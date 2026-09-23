@@ -1,0 +1,31 @@
+/* Карточка итогов: растаможка, справочные суммы, калькулятор ИТП. */
+
+.rs-summary { display: flex; align-items: stretch; flex-wrap: wrap; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
+.rs-block { display: flex; flex: 1 1 auto; flex-direction: column; gap: 8px; margin: 0; padding: 14px 20px; box-shadow: -1px -1px 0 #e6ece8; }
+.rs-title { color: #6b7a71; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.rs-op { align-self: center; color: #b3bdb6; font-size: 1.1rem; font-weight: 500; }
+.rs-formula { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+.rs-total { display: flex; flex-direction: column; margin-right: 4px; }
+.rs-total strong { color: #1c5538; font-size: 1.55rem; font-weight: 750; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-total small { color: #8a968f; font-size: .76rem; font-variant-numeric: tabular-nums; }
+.rs-part { display: flex; align-items: center; gap: 14px; }
+.rs-part > div { display: flex; flex-direction: column; gap: 1px; }
+.rs-part span:not(.rs-op) { color: #7a877f; font-size: .74rem; font-weight: 600; }
+.rs-part b { color: #1f2d24; font-size: .98rem; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-part b small, .rs-ref dd small { color: #8a968f; font-size: .72rem; font-weight: 500; }
+.rs-partial { align-self: flex-start; padding: 3px 9px; border-radius: 6px; background: #fdf3d8; color: #85640a; font-size: .74rem; font-weight: 600; }
+.rs-ref > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.rs-ref dt { color: #7a877f; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.rs-ref dd { margin: 0; color: #1f2d24; font-size: .9rem; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-its { background: #fbfcfb; }
+.rs-title small { margin-left: 6px; color: #a3aea7; font-size: .7rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.rs-its-grid { display: grid; grid-template-columns: 104px auto 104px auto 96px auto auto; justify-content: start; align-items: end; gap: 8px 10px; }
+.rs-its-grid > label { display: flex; flex-direction: column; gap: 3px; margin: 0; color: #7a877f; font-size: .7rem; font-weight: 600; white-space: nowrap; }
+.rs-its-grid > .rs-op { align-self: end; height: 30px; line-height: 30px; text-align: center; }
+.rs-summary .rs-its input { box-sizing: border-box; width: 100%; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; }
+.rs-summary .rs-its input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.rs-summary .rs-its input::placeholder { color: #b3bdb6; }
+@media (max-width: 900px) {
+  .rs-block { flex: 1 1 100%; }
+}
+.rs-its-total { margin-left: 4px; }

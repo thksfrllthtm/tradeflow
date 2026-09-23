@@ -1,0 +1,262 @@
+/* Этап 2: параметры расчёта и таблица строк. */
+
+.gloves-params-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 10px 14px; padding: 12px 14px; border-top: 1px solid #e2e9e3; }
+.gloves-params-grid label { display: flex; flex-direction: column; gap: 4px; color: #45554b; font-size: .74rem; font-weight: 500; }
+.gloves-params-grid label small { color: #718077; font-size: .66rem; font-weight: 400; }
+.gloves-params-grid input, .gloves-params-grid select { padding: 7px 10px; border: 1px solid #c8d2ca; border-radius: 5px; font-size: .84rem; background: #fff; }
+.gloves-params-grid input:focus, .gloves-params-grid select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 2px #24704a22; }
+.gloves-row-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0; padding: 10px 14px; border: 1px solid #dfe7e1; border-radius: 8px; background: #fbfdfb; }
+.gloves-row-toolbar span { flex: 1 1 auto; min-width: 0; color: #63736a; font-size: .82rem; }
+.gloves-row-toolbar .secondary { padding: 7px 14px; }
+
+.gloves-table-wrap {
+  position: relative;
+  overflow: auto;
+  max-height: min(74vh, 720px);
+  margin: 0;
+  border: 1px solid #cfd9d2;
+  border-radius: 10px;
+  background: #fff;
+  scrollbar-gutter: stable both-edges;
+  box-shadow: 0 1px 2px rgba(28, 85, 56, .04);
+}
+.gloves-table { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; font-size: .82rem; table-layout: fixed; }
+.gloves-table th {
+  position: sticky; top: 0; z-index: 3;
+  padding: 9px 10px;
+  background: #eef3ef;
+  border-bottom: 2px solid #cfd9d2;
+  text-align: left;
+  font-weight: 650;
+  font-size: .74rem;
+  letter-spacing: .01em;
+  color: #45554b;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+.gloves-table td {
+  padding: 10px;
+  background: #fff;
+  border-bottom: 1px solid #edf0ee;
+  vertical-align: top;
+}
+.gloves-table tbody tr + tr td { border-top: 1px solid transparent; }
+.gloves-table tbody tr { border-bottom: 1px solid #edf0ee; }
+.gloves-table tbody tr:last-child td { border-bottom: 0; }
+.gloves-table tbody tr:hover td { background: #f6faf7; }
+.gloves-table tbody tr:nth-child(even) td { background: #fbfdfb; }
+.gloves-table tbody tr:nth-child(even):hover td { background: #f6faf7; }
+.gloves-table tr.row-excluded td { opacity: .45; }
+.gloves-table tr.row-error td { background: #fef4f4; }
+.gloves-table tr.row-error td:first-child { box-shadow: inset 3px 0 0 #d97a7a; }
+.gloves-table th:nth-child(1), .gloves-table td:nth-child(1) { width: 42px; text-align: center; }
+.gloves-table th:nth-child(2), .gloves-table td:nth-child(2) { width: 52px; text-align: center; }
+.gloves-table th:nth-child(3), .gloves-table td:nth-child(3) { width: 54px; text-align: center; color: #68766e; font-variant-numeric: tabular-nums; font-weight: 600; }
+.gloves-table th:nth-child(4), .gloves-table td:nth-child(4) { width: auto; }
+.gloves-table th:nth-child(5), .gloves-table td:nth-child(5) { width: 44px; text-align: center; vertical-align: middle; }
+.gloves-table td:nth-child(-n+3) { position: sticky; z-index: 2; background: #fff; }
+.gloves-table th:nth-child(-n+3) { position: sticky; z-index: 4; background: #eef3ef; }
+.gloves-table th:nth-child(1), .gloves-table td:nth-child(1) { left: 0; }
+.gloves-table th:nth-child(2), .gloves-table td:nth-child(2) { left: 42px; }
+.gloves-table th:nth-child(3), .gloves-table td:nth-child(3) { left: 94px; box-shadow: 2px 0 4px -2px rgba(0,0,0,.08); }
+.gloves-table tbody tr:hover td:nth-child(-n+3) { background: #f6faf7; }
+.gloves-table tbody tr.row-excluded td:nth-child(-n+3) { background: #fff; }
+.gloves-table tbody tr.row-error td:nth-child(-n+3) { background: #fef4f4; }
+.gloves-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: #24704a; cursor: pointer; margin: 0; vertical-align: middle; }
+.gloves-table .col-check small { display: block; margin-top: 3px; color: #8a958e; font-size: .55rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.gloves-table input[type="text"],
+.gloves-table input[inputmode="decimal"],
+.gloves-table input:not([type]) {
+  width: 100%; min-width: 0; padding: 8px 10px;
+  border: 1px solid #d4dcd6; border-radius: 6px;
+  font-size: .84rem; background: #fff; box-sizing: border-box;
+  transition: border-color .15s, box-shadow .15s;
+}
+.gloves-table input[inputmode="decimal"] { text-align: right; font-variant-numeric: tabular-nums; }
+.gloves-table td input { margin: 0; min-height: 34px; box-sizing: border-box; }
+.gloves-table td select { width: 100%; min-height: 34px; padding: 6px 10px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; font-size: .8rem; box-sizing: border-box; }
+.gloves-table input:focus, .gloves-table select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.gloves-review-table {
+  width: 100%;
+  min-width: 1393px;
+  table-layout: fixed;
+  font-size: .76rem;
+}
+.gloves-review-table th,
+.gloves-review-table td {
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+.gloves-review-table th:nth-child(1), .gloves-review-table td:nth-child(1) { width: 42px; }
+.gloves-review-table th:nth-child(2), .gloves-review-table td:nth-child(2) { width: 52px; }
+.gloves-review-table th:nth-child(3), .gloves-review-table td:nth-child(3) { width: 54px; }
+.gloves-review-table th:nth-child(4), .gloves-review-table td:nth-child(4) { width: 320px; }
+.gloves-review-table th:nth-child(5), .gloves-review-table td:nth-child(5) { width: 90px; }
+.gloves-review-table th:nth-child(6), .gloves-review-table td:nth-child(6) { width: 100px; }
+.gloves-review-table th:nth-child(7), .gloves-review-table td:nth-child(7) { width: 100px; }
+.gloves-review-table th:nth-child(8), .gloves-review-table td:nth-child(8) { width: 105px; }
+.gloves-review-table th:nth-child(9), .gloves-review-table td:nth-child(9) { width: 130px; }
+.gloves-review-table th:nth-child(10), .gloves-review-table td:nth-child(10) { width: 70px; }
+.gloves-review-table th:nth-child(11), .gloves-review-table td:nth-child(11) { width: 86px; }
+.gloves-review-table th:nth-child(12), .gloves-review-table td:nth-child(12) { width: 44px; }
+.gloves-review-table th:nth-child(n+5):nth-child(-n+11) {
+  text-align: center;
+  white-space: normal;
+  line-height: 1.2;
+}
+.gloves-review-table td:nth-child(n+5):nth-child(-n+10) {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.gloves-review-table td:nth-child(1),
+.gloves-review-table td:nth-child(2),
+.gloves-review-table td:nth-child(3),
+.gloves-review-table td:nth-child(11),
+.gloves-review-table td:nth-child(12) {
+  text-align: center;
+}
+.gloves-review-table td:nth-child(3) {
+  color: #536159;
+  font-weight: 650;
+}
+.gloves-review-table tbody tr + tr td {
+  border-top: 1px solid #e4ebe6;
+}
+.gloves-review-table tbody tr:hover td {
+  background: #f3f8f4;
+}
+.gloves-review-table .review-product-cell {
+  display: table-cell;
+  min-width: 0;
+  padding: 8px 10px;
+}
+.gloves-review-table .review-product-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.gloves-review-table .review-product-head .product-name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.gloves-review-table .gloves-row-photos {
+  flex: 0 0 auto;
+  gap: 5px;
+}
+.gloves-review-table .photo-preview-button {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+}
+.gloves-review-table .photo-preview-button img {
+  max-width: 36px;
+  max-height: 36px;
+}
+.gloves-review-table .photo-upload-button,
+.gloves-review-table .photo-empty {
+  padding: 5px 7px;
+  font-size: .66rem;
+}
+.gloves-review-table .review-product-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 18px;
+  margin-top: 5px;
+}
+.gloves-review-table .review-product-code strong {
+  color: #1b6b43;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.gloves-review-table .review-product-code .button-link {
+  color: #a33232;
+  font-size: .66rem;
+}
+.gloves-review-table .review-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.gloves-review-table .review-product-actions .button-link {
+  font-size: .68rem;
+  font-weight: 650;
+}
+.gloves-review-table .review-product-actions small {
+  font-size: .64rem;
+  white-space: nowrap;
+}
+.gloves-review-table .review-input {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 7px;
+  font-size: .76rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.gloves-review-table .review-edit-cell {
+  padding: 8px 7px;
+}
+.gloves-review-table .review-net-cell {
+  padding: 8px 7px;
+}
+.gloves-review-table .review-net-editor {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.gloves-review-table .review-net-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+.gloves-review-table .review-net-input-wrap .review-input {
+  min-height: 42px;
+  padding: 6px 8px 18px;
+  background: #fff;
+}
+.gloves-review-table .review-net-input-wrap .net-status {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  left: 8px;
+  max-width: none;
+  overflow: hidden;
+  color: #728077;
+  font-size: .59rem;
+  line-height: 1;
+  pointer-events: none;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gloves-review-table .review-net-input-wrap .net-status.net-ok { color: #28734b; }
+.gloves-review-table .review-net-input-wrap .net-status.net-warn { color: #92701c; }
+.gloves-review-table .review-net-input-wrap .net-status.net-bad { color: #a23b3b; }
+.gloves-review-table .review-net-cell .net-status {
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gloves-review-table .review-net-cell .net-reset {
+  justify-self: start;
+  margin-top: 0;
+  padding: 2px 5px;
+  font-size: .6rem;
+}
+.gloves-review-table .status-badge {
+  white-space: nowrap;
+}
+.gloves-table .status-calculated { background: #d4edda; color: #155724; }
+.gloves-table .status-review { background: #fff3cd; color: #856404; }
+
+@media (max-width: 768px) {
+  .gloves-row-toolbar { position: static; }
+  .gloves-review-table .review-product-head { align-items: flex-start; }
+  .gloves-review-table .review-product-head .product-name-input { min-width: 190px; }
+  .gloves-review-table .gloves-row-photos { width: auto; }
+}

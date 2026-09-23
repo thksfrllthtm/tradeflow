@@ -1,0 +1,21 @@
+.env
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+backend/bin/
+coverage/
+.cache/
+
+# Кэш сборки Go
+.gocache-*/
+backend/.gocache-*/
+
+# Загруженные файлы и локальные данные
+backend/data/
+
+# Папки редакторов и ИИ-инструментов
+.agents/
+.claude/
+.cursor/
+graphify-out/
+skills-lock.json

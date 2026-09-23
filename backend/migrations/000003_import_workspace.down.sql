@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS import_workspaces;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS additional_fields;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS material;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS net_weight_basis;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS net_weight_unit;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS net_weight;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS gross_weight_basis;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS gross_weight_unit;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS gross_weight;
+ALTER TABLE imported_products DROP COLUMN IF EXISTS quantity_unit;

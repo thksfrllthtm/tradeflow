@@ -1,0 +1,16 @@
+/* Плашка ошибок расчёта. */
+
+.rs-errors { border: 1px solid #efcaca; border-radius: 10px; background: #fff7f7; color: #7e3030; }
+.rs-errors > summary { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; list-style: none; }
+.rs-errors > summary::-webkit-details-marker { display: none; }
+.rs-errors > summary strong { color: #8d2929; font-size: .86rem; }
+.rs-errors > summary .button-link { margin-left: auto; color: #8d2929; font-size: .8rem; font-weight: 650; }
+.rs-errors-count { flex: 0 0 auto; padding: 4px 8px; border-radius: 999px; background: #f9dddd; color: #8d2929; font-size: .72rem; font-weight: 650; white-space: nowrap; }
+.rs-error-groups { max-height: 220px; margin: 0; padding: 0 14px 8px; overflow: auto; list-style: none; }
+.rs-error-groups li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; padding: 7px 0; border-top: 1px solid #f3dcdc; font-size: .8rem; line-height: 1.4; }
+.rs-error-text { color: #7e3030; font-weight: 600; }
+.rs-error-rows { color: #9a5151; font-variant-numeric: tabular-nums; }
+.rs-error-rows b { margin-right: 6px; color: #8d2929; font-weight: 700; }
+@media (max-width: 760px) {
+  .rs-error-groups li { grid-template-columns: 1fr; gap: 2px; }
+}

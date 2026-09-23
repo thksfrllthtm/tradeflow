@@ -1,0 +1,57 @@
+/* Этап 1: загрузка файла, настройки листа и назначение колонок. */
+
+.im-drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 220px; margin: 0; padding: 24px; border: 2px dashed #bfd2c5; border-radius: 12px; background: #fff; color: #56665c; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+.im-drop:hover, .im-drop:focus-within { border-color: #24704a; background: #f6fbf8; }
+.im-drop.busy { cursor: progress; opacity: .7; }
+.im-drop strong { color: #1f2d24; font-size: 1rem; }
+.im-drop span { color: #7a877f; font-size: .8rem; }
+.im-drop input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.im-alt { margin: 0; color: #7a877f; font-size: .82rem; text-align: center; }
+.im-alt .button-link { font-size: .82rem; font-weight: 600; }
+
+.im-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 10px 14px; border-bottom: 1px solid #e6ece8; }
+.im-file-button { position: relative; display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 12px; overflow: hidden; border: 1px solid #b8d3c1; border-radius: 6px; background: #eef7f1; color: #1c5538; font-size: .78rem; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.im-file-button:hover { border-color: #24704a; }
+.im-file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.im-file-name { max-width: 260px; overflow: hidden; color: #34443a; font-size: .8rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.im-settings { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-left: auto; }
+.im-settings .im-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #6b7a71; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.im-settings input, .im-settings select { box-sizing: border-box; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .82rem; }
+.im-settings input { width: 56px; text-align: right; }
+.im-settings select { width: auto; max-width: 220px; }
+.im-settings input:focus, .im-settings select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.im-settings .rv-bar-button { height: 30px; padding: 0 12px; }
+
+.im-mapping { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 14px; border-bottom: 1px solid #e6ece8; background: #fbfcfb; }
+.im-mapping-title { margin-right: 2px; color: #7a877f; font-size: .76rem; font-weight: 600; }
+.im-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; padding: 3px 9px; border: 1px dashed #cfd8d2; border-radius: 999px; background: #fff; color: #7a877f; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.im-chip i { color: #a3aea7; font-style: normal; font-weight: 500; }
+.im-chip b { overflow: hidden; color: #1d6a3f; font-weight: 600; text-overflow: ellipsis; }
+.im-chip.set { border: 1px solid #b8d3c1; background: #eef7f1; color: #34443a; }
+.im-chip.set::before { content: "✓"; color: #24704a; }
+
+.im-table-wrap { overflow: auto; max-height: max(320px, calc(100vh - 330px)); }
+.gloves-page .im-table { width: max-content; min-width: 100% !important; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .8rem; }
+.gloves-page .im-table th, .gloves-page .im-table td { max-width: 240px; padding: 5px 10px !important; overflow: hidden; border-bottom: 1px solid #edf1ee; background: #fff; color: #9aa59e; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.gloves-page .im-table th { position: sticky; top: 0; z-index: 3; min-width: 120px; padding: 7px 8px !important; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; font-size: .74rem !important; text-align: left; vertical-align: top; }
+.gloves-page .im-table td.im-mapped { color: #1f2d24; background: #fbfdfb; }
+.gloves-page .im-table th.im-mapped { min-width: 170px; background: #e6f3eb; box-shadow: inset 0 -2px 0 #24704a; }
+.im-col-name { display: block; max-width: 220px; margin-bottom: 4px; overflow: hidden; color: #5d6d63; font-weight: 600; text-overflow: ellipsis; }
+.gloves-page .im-table th select { width: 100%; height: 28px; margin: 0; padding: 2px 6px; border: 1px dashed #cfd8d2; border-radius: 6px; background: #fff; color: #9aa59e; font-size: .78rem; cursor: pointer; }
+.gloves-page .im-table th.im-mapped select { border: 1px solid #24704a; color: #1c5538; font-weight: 650; }
+.gloves-page .im-table th select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.gloves-page .im-table .im-check { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; text-align: center; }
+.gloves-page .im-table .im-row { position: sticky; left: 36px; z-index: 2; width: 44px; min-width: 44px; color: #8a968f; font-variant-numeric: tabular-nums; text-align: right; box-shadow: inset -1px 0 0 #edf1ee; }
+.gloves-page .im-table th.im-check, .gloves-page .im-table th.im-row { z-index: 4; vertical-align: bottom; }
+.gloves-page .im-table td.im-warn { color: #956b16; font-weight: 700; }
+.gloves-page .im-table input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #24704a; cursor: pointer; }
+.gloves-page .im-table tbody tr:hover td { background: #f3f8f4; }
+.gloves-page .im-table tbody tr.im-excluded td:not(.im-check) { color: #c3cbc5; text-decoration: line-through; text-decoration-color: #d8dfda; }
+.gloves-page .im-table tbody tr:last-child td { border-bottom: 0; }
+.im-need { color: #956b16; font-style: normal; font-weight: 600; }
+.rv-actions .im-manual { color: #24704a; }
+.rv-actions .im-manual:hover:not(:disabled) { background: #eef7f1; }
+
+@media (max-width: 900px) {
+  .im-settings { margin-left: 0; }
+}

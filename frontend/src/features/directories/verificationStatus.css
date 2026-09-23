@@ -1,0 +1,15 @@
+/* Бейдж «Проверено оператором / Требует проверки» — в справочниках и в окнах выбора кода. */
+.directory-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.directory-status.operator_verified { background: #d9f0df; color: #20623c; }
+.directory-status.needs_review { background: #fff1cf; color: #866313; }
+.directory-status.archived { background: #eef1ef; color: #6b7a71; }

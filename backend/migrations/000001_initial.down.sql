@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS estimates;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;

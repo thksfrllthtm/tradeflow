@@ -1,0 +1,165 @@
+/* Общее для калькуляторов обеих смет: страница этапа, кнопки, баннер, этапы, параметры, подсказки нетто. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  font-size: .84rem;
+}
+.banner.error { background: #fef2f2; border: 1px solid #f1c9c9; color: #8f2b2b; }
+.banner.error button {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.banner.error button:hover { background: #f7dede; }
+.gloves-step-page { display: grid; gap: 10px; }
+.btn-calculate {
+  padding: 9px 18px;
+  border: 1px solid #1c5a3a;
+  border-radius: 6px;
+  background: #24704a;
+  color: #fff;
+  font-weight: 600;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-calculate:hover:not(:disabled) { background: #1c5a3a; }
+.btn-calculate:disabled { opacity: .5; cursor: not-allowed; }
+.secondary {
+  padding: 7px 14px;
+  border: 1px solid #b8d3c1;
+  border-radius: 6px;
+  background: #eef7f1;
+  color: #1c5538;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.secondary:hover:not(:disabled) { background: #ddeee4; border-color: #24704a; }
+.secondary:disabled { opacity: .5; cursor: not-allowed; }
+.icon-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e6e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #56665c;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.icon-button:hover { border-color: #24704a; color: #24704a; }
+.button-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2d704b;
+  font-size: .78rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.button-link:hover:not(:disabled) { text-decoration: underline; }
+.button-link:disabled { color: #b3bcb6; cursor: not-allowed; }
+.gloves-page {
+  padding: 16px 20px 28px;
+  max-width: none;
+  margin: 0;
+  color: #2c3a31;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.gloves-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 4px;
+  border: 1px solid #e0e7e2;
+  border-radius: 8px;
+  background: #f3f7f4;
+}
+.gloves-stepper button {
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #56665c;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.gloves-stepper button:hover:not(:disabled):not(.active) { background: #e8f0ea; color: #24704a; }
+.gloves-stepper button.active { background: #24704a; color: #fff; }
+.gloves-stepper button:disabled { color: #a5b0a8; cursor: not-allowed; }
+@media (max-width: 768px) {
+  .gloves-page { padding: 10px; }
+  .gloves-stepper { grid-template-columns: 1fr; }
+}
+.net-ok { color: #23603d; }
+.net-warn { color: #956b16; }
+.net-bad { color: #a33232; }
+.gloves-params {
+  margin: 0;
+  border: 1px solid #dfe7e1;
+  border-radius: 8px;
+  background: #f8faf8;
+}
+.gloves-params > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #34443a;
+  font-size: .84rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+.gloves-params > summary::-webkit-details-marker { display: none; }
+.gloves-params > summary::before { content: '▸'; margin-right: 2px; color: #7a877f; }
+.gloves-params[open] > summary::before { content: '▾'; }
+.gloves-params-summary {
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: #718077;
+  font-size: .74rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gloves-table-top-scroll {
+  display: block;
+  height: 12px;
+  margin: 0 0 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid #d4dcd6;
+  border-radius: 6px;
+  background: #f1f5f2;
+}
+.gloves-table-top-scroll > div { height: 1px; }
+.gloves-empty { text-align: center; padding: 40px 20px; color: #7a877f; }
+.gloves-empty h3 {
+  margin: 0 0 6px;
+  color: #45554b;
+  font-size: 1rem;
+  font-weight: 650;
+}
+.gloves-empty p { margin: 0; font-size: .84rem; }

@@ -1,0 +1,46 @@
+/* Общее для компонентов сметы перчаток: страницы этапов, кнопки, баннер ошибки, строка действий. */
+
+/* ============ Step pages ============ */
+
+.gloves-step-title { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 2px 2px 0; }
+.gloves-step-title h2 { margin: 2px 0 3px; font-size: 1.05rem; color: #24352b; font-weight: 650; }
+.gloves-step-title p { margin: 0; color: #7a877f; font-size: .82rem; }
+.gloves-step-title > .button-link { color: #24704a; white-space: nowrap; }
+
+/* ============ Actions row ============ */
+.gloves-actions {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #dfe7e1;
+  border-radius: 10px;
+  background: #fbfdfb;
+}
+.gloves-actions button { padding: 10px 20px; border-radius: 6px; font-size: .84rem; cursor: pointer; transition: background .15s, border-color .15s; }
+.gloves-actions .btn-calculate { background: #24704a; color: #fff; border: 1px solid #1c5a3a; font-weight: 650; }
+.gloves-actions .btn-calculate:hover:not(:disabled) { background: #1c5a3a; }
+.gloves-actions .btn-calculate:disabled { opacity: .5; cursor: not-allowed; }
+.gloves-actions .btn-save-draft { background: #fff; color: #1c5538; border: 1px solid #b8d2bf; font-weight: 600; }
+.gloves-actions .btn-save-draft:hover:not(:disabled) { background: #f0f7f2; }
+.gloves-actions .btn-save-draft:disabled { opacity: .5; cursor: not-allowed; }
+.gloves-actions .btn-clear { background: #fff; color: #856404; border: 1px solid #e0d5a0; font-weight: 600; }
+.gloves-actions .btn-clear:hover:not(:disabled) { background: #fbf6e3; }
+.gloves-actions .btn-clear:disabled { opacity: .5; cursor: not-allowed; }
+.gloves-actions .muted { color: #7a877f; font-size: .76rem; flex: 1 1 220px; }
+
+/* ============ Responsive ============ */
+
+@media (max-width: 768px) {
+  .gloves-step-title, .gloves-step-actions { flex-direction: column; align-items: stretch; }
+
+  
+  
+  .gloves-actions .muted { flex-basis: 100%; }
+
+  
+  
+  
+  
+  
+  
+  
+}

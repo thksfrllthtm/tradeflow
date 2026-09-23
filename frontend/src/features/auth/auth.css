@@ -1,0 +1,39 @@
+/* Экраны входа и регистрации. */
+
+.login-card { width: min(100%, 410px); padding: 36px; border: 1px solid #e1e8e3; border-radius: 15px; background: white; box-shadow: 0 22px 60px rgba(22, 50, 34, .09); }
+.login-card h1 { margin-bottom: 8px; font-size: 1.9rem; }
+.form-stack { display: grid; gap: 18px; margin-top: 28px; }
+.login-card {
+  width: min(100%, 400px);
+  padding: 32px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--c-bg);
+  box-shadow: var(--shadow-card);
+}
+.login-card h1 { margin-bottom: 6px; font-size: 1.7rem; }
+.form-stack { display: grid; gap: 16px; margin-top: 24px; }
+.auth-notice { margin: 8px 0 0; color: #6b7b72; font-size: .85rem; }
+.auth-switch {
+  width: 100%;
+  margin-top: 14px;
+  background: transparent;
+  color: var(--c-green);
+  border: 1px solid var(--c-border);
+  font-weight: 500;
+}
+.auth-switch:hover:not(:disabled) { background: var(--c-green-light); }
+.password-field { position: relative; display: block; }
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  color: var(--c-text-muted);
+  padding: 4px 6px;
+  font-size: .78rem;
+}
+.password-toggle:hover:not(:disabled) { background: transparent; color: var(--c-green); }
+.password-field input { padding-right: 70px; }
+.field-hint { display: block; margin-top: 4px; color: var(--c-text-muted); font-size: .75rem; }

@@ -1,0 +1,78 @@
+/* Общая шапка. Селекторы кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
+
+.app-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 52px;
+  padding: 0 20px;
+  background: #0f2e1c;
+  color: #fff;
+}
+
+.app-header-brand { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+.app-header-logo {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #2f9a64, #146c43);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.app-header-name { font-size: .86rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+
+.app-header-nav { display: flex; flex: 1 1 auto; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.app-header-nav a {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 7px;
+  color: #a9c7b4;
+  font-size: .82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.app-header-nav a:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.app-header-nav a.active { background: rgba(255, 255, 255, .13); color: #fff; }
+
+.app-header-user { display: flex; flex: 0 1 auto; align-items: center; gap: 9px; min-width: 0; }
+.app-header-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1f5a3a;
+  color: #cfe8d9;
+  font-size: .68rem;
+  font-weight: 700;
+}
+.app-header-who { overflow: hidden; color: #cfe0d5; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+.app-header .app-header-logout {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 7px;
+  background: transparent;
+  color: #cfe0d5;
+  font-size: .76rem;
+  font-weight: 600;
+}
+.app-header .app-header-logout:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .08); color: #fff; }
+
+@media (max-width: 900px) {
+  .app-header { gap: 14px; padding: 0 14px; }
+  .app-header-name, .app-header-who { display: none; }
+}
+@media (max-width: 560px) {
+  .app-header { gap: 8px; padding: 0 10px; }
+  .app-header-nav a { padding: 6px 8px; font-size: .78rem; }
+  .app-header-avatar { display: none; }
+}

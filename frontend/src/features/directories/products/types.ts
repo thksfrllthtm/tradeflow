@@ -1,0 +1,4 @@
+import { TNVEDDirectoryEntry } from '../tnved/types'
+
+export type ProductDirectoryEntry = { id: number; category: string; name: string; nameZh: string; unit: string; synonymsRu: string[]; synonymsZh: string[]; synonymsEn: string[]; tnvedDirectoryEntryId?: number; tnvedCode: string; tnvedName: string; tnvedNameZh: string; companyCoefficient: string; antiDumpingPercent: string; tnved?: TNVEDDirectoryEntry; verificationStatus: 'needs_review' | 'operator_verified'; archivedAt: string; archivedBy?: number; createdBy?: number; updatedBy?: number; createdAt: string; updatedAt: string }
+export type ProductDirectoryInput = { category: string; name: string; nameZh: string; unit: string; companyCoefficient: string; synonymsRu: string[]; synonymsZh: string[]; synonymsEn: string[]; tnvedDirectoryEntryId?: number; verificationStatus: 'needs_review' | 'operator_verified' }

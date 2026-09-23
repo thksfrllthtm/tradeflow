@@ -1,0 +1,48 @@
+/* Выбор кода ТН ВЭД в карточке товара: поле поиска, список под ним, выбранный код с ставками. */
+
+.tnved-picker { position: relative; display: grid; gap: 8px; }
+.tnved-picker > input {
+  width: 100%;
+  height: 38px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid #d3ddd6;
+  border-radius: 7px;
+  font-size: .86rem;
+}
+.tnved-picker > input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+
+.tnved-picker-list {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  max-height: 280px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid #dfe7e1;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(20, 52, 35, .14);
+  list-style: none;
+}
+.tnved-picker-list li {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 1px 10px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.tnved-picker-list li.active { background: #eef6f1; }
+.tnved-picker-list li.selected code::after { content: ' ✓'; color: #24704a; }
+.tnved-picker-list code { grid-row: span 2; color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; font-weight: 700; }
+.tnved-picker-list span { overflow: hidden; color: #1f2d24; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+.tnved-picker-list small { color: #7a877f; font-size: .7rem; }
+.tnved-picker-list .tnved-picker-empty { display: block; color: #7a877f; font-size: .8rem; cursor: default; }
+
+.tnved-picker-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 8px 12px; border-radius: 7px; background: #f3f8f5; color: #56665c; font-size: .76rem; }
+.tnved-picker-card code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .84rem; font-weight: 700; }
+.tnved-picker-card .warn { color: #9a5d0c; font-weight: 600; }

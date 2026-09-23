@@ -1,0 +1,53 @@
+/* Каркас приложения: экран загрузки, колонка страницы, всплывающий баннер ошибки. Шапка — shared/components/AppHeader. */
+
+.centered, .login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.app-shell {
+  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ссылка-кнопка (используется на этапах сметы) */
+.button-link {
+  background: transparent;
+  padding: 4px 0;
+  text-decoration: none;
+  color: #b8d4c2;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+}
+.button-link:hover:not(:disabled) { background: transparent; color: #fff; border-bottom-color: rgba(255,255,255,.3); }
+
+/* ── Баннер ошибки ── */
+.banner {
+  position: fixed;
+  z-index: 50;
+  right: 16px;
+  top: 60px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 400px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--c-error-bg);
+  border: 1px solid #f0cccc;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  font-size: .85rem;
+}
+.banner button {
+  flex-shrink: 0;
+  padding: 0 4px;
+  background: transparent;
+  color: var(--c-error);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.banner button:hover:not(:disabled) { background: transparent; }
+

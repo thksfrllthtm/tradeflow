@@ -1,0 +1,36 @@
+/* Этап 1: загрузка файла, настройки листа, предпросмотр Excel и выбор колонок. */
+
+.gloves-step-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 4px; }
+.gloves-step-actions .muted { color: #7a877f; font-size: .78rem; }
+.gloves-upload-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0; padding: 12px 14px; border: 1px dashed #bfccc3; border-radius: 8px; background: #f7faf8; }
+.gloves-upload-bar label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid #b8d3c1; border-radius: 6px; background: #eef7f1; color: #24704a; font-size: .82rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+.gloves-upload-bar label:hover { background: #ddeee4; }
+.gloves-upload-bar label input { display: none; }
+.gloves-upload-bar button { padding: 8px 14px; border: 1px solid #c8d2ca; border-radius: 6px; background: #fff; color: #34443a; font-size: .82rem; cursor: pointer; transition: border-color .15s, color .15s; }
+.gloves-upload-bar button:hover { border-color: #24704a; color: #24704a; }
+.gloves-upload-bar .upload-info { flex: 1 1 200px; font-size: .78rem; color: #7a877f; }
+.gloves-source-settings { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin: 0; padding: 12px 14px; border: 1px solid #e0e6e1; border-radius: 8px; background: #fdfdfd; }
+.gloves-source-settings label { display: flex; flex-direction: column; gap: 3px; font-size: .76rem; color: #56665c; font-weight: 500; }
+.gloves-source-settings select, .gloves-source-settings input { padding: 6px 9px; border: 1px solid #c8d2ca; border-radius: 5px; font-size: .82rem; width: 130px; background: #fff; }
+.gloves-source-settings select:focus, .gloves-source-settings input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 2px #24704a22; }
+.gloves-source-settings button { padding: 7px 14px; border: 1px solid #c8d2ca; border-radius: 5px; background: #fff; color: #34443a; font-size: .82rem; cursor: pointer; transition: border-color .15s, color .15s; }
+.gloves-source-settings button:hover:not(:disabled) { border-color: #24704a; color: #24704a; }
+.gloves-source-settings button:disabled { opacity: .5; cursor: not-allowed; }
+.gloves-source-settings .muted { flex: 1 1 220px; font-size: .76rem; color: #7a877f; }
+.gloves-mapping { display: grid; gap: 10px; }
+.gloves-excel-preview { margin: 0; padding: 12px 14px; border: 1px solid #e0e7e2; border-radius: 8px; background: #fbfdfb; }
+.gloves-excel-preview > div:first-child { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 9px; }
+.gloves-excel-preview strong { color: #24352b; font-size: .88rem; font-weight: 650; }
+.gloves-excel-preview .muted { color: #7a877f; font-size: .76rem; }
+.gloves-preview-scroll { overflow: auto; max-height: min(58vh, 520px); border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; }
+.gloves-preview-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .78rem; }
+.gloves-preview-table th { position: sticky; top: 0; z-index: 2; min-width: 150px; padding: 7px 9px; background: #f0f4f1; border-bottom: 2px solid #d4dcd6; text-align: left; vertical-align: top; font-weight: 600; color: #34443a; }
+.gloves-preview-table th:first-child { min-width: 60px; width: 60px; text-align: center; }
+.gloves-preview-table th strong { display: block; margin-bottom: 5px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .76rem; color: #56665c; font-weight: 600; }
+.gloves-preview-table th select { width: 100%; padding: 5px 7px; border: 1px solid #c8d2ca; border-radius: 4px; background: #fff; font-size: .76rem; }
+.gloves-preview-table th select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 2px #24704a22; }
+.gloves-preview-table td { padding: 6px 9px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 1px solid #eef0ee; color: #45554b; background: #fff; }
+.gloves-preview-table td:first-child { width: 60px; text-align: center; }
+.gloves-preview-table tbody tr:hover td { background: #f3f8f4; }
+.gloves-preview-table tr.row-excluded td { opacity: .38; }
+.gloves-preview-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: #24704a; cursor: pointer; }

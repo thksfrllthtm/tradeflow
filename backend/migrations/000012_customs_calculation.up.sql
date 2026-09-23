@@ -1,0 +1,27 @@
+CREATE TABLE customs_calculations (
+    id BIGSERIAL PRIMARY KEY,
+    estimate_id BIGINT NOT NULL UNIQUE REFERENCES estimates(id) ON DELETE CASCADE,
+    assessment_date DATE NOT NULL,
+    origin VARCHAR(200) NOT NULL DEFAULT '',
+    usd_kzt NUMERIC(30,12) NOT NULL,
+    eur_kzt NUMERIC(30,12),
+    wagons NUMERIC(30,12),
+    wagon_tariff_usd NUMERIC(30,12) NOT NULL DEFAULT 420,
+    package_weight_kg NUMERIC(30,12) NOT NULL DEFAULT 0.3,
+    customs_fee_kzt NUMERIC(30,12),
+    fee_included BOOLEAN NOT NULL DEFAULT FALSE,
+    cash_usd NUMERIC(30,12),
+    items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_by BIGINT NOT NULL REFERENCES users(id),
+    updated_by BIGINT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT customs_calculation_usd_kzt_positive CHECK (usd_kzt > 0),
+    CONSTRAINT customs_calculation_eur_kzt_positive CHECK (eur_kzt IS NULL OR eur_kzt > 0),
+    CONSTRAINT customs_calculation_wagons_nonnegative CHECK (wagons IS NULL OR wagons >= 0),
+    CONSTRAINT customs_calculation_tariff_positive CHECK (wagon_tariff_usd >= 0),
+    CONSTRAINT customs_calculation_package_weight_nonnegative CHECK (package_weight_kg >= 0),
+    CONSTRAINT customs_calculation_fee_nonnegative CHECK (customs_fee_kzt IS NULL OR customs_fee_kzt >= 0),
+    CONSTRAINT customs_calculation_cash_nonnegative CHECK (cash_usd IS NULL OR cash_usd >= 0)
+);
+CREATE INDEX customs_calculations_estimate_idx ON customs_calculations(estimate_id);
