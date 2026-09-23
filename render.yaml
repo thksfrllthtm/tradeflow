@@ -1,0 +1,35 @@
+# Render Blueprint: один бесплатный веб-сервис (сайт + API). База — Neon (DATABASE_URL).
+# Пошаговая инструкция — deploy/render/README.md.
+services:
+  - type: web
+    name: tradeflow
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./deploy/render/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Адрес базы из Neon (Direct connection, без пулера)
+      - key: DATABASE_URL
+        sync: false
+      # Первый сотрудник создаётся при запуске; пароль не короче 12 символов
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: ALLOW_REGISTRATION
+        value: "false"
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_NAME
+        value: tradeflow_session
+      - key: SESSION_TTL_HOURS
+        value: "24"
+      # Ключи AI (ANTHROPIC_API_KEY / GEMINI_API_KEY) для сметы не нужны — при необходимости
+      # добавьте их потом в Render → Environment.
+      - key: AI_PROVIDER
+        value: anthropic

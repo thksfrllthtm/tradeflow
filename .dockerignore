@@ -1,0 +1,14 @@
+# Контекст сборки образа для Render (deploy/render/Dockerfile) — корень репозитория.
+.git
+.env
+.agents
+.claude
+.cursor
+graphify-out
+.gocache-*
+backend/.gocache-*
+backend/data
+backend/bin
+frontend/node_modules
+frontend/dist
+**/*.tsbuildinfo

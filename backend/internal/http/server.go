@@ -151,5 +151,6 @@ func (s *Server) Router() *gin.Engine {
 	goodsEstimates.DELETE("/estimates/:id", s.deleteGoodsEstimate)
 	goodsEstimates.PUT("/estimates/:id/draft", s.saveGoodsEstimateDraft)
 
+	s.serveFrontend(router)
 	return router
 }

@@ -20,6 +20,12 @@ type Config struct {
 	GeminiModel       string
 	AnthropicAPIKey   string
 	AnthropicModel    string
+	// RegistrationDisabled: запретить самостоятельную регистрацию (ALLOW_REGISTRATION=false).
+	// На публичном сервере сотрудников заводит bootstrap-admin.
+	RegistrationDisabled bool
+	// StaticDir: папка собранного фронтенда. Если задана, сервер сам отдаёт сайт
+	// (один адрес для сайта и API — так работает развёртывание на Render).
+	StaticDir string
 }
 
 func Load() (Config, error) {
@@ -33,23 +39,31 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	allowRegistration, err := boolEnv("ALLOW_REGISTRATION", true)
+	if err != nil {
+		return Config{}, err
+	}
+
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if databaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
 
 	return Config{
-		DatabaseURL:       databaseURL,
-		Port:              stringEnv("BACKEND_PORT", "8080"),
-		SessionCookieName: stringEnv("SESSION_COOKIE_NAME", "import_calculator_session"),
-		SessionTTL:        time.Duration(ttlHours) * time.Hour,
-		CookieSecure:      cookieSecure,
-		FileStorageDir:    stringEnv("FILE_STORAGE_DIR", "./data/uploads"),
-		AIProvider:        stringEnv("AI_PROVIDER", "anthropic"),
-		GeminiAPIKey:      strings.TrimSpace(os.Getenv("GEMINI_API_KEY")),
-		GeminiModel:       stringEnv("GEMINI_MODEL", "gemini-3.8-flash"),
-		AnthropicAPIKey:   strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY")),
-		AnthropicModel:    stringEnv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+		DatabaseURL: databaseURL,
+		// PORT задают хостинги вроде Render; BACKEND_PORT — docker-compose.
+		Port:                 stringEnv("BACKEND_PORT", stringEnv("PORT", "8080")),
+		SessionCookieName:    stringEnv("SESSION_COOKIE_NAME", "import_calculator_session"),
+		SessionTTL:           time.Duration(ttlHours) * time.Hour,
+		CookieSecure:         cookieSecure,
+		FileStorageDir:       stringEnv("FILE_STORAGE_DIR", "./data/uploads"),
+		AIProvider:           stringEnv("AI_PROVIDER", "anthropic"),
+		GeminiAPIKey:         strings.TrimSpace(os.Getenv("GEMINI_API_KEY")),
+		GeminiModel:          stringEnv("GEMINI_MODEL", "gemini-3.8-flash"),
+		AnthropicAPIKey:      strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY")),
+		AnthropicModel:       stringEnv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+		RegistrationDisabled: !allowRegistration,
+		StaticDir:            strings.TrimSpace(os.Getenv("STATIC_DIR")),
 	}, nil
 }
 

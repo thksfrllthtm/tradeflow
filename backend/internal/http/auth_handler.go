@@ -101,6 +101,10 @@ func (s *Server) allowAuthAttempt(ip, email string) bool {
 }
 
 func (s *Server) register(c *gin.Context) {
+	if s.config.RegistrationDisabled {
+		c.JSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "Регистрация закрыта. Попросите администратора создать вам аккаунт", "code": "registration_disabled"}})
+		return
+	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 12<<10)
 	var input struct {
 		Name     string `json:"name"`

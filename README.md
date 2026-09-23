@@ -211,6 +211,11 @@ Backend (`backend/internal`): `http/` — обработчики по домен
 `server.go`), `service/` — бизнес-логика и расчёты, `repository/` — GORM-модели и запросы по
 таблицам, `config/` — настройки. Точки входа — `backend/cmd/*`, миграции — `backend/migrations`.
 
+## Развёртывание на Render + Neon
+
+Бесплатный тестовый сервер: один сервис Render (сайт + API, `render.yaml`) и база Neon.
+Пошаговая инструкция — [deploy/render/README.md](deploy/render/README.md).
+
 ## Проверки
 
 ```powershell
