@@ -27,6 +27,10 @@ const (
 	MaxImageBytes        = 5 << 20
 	MaxXLSXExpandedBytes = 100 << 20
 	lineTotalTolerance   = "0.01"
+	// Разбор Excel для смет (/api/gloves/parse-xlsx) не сохраняет файл, поэтому допускает
+	// файлы больше: фото из них браузер сжимает до сохранения сметы.
+	MaxGlovesXLSXBytes       = 100 << 20
+	MaxGlovesParseImageBytes = 25 << 20
 )
 
 var ErrDuplicateImport = errors.New("the same file has already been uploaded for this estimate")

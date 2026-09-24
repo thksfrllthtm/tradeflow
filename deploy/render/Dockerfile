@@ -23,5 +23,8 @@ COPY backend/migrations /app/migrations
 COPY --chmod=755 deploy/render/entrypoint.sh /app/entrypoint.sh
 # Используется, только если SUPABASE_URL не задан: тогда файлы лежат на временном диске.
 ENV FILE_STORAGE_DIR=/app/data/uploads
+# Бесплатный Render даёт 512 МБ: разбор XLSX с фото держит в памяти сотни МБ, поэтому
+# сборщик мусора Go должен освобождать память раньше, чем контейнер упрётся в лимит.
+ENV GOMEMLIMIT=400MiB
 EXPOSE 10000
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -4,9 +4,10 @@ package service
 
 import (
 	"archive/zip"
-	"bytes"
+	"bufio"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -115,27 +116,27 @@ func glovesXLSXPictureMIME(extension string) string {
 // parseGlovesSpanningImages reads the drawing anchor ranges without exposing
 // any XLSX internals from excelize. GetPictures still supplies the decoded
 // image bytes, while the drawing XML tells us which rows the image covers.
-func parseGlovesSpanningImages(contents []byte, workbook *excelize.File, targetSheet string) ([]GlovesParseImage, error) {
-	archive, err := zip.NewReader(bytes.NewReader(contents), int64(len(contents)))
+func parseGlovesSpanningImages(file io.ReaderAt, size int64, workbook *excelize.File, targetSheet string) ([]GlovesParseImage, [][]byte, error) {
+	archive, err := zip.NewReader(file, size)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	workbookXML, err := readGlovesXLSXPart(archive, "xl/workbook.xml")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var workbookData glovesXLSXWorkbook
 	if err := xml.Unmarshal(workbookXML, &workbookData); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	workbookRelationsXML, err := readGlovesXLSXPart(archive, "xl/_rels/workbook.xml.rels")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var workbookRelations glovesXLSXRelationships
 	if err := xml.Unmarshal(workbookRelationsXML, &workbookRelations); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	sheetPath := ""
@@ -152,38 +153,38 @@ func parseGlovesSpanningImages(contents []byte, workbook *excelize.File, targetS
 		break
 	}
 	if sheetPath == "" {
-		return nil, fmt.Errorf("XLSX sheet %q path not found", targetSheet)
+		return nil, nil, fmt.Errorf("XLSX sheet %q path not found", targetSheet)
 	}
 
 	sheetXML, err := readGlovesXLSXPart(archive, sheetPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var sheetData glovesXLSXSheet
 	if err := xml.Unmarshal(sheetXML, &sheetData); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if sheetData.Drawing == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	sheetRelationsPath := path.Join(path.Dir(sheetPath), "_rels", path.Base(sheetPath)+".rels")
 	sheetRelationsXML, err := readGlovesXLSXPart(archive, sheetRelationsPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	drawingTarget, err := glovesXLSXRelationshipTarget(sheetRelationsXML, sheetData.Drawing.RelID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	drawingPath := glovesXLSXPartTarget(path.Dir(sheetPath), drawingTarget)
 	drawingXML, err := readGlovesXLSXPart(archive, drawingPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var drawing glovesXLSXDrawing
 	if err := xml.Unmarshal(drawingXML, &drawing); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	type imageRange struct{ startRow, endRow, col int }
@@ -209,6 +210,7 @@ func parseGlovesSpanningImages(contents []byte, workbook *excelize.File, targetS
 	}
 
 	images := make([]GlovesParseImage, 0)
+	imageFiles := make([][]byte, 0)
 	for _, imageRange := range ranges {
 		cell, cellErr := excelize.CoordinatesToCellName(imageRange.col+1, imageRange.startRow+1)
 		if cellErr != nil {
@@ -223,46 +225,70 @@ func parseGlovesSpanningImages(contents []byte, workbook *excelize.File, targetS
 			if mimeType == "" {
 				continue
 			}
-			if len(picture.File) > MaxImageBytes {
-				return nil, &ValidationError{Field: "file", Message: fmt.Sprintf("Изображение в строке %d больше %d МБ", imageRange.startRow+1, MaxImageBytes/(1024*1024))}
+			if len(picture.File) > MaxGlovesParseImageBytes {
+				return nil, nil, &ValidationError{Field: "file", Message: fmt.Sprintf("Изображение в строке %d больше %d МБ", imageRange.startRow+1, MaxGlovesParseImageBytes/(1024*1024))}
 			}
-			data := base64.StdEncoding.EncodeToString(picture.File)
+			imageFiles = append(imageFiles, picture.File)
 			for row := imageRange.startRow; row < imageRange.endRow; row++ {
-				images = append(images, GlovesParseImage{SourceRow: row + 1, Data: data, MimeType: mimeType})
+				images = append(images, GlovesParseImage{SourceRow: row + 1, DataIndex: len(imageFiles) - 1, MimeType: mimeType})
 			}
 		}
 	}
-	return images, nil
+	return images, imageFiles, nil
 }
 
-func (s *GlovesService) ParseXlsx(ctx context.Context, file io.Reader, filename string, sheet string, headerRow, dataStartRow int) (GlovesParseResult, error) {
-	return s.parseXlsx(ctx, file, filename, sheet, headerRow, dataStartRow, false)
+// WriteJSON writes the result as JSON with an extra "imageData" array holding
+// ImageFiles in base64, encoding one picture at a time.
+func (r GlovesParseResult) WriteJSON(w io.Writer) error {
+	head, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
+	out := bufio.NewWriterSize(w, 64<<10)
+	out.Write(head[:len(head)-1]) // without the closing brace
+	out.WriteString(`,"imageData":[`)
+	for index, file := range r.ImageFiles {
+		if index > 0 {
+			out.WriteByte(',')
+		}
+		out.WriteByte('"')
+		encoder := base64.NewEncoder(base64.StdEncoding, out)
+		encoder.Write(file)
+		encoder.Close()
+		out.WriteByte('"')
+	}
+	out.WriteString("]}")
+	// bufio.Writer keeps the first write error and reports it here.
+	return out.Flush()
+}
+
+func (s *GlovesService) ParseXlsx(ctx context.Context, file io.ReaderAt, size int64, filename string, sheet string, headerRow, dataStartRow int) (GlovesParseResult, error) {
+	return s.parseXlsx(ctx, file, size, filename, sheet, headerRow, dataStartRow, false)
 }
 
 // ParseXlsxWithSharedImages is used by the copied gloves estimate. It keeps
 // an image attached to every product row covered by the same Excel drawing
 // anchor, which is how supplier sheets commonly show one photo for a group
 // of products.
-func (s *GlovesService) ParseXlsxWithSharedImages(ctx context.Context, file io.Reader, filename string, sheet string, headerRow, dataStartRow int) (GlovesParseResult, error) {
-	return s.parseXlsx(ctx, file, filename, sheet, headerRow, dataStartRow, true)
+func (s *GlovesService) ParseXlsxWithSharedImages(ctx context.Context, file io.ReaderAt, size int64, filename string, sheet string, headerRow, dataStartRow int) (GlovesParseResult, error) {
+	return s.parseXlsx(ctx, file, size, filename, sheet, headerRow, dataStartRow, true)
 }
 
-func (s *GlovesService) parseXlsx(ctx context.Context, file io.Reader, filename string, sheet string, headerRow, dataStartRow int, shareSpanningImages bool) (GlovesParseResult, error) {
+// parseXlsx reads the workbook from file (an uploaded file on disk for large
+// uploads) instead of copying it into memory: excelize already keeps one copy
+// of every part, which is the biggest cost for workbooks full of photos.
+func (s *GlovesService) parseXlsx(ctx context.Context, file io.ReaderAt, size int64, filename string, sheet string, headerRow, dataStartRow int, shareSpanningImages bool) (GlovesParseResult, error) {
 	_ = ctx
 	if !strings.HasSuffix(strings.ToLower(strings.TrimSpace(filename)), ".xlsx") {
 		return GlovesParseResult{}, &ValidationError{Field: "file", Message: "Поддерживаются только обычные файлы .xlsx"}
 	}
-	if file == nil {
+	if file == nil || size <= 0 {
 		return GlovesParseResult{}, &ValidationError{Field: "file", Message: "Выберите XLSX-файл"}
 	}
-	contents, readErr := io.ReadAll(io.LimitReader(file, MaxXLSXBytes+1))
-	if readErr != nil {
-		return GlovesParseResult{}, &ValidationError{Field: "file", Message: "Не удалось прочитать XLSX-файл"}
+	if size > MaxGlovesXLSXBytes {
+		return GlovesParseResult{}, &ValidationError{Field: "file", Message: fmt.Sprintf("XLSX-файл больше %d МБ не поддерживается", MaxGlovesXLSXBytes/(1024*1024))}
 	}
-	if len(contents) > MaxXLSXBytes {
-		return GlovesParseResult{}, &ValidationError{Field: "file", Message: fmt.Sprintf("XLSX-файл больше %d МБ не поддерживается", MaxXLSXBytes/(1024*1024))}
-	}
-	workbook, err := excelize.OpenReader(bytes.NewReader(contents))
+	workbook, err := excelize.OpenReader(io.NewSectionReader(file, 0, size))
 	if err != nil {
 		return GlovesParseResult{}, &ValidationError{Field: "file", Message: "Файл повреждён или не является обычным XLSX"}
 	}
@@ -391,10 +417,12 @@ func (s *GlovesService) parseXlsx(ctx context.Context, file io.Reader, filename 
 	}
 
 	result.Images = []GlovesParseImage{}
+	result.ImageFiles = [][]byte{}
 	if shareSpanningImages {
-		sharedImages, sharedErr := parseGlovesSpanningImages(contents, workbook, targetSheet)
+		sharedImages, sharedFiles, sharedErr := parseGlovesSpanningImages(file, size, workbook, targetSheet)
 		if sharedErr == nil && len(sharedImages) > 0 {
 			result.Images = sharedImages
+			result.ImageFiles = sharedFiles
 		}
 	}
 	if len(result.Images) == 0 {
@@ -422,14 +450,13 @@ func (s *GlovesService) parseXlsx(ctx context.Context, file io.Reader, filename 
 						result.Warnings = append(result.Warnings, fmt.Sprintf("Изображение в строке %d пропущено: формат %s не поддерживается; используйте JPG или PNG", row, picture.Extension))
 						continue
 					}
-					if len(picture.File) > MaxImageBytes {
-						return result, &ValidationError{Field: "file", Message: fmt.Sprintf("Изображение в строке %d больше %d МБ", row, MaxImageBytes/(1024*1024))}
+					if len(picture.File) > MaxGlovesParseImageBytes {
+						return result, &ValidationError{Field: "file", Message: fmt.Sprintf("Изображение в строке %d больше %d МБ", row, MaxGlovesParseImageBytes/(1024*1024))}
 					}
-					b64 := base64.StdEncoding.EncodeToString(picture.File)
-
+					result.ImageFiles = append(result.ImageFiles, picture.File)
 					result.Images = append(result.Images, GlovesParseImage{
 						SourceRow: row,
-						Data:      b64,
+						DataIndex: len(result.ImageFiles) - 1,
 						MimeType:  mimeType,
 					})
 				}

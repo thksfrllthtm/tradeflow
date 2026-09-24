@@ -128,16 +128,24 @@ type GlovesParseRow struct {
 	Warnings  []string          `json:"warnings,omitempty"`
 }
 
+// GlovesParseImage links a sheet row to a picture in GlovesParseResult.ImageData.
+// One picture often covers several product rows, so it is sent once and
+// referenced by index: repeating it per row made responses (and server memory)
+// grow many times over the file size.
 type GlovesParseImage struct {
 	SourceRow int    `json:"sourceRow"`
-	Data      string `json:"data"`
+	DataIndex int    `json:"dataIndex"`
 	MimeType  string `json:"mimeType"`
 }
 
 type GlovesParseResult struct {
-	Sheets   []GlovesSheetInfo  `json:"sheets"`
-	Headers  []string           `json:"headers"`
-	Rows     []GlovesParseRow   `json:"rows"`
-	Images   []GlovesParseImage `json:"images"`
-	Warnings []string           `json:"warnings,omitempty"`
+	Sheets  []GlovesSheetInfo  `json:"sheets"`
+	Headers []string           `json:"headers"`
+	Rows    []GlovesParseRow   `json:"rows"`
+	Images  []GlovesParseImage `json:"images"`
+	// ImageFiles are the picture bytes referenced by GlovesParseImage.DataIndex.
+	// WriteJSON sends them as base64 "imageData" one at a time, so a large
+	// workbook never exists as one huge JSON string in memory.
+	ImageFiles [][]byte `json:"-"`
+	Warnings   []string `json:"warnings,omitempty"`
 }

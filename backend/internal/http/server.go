@@ -50,6 +50,9 @@ func NewServer(database *repository.Repository, cfg config.Config, files ...repo
 
 func (s *Server) Router() *gin.Engine {
 	router := gin.New()
+	// Файлы больше 8 МБ из multipart-запросов gin сохраняет во временный файл, а не держит
+	// в памяти: на бесплатном Render всего 512 МБ, а Excel со сметой бывает до 100 МБ.
+	router.MaxMultipartMemory = 8 << 20
 	router.Use(gin.Logger(), gin.Recovery())
 	router.GET("/api/health", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 

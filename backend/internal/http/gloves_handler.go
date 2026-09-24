@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,16 +16,16 @@ func (s *Server) parseGlovesXlsx(c *gin.Context) {
 	// Multipart headers and boundaries add overhead on top of the documented
 	// file limit; leave a small fixed envelope without making the endpoint
 	// unbounded.
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, service.MaxXLSXBytes+(1<<20))
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, service.MaxGlovesXLSXBytes+(1<<20))
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		badRequest(c, "Выберите XLSX-файл", "file")
+		badRequest(c, fmt.Sprintf("Выберите XLSX-файл размером до %d МБ", service.MaxGlovesXLSXBytes>>20), "file")
 		return
 	}
 	defer file.Close()
 
-	if header.Size > service.MaxXLSXBytes {
-		badRequest(c, "XLSX-файл больше 50 МБ не поддерживается", "file")
+	if header.Size > service.MaxGlovesXLSXBytes {
+		badRequest(c, fmt.Sprintf("XLSX-файл больше %d МБ не поддерживается", service.MaxGlovesXLSXBytes>>20), "file")
 		return
 	}
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".xlsx") {
@@ -38,9 +39,9 @@ func (s *Server) parseGlovesXlsx(c *gin.Context) {
 
 	var result service.GlovesParseResult
 	if c.Query("shareImages") == "true" {
-		result, err = s.gloves.ParseXlsxWithSharedImages(c.Request.Context(), file, header.Filename, sheet, headerRow, dataStartRow)
+		result, err = s.gloves.ParseXlsxWithSharedImages(c.Request.Context(), file, header.Size, header.Filename, sheet, headerRow, dataStartRow)
 	} else {
-		result, err = s.gloves.ParseXlsx(c.Request.Context(), file, header.Filename, sheet, headerRow, dataStartRow)
+		result, err = s.gloves.ParseXlsx(c.Request.Context(), file, header.Size, header.Filename, sheet, headerRow, dataStartRow)
 	}
 	if err != nil {
 		var valErr *service.ValidationError
@@ -52,7 +53,13 @@ func (s *Server) parseGlovesXlsx(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	// Photos are streamed into the response instead of c.JSON building the
+	// whole (possibly 100+ MB) body in memory.
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Status(http.StatusOK)
+	if err := result.WriteJSON(c.Writer); err != nil {
+		_ = c.Error(err)
+	}
 }
 
 func (s *Server) listGlovesEstimates(c *gin.Context) {

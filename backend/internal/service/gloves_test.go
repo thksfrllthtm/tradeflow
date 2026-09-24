@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"image"
+	"image/png"
 	"strings"
 	"testing"
 
@@ -28,7 +31,7 @@ func TestGlovesParseXlsxReturnsHeadersAndSourceRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader(buffer.Bytes()), "test.xlsx", "Sheet1", 1, 2)
+	parsed, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader(buffer.Bytes()), int64(buffer.Len()), "test.xlsx", "Sheet1", 1, 2)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -52,7 +55,7 @@ func TestGlovesParseXlsxExcludesTotalRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader(buffer.Bytes()), "test.xlsx", "Sheet1", 1, 2)
+	parsed, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader(buffer.Bytes()), int64(buffer.Len()), "test.xlsx", "Sheet1", 1, 2)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -75,7 +78,7 @@ func TestGlovesParseXlsxKeepsBlankAndDuplicateHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader(buffer.Bytes()), "test.xlsx", "Sheet1", 1, 2)
+	parsed, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader(buffer.Bytes()), int64(buffer.Len()), "test.xlsx", "Sheet1", 1, 2)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -88,7 +91,7 @@ func TestGlovesParseXlsxKeepsBlankAndDuplicateHeaders(t *testing.T) {
 }
 
 func TestGlovesParseXlsxRejectsCorruptWorkbook(t *testing.T) {
-	_, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader([]byte("not an xlsx")), "bad.xlsx", "", 1, 2)
+	_, err := NewGlovesService().ParseXlsx(context.Background(), bytes.NewReader([]byte("not an xlsx")), int64(len("not an xlsx")), "bad.xlsx", "", 1, 2)
 	if err == nil || !strings.Contains(err.Error(), "Файл повреждён") {
 		t.Fatalf("expected clear corrupt-file error, got %v", err)
 	}
@@ -209,5 +212,67 @@ func TestGlovesCalculationRejectsFractionalInferredPlaces(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected fractional-place error, got %v", result.Items[0].Errors)
+	}
+}
+
+func TestGlovesParseXlsxSendsSharedPictureOnce(t *testing.T) {
+	book := excelize.NewFile()
+	for cell, value := range map[string]string{"A1": "Наименование", "A2": "Перчатки S", "A3": "Перчатки M"} {
+		if err := book.SetCellValue("Sheet1", cell, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A tall picture anchored at B2 covers rows 2 and 3 (default row height is 20 px).
+	var picture bytes.Buffer
+	if err := png.Encode(&picture, image.NewRGBA(image.Rect(0, 0, 10, 35))); err != nil {
+		t.Fatal(err)
+	}
+	if err := book.AddPictureFromBytes("Sheet1", "B2", &excelize.Picture{Extension: ".png", File: picture.Bytes()}); err != nil {
+		t.Fatal(err)
+	}
+	buffer, err := book.WriteToBuffer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := NewGlovesService().ParseXlsxWithSharedImages(context.Background(), bytes.NewReader(buffer.Bytes()), int64(buffer.Len()), "test.xlsx", "Sheet1", 1, 2)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	var written bytes.Buffer
+	if err := parsed.WriteJSON(&written); err != nil {
+		t.Fatal(err)
+	}
+	var response struct {
+		Rows      []GlovesParseRow   `json:"rows"`
+		Images    []GlovesParseImage `json:"images"`
+		ImageData []string           `json:"imageData"`
+	}
+	if err := json.Unmarshal(written.Bytes(), &response); err != nil {
+		t.Fatalf("response must be valid JSON: %v", err)
+	}
+	if len(response.Rows) != 2 || len(response.ImageData) != 1 || len(response.Images) != 2 {
+		t.Fatalf("one picture over two rows must be sent once and referenced twice, got %d data, %d links", len(response.ImageData), len(response.Images))
+	}
+	for index, link := range response.Images {
+		if link.SourceRow != index+2 || link.DataIndex != 0 || link.MimeType != "image/png" {
+			t.Fatalf("unexpected image link %+v", link)
+		}
+	}
+	if decoded, _ := base64.StdEncoding.DecodeString(response.ImageData[0]); !bytes.Equal(decoded, picture.Bytes()) {
+		t.Fatal("image data must be the original picture")
+	}
+}
+
+func TestGlovesParseResultWriteJSONWithoutImages(t *testing.T) {
+	var written bytes.Buffer
+	if err := (GlovesParseResult{Headers: []string{"A"}}).WriteJSON(&written); err != nil {
+		t.Fatal(err)
+	}
+	var response map[string]any
+	if err := json.Unmarshal(written.Bytes(), &response); err != nil {
+		t.Fatalf("response must be valid JSON: %v (%s)", err, written.String())
+	}
+	if data, ok := response["imageData"].([]any); !ok || len(data) != 0 {
+		t.Fatalf("imageData must be an empty array, got %s", written.String())
 	}
 }

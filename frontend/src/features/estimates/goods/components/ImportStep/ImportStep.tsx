@@ -41,7 +41,7 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
     <label className={loading ? 'im-drop busy' : 'im-drop'}>
       {fileInput}
       <strong>{loading ? 'Читаем файл…' : 'Перетащите XLSX сюда или нажмите, чтобы выбрать файл'}</strong>
-      <span>Обычный XLSX до 50 МБ. Фото из файла сохраняются только в этой смете.</span>
+      <span>Обычный XLSX до 100 МБ. Фото из файла сжимаются и сохраняются только в этой смете.</span>
     </label>
     <p className="im-alt">или <button type="button" className="button-link" onClick={addEmptyRow}>заполните строки вручную</button></p>
   </div>
