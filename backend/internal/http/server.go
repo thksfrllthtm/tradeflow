@@ -28,8 +28,8 @@ type Server struct {
 	authRates        map[string]authRate
 }
 
-func NewServer(database *repository.Repository, cfg config.Config, files ...*repository.FileStore) *Server {
-	var store *repository.FileStore
+func NewServer(database *repository.Repository, cfg config.Config, files ...repository.FileStore) *Server {
+	var store repository.FileStore
 	if len(files) > 0 {
 		store = files[0]
 	}

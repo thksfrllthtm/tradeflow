@@ -31,11 +31,11 @@ func (e *ValidationError) Error() string { return e.Message }
 
 type EstimateService struct {
 	repository *repository.Repository
-	files      *repository.FileStore
+	files      repository.FileStore
 }
 
-func NewEstimateService(repo *repository.Repository, files ...*repository.FileStore) *EstimateService {
-	var store *repository.FileStore
+func NewEstimateService(repo *repository.Repository, files ...repository.FileStore) *EstimateService {
+	var store repository.FileStore
 	if len(files) > 0 {
 		store = files[0]
 	}

@@ -211,10 +211,11 @@ Backend (`backend/internal`): `http/` — обработчики по домен
 `server.go`), `service/` — бизнес-логика и расчёты, `repository/` — GORM-модели и запросы по
 таблицам, `config/` — настройки. Точки входа — `backend/cmd/*`, миграции — `backend/migrations`.
 
-## Развёртывание на Render + Neon
+## Развёртывание: Vercel + Render + Supabase
 
-Бесплатный тестовый сервер: один сервис Render (сайт + API, `render.yaml`) и база Neon.
-Пошаговая инструкция — [deploy/render/README.md](deploy/render/README.md).
+Бесплатный сервер: сайт на Vercel (`frontend/vercel.json`, запросы `/api` пересылаются на Render),
+API на Render (`render.yaml`), база и файлы в Supabase. Пошаговая инструкция и перенос локальных
+данных — [deploy/README.md](deploy/README.md).
 
 ## Проверки
 
@@ -249,7 +250,7 @@ docker run --rm -v "${PWD}\backend\migrations:/migrations" migrate/migrate:v4.18
 
 ## Импорт XLSX (этап 2)
 
-Исходный XLSX и изображения хранятся в закрытой серверной папке (`FILE_STORAGE_DIR`), не в frontend и не по публичному URL. Доступ к связанным изображениям требует активной сессии сотрудника и проверяется сервером по владельцу сметы.
+Исходный XLSX и изображения хранятся в закрытой серверной папке (`FILE_STORAGE_DIR`) или, если задан `SUPABASE_URL`, в приватном бакете Supabase Storage — не в frontend и не по публичному URL. Доступ к связанным изображениям требует активной сессии сотрудника и проверяется сервером по владельцу сметы.
 
 Поддерживаемый входной формат:
 

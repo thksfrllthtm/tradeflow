@@ -1,0 +1,109 @@
+# Развёртывание: Vercel + Render + Supabase (бесплатно)
+
+| Что | Где | Файлы в репозитории |
+|---|---|---|
+| Сайт (frontend) | Vercel | `frontend/vercel.json` |
+| API (backend) | Render | `render.yaml`, `deploy/render/Dockerfile`, `deploy/render/entrypoint.sh` |
+| База PostgreSQL | Supabase Database | `backend/migrations` (применяет Render при запуске) |
+| XLSX и изображения | Supabase Storage, приватный бакет `uploads` | `backend/internal/repository/supabase_files.go` |
+| Код | GitHub, репозиторий `tradeflow` | — |
+
+Браузер работает только с адресом Vercel. Запросы `/api/*` Vercel пересылает на Render
+(`rewrites` в `frontend/vercel.json`), поэтому cookie сессии остаётся на домене сайта и CORS не нужен.
+Render при каждом запуске применяет миграции, создаёт первого сотрудника и при необходимости бакет.
+
+## 1. Supabase
+
+1. Зарегистрируйтесь на <https://supabase.com> (удобно через GitHub), **New project**:
+   имя `tradeflow`, регион **Central EU (Frankfurt)**, придумайте пароль базы и сохраните его.
+   Если форма спрашивает про Data API — выберите вариант **только строка подключения** (Data API не нужен).
+2. Строка подключения: кнопка **Connect** вверху проекта → **Session pooler** (не Direct и не Transaction:
+   у Render нет IPv6, а Transaction pooler не поддерживает нужные приложению запросы). Скопируйте строку вида
+   `postgresql://postgres.<ref>:[YOUR-PASSWORD]@aws-….pooler.supabase.com:5432/postgres`,
+   подставьте пароль вместо `[YOUR-PASSWORD]` и допишите в конец `?sslmode=require`.
+3. **Project URL** — `https://<ref>.supabase.co`, где `<ref>` — Project ID из **Project Settings → General**.
+4. **Secret key**: **Project Settings → API Keys → Secret keys** — создайте ключ и скопируйте (`sb_secret_…`).
+   Ключ даёт полный доступ к проекту: храните его только в Render и никому не пересылайте.
+
+Бакет `uploads` создавать не нужно — его создаст сервер при первом запуске (приватным).
+
+## 2. Render (API)
+
+Если сервис `tradeflow` уже есть: **Render → tradeflow → Environment**, задайте переменные и сохраните:
+
+| Переменная | Значение |
+|---|---|
+| `DATABASE_URL` | строка из шага 1.2 |
+| `SUPABASE_URL` | Project URL из шага 1.3 |
+| `SUPABASE_SECRET_KEY` | ключ из шага 1.4 |
+| `SUPABASE_STORAGE_BUCKET` | `uploads` |
+| `GIN_MODE` | `release` |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | как были (пароль не короче 12 символов) |
+
+Новый сервис: **New → Blueprint** → репозиторий `tradeflow`, ветка `main` — Render прочитает `render.yaml`
+и спросит те же значения.
+
+В **Logs** успешный запуск выглядит так:
+
+```text
+Applying database migrations
+…
+20/u row_level_security …
+employee created: you@example.com (id=1)
+file storage: Supabase Storage bucket "uploads"
+backend listening on :10000
+```
+
+Адрес сервиса (вверху страницы, вида `https://tradeflow.onrender.com`) должен совпадать с адресом
+в `frontend/vercel.json`. Если отличается — исправьте его там и сделайте `git push`.
+
+## 3. Vercel (сайт)
+
+1. Зарегистрируйтесь на <https://vercel.com> через GitHub.
+2. **Add New → Project** → импортируйте репозиторий `tradeflow`.
+3. **Root Directory** → `frontend`. Остальное Vercel возьмёт из `frontend/vercel.json`. **Deploy**.
+4. Откройте адрес проекта (вида `https://tradeflow.vercel.app`) и войдите.
+
+## 4. Перенести локальные данные
+
+Скрипт копирует локальную базу Docker Compose и загруженные файлы в Supabase.
+Нужны Docker Desktop и Go; сервис Render должен хотя бы раз запуститься (он создаёт таблицы).
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\copy-local-to-supabase.ps1
+```
+
+- Спросит строку подключения (шаг 1.2), Project URL и Secret key — ввод скрыт.
+- Покажет, что сейчас в базе Supabase, и попросит подтвердить (`yes`).
+- **Все данные в базе Supabase заменяются локальными**, в том числе сотрудник из `BOOTSTRAP_ADMIN_*`.
+  Входить потом — с локальными email и паролями. Замена идёт одной транзакцией: при ошибке база не меняется.
+- Переносятся только файлы, на которые ссылается база; повторный запуск безопасен.
+
+## 5. Проверить после развёртывания
+
+- Вход, открытие сметы, картинки товаров.
+- **Загрузка большого XLSX (10+ МБ) и сохранение сметы перчаток с фото.** Запросы к API идут через Vercel;
+  если на больших запросах появится ошибка `413`, пришлите её — тогда загрузку нужно будет направить в обход Vercel.
+
+## Как пользоваться дальше
+
+- **Обновление** — `git push` в `main`: Vercel и Render пересоберут каждый свою часть.
+- **Добавить сотрудника.** Регистрация закрыта (`ALLOW_REGISTRATION=false`). В Render → **Environment**
+  замените `BOOTSTRAP_ADMIN_EMAIL` и `BOOTSTRAP_ADMIN_PASSWORD` на данные нового сотрудника — сервис
+  перезапустится и создаст аккаунт. `Bootstrap employee not created (probably already exists)` в логах — нормально.
+
+## Ограничения бесплатных тарифов
+
+- Render **засыпает через 15 минут** без запросов; первое открытие после этого — около минуты
+  (Vercel ждёт ответа до 2 минут).
+- Supabase приостанавливает бесплатный проект после **недели без запросов** — его включают кнопкой
+  **Restore** в панели Supabase. Лимиты: база 500 МБ, файлы 1 ГБ, один файл до 50 МБ.
+
+## Если что-то не работает
+
+- `password authentication failed` / `no such host` / `network is unreachable` в логах Render — неверный
+  `DATABASE_URL`: нужна строка **Session pooler** с подставленным паролем.
+- `supabase storage … HTTP 401/403` — неверный `SUPABASE_SECRET_KEY` или `SUPABASE_URL`.
+- Сайт открывается, но вход не работает / `404` на `/api/...` — адрес Render в `frontend/vercel.json`
+  не совпадает с настоящим.
+- Сборка упала — откройте **Logs → Build** (Render) или **Deployments** (Vercel), пришлите последние строки.

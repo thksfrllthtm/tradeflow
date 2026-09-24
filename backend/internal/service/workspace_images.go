@@ -9,7 +9,6 @@ import (
 	"image"
 	"io"
 	"mime/multipart"
-	"os"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 )
@@ -101,7 +100,7 @@ func (s *ImportService) UploadWorkspaceImage(ctx context.Context, importID, owne
 	return WorkspaceImage{AssetID: asset.ID, RowID: row.ID, MIMEType: asset.MIMEType, FileSize: asset.FileSize, Kind: asset.Kind}, nil
 }
 
-func (s *ImportService) OpenWorkspaceAsset(ctx context.Context, importID, assetID, ownerID int64) (*os.File, repository.ImportAsset, error) {
+func (s *ImportService) OpenWorkspaceAsset(ctx context.Context, importID, assetID, ownerID int64) (repository.StoredFile, repository.ImportAsset, error) {
 	asset, err := s.repository.AssetByIDForImportOwner(ctx, assetID, importID, ownerID)
 	if err != nil {
 		return nil, repository.ImportAsset{}, err

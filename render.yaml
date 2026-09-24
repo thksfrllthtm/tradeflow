@@ -1,5 +1,5 @@
-# Render Blueprint: один бесплатный веб-сервис (сайт + API). База — Neon (DATABASE_URL).
-# Пошаговая инструкция — deploy/render/README.md.
+# Render Blueprint: бесплатный веб-сервис с API. Сайт — Vercel (frontend/vercel.json),
+# база и файлы — Supabase. Пошаговая инструкция — deploy/README.md.
 services:
   - type: web
     name: tradeflow
@@ -11,9 +11,18 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      # Адрес базы из Neon (Direct connection, без пулера)
+      # Supabase → Connect → Session pooler (порт 5432, пользователь postgres.<ref>)
       - key: DATABASE_URL
         sync: false
+      # Supabase → Project Settings → Data API: Project URL (https://<ref>.supabase.co)
+      - key: SUPABASE_URL
+        sync: false
+      # Supabase → Project Settings → API Keys → Secret key (sb_secret_...)
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      # Приватный бакет для XLSX и изображений; создаётся автоматически при запуске
+      - key: SUPABASE_STORAGE_BUCKET
+        value: uploads
       # Первый сотрудник создаётся при запуске; пароль не короче 12 символов
       - key: BOOTSTRAP_ADMIN_EMAIL
         sync: false
@@ -23,6 +32,8 @@ services:
         value: "false"
       - key: RUN_MIGRATIONS
         value: "true"
+      - key: GIN_MODE
+        value: release
       - key: COOKIE_SECURE
         value: "true"
       - key: SESSION_COOKIE_NAME

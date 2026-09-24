@@ -10,7 +10,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"os"
 	"strings"
 	"unicode"
 
@@ -63,15 +62,12 @@ func (s *ImportService) inspectWorkbook(storedPath string) ([]SheetInfo, error) 
 	return info, nil
 }
 
-func inspectXLSXContainer(file *os.File) error {
-	info, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("inspect XLSX size: %w", err)
-	}
-	if info.Size() <= 0 || info.Size() > MaxXLSXBytes {
+func inspectXLSXContainer(file repository.StoredFile) error {
+	size := file.Size()
+	if size <= 0 || size > MaxXLSXBytes {
 		return &ValidationError{Field: "file", Message: "XLSX-файл больше 50 МБ не поддерживается"}
 	}
-	archive, err := zip.NewReader(file, info.Size())
+	archive, err := zip.NewReader(file, size)
 	if err != nil {
 		return &ValidationError{Field: "file", Message: "Файл повреждён или не является обычным XLSX"}
 	}

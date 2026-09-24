@@ -1,4 +1,4 @@
-# Контекст сборки образа для Render (deploy/render/Dockerfile) — корень репозитория.
+# Контекст сборки образа API для Render (deploy/render/Dockerfile) — корень репозитория.
 .git
 .env
 .agents
@@ -9,6 +9,6 @@ graphify-out
 backend/.gocache-*
 backend/data
 backend/bin
-frontend/node_modules
-frontend/dist
 **/*.tsbuildinfo
+# Сайт собирает Vercel — в образ API он не нужен.
+frontend

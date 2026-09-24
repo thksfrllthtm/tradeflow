@@ -2,12 +2,12 @@
 # Запуск на Render: миграции → первый сотрудник (если задан) → сервер.
 set -eu
 
-# Neon добавляет в адрес channel_binding=require, а используемые драйверы (lib/pq в migrate,
+# Некоторые провайдеры (Neon) добавляют в адрес channel_binding=require, а используемые драйверы (lib/pq в migrate,
 # pgx 5.6) этот параметр не понимают. Соединение остаётся зашифрованным: sslmode=require.
 DATABASE_URL=$(printf '%s' "$DATABASE_URL" | sed -E 's/([?&])channel_binding=[^&]*&?/\1/; s/[?&]$//')
 export DATABASE_URL
 
-# Диск на бесплатном Render временный: загруженные файлы пропадают при перезапуске.
+# Папка для файлов нужна, только если SUPABASE_URL не задан (диск на Render временный).
 mkdir -p /app/data/uploads
 chown -R app:app /app/data
 

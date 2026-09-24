@@ -10,7 +10,6 @@ import (
 	_ "image/png"
 	"io"
 	"mime/multipart"
-	"os"
 	"regexp"
 	"strings"
 
@@ -150,7 +149,7 @@ func (s *ImportService) UploadManualImage(ctx context.Context, productID, ownerI
 	return asset, nil
 }
 
-func (s *ImportService) OpenProductAsset(ctx context.Context, productID, assetID, ownerID int64) (*os.File, repository.ImportAsset, error) {
+func (s *ImportService) OpenProductAsset(ctx context.Context, productID, assetID, ownerID int64) (repository.StoredFile, repository.ImportAsset, error) {
 	asset, err := s.repository.AssetByIDForProductOwner(ctx, assetID, productID, ownerID)
 	if err != nil {
 		return nil, repository.ImportAsset{}, err

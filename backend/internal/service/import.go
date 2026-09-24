@@ -35,10 +35,10 @@ var ErrReplacementRequired = errors.New("replacement confirmation is required")
 
 type ImportService struct {
 	repository *repository.Repository
-	files      *repository.FileStore
+	files      repository.FileStore
 }
 
-func NewImportService(repository *repository.Repository, files *repository.FileStore) *ImportService {
+func NewImportService(repository *repository.Repository, files repository.FileStore) *ImportService {
 	return &ImportService{repository: repository, files: files}
 }
 
