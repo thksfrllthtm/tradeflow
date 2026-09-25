@@ -37,7 +37,7 @@ func (s *Server) createGoodsEstimate(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<10)
 	var input service.GlovesEstimateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		badRequest(c, "Проверьте данные сметы перчаток", "estimate")
+		badRequest(c, "Проверьте данные сметы", "estimate")
 		return
 	}
 	estimate, err := s.goodsEstimates.CreateEstimate(c.Request.Context(), currentUser(c).ID, input)
@@ -67,7 +67,7 @@ func (s *Server) updateGoodsEstimate(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<10)
 	var input service.GlovesEstimateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		badRequest(c, "Проверьте данные сметы перчаток", "estimate")
+		badRequest(c, "Проверьте данные сметы", "estimate")
 		return
 	}
 	estimate, err := s.goodsEstimates.UpdateEstimate(c.Request.Context(), id, estimateScope(c), input)

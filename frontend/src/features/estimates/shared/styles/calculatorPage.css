@@ -1,9 +1,8 @@
-/* Общее для страницы калькулятора обеих смет: каркас, компактные таблицы, просмотр фото. */
+/* Страница калькулятора смет: каркас, компактные таблицы, просмотр фото. */
 
 .gloves-calculator-embedded { min-width: 0; }
 .gloves-calculator-embedded .gloves-page { padding-top: 14px; }
 .gloves-calculator-embedded .gloves-page { padding: 15px 20px 34px; }
-.gloves-calculator-embedded .gloves-heading { padding: 0 2px; }
 @media (max-width: 760px) {
   .gloves-calculator-embedded .gloves-page { padding-inline: 12px; }
 }

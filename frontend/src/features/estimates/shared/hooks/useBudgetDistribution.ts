@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { GlovesCalculationResult, GlovesItemInput } from '../types'
-import { pricingApi, PriceGroupInput } from '../api/pricingApi'
+import { pricingApi, PriceGroupInput, SuggestedPrice } from '../api/pricingApi'
 import { BudgetGroup, budgetGroups, BudgetRowAccess, distributeBudget } from '../lib/distributeBudget'
 import { GroupFacts, resolveWeights } from '../lib/budgetWeights'
 
@@ -39,25 +39,72 @@ function customsPaymentUsd(calculated: GlovesCalculationResult) {
   return kzt / rate
 }
 
-function sumOver(rows: Row[], group: BudgetGroup, value: (row: Row) => number | null) {
-  return group.indexes.reduce((sum, index) => sum + (value(rows[index]) ?? 0), 0)
+function sumOver(rows: Row[], indexes: number[], value: (row: Row) => number | null) {
+  return indexes.reduce((sum, index) => sum + (value(rows[index]) ?? 0), 0)
 }
 
-function describe(rows: Row[], group: BudgetGroup) {
-  const names = [...new Set(group.indexes.flatMap((index) => [rows[index].item.name, rows[index].result.standardName].map((value) => String(value ?? '').trim()).filter(Boolean)))]
-  return names.slice(0, 4).join('; ')
+const clean = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim()
+
+// Название товара строки: выбранная карточка справочника товаров («русское / китайское»),
+// иначе название строки.
+function productName(row: Row) {
+  const snapshot = row.item.directorySnapshot
+  if (row.item.productDirectoryId && snapshot) {
+    const both = [clean(snapshot.name), clean(snapshot.nameZh)].filter(Boolean).join(' / ')
+    if (both) return both
+  }
+  return [row.item.name, row.item.supplierName, row.result.standardName].map(clean).find(Boolean) ?? ''
 }
 
-// Названия товаров группы для списка пояснений: только названия строк, без описания кода и повторов.
-function groupNames(rows: Row[], group: BudgetGroup) {
-  const names = [...new Set(group.indexes.map((index) => String(rows[index].item.name ?? '').replace(/\s+/g, ' ').trim()).filter(Boolean))]
-  return names.join('; ')
+// Один и тот же товар — тот же код и та же карточка справочника товаров, а без карточки — то же
+// название (без учёта регистра и пробелов). У одного товара одна цена, где бы ни стояли его строки.
+function productKey(row: Row, index: number) {
+  const code = access.getCode(row).trim()
+  if (!code) return `row:${index}`
+  if (row.item.productDirectoryId) return `${code}|product:${row.item.productDirectoryId}`
+  const name = productName(row).toLowerCase().replace(/ё/g, 'е')
+  return name ? `${code}|${name}` : `row:${index}`
+}
+
+type AiProduct = { id: string; key: string; code: string; name: string; indexes: number[] }
+
+// Товары для ИИ: коды без цены и коды с ценой, где у другого товара цены нет (ему нужна
+// пропорция к товару с ценой). Строки одного товара склеиваются.
+function aiProducts(rows: Row[], groups: BudgetGroup[], unit: string) {
+  const products: AiProduct[] = []
+  const request: PriceGroupInput[] = []
+  groups.forEach((group) => {
+    const pricedKeys = new Set(group.pricedIndexes.map((index) => productKey(rows[index], index)))
+    const needsAi = group.fixedPrice === null || group.indexes.some((index) => !pricedKeys.has(productKey(rows[index], index)))
+    if (!needsAi) return
+    const byKey = new Map<string, AiProduct>()
+    group.indexes.forEach((index) => {
+      const key = productKey(rows[index], index)
+      const product = byKey.get(key) ?? { id: `p${products.length + byKey.size + 1}`, key, code: group.code || group.key, name: productName(rows[index]), indexes: [] }
+      product.indexes.push(index)
+      byKey.set(key, product)
+    })
+    const groupProducts = [...byKey.values()]
+    products.push(...groupProducts)
+    request.push({
+      code: group.code || group.key,
+      unit,
+      products: groupProducts.map((product) => ({
+        id: product.id,
+        name: product.name,
+        quantity: sumOver(rows, product.indexes, (row) => access.getQuantity(row)),
+        places: sumOver(rows, product.indexes, (row) => numberOf(row.result.places)) || undefined,
+        grossKg: sumOver(rows, product.indexes, (row) => numberOf(row.result.grossKg)) || undefined,
+        netKg: sumOver(rows, product.indexes, (row) => numberOf(row.result.netKg)) || undefined,
+      })),
+    })
+  })
+  return { products, request }
 }
 
 // Распределение бюджета на этапе результата. apply получает строки с новыми ценами:
 // калькулятор запоминает прежний результат для отката и пересчитывает без сохранения черновика.
-export function useBudgetDistribution({ kind, estimateId, unit, result, items, preview, apply }: {
-  kind: 'goods' | 'gloves'
+export function useBudgetDistribution({ estimateId, unit, result, items, preview, apply }: {
   estimateId: number
   unit: string
   result: GlovesCalculationResult | null
@@ -74,6 +121,9 @@ export function useBudgetDistribution({ kind, estimateId, unit, result, items, p
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [explanations, setExplanations] = useState<AiExplanation[]>([])
   const [evaluations, setEvaluations] = useState(0)
+  // Ответы ИИ по набору товаров: бюджет в ИИ не отправляется, поэтому при другом бюджете
+  // и тех же товарах ответ берётся из памяти мгновенно.
+  const aiAnswers = useRef(new Map<string, SuggestedPrice[]>())
 
   function reset() {
     setSummary(null); setWarning(''); setNotice(''); setNotes({}); setExplanations([])
@@ -91,18 +141,24 @@ export function useBudgetDistribution({ kind, estimateId, unit, result, items, p
         const item = items[index] ?? ({} as GlovesItemInput)
         return { result: resultItem, item: { ...item, pricePerPair: resultItem.pricePerPair || item.pricePerPair || '' } }
       })
-      const free = budgetGroups(rows, access).filter((group) => group.fixedPrice === null)
+      const groups = budgetGroups(rows, access)
+      const free = groups.filter((group) => group.fixedPrice === null)
       const facts = new Map<string, GroupFacts>(free.map((group) => {
         const quantity = group.quantity
-        const net = sumOver(rows, group, (row) => numberOf(row.result.netKg))
+        const net = sumOver(rows, group.indexes, (row) => numberOf(row.result.netKg))
         return [group.key, { key: group.key, netPerUnit: net > 0 && quantity > 0 ? net / quantity : null }]
       }))
 
-      // История цен из прошлых смет — для групп с кодом.
+      // История цен из прошлых смет (для групп с кодом) и ответ ИИ запрашиваются одновременно.
       const historyCodes = free.filter((group) => group.code).map((group) => group.code)
+      const { products, request } = mode === 'ai' ? aiProducts(rows, groups, unit) : { products: [], request: [] }
+      const signature = JSON.stringify(request)
+      const cached = aiAnswers.current.get(signature)
+      const aiAnswer = request.length === 0 ? null
+        : (cached ? Promise.resolve(cached) : pricingApi.suggestPrices(request)).then((prices) => ({ prices }), (error: unknown) => ({ error }))
       if (historyCodes.length > 0) {
         try {
-          const history = new Map((await pricingApi.priceHistory(kind, estimateId, historyCodes)).map((price) => [price.code, price.unitPrice]))
+          const history = new Map((await pricingApi.priceHistory(estimateId, historyCodes)).map((price) => [price.code, price.unitPrice]))
           free.forEach((group) => {
             const known = history.get(group.code)
             const fact = facts.get(group.key)
@@ -111,37 +167,46 @@ export function useBudgetDistribution({ kind, estimateId, unit, result, items, p
         } catch { /* без истории — вес нетто или поровну */ }
       }
 
-      const nextNotes: Record<number, string> = {}
-      const reasons = new Map<string, string>()
-      if (mode === 'ai' && free.length > 0) {
-        const aiGroups: PriceGroupInput[] = free.map((group) => ({
-          code: group.code || group.key,
-          description: describe(rows, group),
-          quantity: group.quantity,
-          unit,
-          places: sumOver(rows, group, (row) => numberOf(row.result.places)) || undefined,
-          grossKg: sumOver(rows, group, (row) => numberOf(row.result.grossKg)) || undefined,
-          netKg: sumOver(rows, group, (row) => numberOf(row.result.netKg)) || undefined,
-        }))
+      // Режим ИИ: цена каждого товара. Цена кода для подбора — средняя цена его товаров
+      // (по количеству), внутри кода цена делится между товарами в пропорции ИИ.
+      const productPrices: Record<string, number> = {}
+      const answered: { product: AiProduct; reason: string }[] = []
+      if (aiAnswer) {
         try {
-          const suggested = new Map((await pricingApi.suggestPrices(aiGroups)).map((price) => [price.code, price]))
+          const answer = await aiAnswer
+          if ('error' in answer) throw answer.error
+          const prices = answer.prices
+          aiAnswers.current.set(signature, prices)
+          const suggested = new Map(prices.map((price) => [price.id, price]))
+          products.forEach((product) => {
+            const price = suggested.get(product.id)
+            if (!price) return
+            productPrices[product.key] = price.unitPrice
+            answered.push({ product, reason: price.reason })
+          })
           free.forEach((group) => {
-            const price = suggested.get(group.code || group.key)
             const fact = facts.get(group.key)
-            if (!price || !fact) return
-            fact.price = price.unitPrice
-            if (price.reason) {
-              reasons.set(group.key, price.reason)
-              group.indexes.forEach((index) => { nextNotes[index] = price.reason })
-            }
+            let quantity = 0
+            let value = 0
+            group.indexes.forEach((index) => {
+              const price = productPrices[productKey(rows[index], index)]
+              const rowQuantity = access.getQuantity(rows[index]) ?? 0
+              if (!price) return
+              quantity += rowQuantity
+              value += price * rowQuantity
+            })
+            if (fact && quantity > 0) fact.price = value / quantity
           })
         } catch (reason) {
           setNotice(`ИИ недоступен (${errorMessage(reason)}), использовано математическое распределение`)
         }
       }
+      const byProduct = answered.length > 0
 
       const outcome = await distributeBudget(rows, amount, access, {
         weights: resolveWeights([...facts.values()]),
+        productOf: byProduct ? productKey : undefined,
+        productPrices: byProduct ? productPrices : undefined,
         evaluate: async (candidate) => customsPaymentUsd(await preview(candidate.map((row) => row.item))),
         onProgress: setEvaluations,
       })
@@ -149,14 +214,24 @@ export function useBudgetDistribution({ kind, estimateId, unit, result, items, p
         setWarning(outcome.message ?? 'Распределять нечего')
         return
       }
+      // Пояснения — только к строкам, цену которых поставил подбор (строки со своей ценой не менялись).
+      const priced = new Set(groups.flatMap((group) => group.pricedIndexes))
+      const nextNotes: Record<number, string> = {}
+      const nextExplanations: AiExplanation[] = []
+      answered.forEach(({ product, reason }) => {
+        const changed = product.indexes.filter((index) => !priced.has(index))
+        if (changed.length === 0 || !reason) return
+        changed.forEach((index) => { nextNotes[index] = reason })
+        nextExplanations.push({
+          code: product.code.startsWith('row:') ? '—' : product.code,
+          names: product.name,
+          price: outcome.items[changed[0]]?.item.pricePerPair ?? '',
+          reason,
+          rows: changed.map((index) => index + 1),
+        })
+      })
       setNotes(nextNotes)
-      setExplanations(free.filter((group) => reasons.has(group.key)).map((group) => ({
-        code: group.code || '—',
-        names: groupNames(rows, group),
-        price: outcome.items[group.indexes[0]]?.item.pricePerPair ?? '',
-        reason: reasons.get(group.key) ?? '',
-        rows: group.indexes.map((index) => index + 1),
-      })))
+      setExplanations(nextExplanations)
       setSummary({ status: outcome.status, budget: amount, total: outcome.total, gap: outcome.gap, fixedRows: outcome.fixedRows, evaluations: outcome.evaluations })
       if (outcome.status === 'closest') setWarning(outcome.message ?? '')
       apply(outcome.items.map((row) => row.item))

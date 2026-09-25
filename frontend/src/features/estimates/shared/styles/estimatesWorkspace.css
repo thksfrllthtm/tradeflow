@@ -14,39 +14,7 @@
 .estimates-empty h1 { margin-bottom: 8px; color: #1f2d24; font-size: 1.35rem; letter-spacing: -.015em; }
 .estimates-empty p { margin-bottom: 18px; color: #6b7a71; }
 
-/* Название, клиент и дата сметы перчаток */
-.gloves-estimate-meta {
-  display: flex;
-  align-items: stretch;
-  gap: 24px;
-  margin: 14px 20px 0;
-  padding: 15px 18px;
-  border: 1px solid #dce7df;
-  border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 5px 18px rgba(24, 60, 39, .045);
-}
-.gloves-estimate-meta h1 { margin: 0; font-size: 1.25rem; }
-.gloves-estimate-meta-fields {
-  flex: 1 1 760px;
-  display: grid;
-  grid-template-columns: minmax(170px, 1.2fr) minmax(145px, 1fr) 145px auto;
-  align-items: end;
-  gap: 10px;
-}
-.gloves-estimate-meta-fields label { min-width: 0; font-size: .72rem; }
-.gloves-estimate-meta-fields input { min-width: 0; margin-top: 4px; padding: 9px 10px; font-size: .8rem; }
-.gloves-estimate-meta-fields button { min-height: 37px; padding: 8px 13px; font-size: .76rem; }
-
-@media (max-width: 920px) {
-  .gloves-estimate-meta { gap: 16px; }
-  .gloves-estimate-meta-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .gloves-estimate-meta-fields button { width: max-content; }
-}
 @media (max-width: 760px) {
   .estimates-workspace { flex-direction: column; }
   .estimates-content { overflow: visible; }
-  .gloves-estimate-meta { flex-direction: column; margin: 14px 12px 0; padding: 17px 15px; }
-  .gloves-estimate-meta-fields { grid-template-columns: 1fr; }
-  .gloves-estimate-meta-fields button { width: 100%; }
 }

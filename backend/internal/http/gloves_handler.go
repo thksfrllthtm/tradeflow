@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -60,114 +59,6 @@ func (s *Server) parseGlovesXlsx(c *gin.Context) {
 	if err := result.WriteJSON(c.Writer); err != nil {
 		_ = c.Error(err)
 	}
-}
-
-func (s *Server) listGlovesEstimates(c *gin.Context) {
-	estimates, err := s.gloves.ListEstimates(c.Request.Context(), estimateScope(c))
-	if err != nil {
-		internalError(c)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"estimates": estimates})
-}
-
-func (s *Server) createGlovesEstimate(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<10)
-	var input service.GlovesEstimateInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		badRequest(c, "Проверьте данные сметы перчаток", "estimate")
-		return
-	}
-	estimate, err := s.gloves.CreateEstimate(c.Request.Context(), currentUser(c).ID, input)
-	if !handleGlovesEstimateError(c, err) {
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"estimate": estimate})
-}
-
-func (s *Server) getGlovesEstimate(c *gin.Context) {
-	id, ok := glovesEstimateID(c)
-	if !ok {
-		return
-	}
-	estimate, err := s.gloves.GetEstimate(c.Request.Context(), id, estimateScope(c))
-	if !handleGlovesEstimateError(c, err) {
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"estimate": estimate})
-}
-
-func (s *Server) updateGlovesEstimate(c *gin.Context) {
-	id, ok := glovesEstimateID(c)
-	if !ok {
-		return
-	}
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<10)
-	var input service.GlovesEstimateInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		badRequest(c, "Проверьте данные сметы перчаток", "estimate")
-		return
-	}
-	estimate, err := s.gloves.UpdateEstimate(c.Request.Context(), id, estimateScope(c), input)
-	if !handleGlovesEstimateError(c, err) {
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"estimate": estimate})
-}
-
-func (s *Server) deleteGlovesEstimate(c *gin.Context) {
-	id, ok := glovesEstimateID(c)
-	if !ok {
-		return
-	}
-	if err := s.gloves.DeleteEstimate(c.Request.Context(), id, estimateScope(c)); !handleGlovesEstimateError(c, err) {
-		return
-	}
-	c.Status(http.StatusNoContent)
-}
-
-func (s *Server) saveGlovesEstimateDraft(c *gin.Context) {
-	id, ok := glovesEstimateID(c)
-	if !ok {
-		return
-	}
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<20)
-	var draft service.GlovesDraft
-	if err := c.ShouldBindJSON(&draft); err != nil {
-		badRequest(c, "Проверьте данные черновика перчаток", "draft")
-		return
-	}
-	saved, err := s.gloves.SaveEstimateDraft(c.Request.Context(), id, estimateScope(c), draft)
-	if !handleGlovesEstimateError(c, err) {
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"estimate": saved})
-}
-
-func glovesEstimateID(c *gin.Context) (int64, bool) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil || id < 1 {
-		badRequest(c, "Некорректный идентификатор сметы перчаток", "id")
-		return 0, false
-	}
-	return id, true
-}
-
-func handleGlovesEstimateError(c *gin.Context, err error) bool {
-	if err == nil {
-		return true
-	}
-	if errors.Is(err, repository.ErrNotFound) || service.IsNotFound(err) {
-		notFound(c)
-		return false
-	}
-	var valErr *service.ValidationError
-	if errors.As(err, &valErr) {
-		badRequest(c, valErr.Message, valErr.Field)
-		return false
-	}
-	internalError(c)
-	return false
 }
 
 func (s *Server) calculateGloves(c *gin.Context) {

@@ -13,11 +13,14 @@
 //    (итог растёт вместе с ценами) до попадания в окно minGap…maxGap под бюджетом.
 // 4. Остаток от округления добирается ценой группы с наименьшим количеством (шаг 10^−decimals),
 //    перерасход штрафуется сильно. Не попали в окно — 'closest' и предупреждение.
+// 5. Товары внутри кода (productOf + productPrices, режим ИИ): цена кода делится между товарами
+//    в пропорции их цен, сумма кода (цена × количество) не меняется. Одинаковый товар — одна цена.
+//    Без этих опций у всех строк кода одна цена.
 
-export const BUDGET_MIN_GAP = 20
-export const BUDGET_MAX_GAP = 30
-export const BUDGET_PRICE_DECIMALS = 4
-export const BUDGET_MAX_EVALUATIONS = 14
+const BUDGET_MIN_GAP = 20
+const BUDGET_MAX_GAP = 30
+const BUDGET_PRICE_DECIMALS = 4
+const BUDGET_MAX_EVALUATIONS = 14
 
 export type BudgetRowAccess<T> = {
   getCode: (row: T) => string
@@ -38,6 +41,10 @@ export type BudgetOptions<T> = {
   evaluate: BudgetEvaluator<T>
   // Вес группы по ключу группы (budgetGroupKey); если веса нет — 1.
   weights?: Record<string, number>
+  // Товар строки внутри кода и его цена (важна только пропорция внутри кода). Товар без цены
+  // получает среднюю цену кода.
+  productOf?: (row: T, index: number) => string
+  productPrices?: Record<string, number>
   minGap?: number
   maxGap?: number
   decimals?: number
@@ -84,6 +91,32 @@ export function budgetGroups<T>(rows: T[], access: BudgetRowAccess<T>): BudgetGr
   return [...groups.values()]
 }
 
+// Доля цены строки относительно средней цены её кода (взвешенной по количеству): Σ доля × количество
+// по коду равна количеству кода, поэтому сумма кода при делении не меняется. Товар без цены — 1.
+function productShares<T>(rows: T[], groups: BudgetGroup[], access: BudgetRowAccess<T>, productOf?: (row: T, index: number) => string, prices?: Record<string, number>) {
+  const shares = new Map<number, number>()
+  if (!productOf || !prices) return shares
+  const priceOf = (index: number) => {
+    const price = prices[productOf(rows[index], index)]
+    return price !== undefined && Number.isFinite(price) && price > 0 ? price : null
+  }
+  for (const group of groups) {
+    let quantity = 0
+    let value = 0
+    group.indexes.forEach((index) => {
+      const price = priceOf(index)
+      if (price === null) return
+      const rowQuantity = access.getQuantity(rows[index]) ?? 0
+      quantity += rowQuantity
+      value += price * rowQuantity
+    })
+    if (!(quantity > 0 && value > 0)) continue
+    const average = value / quantity
+    group.indexes.forEach((index) => shares.set(index, (priceOf(index) ?? average) / average))
+  }
+  return shares
+}
+
 const money = (value: number) => Math.round(value * 100) / 100
 const format = (value: number) => value.toFixed(2)
 
@@ -110,13 +143,27 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     return weight !== undefined && Number.isFinite(weight) && weight > 0 ? weight : 1
   }
   const priceText = (value: number) => value.toFixed(decimals).replace(/\.?0+$/, '') || '0'
+  const relative = productShares(rows, groups, access, options.productOf, options.productPrices)
+  const productOf = options.productOf
+  // Строка без своей цены в группе с ценой: тот же товар — его цена; другой товар — цена первой
+  // строки с ценой в пропорции цен товаров; без товаров — цена группы.
+  const fixedPriceFor = (group: BudgetGroup, index: number) => {
+    const price = group.fixedPrice ?? 0
+    if (!productOf) return price
+    const product = productOf(rows[index], index)
+    const same = group.pricedIndexes.find((priced) => productOf(rows[priced], priced) === product)
+    if (same !== undefined) return access.getPrice(rows[same]) ?? price
+    const share = relative.get(index)
+    const anchorShare = relative.get(group.pricedIndexes[0])
+    return share && anchorShare ? price * share / anchorShare : price
+  }
   // Цены свободных групп — в целых «шагах» 10^−decimals.
   const stepsFor = (factor: number) => new Map(free.map((group) => [group.key, Math.max(0, Math.round(weightOf(group) * factor * scale))]))
   const rowsFor = (steps: Map<string, number>) => {
     const priceByIndex = new Map<number, string>()
     // В группе с ценой строки без цены получают цену группы; строки со своей ценой не трогаем.
-    fixed.forEach((group) => group.indexes.filter((index) => !group.pricedIndexes.includes(index)).forEach((index) => priceByIndex.set(index, priceText(group.fixedPrice ?? 0))))
-    free.forEach((group) => group.indexes.forEach((index) => priceByIndex.set(index, priceText((steps.get(group.key) ?? 0) / scale))))
+    fixed.forEach((group) => group.indexes.filter((index) => !group.pricedIndexes.includes(index)).forEach((index) => priceByIndex.set(index, priceText(fixedPriceFor(group, index)))))
+    free.forEach((group) => group.indexes.forEach((index) => priceByIndex.set(index, priceText(Math.round((steps.get(group.key) ?? 0) * (relative.get(index) ?? 1)) / scale))))
     return rows.map((row, index) => priceByIndex.has(index) ? access.setPrice(row, priceByIndex.get(index) ?? '') : row)
   }
   const measure = async (steps: Map<string, number>) => {

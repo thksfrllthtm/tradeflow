@@ -10,7 +10,7 @@
 | Frontend | React + TypeScript + Vite. |
 | Деньги | `shopspring/decimal`, PostgreSQL `NUMERIC`, десятичные строки в JSON; без float-арифметики. |
 | XLSX | Excelize, только явно поддержанные структура и способы хранения изображений. |
-| ИИ | Только DeepSeek для соотношения цен при подборе под бюджет («Подобрать с ИИ»); итоговые цены считает математика в браузере. |
+| ИИ | Только DeepSeek при подборе под бюджет («Подобрать с ИИ»): цена каждого товара с обоснованием (режим рассуждения); сумму под бюджет считает математика в браузере. |
 
 ## Предварительный расчёт партии
 
@@ -47,7 +47,7 @@
 Данные справочника не объявляются официальными или актуальными. До получения разрешённого источника и выборочной сверки операторские записи служат только настройками предварительного расчёта.
 ## Отдельный расчёт перчаток (2026-09-17)
 
-- Сметы перчаток и сметы товаров хранятся в своих таблицах (`gloves_estimates`, `gloves_copy_estimates`) вместе с черновиком и результатом расчёта.
+- Сметы товаров хранятся в `gloves_copy_estimates` вместе с черновиком и результатом расчёта (сметы перчаток удалены миграцией 000023).
 - The server resolves every selected directory entry by `directoryEntryId` at calculation time and creates a fresh snapshot. Client-provided rate snapshots are ignored when a database is available; archived entries cannot be used. The directory coefficient is the row default, while an operator may intentionally override that coefficient for one shipment row without changing the directory.
 - Supplier values and directory values stay separate. Pair counts are pairs (never divided by two), missing net weight may be derived from gross and package weight, and one party delivery amount is allocated by gross weight with a residual on the last eligible row. Inclusion of each allocated share in the customs base is an explicit row choice (off by default); delivery remains a single party expense. Embedded and manually uploaded JPG/PNG images stay attached to the row and are never inferred for a neighbouring row.
 

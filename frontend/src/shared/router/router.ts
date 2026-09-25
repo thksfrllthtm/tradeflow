@@ -3,14 +3,12 @@ import { useEffect, useState } from 'react'
 // Адреса страниц приложения. Обычные пути (без #): Vite отдаёт index.html на любой путь,
 // поэтому прямые ссылки и обновление страницы работают.
 //   /estimates/goods[/id]    — сметы товаров (главная)
-//   /estimates/gloves[/id]   — сметы перчаток
 //   /directory/products      — справочник товаров
 //   /directory/tnved         — справочник ТН ВЭД
 //   /employees               — сотрудники и роли (только администратор)
 //   /login, /register        — вход и регистрация
 export type Route =
   | { page: 'goods'; estimateId: number | null }
-  | { page: 'gloves'; estimateId: number | null }
   | { page: 'products' }
   | { page: 'tnved' }
   | { page: 'employees' }
@@ -20,7 +18,6 @@ export type Route =
 export const paths = {
   home: '/estimates/goods',
   goods: (id?: number | null) => id ? `/estimates/goods/${id}` : '/estimates/goods',
-  gloves: (id?: number | null) => id ? `/estimates/gloves/${id}` : '/estimates/gloves',
   products: '/directory/products',
   tnved: '/directory/tnved',
   employees: '/employees',
@@ -31,7 +28,6 @@ export const paths = {
 // Старые адреса вида /#gloves-copy продолжают открываться — их заменяем на новые.
 const legacyHashes: Record<string, string> = {
   '#gloves-copy': paths.goods(),
-  '#gloves': paths.gloves(),
   '#directory': paths.tnved,
   '#products': paths.products,
 }
@@ -39,8 +35,8 @@ const legacyHashes: Record<string, string> = {
 // null — неизвестный адрес (приложение перенаправит на главную).
 export function parseRoute(pathname: string): Route | null {
   const path = pathname.replace(/\/+$/, '') || '/'
-  const estimate = /^\/estimates\/(goods|gloves)(?:\/(\d+))?$/.exec(path)
-  if (estimate) return { page: estimate[1] as 'goods' | 'gloves', estimateId: estimate[2] ? Number(estimate[2]) : null }
+  const estimate = /^\/estimates\/goods(?:\/(\d+))?$/.exec(path)
+  if (estimate) return { page: 'goods', estimateId: estimate[1] ? Number(estimate[1]) : null }
   if (path === paths.products) return { page: 'products' }
   if (path === paths.tnved) return { page: 'tnved' }
   if (path === paths.employees) return { page: 'employees' }

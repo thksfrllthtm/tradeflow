@@ -9,7 +9,7 @@ type RowState = {
   setError: (message: string) => void
 }
 
-// Правка строк на этапе 2 (одинакова для обеих смет). Любая правка сбрасывает
+// Правка строк на этапе 2 (сметы товаров). Любая правка сбрасывает
 // результат расчёта, потому что он больше не соответствует строкам.
 export function rowActions({ setItems, setResult, setSelectedForDirectory, setError }: RowState, itemCount: number, packageWeightKg: string) {
   return {

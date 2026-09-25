@@ -1,4 +1,4 @@
-/* Общее для калькуляторов обеих смет: страница этапа, кнопки, баннер, этапы, параметры, подсказки нетто. */
+/* Общее для калькулятора смет: страница этапа, кнопки, баннер, параметры, подсказки нетто. */
 .banner {
   display: flex;
   align-items: center;
@@ -48,23 +48,6 @@
 }
 .secondary:hover:not(:disabled) { background: #ddeee4; border-color: #24704a; }
 .secondary:disabled { opacity: .5; cursor: not-allowed; }
-.icon-button {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e0e6e1;
-  border-radius: 6px;
-  background: #fff;
-  color: #56665c;
-  font-size: 1.15rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color .15s, color .15s;
-}
-.icon-button:hover { border-color: #24704a; color: #24704a; }
 .button-link {
   padding: 0;
   border: 0;
@@ -84,33 +67,8 @@
   font-size: 13.5px;
   line-height: 1.45;
 }
-.gloves-stepper {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  margin: 0 0 14px;
-  padding: 4px;
-  border: 1px solid #e0e7e2;
-  border-radius: 8px;
-  background: #f3f7f4;
-}
-.gloves-stepper button {
-  padding: 9px 12px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #56665c;
-  font-size: .82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, color .15s;
-}
-.gloves-stepper button:hover:not(:disabled):not(.active) { background: #e8f0ea; color: #24704a; }
-.gloves-stepper button.active { background: #24704a; color: #fff; }
-.gloves-stepper button:disabled { color: #a5b0a8; cursor: not-allowed; }
 @media (max-width: 768px) {
   .gloves-page { padding: 10px; }
-  .gloves-stepper { grid-template-columns: 1fr; }
 }
 .net-ok { color: #23603d; }
 .net-warn { color: #956b16; }

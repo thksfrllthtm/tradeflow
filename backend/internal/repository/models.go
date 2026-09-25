@@ -147,22 +147,6 @@ type ProductDirectoryEntry struct {
 
 func (ProductDirectoryEntry) TableName() string { return "product_directory_entries" }
 
-// GlovesEstimate is an independent estimate list for the standalone gloves
-// calculator. It deliberately does not use the regular estimates table.
-type GlovesEstimate struct {
-	ID             int64     `gorm:"primaryKey" json:"id"`
-	UserID         int64     `gorm:"column:user_id;not null;index" json:"userId"`
-	Name           string    `gorm:"size:200;not null" json:"name"`
-	Client         string    `gorm:"size:200;not null" json:"client"`
-	AssessmentDate time.Time `gorm:"column:assessment_date;type:date;not null" json:"assessmentDate"`
-	InputSnapshot  JSON      `gorm:"column:input_snapshot;type:jsonb;not null" json:"inputSnapshot"`
-	ResultSnapshot JSON      `gorm:"column:result_snapshot;type:jsonb;not null" json:"resultSnapshot"`
-	CreatedAt      time.Time `gorm:"column:created_at;not null" json:"createdAt"`
-	UpdatedAt      time.Time `gorm:"column:updated_at;not null" json:"updatedAt"`
-}
-
-func (GlovesEstimate) TableName() string { return "gloves_estimates" }
-
 // GoodsEstimate is the independent storage for the copied gloves
 // calculator. It intentionally has its own table so the original gloves
 // estimates cannot be changed from the copied section.

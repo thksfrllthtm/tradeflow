@@ -28,7 +28,6 @@ func (s *Server) suggestPriceWeights(c *gin.Context) {
 func (s *Server) priceHistory(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
 	var request struct {
-		Kind       string   `json:"kind"`
 		EstimateID int64    `json:"estimateId"`
 		Codes      []string `json:"codes"`
 	}
@@ -36,7 +35,7 @@ func (s *Server) priceHistory(c *gin.Context) {
 		badRequest(c, "Некорректный запрос истории цен", "codes")
 		return
 	}
-	prices, err := s.pricing.PriceHistory(c.Request.Context(), estimateScope(c), request.Kind, request.EstimateID, request.Codes)
+	prices, err := s.pricing.PriceHistory(c.Request.Context(), estimateScope(c), request.EstimateID, request.Codes)
 	if err != nil {
 		if validation, ok := err.(*service.ValidationError); ok {
 			badRequest(c, validation.Message, validation.Field)

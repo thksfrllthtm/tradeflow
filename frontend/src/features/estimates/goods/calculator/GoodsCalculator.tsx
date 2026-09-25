@@ -60,6 +60,9 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const [paramsOpen, setParamsOpen] = useState<boolean>(() => !storedParams(estimateId).usdKzt)
   const selectedFileRef = useRef<File | null>(null)
   const autoRateRequestedRef = useRef(false)
+  // Дата, на которую курс взят из НБРК; пусто — курс введён вручную или его нет.
+  const nbkRateDateRef = useRef('')
+  const rateRequestRef = useRef(0)
   const hydrationRef = useRef(false)
   const { tableWrapRef, topScrollRef, syncHorizontalScroll } = useSyncedHorizontalScroll(step === 2)
   const calculationRequestRef = useRef(0)
@@ -116,11 +119,12 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const { setItem, addManualPhoto, addEmptyRow, removeRow, resetAutomaticNet } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
   const { setMappingForHeader, setRawRowIncluded } = columnMappingActions(setMapping, setRawRows)
   const { recalculateResultPrice, decreaseResultPrices, restoreInitialResult, undoLastBulkPriceDecrease, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
-  const budget = useBudgetDistribution({ kind: 'goods', estimateId, unit: 'шт', result, items, preview: previewCalculation, apply: applyDistributedPrices })
+  const budget = useBudgetDistribution({ estimateId, unit: 'шт', result, items, preview: previewCalculation, apply: applyDistributedPrices })
 
   function setParam(field: keyof GlovesParams, value: string) {
     setParams((current) => ({ ...current, [field]: value }))
     if (field === 'assessmentDate' || field === 'usdKzt') setUsdRateNotice('')
+    if (field === 'usdKzt') nbkRateDateRef.current = ''
     if (field === 'packageWeightKg') {
       // Общая упаковка меняет только строки, которые идут по общему значению.
       // Строка со своей упаковкой (значение отличается от общего) остаётся как есть.
@@ -131,30 +135,45 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     setResult(null)
   }
 
-  async function loadUsdRate() {
-    if (!params.assessmentDate) {
-      setError('Сначала укажите дату расчёта')
+  // quiet — автоматическая загрузка: ошибку не показываем, курс можно взять кнопкой «НБРК» или ввести.
+  async function loadUsdRate(quiet = false) {
+    const date = params.assessmentDate
+    if (!date) {
+      if (!quiet) setError('Сначала укажите дату расчёта')
       return
     }
+    // Ответ на устаревший запрос (дату успели сменить) не применяется.
+    const request = ++rateRequestRef.current
     setUsdRateLoading(true)
-    setError('')
+    if (!quiet) setError('')
     try {
-      const rate = await goodsEstimatesApi.usdRate(params.assessmentDate)
+      const rate = await goodsEstimatesApi.usdRate(date)
+      if (request !== rateRequestRef.current) return
       setParam('usdKzt', rate.rate)
+      nbkRateDateRef.current = date
       setUsdRateNotice(`${rate.source} · ${rate.date}`)
     } catch (reason) {
-      setError(requestErrorMessage(reason))
+      if (request !== rateRequestRef.current) return
+      if (!quiet) setError(requestErrorMessage(reason))
       setUsdRateNotice('')
     } finally {
-      setUsdRateLoading(false)
+      if (request === rateRequestRef.current) setUsdRateLoading(false)
     }
   }
 
+  // Курс НБРК подставляется сам: сразу при открытии сметы без курса и после смены даты, если
+  // прежний курс тоже был из НБРК. Введённый вручную курс не меняется.
   useEffect(() => {
-    if (step !== 2 || !hydrationRef.current || autoRateRequestedRef.current || params.usdKzt.trim() !== '') return
-    autoRateRequestedRef.current = true
-    void loadUsdRate()
-  }, [step, params.usdKzt])
+    if (!photoStorageReady || !params.assessmentDate) return
+    const missing = params.usdKzt.trim() === '' && !autoRateRequestedRef.current
+    const outdated = nbkRateDateRef.current !== '' && nbkRateDateRef.current !== params.assessmentDate
+    if (!missing && !outdated) return
+    const timer = window.setTimeout(() => {
+      autoRateRequestedRef.current = true
+      void loadUsdRate(true)
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [photoStorageReady, params.assessmentDate, params.usdKzt])
 
   async function parseFile(file: File, replaceExisting: boolean, requestedSheet = '') {
     const signature = `${file.name}:${file.size}:${file.lastModified}`
@@ -351,7 +370,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
 
   function clearAll() {
     if (!window.confirm('Очистить параметры и все строки этой сметы?')) return
-    setParams(emptyParams()); setItems([]); setResult(null); setStep(1); setSourceSnapshot(null); setSelectedForDirectory([]); setDirectoryOpen(false); directorySearch.reset(); localStorage.removeItem(paramsStorageKey); localStorage.removeItem(itemsStorageKey); localStorage.removeItem(fileStorageKey); localStorage.removeItem(localUpdatedStorageKey)
+    setParams(emptyParams()); autoRateRequestedRef.current = false; nbkRateDateRef.current = ''; setItems([]); setResult(null); setStep(1); setSourceSnapshot(null); setSelectedForDirectory([]); setDirectoryOpen(false); directorySearch.reset(); localStorage.removeItem(paramsStorageKey); localStorage.removeItem(itemsStorageKey); localStorage.removeItem(fileStorageKey); localStorage.removeItem(localUpdatedStorageKey)
     void goodsPhotoStore.remove(estimateId)
   }
 

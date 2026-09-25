@@ -138,9 +138,29 @@ func (s *GoodsEstimateService) SaveEstimateDraft(ctx context.Context, id, userID
 }
 
 func decodeGoodsEstimate(row repository.GoodsEstimate) (GlovesEstimateRecord, error) {
-	return decodeGlovesEstimate(repository.GlovesEstimate{
-		ID: row.ID, UserID: row.UserID, Name: row.Name, Client: row.Client,
-		AssessmentDate: row.AssessmentDate, InputSnapshot: row.InputSnapshot,
-		ResultSnapshot: row.ResultSnapshot, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
-	})
+	var input GlovesCalculationInput
+	if len(row.InputSnapshot) > 0 && string(row.InputSnapshot) != "{}" && string(row.InputSnapshot) != "null" {
+		if err := json.Unmarshal(row.InputSnapshot, &input); err != nil {
+			return GlovesEstimateRecord{}, fmt.Errorf("сохранённая смета повреждена")
+		}
+	}
+	var result *GlovesCalculationResult
+	if len(row.ResultSnapshot) > 0 && string(row.ResultSnapshot) != "{}" && string(row.ResultSnapshot) != "null" {
+		var decoded GlovesCalculationResult
+		if err := json.Unmarshal(row.ResultSnapshot, &decoded); err != nil {
+			return GlovesEstimateRecord{}, fmt.Errorf("сохранённый результат сметы повреждён")
+		}
+		result = &decoded
+	}
+	status := "Черновик"
+	if result != nil {
+		status = "Рассчитано"
+	}
+	return GlovesEstimateRecord{
+		GlovesEstimateSummary: GlovesEstimateSummary{
+			ID: row.ID, Name: row.Name, Client: row.Client, AssessmentDate: row.AssessmentDate.Format("2006-01-02"),
+			Status: status, CreatedAt: row.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: row.UpdatedAt.UTC().Format(time.RFC3339),
+		},
+		Input: input, Result: result,
+	}, nil
 }

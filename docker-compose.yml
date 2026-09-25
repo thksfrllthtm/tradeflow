@@ -35,7 +35,7 @@ services:
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS}
       COOKIE_SECURE: ${COOKIE_SECURE}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-pro}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -7,7 +7,7 @@ type ParseXlsxResponse = Omit<GlovesParseResult, 'images'> & {
   imageData?: string[]
 }
 
-// Разбор Excel, расчёт и экспорт — общий backend для обеих смет (/api/gloves/*).
+// Разбор Excel, расчёт и экспорт — общий backend смет (/api/gloves/*, адрес остался от первой версии).
 export const calculatorApi = {
   parseXlsx: async (file: File, options?: { sheet?: string; headerRow?: number; dataStartRow?: number; shareImages?: boolean }): Promise<GlovesParseResult> => {
     const form = new FormData(); form.append('file', file)

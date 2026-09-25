@@ -89,23 +89,13 @@ func ownedBy(query *gorm.DB, userID int64) *gorm.DB {
 	return query.Where("user_id = ?", userID)
 }
 
-// Estimate kinds for the unit price history: each calculator keeps its own table.
-const (
-	EstimateKindGoods  = "goods"
-	EstimateKindGloves = "gloves"
-)
-
 // UnitPriceHistory returns, for each requested TN ВЭД code, the unit price in
-// USD from the most recently saved calculation result that contains it
+// USD from the most recently saved goods estimate result that contains it
 // (excluded rows and the current estimate are skipped). The JSON is read
 // inside PostgreSQL, so estimate snapshots with photos never reach the server.
-func (r *Repository) UnitPriceHistory(ctx context.Context, kind string, userID, excludeEstimateID int64, codes []string) (map[string]float64, error) {
-	table := "gloves_copy_estimates"
-	if kind == EstimateKindGloves {
-		table = "gloves_estimates"
-	}
+func (r *Repository) UnitPriceHistory(ctx context.Context, userID, excludeEstimateID int64, codes []string) (map[string]float64, error) {
 	query := `SELECT DISTINCT ON (item->>'code') item->>'code' AS code, (item->>'pairPriceUsd')::numeric AS price
-		FROM ` + table + ` e
+		FROM gloves_copy_estimates e
 		CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(e.result_snapshot->'items') = 'array' THEN e.result_snapshot->'items' ELSE '[]'::jsonb END) AS item
 		WHERE item->>'code' IN ? AND e.id <> ?
 		  AND COALESCE(item->>'excluded', 'false') <> 'true'

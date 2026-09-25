@@ -53,7 +53,7 @@ func Load() (Config, error) {
 		SessionTTL:           time.Duration(ttlHours) * time.Hour,
 		CookieSecure:         cookieSecure,
 		DeepSeekAPIKey:       strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
-		DeepSeekModel:        stringEnv("DEEPSEEK_MODEL", "deepseek-v4-pro"),
+		DeepSeekModel:        stringEnv("DEEPSEEK_MODEL", "deepseek-flash"),
 		RegistrationDisabled: !allowRegistration,
 		StaticDir:            strings.TrimSpace(os.Getenv("STATIC_DIR")),
 	}, nil

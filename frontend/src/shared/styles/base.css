@@ -63,17 +63,6 @@ label {
 .error { color: var(--c-error); margin: 0; font-size: .85rem; }
 
 /* ── Общие кнопки ── */
-.icon-button {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 50%;
-  background: var(--c-green);
-  color: #fff;
-  font-size: 1.1rem;
-  line-height: 28px;
-  text-align: center;
-}
 .secondary { color: var(--c-green); background: var(--c-green-light); border: 1px solid #c4d9c9; }
 .secondary:hover:not(:disabled) { background: #d2e9db; }
 button {

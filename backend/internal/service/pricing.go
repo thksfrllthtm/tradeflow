@@ -31,10 +31,7 @@ type UnitPrice struct {
 
 // PriceHistory returns the latest known unit price for each code. userID is
 // the estimate scope (repository.AllUsers for an administrator).
-func (s *PricingService) PriceHistory(ctx context.Context, userID int64, kind string, estimateID int64, codes []string) ([]UnitPrice, error) {
-	if kind != repository.EstimateKindGoods && kind != repository.EstimateKindGloves {
-		return nil, &ValidationError{Field: "kind", Message: "Неизвестный вид сметы"}
-	}
+func (s *PricingService) PriceHistory(ctx context.Context, userID, estimateID int64, codes []string) ([]UnitPrice, error) {
 	unique := make([]string, 0, len(codes))
 	seen := map[string]bool{}
 	for _, code := range codes {
@@ -51,7 +48,7 @@ func (s *PricingService) PriceHistory(ctx context.Context, userID int64, kind st
 	if len(unique) == 0 || s.repository == nil {
 		return result, nil
 	}
-	prices, err := s.repository.UnitPriceHistory(ctx, kind, userID, estimateID, unique)
+	prices, err := s.repository.UnitPriceHistory(ctx, userID, estimateID, unique)
 	if err != nil {
 		return nil, err
 	}

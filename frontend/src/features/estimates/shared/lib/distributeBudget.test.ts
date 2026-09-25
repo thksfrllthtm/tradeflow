@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { budgetGroupKey, BudgetRowAccess, distributeBudget } from './distributeBudget'
 
-type Row = { code: string; quantity: number; price?: string; excluded?: boolean }
+type Row = { code: string; quantity: number; price?: string; excluded?: boolean; name?: string }
 
 const access: BudgetRowAccess<Row> = {
   getCode: (row) => row.code,
@@ -120,6 +120,49 @@ describe('rows that already have a price', () => {
     ], 2000, access, { evaluate: cost })
     expect(result.items.map((row) => row.price).slice(0, 3)).toEqual(['2.5', '3', '2.5'])
     expect(result.fixedRows).toBe(3)
+    expect(result.status).toBe('ok')
+  })
+})
+
+describe('products inside a code (AI prices)', () => {
+  const productOf = (row: Row, index: number) => `${row.code.trim()}|${row.name ?? index}`
+
+  it('splits the code price in the AI proportion and keeps one price per product', async () => {
+    const rows: Row[] = [
+      { code: '8201', name: 'штыковая', quantity: 200 },
+      { code: '8201', name: 'совковая', quantity: 500 },
+      { code: '7310', name: 'бочка', quantity: 50 },
+      { code: '8201', name: 'совковая', quantity: 200 },
+      { code: '8201', name: 'штыковая', quantity: 300 },
+    ]
+    const result = await distributeBudget(rows, 3000, access, {
+      evaluate: customs,
+      productOf,
+      productPrices: { '8201|штыковая': 1.15, '8201|совковая': 1.1, '7310|бочка': 12 },
+    })
+    const price = (index: number) => Number(result.items[index].price)
+    expect(result.status).toBe('ok')
+    // Строки 1 и 5, 2 и 4 — один товар: одна цена.
+    expect(result.items[0].price).toBe(result.items[4].price)
+    expect(result.items[1].price).toBe(result.items[3].price)
+    // Внутри кода — пропорция ИИ, а не одна цена.
+    expect(price(0) / price(1)).toBeCloseTo(1.15 / 1.1, 3)
+    expect(await customs(result.items)).toBeCloseTo(result.total, 2)
+  })
+
+  it('prices another product of a priced code from the row with a price', async () => {
+    const result = await distributeBudget([
+      { code: '8201', name: 'штыковая', quantity: 100, price: '2.3' },
+      { code: '8201', name: 'совковая', quantity: 100 },
+      { code: '8201', name: 'штыковая', quantity: 40 },
+      { code: '7310', name: 'бочка', quantity: 50 },
+    ], 2000, access, {
+      evaluate: cost,
+      productOf,
+      productPrices: { '8201|штыковая': 1.15, '8201|совковая': 1.1, '7310|бочка': 12 },
+    })
+    // Тот же товар — цена строки с ценой; другой товар — в пропорции ИИ к ней: 2.3 × 1.1 / 1.15.
+    expect(result.items.map((row) => row.price).slice(0, 3)).toEqual(['2.3', '2.2', '2.3'])
     expect(result.status).toBe('ok')
   })
 })

@@ -82,20 +82,15 @@ func (s *Server) Router() *gin.Engine {
 	productsDirectory.POST("/:id/restore", s.requireAdmin, s.restoreProductDirectory)
 	productsDirectory.POST("/:id/copy", s.requireAdmin, s.copyProductDirectory)
 
+	// Разбор Excel, расчёт растаможки и экспорт для смет товаров (адрес остался от первой
+	// версии калькулятора — сметы перчаток).
 	gloves := router.Group("/api/gloves")
 	gloves.Use(s.requireUser)
-	gloves.GET("/estimates", s.listGlovesEstimates)
-	gloves.POST("/estimates", s.createGlovesEstimate)
-	gloves.GET("/estimates/:id", s.getGlovesEstimate)
-	gloves.PATCH("/estimates/:id", s.updateGlovesEstimate)
-	gloves.DELETE("/estimates/:id", s.deleteGlovesEstimate)
-	gloves.PUT("/estimates/:id/draft", s.saveGlovesEstimateDraft)
 	gloves.POST("/parse-xlsx", s.parseGlovesXlsx)
 	gloves.POST("/calculate", s.calculateGloves)
 	gloves.POST("/export", s.exportGloves)
 
-	// The copied gloves calculator uses the same parsing, calculation and
-	// export rules, but keeps estimates and drafts in separate storage.
+	// Сметы товаров: список, карточка и сохранённый черновик с результатом.
 	goodsEstimates := router.Group("/api/gloves-copy")
 	goodsEstimates.Use(s.requireUser)
 	goodsEstimates.GET("/usd-rate", s.getGoodsEstimateUSDRate)
