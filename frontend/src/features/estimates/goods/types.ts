@@ -7,4 +7,6 @@ export type GlovesMapping = {
   pairsPerPlace: string
   grossKg: string
   netKg: string
+  // Цена за единицу из файла (USD); у строк без цены стоимость считается как обычно.
+  pricePerPair: string
 }

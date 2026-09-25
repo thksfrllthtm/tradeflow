@@ -27,7 +27,7 @@
 .gloves-result-table .result-select-column input { width: 15px; height: 15px; margin: 0; accent-color: #24704a; }
 .gloves-result-table td:nth-child(n+5):nth-child(-n+17) { font-variant-numeric: tabular-nums; text-align: right; }
 .gloves-result-table code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .72rem; }
-.gloves-result-price-input { width: 88px; min-height: 30px; padding: 5px 7px; border: 1px solid #cbd9ce; border-radius: 6px; color: #26372d; background: #fff; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
+.gloves-result-price-input { display: inline-block; vertical-align: middle; width: 88px; min-height: 30px; padding: 5px 7px; border: 1px solid #cbd9ce; border-radius: 6px; color: #26372d; background: #fff; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
 .gloves-result-price-input:focus { border-color: #23744b; outline: 2px solid rgba(35, 116, 75, .16); }
 .gloves-result-table .result-product-name { min-width: 190px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .result-status { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: .66rem; font-weight: 650; }

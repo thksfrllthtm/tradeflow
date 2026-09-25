@@ -40,7 +40,7 @@ services:
         value: tradeflow_session
       - key: SESSION_TTL_HOURS
         value: "24"
-      # Ключи AI (ANTHROPIC_API_KEY / GEMINI_API_KEY) для сметы не нужны — при необходимости
-      # добавьте их потом в Render → Environment.
+      # Ключи AI (ANTHROPIC_API_KEY / GEMINI_API_KEY / DEEPSEEK_API_KEY) для сметы не обязательны —
+      # добавьте их потом в Render → Environment. DEEPSEEK_API_KEY нужен для «Распределить (ИИ + математика)».
       - key: AI_PROVIDER
         value: anthropic

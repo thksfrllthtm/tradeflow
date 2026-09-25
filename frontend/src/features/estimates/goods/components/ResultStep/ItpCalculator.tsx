@@ -3,7 +3,7 @@ import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
 import { GlovesCalculationResult } from '../../../shared/types'
 import { calculatorInputValue, parseCalculatorNumber } from './resultValues'
 
-// «Стоимость по ИТП»: ИТП × общий нетто = USD, × курс = ₸. Только для сверки,
+// «Сверка по ИТП» (свёрнута по умолчанию): ИТП × общий нетто = USD, × курс = ₸. Только для сверки,
 // на расчёт не влияет. Нетто и курс заполняются из результата, их можно поправить.
 export function ItpCalculator({ result }: { result: GlovesCalculationResult }) {
   const [itsValue, setItsValue] = useState('')
@@ -27,8 +27,8 @@ export function ItpCalculator({ result }: { result: GlovesCalculationResult }) {
     : null
 
   return (
-    <div className="rs-block rs-its">
-      <span className="rs-title">Стоимость по ИТП <small>для сверки, на расчёт не влияет</small></span>
+    <details className="rs-block rs-its">
+      <summary className="rs-title">Сверка по ИТП <small>на расчёт не влияет</small></summary>
       <div className="rs-its-grid">
         <label>ИТП, USD за 1 кг<input inputMode="decimal" value={itsValue} onChange={(event) => setItsValue(event.target.value.replace(',', '.'))} onBlur={() => setItsValue(calculatorInputValue(itsValue))} placeholder="введите" /></label>
         <span className="rs-op">×</span>
@@ -41,6 +41,6 @@ export function ItpCalculator({ result }: { result: GlovesCalculationResult }) {
           <small>{itsUsd !== null ? `≈ ${formatDisplayNumber(itsUsd.toFixed(2))} USD` : 'введите ИТП'}</small>
         </div>
       </div>
-    </div>
+    </details>
   )
 }

@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react'
 //   /estimates/gloves[/id]   — сметы перчаток
 //   /directory/products      — справочник товаров
 //   /directory/tnved         — справочник ТН ВЭД
+//   /employees               — сотрудники и роли (только администратор)
 //   /login, /register        — вход и регистрация
 export type Route =
   | { page: 'goods'; estimateId: number | null }
   | { page: 'gloves'; estimateId: number | null }
   | { page: 'products' }
   | { page: 'tnved' }
+  | { page: 'employees' }
   | { page: 'login' }
   | { page: 'register' }
 
@@ -21,6 +23,7 @@ export const paths = {
   gloves: (id?: number | null) => id ? `/estimates/gloves/${id}` : '/estimates/gloves',
   products: '/directory/products',
   tnved: '/directory/tnved',
+  employees: '/employees',
   login: '/login',
   register: '/register',
 }
@@ -40,6 +43,7 @@ export function parseRoute(pathname: string): Route | null {
   if (estimate) return { page: estimate[1] as 'goods' | 'gloves', estimateId: estimate[2] ? Number(estimate[2]) : null }
   if (path === paths.products) return { page: 'products' }
   if (path === paths.tnved) return { page: 'tnved' }
+  if (path === paths.employees) return { page: 'employees' }
   if (path === paths.login) return { page: 'login' }
   if (path === paths.register) return { page: 'register' }
   return null

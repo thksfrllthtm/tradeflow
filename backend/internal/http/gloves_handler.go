@@ -63,7 +63,7 @@ func (s *Server) parseGlovesXlsx(c *gin.Context) {
 }
 
 func (s *Server) listGlovesEstimates(c *gin.Context) {
-	estimates, err := s.gloves.ListEstimates(c.Request.Context(), currentUser(c).ID)
+	estimates, err := s.gloves.ListEstimates(c.Request.Context(), estimateScope(c))
 	if err != nil {
 		internalError(c)
 		return
@@ -90,7 +90,7 @@ func (s *Server) getGlovesEstimate(c *gin.Context) {
 	if !ok {
 		return
 	}
-	estimate, err := s.gloves.GetEstimate(c.Request.Context(), id, currentUser(c).ID)
+	estimate, err := s.gloves.GetEstimate(c.Request.Context(), id, estimateScope(c))
 	if !handleGlovesEstimateError(c, err) {
 		return
 	}
@@ -108,7 +108,7 @@ func (s *Server) updateGlovesEstimate(c *gin.Context) {
 		badRequest(c, "Проверьте данные сметы перчаток", "estimate")
 		return
 	}
-	estimate, err := s.gloves.UpdateEstimate(c.Request.Context(), id, currentUser(c).ID, input)
+	estimate, err := s.gloves.UpdateEstimate(c.Request.Context(), id, estimateScope(c), input)
 	if !handleGlovesEstimateError(c, err) {
 		return
 	}
@@ -120,7 +120,7 @@ func (s *Server) deleteGlovesEstimate(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := s.gloves.DeleteEstimate(c.Request.Context(), id, currentUser(c).ID); !handleGlovesEstimateError(c, err) {
+	if err := s.gloves.DeleteEstimate(c.Request.Context(), id, estimateScope(c)); !handleGlovesEstimateError(c, err) {
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -137,7 +137,7 @@ func (s *Server) saveGlovesEstimateDraft(c *gin.Context) {
 		badRequest(c, "Проверьте данные черновика перчаток", "draft")
 		return
 	}
-	saved, err := s.gloves.SaveEstimateDraft(c.Request.Context(), id, currentUser(c).ID, draft)
+	saved, err := s.gloves.SaveEstimateDraft(c.Request.Context(), id, estimateScope(c), draft)
 	if !handleGlovesEstimateError(c, err) {
 		return
 	}
@@ -226,7 +226,8 @@ func (s *Server) calculateGloves(c *gin.Context) {
 }
 
 func (s *Server) exportGloves(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<20)
+	// Rows carry their first photo (compressed JPG/PNG) for the XLSX file.
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<20)
 	var input service.GlovesCalculationInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте данные расчёта", "")

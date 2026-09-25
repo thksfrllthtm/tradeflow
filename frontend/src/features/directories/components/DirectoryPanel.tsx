@@ -9,12 +9,14 @@ type Props = {
   error: string
   onClose: () => void
   onSubmit: () => void
+  // Только просмотр (у сотрудников без прав администратора): поля недоступны, кнопки «Сохранить» нет.
+  readOnly?: boolean
   children: ReactNode
 }
 
 // Боковая панель справочника: шапка, прокручиваемая форма и всегда видимые кнопки внизу.
 // Esc, клик по фону и «Отмена» спрашивают подтверждение, если есть несохранённые изменения.
-export function DirectoryPanel({ title, subtitle, dirty, saving, error, onClose, onSubmit, children }: Props) {
+export function DirectoryPanel({ title, subtitle, dirty, saving, error, onClose, onSubmit, readOnly = false, children }: Props) {
   function close() { if (!dirty || window.confirm('Есть несохранённые изменения. Закрыть форму?')) onClose() }
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function DirectoryPanel({ title, subtitle, dirty, saving, error, onClose,
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (!saving) onSubmit()
+    if (!saving && !readOnly) onSubmit()
   }
 
   return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close() }}>
@@ -40,12 +42,17 @@ export function DirectoryPanel({ title, subtitle, dirty, saving, error, onClose,
         <div><h2 id="drawer-title">{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
         <button type="button" className="drawer-close" onClick={close} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
       </header>
-      <div className="drawer-body">{children}</div>
-      <footer className="drawer-foot">
-        {error ? <p className="drawer-error" role="alert">{error}</p> : <span className={dirty ? 'drawer-state dirty' : 'drawer-state'}>{saving ? 'Сохраняем…' : dirty ? 'Есть несохранённые изменения' : 'Без изменений'}</span>}
-        <button type="button" className="drawer-cancel" onClick={close}>Отмена</button>
-        <button type="submit" className="drawer-save" disabled={saving || !dirty}>{saving ? 'Сохраняем…' : 'Сохранить'}</button>
-      </footer>
+      <div className="drawer-body"><fieldset className="drawer-fields" disabled={readOnly}>{children}</fieldset></div>
+      {readOnly
+        ? <footer className="drawer-foot">
+          <span className="drawer-state">Только просмотр: менять справочник может администратор</span>
+          <button type="button" className="drawer-cancel" onClick={close}>Закрыть</button>
+        </footer>
+        : <footer className="drawer-foot">
+          {error ? <p className="drawer-error" role="alert">{error}</p> : <span className={dirty ? 'drawer-state dirty' : 'drawer-state'}>{saving ? 'Сохраняем…' : dirty ? 'Есть несохранённые изменения' : 'Без изменений'}</span>}
+          <button type="button" className="drawer-cancel" onClick={close}>Отмена</button>
+          <button type="submit" className="drawer-save" disabled={saving || !dirty}>{saving ? 'Сохраняем…' : 'Сохранить'}</button>
+        </footer>}
     </form>
   </div>
 }

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { GlovesCalculationResult, GlovesItemInput } from '../../../shared/types'
+import { BudgetNote, BudgetTool } from '../../../shared/components/BudgetTool/BudgetTool'
+import { BudgetDistributionState } from '../../../shared/hooks/useBudgetDistribution'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
 import '../../../shared/styles/calculatorCommon.css'
 import '../../styles/calculator.css'
@@ -18,6 +20,7 @@ type Props = {
   onRestoreInitial: () => void
   onUndoBulkPriceDecrease: () => void
   canUndoBulkPriceDecrease: boolean
+  budget: BudgetDistributionState
 }
 
 export function ResultStep({
@@ -33,9 +36,13 @@ export function ResultStep({
   onRestoreInitial,
   onUndoBulkPriceDecrease,
   canUndoBulkPriceDecrease,
+  budget,
 }: Props) {
   const [bulkPriceDecrease, setBulkPriceDecrease] = useState('')
   const [selectedRows, setSelectedRows] = useState<number[]>([])
+  // Цена, которую сейчас вводят: пока поле в фокусе, показываем ровно её (в том числе пустую),
+  // иначе стёртое поле сразу заполнилось бы рассчитанной ценой. Пересчёт — при выходе из поля.
+  const [draftPrices, setDraftPrices] = useState<Record<number, string>>({})
   const display = (value: string | number | undefined | null) =>
     value === undefined || value === null || value === '' ? '—' : String(value)
   const displayNumber = (value: string | number | undefined | null) => {
@@ -146,6 +153,8 @@ export function ResultStep({
           </div>
         </div>
 
+        <BudgetTool budget={budget} disabled={loading} />
+
         <div className="gloves-result-table-scroll">
           <table className="gloves-result-table">
             <thead>
@@ -186,7 +195,7 @@ export function ResultStep({
                 // The value typed by the user must have priority over the
                 // calculated pair price. Otherwise the input immediately
                 // jumps back to the old value after every keystroke.
-                const price = item.pricePerPair || item.pairPrice || source?.pricePerPair || ''
+                const price = draftPrices[index] ?? (item.pricePerPair || item.pairPrice || source?.pricePerPair || '')
                 const sourceRow = index + 1
 
                 return (
@@ -210,17 +219,26 @@ export function ResultStep({
                     <td>{displayNumber(item.netKg)}</td>
                     <td>{displayNumber(item.coefficient)}</td>
                     <td>
+                      <span className="price-field">
                       <input
                         className="gloves-result-price-input"
                         inputMode="decimal"
                         value={price}
-                        onChange={(event) => onPriceChange(index, event.target.value.replace(',', '.'))}
-                        onBlur={(event) => onPriceBlur(index, event.currentTarget.value)}
+                        onChange={(event) => { const value = event.target.value.replace(',', '.'); setDraftPrices((current) => ({ ...current, [index]: value })); onPriceChange(index, value) }}
+                        onBlur={() => {
+                          const value = draftPrices[index]
+                          if (value === undefined) return
+                          setDraftPrices(({ [index]: _done, ...rest }) => rest)
+                          // Пустое поле — убрать цену: строка считается без неё (по ИТП или с пометкой «Укажите цену»).
+                          onPriceBlur(index, value.trim())
+                        }}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') event.currentTarget.blur()
                         }}
                         aria-label={`Цена за пару, строка ${sourceRow}`}
                       />
+                      <BudgetNote note={budget.notes[index]} />
+                      </span>
                     </td>
                     <td>{displayNumber(item.goodsCost || item.costInput)} {item.goodsCostCurrency || item.costCurrency || ''}</td>
                     <td>{displayNumber(item.customsValueKzt)}</td>

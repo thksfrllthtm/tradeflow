@@ -53,7 +53,8 @@
   font-size: .68rem;
   font-weight: 700;
 }
-.app-header-who { overflow: hidden; color: #cfe0d5; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+.app-header-who { overflow: hidden; color: #cfe0d5; font-size: .8rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.app-header-who small { display: block; color: #8fb09c; font-size: .68rem; }
 .app-header .app-header-logout {
   flex: 0 0 auto;
   height: 28px;

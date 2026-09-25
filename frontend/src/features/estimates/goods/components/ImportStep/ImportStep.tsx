@@ -32,7 +32,7 @@ type Props = {
 }
 
 // Короткие подписи — те же, что в заголовках таблицы на этапе проверки.
-const shortLabel: Record<keyof GlovesMapping, string> = { name: 'Наименование', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт', places: 'Места', pairsPerPlace: 'Шт. в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг' }
+const shortLabel: Record<keyof GlovesMapping, string> = { name: 'Наименование', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт', places: 'Места', pairsPerPlace: 'Шт. в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
 
 export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, headers, rawRows, mapping, fileName, selectedFileAvailable, mappingFieldOptions, upload, addEmptyRow, setSheet, setHeaderRow, setDataStartRow, reparseSelectedSheet, mappedFieldForHeader, setMappingForHeader, setRawRowIncluded, applyMapping }: Props) {
   const fileInput = <input type="file" accept=".xlsx" onChange={upload} disabled={loading} />

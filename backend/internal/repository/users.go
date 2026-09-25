@@ -21,16 +21,60 @@ func (r *Repository) UserByEmail(ctx context.Context, email string) (User, error
 	return user, err
 }
 
+// CreateUser creates an employee with the default invoicer role.
 func (r *Repository) CreateUser(ctx context.Context, email, passwordHash string, name ...string) (User, error) {
 	displayName := ""
 	if len(name) > 0 {
-		displayName = strings.TrimSpace(name[0])
+		displayName = name[0]
 	}
-	user := User{Name: displayName, Email: normalizeEmail(email), PasswordHash: passwordHash}
+	return r.CreateUserWithRole(ctx, email, passwordHash, displayName, RoleInvoicer)
+}
+
+func (r *Repository) CreateUserWithRole(ctx context.Context, email, passwordHash, name, role string) (User, error) {
+	user := User{Name: strings.TrimSpace(name), Email: normalizeEmail(email), PasswordHash: passwordHash, Role: role}
 	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
 		return User{}, err
 	}
 	return user, nil
+}
+
+func (r *Repository) UserByID(ctx context.Context, id int64) (User, error) {
+	var user User
+	err := r.db.WithContext(ctx).First(&user, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return User{}, ErrNotFound
+	}
+	return user, err
+}
+
+func (r *Repository) ListUsers(ctx context.Context) ([]User, error) {
+	var users []User
+	err := r.db.WithContext(ctx).Order("id").Find(&users).Error
+	return users, err
+}
+
+// UpdateUser changes only the given columns (role, name, password_hash, disabled_at).
+func (r *Repository) UpdateUser(ctx context.Context, id int64, changes map[string]any) (User, error) {
+	changes["updated_at"] = time.Now().UTC()
+	result := r.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Updates(changes)
+	if result.Error != nil {
+		return User{}, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return User{}, ErrNotFound
+	}
+	return r.UserByID(ctx, id)
+}
+
+func (r *Repository) CountActiveAdmins(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&User{}).Where("role = ? AND disabled_at IS NULL", RoleAdmin).Count(&count).Error
+	return count, err
+}
+
+// DeleteUserSessions logs the employee out everywhere (after blocking or a password change).
+func (r *Repository) DeleteUserSessions(ctx context.Context, userID int64) error {
+	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&Session{}).Error
 }
 
 func (r *Repository) CreateSession(ctx context.Context, token string, userID int64, expiresAt time.Time) error {
@@ -55,7 +99,8 @@ func (r *Repository) UserBySessionToken(ctx context.Context, token string) (User
 		return User{}, err
 	}
 	var user User
-	err = r.db.WithContext(ctx).First(&user, session.UserID).Error
+	// A blocked employee's sessions stop working immediately.
+	err = r.db.WithContext(ctx).Where("disabled_at IS NULL").First(&user, session.UserID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return User{}, ErrNotFound
 	}

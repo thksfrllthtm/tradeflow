@@ -20,7 +20,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf
   const [collapsed, setCollapsed] = useState(false)
   const [query, setQuery] = useState('')
   const needle = query.trim().toLowerCase()
-  const visible = needle ? estimates.filter((estimate) => [nameOf(estimate), estimate.client, formatRuDate(estimate.assessmentDate)].join(' ').toLowerCase().includes(needle)) : estimates
+  const visible = needle ? estimates.filter((estimate) => [nameOf(estimate), estimate.client, estimate.ownerName, formatRuDate(estimate.assessmentDate)].join(' ').toLowerCase().includes(needle)) : estimates
 
   if (collapsed) return <aside className="es-sidebar collapsed" aria-label={title}>
     <button type="button" className="es-icon" onClick={() => setCollapsed(false)} title="Показать список смет" aria-label="Показать список смет">›</button>
@@ -50,7 +50,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf
                 <i className={calculated ? 'es-status done' : 'es-status'}>{estimate.status}</i>
               </span>
               <span className="es-item-sub">
-                <span>{estimate.client || 'Без клиента'}</span>
+                <span>{estimate.client || 'Без клиента'}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
                 <span>{formatRuDate(estimate.assessmentDate)}</span>
               </span>
             </Link>

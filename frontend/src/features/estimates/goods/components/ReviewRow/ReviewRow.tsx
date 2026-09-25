@@ -2,6 +2,8 @@ import { ChangeEvent, InputHTMLAttributes, KeyboardEvent, memo } from 'react'
 import { GlovesCalculationResult, GlovesItemInput } from '../../../shared/types'
 import { autoNetFor, formatWeight, netHint } from '../../../shared/lib/netWeight'
 import { photosOf } from '../../../shared/lib/itemPhotos'
+import { autoQuantityHint, QuantityField } from '../../../shared/lib/quantities'
+import { reviewStatus } from './reviewStatus'
 import '../../../shared/styles/calculatorCommon.css'
 import './ReviewRow.css'
 
@@ -42,7 +44,6 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
   const id = item.id ?? ''
   const value = (field: keyof GlovesItemInput) => String(item[field] ?? '')
   const photos = photosOf(item)
-  const issues = [...(resultItem?.errors ?? []), ...(resultItem?.warnings ?? [])]
   const verified = item.directorySnapshot?.verificationStatus === 'operator_verified'
   const ownPackage = item.packageWeightKg !== defaultPackageWeight
   // Пустая своя упаковка на сервере заменяется общей — считаем подсказку так же.
@@ -52,16 +53,17 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
   // Упаковка влияет только на авто-нетто; для нетто из Excel или введённого вручную её не показываем.
   const autoNetMode = !item.netKg
   const numberInput = (field: keyof GlovesItemInput, label: string, extra: InputHTMLAttributes<HTMLInputElement> = {}) => (
-    <input className="rv-input" inputMode="decimal" value={value(field)} onChange={(event) => onChange(id, field, event.target.value.replace(',', '.'))} onKeyDown={moveFocus} aria-label={`${label}, строка ${rowNumber}`} {...extra} />
+    <input className="rv-input" inputMode="decimal" placeholder="—" value={value(field)} onChange={(event) => onChange(id, field, event.target.value.replace(',', '.'))} onKeyDown={moveFocus} aria-label={`${label}, строка ${rowNumber}`} {...extra} />
   )
-  const statusReady = resultItem?.status === 'calculated' || (Boolean(item.code) && verified)
-  const status = item.excluded ? { className: 'off', label: 'Исключена' }
-    : resultItem?.errors?.length ? { className: 'bad', label: 'Ошибка' }
-    : statusReady ? { className: 'ok', label: 'Готово' }
-    : { className: 'warn', label: item.code ? 'Проверить' : 'Нужен код' }
+  // Пустое из трёх полей «места / штук в месте / количество» показывает вычисленное значение.
+  const quantityInput = (field: QuantityField, label: string) => {
+    const hint = autoQuantityHint(item, field)
+    return numberInput(field, label, hint ? { placeholder: hint.placeholder, title: hint.title } : {})
+  }
+  const status = reviewStatus(item, resultItem)
 
   return (
-    <tr className={[item.excluded ? 'rv-excluded' : '', issues.length ? 'rv-error' : '', selected ? 'rv-selected' : ''].filter(Boolean).join(' ')}>
+    <tr className={[item.excluded ? 'rv-excluded' : '', status.tone === 'bad' ? 'rv-error' : '', selected ? 'rv-selected' : ''].filter(Boolean).join(' ')}>
       <td className="rv-check"><input type="checkbox" checked={selected} onChange={(event) => onSelect(id, event.target.checked)} aria-label={`Выбрать строку ${rowNumber}`} /></td>
       <td className="rv-num">{rowNumber}</td>
       <td className="rv-product">
@@ -72,15 +74,15 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
           </div>
           <input className="rv-input rv-name" value={value('name')} onChange={(event) => onChange(id, 'name', event.target.value)} onKeyDown={moveFocus} placeholder="Название товара" aria-label={`Название товара, строка ${rowNumber}`} />
           <div className="rv-code-line">
-            <button type="button" className={`rv-code ${item.code ? (verified ? 'ok' : 'warn') : 'missing'}`} onClick={() => onOpenPicker(id)} title={item.code ? 'Изменить товар или код ТН ВЭД' : 'Выбрать товар или код ТН ВЭД'}>{item.code || 'Выбрать код ТН ВЭД'}</button>
-            {item.code && <span className={verified ? 'rv-code-note ok' : 'rv-code-note warn'}>{verified ? 'проверено оператором' : 'проверьте ставки'}</span>}
+            <button type="button" className={`rv-code ${item.code ? (verified ? 'ok' : 'warn') : 'missing'}`} onClick={() => onOpenPicker(id)} title={item.code ? `${verified ? 'Проверено оператором' : 'Ставки не проверены оператором'} · изменить товар или код` : 'Выбрать товар или код ТН ВЭД'}>{item.code || 'Выбрать код ТН ВЭД'}</button>
+            {item.code && !verified && <span className="rv-code-note">проверьте ставки</span>}
             {item.code && <button type="button" className="rv-code-clear" onClick={() => onClearDirectory(id)} title="Снять товар и код">снять</button>}
           </div>
         </div>
       </td>
-      <td>{numberInput('places', 'Места')}</td>
-      <td>{numberInput('pairsPerPlace', 'Штук в месте')}</td>
-      <td>{numberInput('pairs', 'Количество')}</td>
+      <td>{quantityInput('places', 'Места')}</td>
+      <td>{quantityInput('pairsPerPlace', 'Штук в месте')}</td>
+      <td>{quantityInput('pairs', 'Количество')}</td>
       <td>{numberInput('grossKg', 'Брутто')}</td>
       <td className="rv-net">
         <div className="rv-net-box">
@@ -93,8 +95,8 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
         </label>}
         {netHintValue.className !== 'net-ok' && <small className={`rv-hint ${netHintValue.className}`} title={netHintValue.text}>{netHintValue.text}</small>}
       </td>
-      <td className="rv-status"><span className={`rv-badge ${status.className}`} title={issues.join('\n') || undefined}>{status.label}</span></td>
       <td className="rv-include"><label className="rv-switch" title={item.excluded ? 'Строка не учитывается в расчёте' : 'Строка учитывается в расчёте'}><input type="checkbox" checked={!item.excluded} onChange={(event) => onChange(id, 'excluded', !event.target.checked)} aria-label={`Учитывать строку ${rowNumber} в расчёте`} /><span /></label></td>
+      <td className="rv-status"><span className={`rs-dot ${status.tone}`} title={status.title} aria-label={status.label}>{status.tone === 'ok' ? '✓' : status.tone === 'off' ? '–' : '!'}</span></td>
       <td className="rv-remove-col"><button type="button" className="rv-remove" onClick={() => onRemove(id)} title="Удалить строку" aria-label={`Удалить строку ${rowNumber}`}>×</button></td>
     </tr>
   )

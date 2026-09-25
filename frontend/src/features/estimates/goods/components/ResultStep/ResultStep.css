@@ -1,29 +1,40 @@
-/* Этап 3: таблица результата и инструмент изменения цены единицы. */
+/* Этап 3: панель инструментов цен и компактная таблица результата, помещающаяся по ширине. */
 
 .rs-step { gap: 10px; }
 
-.rs-price-tool { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-left: auto; }
-.rs-price-tool label { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; }
-.rs-price-tool input { box-sizing: border-box; width: 72px; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
+/* Панель: слева подбор цен под бюджет, справа правка цен. */
+.rs-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px; border-bottom: 1px solid #e6ece8; }
+.rs-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.rs-price-tool label { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
+.rs-price-tool input { box-sizing: border-box; width: 64px; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
 .rs-price-tool input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.rs-price-tool .secondary { height: 30px; padding: 0 12px; font-size: .78rem; }
-.rs-price-tool .button-link { font-size: .78rem; }
+.rs-price-tool input::placeholder { color: #b3bdb6; }
+/* Кнопки правки цен: контурные, тёмный текст; неактивные — серые, но читаемые. */
+.rs-price-tool .rs-tool-button { height: 30px; padding: 0 11px; border: 1px solid #cfd9d2; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .78rem; font-weight: 600; white-space: nowrap; opacity: 1; }
+.rs-price-tool .rs-tool-button:hover:not(:disabled) { border-color: #24704a; background: #f3f8f5; color: #1c5538; }
+.rs-price-tool .rs-tool-button:disabled { border-color: #e3e9e5; background: #f7f9f8; color: #9aa59e; opacity: 1; }
+.rs-selected { color: #1c5538; font-size: .78rem; white-space: nowrap; }
+.rv-card > .budget-status { padding: 6px 14px; border-bottom: 1px solid #e6ece8; background: #f7faf8; }
 
-.rs-table-wrap { max-height: max(320px, calc(100vh - 380px)); }
-.gloves-page .rs-table { width: max-content; min-width: 100% !important; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
-.gloves-page .rs-table th, .gloves-page .rs-table td { padding: 5px 10px !important; overflow: visible; border-bottom: 1px solid #edf1ee; background: #fff; color: #1f2d24; font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; vertical-align: middle; }
-.gloves-page .rs-table th { position: sticky; top: 0; z-index: 3; padding: 8px 10px !important; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; color: #5d6d63; font-size: .74rem !important; font-weight: 650; }
+/* Таблица: на всю ширину, название забирает свободное место. */
+.rs-table-wrap { max-height: max(300px, calc(100vh - 410px)); }
+.gloves-page .rs-table { width: 100%; min-width: 980px; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+.gloves-page .rs-table th, .gloves-page .rs-table td { padding: 6px 8px !important; overflow: visible; border-bottom: 1px solid #edf1ee; background: #fff; color: #1f2d24; font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; vertical-align: middle; }
+.gloves-page .rs-table th { position: sticky; top: 0; z-index: 3; padding: 8px 8px !important; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; color: #5d6d63; font-size: .72rem !important; font-weight: 650; }
+.gloves-page .rs-table th small { color: #9aa59e; font-weight: 500; }
 .gloves-page .rs-table td small { color: #8a968f; font-size: .72rem; }
-.gloves-page .rs-table .rs-text { text-align: left; }
-.gloves-page .rs-table code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .78rem; font-weight: 700; }
-.gloves-page .rs-table .rs-check { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; text-align: center; }
-.gloves-page .rs-table .rs-num { position: sticky; left: 36px; z-index: 2; width: 32px; min-width: 32px; color: #8a968f; text-align: center; }
-.gloves-page .rs-table .rs-name { position: sticky; left: 68px; z-index: 2; min-width: 200px; max-width: 280px; overflow: hidden; font-weight: 500; text-align: left; text-overflow: ellipsis; box-shadow: inset -1px 0 0 #e6ece8; }
+.gloves-page .rs-table .rs-sub { display: block; margin-top: 1px; color: #9aa59e; font-size: .68rem; font-weight: 500; line-height: 1.2; }
+.gloves-page .rs-table .rs-check { position: sticky; left: 0; z-index: 2; width: 32px; min-width: 32px; text-align: center; }
+.gloves-page .rs-table .rs-num { position: sticky; left: 32px; z-index: 2; width: 28px; min-width: 28px; color: #8a968f; text-align: center; }
+.gloves-page .rs-table .rs-name { position: sticky; left: 60px; z-index: 2; width: 100%; min-width: 220px; max-width: 0; text-align: left; box-shadow: inset -1px 0 0 #e6ece8; }
+.gloves-page .rs-table .rs-name-text { display: block; overflow: hidden; font-weight: 550; text-overflow: ellipsis; }
+.gloves-page .rs-table .rs-name code { display: block; margin-top: 1px; color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .7rem; font-weight: 700; }
 .gloves-page .rs-table th.rs-check, .gloves-page .rs-table th.rs-num, .gloves-page .rs-table th.rs-name { z-index: 4; }
 .gloves-page .rs-table input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #24704a; cursor: pointer; }
-.gloves-page .rs-table .rs-price { box-sizing: border-box; width: 84px; height: 28px; margin: 0; padding: 3px 7px; border: 1px solid #e3e9e5; border-radius: 6px; background: #fff; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
+.gloves-page .rs-table .rs-price { display: inline-block; vertical-align: middle; box-sizing: border-box; width: 80px; height: 28px; margin: 0; padding: 3px 7px; border: 1px solid #e3e9e5; border-radius: 6px; background: #fff; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
 .gloves-page .rs-table tr:hover .rs-price { border-color: #cfd9d2; }
 .gloves-page .rs-table .rs-price:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.gloves-page .rs-table .rs-status { width: 28px; text-align: center; }
 .gloves-page .rs-table tbody tr:hover td { background: #f7faf8; }
 .gloves-page .rs-table tbody tr.rv-selected td { background: #eef7f1; }
 .gloves-page .rs-table tbody tr.rv-excluded td { color: #b3bdb6; }
@@ -31,6 +42,5 @@
 .gloves-page .rs-table tfoot td.rs-check, .gloves-page .rs-table tfoot td.rs-num, .gloves-page .rs-table tfoot td.rs-name { z-index: 4; }
 
 @media (max-width: 900px) {
-  .rs-price-tool { margin-left: 0; }
+  .rs-toolbar { align-items: flex-start; }
 }
-

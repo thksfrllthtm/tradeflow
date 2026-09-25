@@ -4,8 +4,11 @@ import { ItpCalculator } from './ItpCalculator'
 import { displayNumber, hasAntiDumping, parseCalculatorNumber } from './resultValues'
 import './ResultSummary.css'
 
-// Карточка итогов: растаможка как формула из слагаемых, справочные суммы и калькулятор ИТП.
-export function ResultSummary({ result }: { result: GlovesCalculationResult }) {
+// Карточка итогов: растаможка как формула из слагаемых, справочные суммы, кнопки и сверка по ИТП.
+type SummaryProps = { result: GlovesCalculationResult; loading: boolean; saveDraft: () => void; exportExcel: () => void }
+
+// Кнопки сохранения и выгрузки — в карточке итогов, чтобы всегда были на виду.
+export function ResultSummary({ result, loading, saveDraft, exportExcel }: SummaryProps) {
   const customsPaymentsUsd = (() => {
     const kzt = parseCalculatorNumber(result.totals.customsPaymentsKzt) ?? NaN
     const rate = parseCalculatorNumber(result.usdKzt) ?? NaN
@@ -42,7 +45,12 @@ export function ResultSummary({ result }: { result: GlovesCalculationResult }) {
         <span className="rs-title">Справочно</span>
         <div><dt title="База для расчёта пошлины и НДС">Таможенная стоимость</dt><dd>{displayNumber(result.totals.customsValueKzt)} <small>₸</small></dd></div>
         <div><dt title="Не входит в растаможку">Доставка</dt><dd>{displayNumber(result.totals.totalDeliveryUsd)} <small>USD</small></dd></div>
+        <p className="rs-ref-note">Стоимость товара и доставка — отдельные расходы, в растаможку не входят</p>
       </dl>
+      <div className="rs-block rs-actions">
+        <button type="button" className="btn-calculate" onClick={exportExcel} disabled={loading}>{loading ? 'Подождите…' : 'Экспорт Excel'}</button>
+        <button type="button" className="btn-save-draft" onClick={saveDraft} disabled={loading}>Сохранить результат</button>
+      </div>
       <ItpCalculator result={result} />
     </section>
   )

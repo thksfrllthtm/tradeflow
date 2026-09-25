@@ -10,13 +10,13 @@ import (
 
 func (r *Repository) ListGlovesEstimates(ctx context.Context, userID int64) ([]GlovesEstimate, error) {
 	var estimates []GlovesEstimate
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("updated_at DESC").Find(&estimates).Error
+	err := ownedBy(r.db.WithContext(ctx), userID).Order("updated_at DESC").Find(&estimates).Error
 	return estimates, err
 }
 
 func (r *Repository) GlovesEstimateByIDForUser(ctx context.Context, id, userID int64) (GlovesEstimate, error) {
 	var estimate GlovesEstimate
-	err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&estimate).Error
+	err := ownedBy(r.db.WithContext(ctx).Where("id = ?", id), userID).First(&estimate).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return GlovesEstimate{}, ErrNotFound
 	}
@@ -31,8 +31,8 @@ func (r *Repository) CreateGlovesEstimate(ctx context.Context, estimate GlovesEs
 }
 
 func (r *Repository) UpdateGlovesEstimate(ctx context.Context, estimate GlovesEstimate) (GlovesEstimate, error) {
-	result := r.db.WithContext(ctx).Model(&GlovesEstimate{}).
-		Where("id = ? AND user_id = ?", estimate.ID, estimate.UserID).
+	result := ownedBy(r.db.WithContext(ctx).Model(&GlovesEstimate{}), estimate.UserID).
+		Where("id = ?", estimate.ID).
 		Updates(map[string]any{
 			"name":            estimate.Name,
 			"client":          estimate.Client,
@@ -49,8 +49,8 @@ func (r *Repository) UpdateGlovesEstimate(ctx context.Context, estimate GlovesEs
 }
 
 func (r *Repository) SaveGlovesEstimateDraft(ctx context.Context, id, userID int64, inputSnapshot, resultSnapshot JSON, assessmentDate time.Time, updatedAt time.Time) (GlovesEstimate, error) {
-	result := r.db.WithContext(ctx).Model(&GlovesEstimate{}).
-		Where("id = ? AND user_id = ?", id, userID).
+	result := ownedBy(r.db.WithContext(ctx).Model(&GlovesEstimate{}), userID).
+		Where("id = ?", id).
 		Updates(map[string]any{
 			"assessment_date": assessmentDate,
 			"input_snapshot":  inputSnapshot,
@@ -67,7 +67,7 @@ func (r *Repository) SaveGlovesEstimateDraft(ctx context.Context, id, userID int
 }
 
 func (r *Repository) DeleteGlovesEstimate(ctx context.Context, id, userID int64) error {
-	result := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).Delete(&GlovesEstimate{})
+	result := ownedBy(r.db.WithContext(ctx).Where("id = ?", id), userID).Delete(&GlovesEstimate{})
 	if result.Error != nil {
 		return result.Error
 	}

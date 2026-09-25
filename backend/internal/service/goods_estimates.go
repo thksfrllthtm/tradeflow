@@ -26,12 +26,17 @@ func (s *GoodsEstimateService) ListEstimates(ctx context.Context, userID int64) 
 	if err != nil {
 		return nil, err
 	}
+	owners, err := estimateOwnerNames(ctx, s.repository, userID)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]GlovesEstimateSummary, 0, len(rows))
 	for _, row := range rows {
 		record, decodeErr := decodeGoodsEstimate(row)
 		if decodeErr != nil {
 			return nil, decodeErr
 		}
+		record.OwnerName = owners[row.UserID]
 		result = append(result, record.GlovesEstimateSummary)
 	}
 	return result, nil
@@ -104,7 +109,7 @@ func (s *GoodsEstimateService) SaveEstimateDraft(ctx context.Context, id, userID
 	if s.repository == nil {
 		return GlovesEstimateRecord{}, repository.ErrNotFound
 	}
-	if userID < 1 {
+	if userID < 1 && userID != repository.AllUsers {
 		return GlovesEstimateRecord{}, &ValidationError{Field: "draft", Message: "Пользователь не определён"}
 	}
 	if err := validateGlovesDraftItems(draft.Input.Items); err != nil {

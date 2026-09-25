@@ -1,4 +1,5 @@
 import { createPhotoStore } from '../../shared/lib/photoStore'
+import { todayIso } from '../../shared/lib/dates'
 import { storageKey } from '../../shared/lib/localDraft'
 import { GlovesItemInput, GlovesParams } from '../../shared/types'
 
@@ -12,12 +13,17 @@ export const LOCAL_UPDATED_KEY = 'tradeflow.gloves-copy.localUpdatedAt'
 export const goodsPhotoStore = createPhotoStore('tradeflow-gloves-copy-photos')
 
 export function emptyParams(): GlovesParams {
-  return { assessmentDate: new Date().toISOString().slice(0, 10), origin: '', usdKzt: '', eurKzt: '', deliveryMode: 'wagons', wagons: '', wagonTariffUsd: '420', deliveryTotalUsd: '', packageWeightKg: '0.3', customsFeeKzt: '', mrp: '4325', feeMultiplier: '', cashUsd: '', directoryCoefficientOnly: true, genericItems: true }
+  return { assessmentDate: todayIso(), origin: '', usdKzt: '', eurKzt: '', deliveryMode: 'wagons', wagons: '', wagonTariffUsd: '420', deliveryTotalUsd: '', packageWeightKg: '0.3', customsFeeKzt: '', mrp: '4325', feeMultiplier: '6', cashUsd: '', directoryCoefficientOnly: true, genericItems: true }
 }
 
 export function normalizeParams(value: Partial<GlovesParams>): GlovesParams {
-  const result = { ...emptyParams(), ...value }
-  if (!String(result.mrp ?? '').trim()) result.mrp = '4325'
+  const defaults = emptyParams()
+  const result = { ...defaults, ...value }
+  // Новая смета приходит с сервера с пустыми полями: подставляем значения по умолчанию
+  // (сегодняшняя дата, доставка по вагонам, МРП и множитель сбора), чтобы не вводить их каждый раз.
+  for (const field of ['assessmentDate', 'deliveryMode', 'wagonTariffUsd', 'mrp', 'feeMultiplier'] as const) {
+    if (!String(result[field] ?? '').trim()) Object.assign(result, { [field]: defaults[field] })
+  }
   return result
 }
 
@@ -54,8 +60,9 @@ export function ensureItemIds(value: GlovesItemInput[]): GlovesItemInput[] {
     const normalized: GlovesItemInput = {
       ...item,
       // The editable price on the result screen is temporary. The input rows
-      // must keep the original source data so a new calculation starts from it.
-      pricePerPair: '',
+      // must keep the original source data so a new calculation starts from it:
+      // the price from the Excel file, if the row had one.
+      pricePerPair: item.sourcePricePerPair ?? '',
       coefficient: hasProduct ? (item.coefficient ?? '') : '',
       directorySnapshot,
       costInput: item.costInput ?? '',

@@ -1,6 +1,7 @@
 import { ChangeEvent } from 'react'
 import { GlovesCalculationResult, GlovesItemInput } from '../../../shared/types'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { autoQuantity, autoQuantityHint, QuantityField } from '../../../shared/lib/quantities'
 import '../../../shared/styles/calculatorCommon.css'
 import './ReviewRow.css'
 
@@ -32,7 +33,7 @@ function formatWeight(value: number): string {
 
 function autoNetFor(item: GlovesItemInput): number | null {
   const gross = parseDecimal(item.grossKg)
-  const places = parseDecimal(item.places)
+  const places = parseDecimal(item.places) ?? autoQuantity(item, 'places')
   const packageWeight = parseDecimal(item.packageWeightKg)
   if (gross === null || places === null || packageWeight === null) return null
   return gross - places * packageWeight
@@ -76,9 +77,14 @@ export function ReviewRow({ item, rowNumber, resultItem, selected, onSelected, o
   const verified = item.directorySnapshot?.verificationStatus === 'operator_verified'
   const netHintValue = netHint(item)
   const netPlaceholder = 'Авто'
-  const fieldInput = (field: keyof GlovesItemInput, placeholder = '') => (
-    <input className="review-input" inputMode="decimal" value={value(field)} onChange={(event) => onChange(id, field, event.target.value.replace(',', '.'))} placeholder={placeholder} />
+  const fieldInput = (field: keyof GlovesItemInput, placeholder = '', title?: string) => (
+    <input className="review-input" inputMode="decimal" value={value(field)} onChange={(event) => onChange(id, field, event.target.value.replace(',', '.'))} placeholder={placeholder} title={title} />
   )
+  // Пустое из трёх полей «места / пар в месте / пары» показывает вычисленное значение.
+  const quantityInput = (field: QuantityField) => {
+    const hint = autoQuantityHint(item, field)
+    return fieldInput(field, hint?.placeholder, hint?.title)
+  }
   const statusReady = resultItem?.status === 'calculated' || (Boolean(item.code) && verified)
   const statusLabel = resultItem?.errors?.length ? 'Проверить' : statusReady ? 'Готово' : item.code ? 'Проверить' : 'Нужен код'
   const productCell = (
@@ -101,9 +107,9 @@ export function ReviewRow({ item, rowNumber, resultItem, selected, onSelected, o
       <td><input type="checkbox" checked={selected} onChange={(event) => onSelected(event.target.checked)} aria-label="Выбрать строку для карточки" /></td>
       <td>{rowNumber}</td>
       {productCell}
-      <td className="review-edit-cell">{fieldInput('places')}</td>
-      <td className="review-edit-cell">{fieldInput('pairsPerPlace')}</td>
-      <td className="review-edit-cell">{fieldInput('pairs')}</td>
+      <td className="review-edit-cell">{quantityInput('places')}</td>
+      <td className="review-edit-cell">{quantityInput('pairsPerPlace')}</td>
+      <td className="review-edit-cell">{quantityInput('pairs')}</td>
       <td className="review-edit-cell">{fieldInput('grossKg')}</td>
       <td className="review-net-cell">
         <div className="review-net-editor">

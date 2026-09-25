@@ -1,4 +1,4 @@
-import { imageDataUrl, mappedValue, rowId } from '../../shared/lib/excelColumns'
+import { excelPrice, imageDataUrl, mappedValue, rowId } from '../../shared/lib/excelColumns'
 import { GlovesItemInput, GlovesParseRow } from '../../shared/types'
 import { GlovesMapping } from '../types'
 
@@ -11,9 +11,10 @@ const mappingPatterns: Record<keyof GlovesMapping, string[]> = {
   pairsPerPlace: ['Пар в месте', 'Пар/место', '双数/件', '双数/箱', 'pairs per place'],
   grossKg: ['Брутто', 'Вес брутто', '总毛重', '总重量', 'gross'],
   netKg: ['Нетто', 'Вес нетто', '净重', 'net'],
+  pricePerPair: ['Цена за пару', 'Цена за единицу', 'Цена', '单价', 'unit price', 'price'],
 }
 
-export function emptyMapping(): GlovesMapping { return { name: '', pairs: '', places: '', pairsPerPlace: '', grossKg: '', netKg: '' } }
+export function emptyMapping(): GlovesMapping { return { name: '', pairs: '', places: '', pairsPerPlace: '', grossKg: '', netKg: '', pricePerPair: '' } }
 
 export const mappingFieldOptions: Array<{ value: keyof GlovesMapping; label: string }> = [
   { value: 'name', label: 'Название поставщика' },
@@ -22,6 +23,7 @@ export const mappingFieldOptions: Array<{ value: keyof GlovesMapping; label: str
   { value: 'pairsPerPlace', label: 'Пар в одном месте' },
   { value: 'grossKg', label: 'Вес брутто, кг' },
   { value: 'netKg', label: 'Вес нетто, кг' },
+  { value: 'pricePerPair', label: 'Цена за пару, USD' },
 ]
 
 export function buildGloveItems(rows: GlovesParseRow[], images: { sourceRow: number; data: string; mimeType: string }[], mapping: GlovesMapping, packageWeightKg: string, offset: number): GlovesItemInput[] {
@@ -33,12 +35,13 @@ export function buildGloveItems(rows: GlovesParseRow[], images: { sourceRow: num
     const pairsPerPlace = mappedValue(row.values, mapping.pairsPerPlace, mappingPatterns.pairsPerPlace)
     const grossKg = mappedValue(row.values, mapping.grossKg, mappingPatterns.grossKg)
     const netKg = mappedValue(row.values, mapping.netKg, mappingPatterns.netKg)
+    const price = excelPrice(mappedValue(row.values, mapping.pricePerPair, mappingPatterns.pricePerPair))
     return {
       id: rowId(row.sourceRow, index + offset), sourceRow: row.sourceRow, name, supplierName: name, standardName: '', code: '',
       pairs, places, pairsPerPlace, grossKg, grossWeightUnit: grossKg ? 'kg' : '', netKg, netWeightUnit: netKg ? 'kg' : '', netSource: netKg ? 'excel' : '', packageWeightKg,
       coefficient: '', deliveryUsd: '', deliveryManual: false, deliveryIncluded: false, excluded: false, exclusionReason: '',
       deliveryAlreadyInCost: false,
-      pricePerPair: '', costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '',
+      pricePerPair: price, sourcePricePerPair: price, costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '',
       photoUrl: imageDataUrl(rowImages[0]), photoUrls: rowImages.map(imageDataUrl), directoryEntryId: undefined,
     }
   })

@@ -42,3 +42,10 @@ export function normalizeStoredMapping<M extends Mapping>(empty: M, value: Parti
   })
   return result
 }
+
+// Цена за единицу из ячейки Excel в USD: «$1,25», «1.25 USD», «1,25» → «1.25». Другое содержимое
+// (пусто, «¥12», текст) даёт пустую цену: такая строка считается как обычно, цену вводят на этапе результата.
+export function excelPrice(value: string) {
+  const compact = String(value ?? '').replace(/\s+/g, '').replace(/^\$|\$$/g, '').replace(/usd$/i, '').replace(',', '.')
+  return /^\d+(\.\d+)?$/.test(compact) ? compact : ''
+}

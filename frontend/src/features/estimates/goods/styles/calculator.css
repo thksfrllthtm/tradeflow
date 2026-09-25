@@ -18,11 +18,12 @@
 
 .rv-grid-wrap { overflow: auto; max-height: max(320px, calc(100vh - 350px)); }
 
-.rv-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .74rem; font-weight: 650; white-space: nowrap; }
-.rv-badge.ok { background: #e3f3e8; color: #1d6a3f; }
-.rv-badge.warn { background: #fdf3d8; color: #85640a; }
-.rv-badge.bad { background: #fde8e8; color: #a33232; }
-.rv-badge.off { background: #eef1ef; color: #7a877f; }
+/* Статус строки (этапы 2 и 3): ✓ / ! в кружке, причина — в подсказке. */
+.rs-dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .66rem; font-weight: 800; cursor: default; }
+.rs-dot.ok { background: #e3f3e8; color: #1d6a3f; }
+.rs-dot.warn { background: #fdf3d8; color: #85640a; cursor: help; }
+.rs-dot.bad { background: #fde8e8; color: #a33232; cursor: help; }
+.rs-dot.off { background: #eef1ef; color: #9aa59e; }
 
 .rv-actions { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid #e6ece8; background: #fbfcfb; }
 .rv-actions > span { margin-right: auto; }

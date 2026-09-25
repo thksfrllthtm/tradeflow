@@ -25,6 +25,8 @@ type Config struct {
 	GeminiModel           string
 	AnthropicAPIKey       string
 	AnthropicModel        string
+	DeepSeekAPIKey        string
+	DeepSeekModel         string
 	// RegistrationDisabled: запретить самостоятельную регистрацию (ALLOW_REGISTRATION=false).
 	// На публичном сервере сотрудников заводит bootstrap-admin.
 	RegistrationDisabled bool
@@ -70,6 +72,8 @@ func Load() (Config, error) {
 		GeminiModel:           stringEnv("GEMINI_MODEL", "gemini-3.8-flash"),
 		AnthropicAPIKey:       strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY")),
 		AnthropicModel:        stringEnv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+		DeepSeekAPIKey:        strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
+		DeepSeekModel:         stringEnv("DEEPSEEK_MODEL", "deepseek-v4-pro"),
 		RegistrationDisabled:  !allowRegistration,
 		StaticDir:             strings.TrimSpace(os.Getenv("STATIC_DIR")),
 	}, nil

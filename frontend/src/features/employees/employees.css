@@ -1,0 +1,44 @@
+/* Страница «Сотрудники»: таблица в стиле справочников, форма добавления и смены пароля. */
+
+.emp-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid #dfe7e1;
+  border-radius: 10px;
+  background: #fff;
+}
+.emp-card label { display: grid; gap: 5px; margin: 0; color: #56665c; font-size: .76rem; font-weight: 600; }
+.emp-card input, .emp-card select, .emp-password input, .emp-role {
+  height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #d3ddd6;
+  border-radius: 7px;
+  background: #fff;
+  font-size: .84rem;
+}
+.emp-card input:focus, .emp-card select:focus, .emp-password input:focus, .emp-role:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.emp-card-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
+.emp-card-actions button, .emp-actions button, .emp-password button { height: 34px; padding: 0 14px; border-radius: 7px; font-size: .8rem; font-weight: 650; white-space: nowrap; }
+
+.emp-table { min-width: 720px; }
+.emp-table tbody tr { cursor: default; }
+.emp-table .c-name strong { display: block; color: #1f2d24; font-weight: 650; }
+.emp-table .c-name small { display: block; color: #7a877f; }
+.emp-self { color: #7a877f; font-weight: 500; }
+.emp-role { min-width: 160px; }
+.emp-role:disabled { background: #f5f7f6; color: #6b7a71; }
+.emp-actions, .emp-password { display: flex; align-items: center; gap: 6px; }
+.emp-password input { width: 170px; }
+
+/* Второстепенные кнопки: белые с рамкой; «Заблокировать» подсвечивается красным при наведении. */
+.emp-secondary, .emp-secondary:hover:not(:disabled) { border: 1px solid #d3ddd6; background: #fff; color: #34443b; }
+.emp-secondary:hover:not(:disabled) { background: #f3f7f4; }
+.emp-secondary.danger:hover:not(:disabled) { border-color: #e2b4ad; background: #fdf1ef; color: #9a3024; }
+
+@media (max-width: 900px) {
+  .emp-card { grid-template-columns: 1fr; }
+}

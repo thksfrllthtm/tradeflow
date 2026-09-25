@@ -10,13 +10,13 @@ import (
 
 func (r *Repository) ListGoodsEstimates(ctx context.Context, userID int64) ([]GoodsEstimate, error) {
 	var estimates []GoodsEstimate
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("updated_at DESC").Find(&estimates).Error
+	err := ownedBy(r.db.WithContext(ctx), userID).Order("updated_at DESC").Find(&estimates).Error
 	return estimates, err
 }
 
 func (r *Repository) GoodsEstimateByIDForUser(ctx context.Context, id, userID int64) (GoodsEstimate, error) {
 	var estimate GoodsEstimate
-	err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&estimate).Error
+	err := ownedBy(r.db.WithContext(ctx).Where("id = ?", id), userID).First(&estimate).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return GoodsEstimate{}, ErrNotFound
 	}
@@ -31,8 +31,8 @@ func (r *Repository) CreateGoodsEstimate(ctx context.Context, estimate GoodsEsti
 }
 
 func (r *Repository) UpdateGoodsEstimate(ctx context.Context, estimate GoodsEstimate) (GoodsEstimate, error) {
-	result := r.db.WithContext(ctx).Model(&GoodsEstimate{}).
-		Where("id = ? AND user_id = ?", estimate.ID, estimate.UserID).
+	result := ownedBy(r.db.WithContext(ctx).Model(&GoodsEstimate{}), estimate.UserID).
+		Where("id = ?", estimate.ID).
 		Updates(map[string]any{
 			"name":            estimate.Name,
 			"client":          estimate.Client,
@@ -49,8 +49,8 @@ func (r *Repository) UpdateGoodsEstimate(ctx context.Context, estimate GoodsEsti
 }
 
 func (r *Repository) SaveGoodsEstimateDraft(ctx context.Context, id, userID int64, inputSnapshot, resultSnapshot JSON, assessmentDate time.Time, updatedAt time.Time) (GoodsEstimate, error) {
-	result := r.db.WithContext(ctx).Model(&GoodsEstimate{}).
-		Where("id = ? AND user_id = ?", id, userID).
+	result := ownedBy(r.db.WithContext(ctx).Model(&GoodsEstimate{}), userID).
+		Where("id = ?", id).
 		Updates(map[string]any{
 			"assessment_date": assessmentDate,
 			"input_snapshot":  inputSnapshot,
@@ -67,7 +67,7 @@ func (r *Repository) SaveGoodsEstimateDraft(ctx context.Context, id, userID int6
 }
 
 func (r *Repository) DeleteGoodsEstimate(ctx context.Context, id, userID int64) error {
-	result := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).Delete(&GoodsEstimate{})
+	result := ownedBy(r.db.WithContext(ctx).Where("id = ?", id), userID).Delete(&GoodsEstimate{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -75,4 +75,57 @@ func (r *Repository) DeleteGoodsEstimate(ctx context.Context, id, userID int64) 
 		return ErrNotFound
 	}
 	return nil
+}
+
+// AllUsers, passed instead of a user ID, lifts the owner filter on estimates:
+// an administrator sees every employee's estimates. Real user IDs are
+// positive, so a forgotten zero never widens access.
+const AllUsers int64 = -1
+
+func ownedBy(query *gorm.DB, userID int64) *gorm.DB {
+	if userID == AllUsers {
+		return query
+	}
+	return query.Where("user_id = ?", userID)
+}
+
+// Estimate kinds for the unit price history: each calculator keeps its own table.
+const (
+	EstimateKindGoods  = "goods"
+	EstimateKindGloves = "gloves"
+)
+
+// UnitPriceHistory returns, for each requested TN ВЭД code, the unit price in
+// USD from the most recently saved calculation result that contains it
+// (excluded rows and the current estimate are skipped). The JSON is read
+// inside PostgreSQL, so estimate snapshots with photos never reach the server.
+func (r *Repository) UnitPriceHistory(ctx context.Context, kind string, userID, excludeEstimateID int64, codes []string) (map[string]float64, error) {
+	table := "gloves_copy_estimates"
+	if kind == EstimateKindGloves {
+		table = "gloves_estimates"
+	}
+	query := `SELECT DISTINCT ON (item->>'code') item->>'code' AS code, (item->>'pairPriceUsd')::numeric AS price
+		FROM ` + table + ` e
+		CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(e.result_snapshot->'items') = 'array' THEN e.result_snapshot->'items' ELSE '[]'::jsonb END) AS item
+		WHERE item->>'code' IN ? AND e.id <> ?
+		  AND COALESCE(item->>'excluded', 'false') <> 'true'
+		  AND item->>'pairPriceUsd' ~ '^[0-9]+(\.[0-9]+)?$' AND (item->>'pairPriceUsd')::numeric > 0`
+	args := []any{codes, excludeEstimateID}
+	if userID != AllUsers {
+		query += ` AND e.user_id = ?`
+		args = append(args, userID)
+	}
+	query += ` ORDER BY item->>'code', e.updated_at DESC`
+	var rows []struct {
+		Code  string
+		Price float64
+	}
+	if err := r.db.WithContext(ctx).Raw(query, args...).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	prices := make(map[string]float64, len(rows))
+	for _, row := range rows {
+		prices[row.Code] = row.Price
+	}
+	return prices, nil
 }

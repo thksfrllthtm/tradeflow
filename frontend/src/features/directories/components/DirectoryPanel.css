@@ -20,6 +20,8 @@
 .drawer .drawer-close:hover:not(:disabled) { border-color: #b9cbbf; background: #f3f7f4; color: #1f2d24; }
 
 .drawer-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 22px 22px; }
+/* Обёртка полей для режима «только просмотр»: disabled у fieldset отключает все поля внутри. */
+.drawer-fields { display: contents; }
 
 /* Разделы формы */
 .drawer-section { display: grid; gap: 12px; padding: 16px 0; border-bottom: 1px solid #eef2ef; }

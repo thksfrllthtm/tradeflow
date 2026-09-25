@@ -1,5 +1,6 @@
 import { GlovesItemInput } from '../types'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { autoQuantity } from './quantities'
 
 // Вес нетто строки: авто-расчёт (брутто − места × вес упаковки) и подсказка к полю «Нетто».
 function parseDecimal(value: string): number | null {
@@ -15,7 +16,8 @@ export function formatWeight(value: number): string {
 
 export function autoNetFor(item: GlovesItemInput): number | null {
   const gross = parseDecimal(item.grossKg)
-  const places = parseDecimal(item.places)
+  // Пустые места сервер вычисляет из количества и штук в месте — нетто считаем так же.
+  const places = parseDecimal(item.places) ?? autoQuantity(item, 'places')
   const packageWeight = parseDecimal(item.packageWeightKg)
   if (gross === null || places === null || packageWeight === null) return null
   return gross - places * packageWeight

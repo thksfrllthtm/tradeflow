@@ -15,7 +15,11 @@ type PriceState = {
 export function resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate }: PriceState) {
   return {
     recalculateResultPrice(index: number, value: string) {
-      const nextItems = items.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item)
+      // Остальные строки сохраняют цены текущего результата (после распределения бюджета или
+      // массового вычета), иначе правка одной цены сбросила бы их к исходным.
+      const nextItems = items.map((item, itemIndex) => itemIndex === index
+        ? { ...item, pricePerPair: value }
+        : { ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair })
       setResult((current) => current ? { ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item) } : current)
       void calculate(nextItems, false, false)
     },
@@ -36,6 +40,12 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
         return { ...item, pricePerPair: nextPrice.toFixed(4).replace(/\.?0+$/, '') }
       })
       setPreviousBulkResult(result)
+      void calculate(nextItems, false, false)
+    },
+
+    // Цены после распределения бюджета: как массовый вычет — прежний результат остаётся для отката.
+    applyDistributedPrices(nextItems: GlovesItemInput[]) {
+      if (result) setPreviousBulkResult(result)
       void calculate(nextItems, false, false)
     },
 

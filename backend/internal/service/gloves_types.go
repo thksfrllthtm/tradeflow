@@ -37,27 +37,31 @@ type GlovesSourceSnapshot struct {
 }
 
 type GlovesItemInput struct {
-	ID                    string         `json:"id,omitempty"`
-	SourceRow             int            `json:"sourceRow,omitempty"`
-	DirectoryEntryID      *int64         `json:"directoryEntryId,omitempty"`
-	ProductDirectoryID    *int64         `json:"productDirectoryId,omitempty"`
-	Name                  string         `json:"name"`
-	SupplierName          string         `json:"supplierName"`
-	StandardName          string         `json:"standardName"`
-	Code                  string         `json:"code"`
-	PhotoURL              string         `json:"photoUrl"`
-	PhotoURLs             []string       `json:"photoUrls,omitempty"`
-	Pairs                 string         `json:"pairs"`
-	Places                string         `json:"places"`
-	PairsPerPlace         string         `json:"pairsPerPlace"`
-	GrossKg               string         `json:"grossKg"`
-	GrossWeightUnit       string         `json:"grossWeightUnit,omitempty"`
-	NetKg                 string         `json:"netKg"`
-	NetWeightUnit         string         `json:"netWeightUnit,omitempty"`
-	NetSource             string         `json:"netSource"`
-	PackageWeightKg       string         `json:"packageWeightKg"`
-	Coefficient           string         `json:"coefficient"`
-	PricePerPair          string         `json:"pricePerPair"`
+	ID                 string   `json:"id,omitempty"`
+	SourceRow          int      `json:"sourceRow,omitempty"`
+	DirectoryEntryID   *int64   `json:"directoryEntryId,omitempty"`
+	ProductDirectoryID *int64   `json:"productDirectoryId,omitempty"`
+	Name               string   `json:"name"`
+	SupplierName       string   `json:"supplierName"`
+	StandardName       string   `json:"standardName"`
+	Code               string   `json:"code"`
+	PhotoURL           string   `json:"photoUrl"`
+	PhotoURLs          []string `json:"photoUrls,omitempty"`
+	Pairs              string   `json:"pairs"`
+	Places             string   `json:"places"`
+	PairsPerPlace      string   `json:"pairsPerPlace"`
+	GrossKg            string   `json:"grossKg"`
+	GrossWeightUnit    string   `json:"grossWeightUnit,omitempty"`
+	NetKg              string   `json:"netKg"`
+	NetWeightUnit      string   `json:"netWeightUnit,omitempty"`
+	NetSource          string   `json:"netSource"`
+	PackageWeightKg    string   `json:"packageWeightKg"`
+	Coefficient        string   `json:"coefficient"`
+	PricePerPair       string   `json:"pricePerPair"`
+	// SourcePricePerPair is the price from the imported Excel file. It is only
+	// kept in drafts so the browser can restore PricePerPair from it; the
+	// calculation itself uses PricePerPair.
+	SourcePricePerPair    string         `json:"sourcePricePerPair,omitempty"`
 	CostInput             string         `json:"costInput"`
 	CostCurrency          string         `json:"costCurrency"`
 	ExtraExpenses         string         `json:"extraExpenses"`
@@ -108,6 +112,8 @@ type GlovesEstimateSummary struct {
 	Status         string `json:"status"`
 	CreatedAt      string `json:"createdAt"`
 	UpdatedAt      string `json:"updatedAt"`
+	// OwnerName is filled only in the administrator's list of all estimates.
+	OwnerName string `json:"ownerName,omitempty"`
 }
 
 type GlovesEstimateRecord struct {

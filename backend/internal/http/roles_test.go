@@ -1,0 +1,66 @@
+package httpapi
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
+	"github.com/gin-gonic/gin"
+)
+
+// routerAs runs requireAdmin for a signed-in user with the given role.
+func routerAs(role string) *gin.Engine {
+	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
+	router := gin.New()
+	signedIn := func(c *gin.Context) { c.Set(userContextKey, repository.User{ID: 7, Role: role}) }
+	router.POST("/admin-only", signedIn, server.requireAdmin, func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	router.GET("/scope", signedIn, func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"scope": estimateScope(c)}) })
+	return router
+}
+
+func TestRequireAdminAllowsOnlyAdministrators(t *testing.T) {
+	for role, want := range map[string]int{
+		repository.RoleAdmin:      http.StatusNoContent,
+		repository.RoleInvoicer:   http.StatusForbidden,
+		repository.RoleTranslator: http.StatusForbidden,
+		"":                        http.StatusForbidden,
+	} {
+		response := httptest.NewRecorder()
+		routerAs(role).ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/admin-only", nil))
+		if response.Code != want {
+			t.Fatalf("role %q: expected %d, got %d", role, want, response.Code)
+		}
+	}
+}
+
+func TestEstimateScopeLetsOnlyAdministratorsSeeEveryone(t *testing.T) {
+	for role, want := range map[string]string{
+		repository.RoleAdmin:    `{"scope":-1}`,
+		repository.RoleInvoicer: `{"scope":7}`,
+	} {
+		response := httptest.NewRecorder()
+		routerAs(role).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/scope", nil))
+		if response.Body.String() != want {
+			t.Fatalf("role %q: expected %s, got %s", role, want, response.Body.String())
+		}
+	}
+}
+
+func TestEmployeesAndDirectoryChangesRequireSession(t *testing.T) {
+	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
+	for _, route := range []struct{ method, path string }{
+		{http.MethodGet, "/api/employees"},
+		{http.MethodPost, "/api/employees"},
+		{http.MethodPost, "/api/product-directory"},
+		{http.MethodPatch, "/api/tnved-directory/1"},
+	} {
+		response := httptest.NewRecorder()
+		server.Router().ServeHTTP(response, httptest.NewRequest(route.method, route.path, nil))
+		if response.Code != http.StatusUnauthorized {
+			t.Fatalf("%s %s: expected 401, got %d", route.method, route.path, response.Code)
+		}
+	}
+}

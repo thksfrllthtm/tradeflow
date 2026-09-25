@@ -24,6 +24,8 @@ type Server struct {
 	ai               *service.AIService
 	gloves           *service.GlovesService
 	goodsEstimates   *service.GoodsEstimateService
+	employees        *service.EmployeeService
+	pricing          *service.PricingService
 	authMu           sync.Mutex
 	authRates        map[string]authRate
 }
@@ -45,6 +47,8 @@ func NewServer(database *repository.Repository, cfg config.Config, files ...repo
 		ai:               service.NewAIServiceWithProvider(database, cfg.AIProvider, cfg.GeminiAPIKey, cfg.GeminiModel, cfg.AnthropicAPIKey, cfg.AnthropicModel),
 		gloves:           service.NewGlovesService(database),
 		goodsEstimates:   service.NewGoodsEstimateService(database),
+		employees:        service.NewEmployeeService(database),
+		pricing:          service.NewPricingService(database, service.NewDeepSeekClient(cfg.DeepSeekAPIKey, cfg.DeepSeekModel)),
 	}
 }
 
@@ -62,10 +66,18 @@ func (s *Server) Router() *gin.Engine {
 	auth.POST("/logout", s.logout)
 	auth.GET("/me", s.requireUser, s.me)
 
+	employees := router.Group("/api/employees")
+	employees.Use(s.requireUser, s.requireAdmin)
+	employees.GET("", s.listEmployees)
+	employees.POST("", s.createEmployee)
+	employees.PATCH("/:id", s.updateEmployee)
+
 	estimates := router.Group("/api/estimates")
 	estimates.Use(s.requireUser)
 	estimates.GET("", s.listEstimates)
 	estimates.POST("", s.createEstimate)
+	estimates.POST("/price-weights", s.suggestPriceWeights)
+	estimates.POST("/price-history", s.priceHistory)
 	estimates.GET("/:id", s.getEstimate)
 	estimates.PATCH("/:id", s.updateEstimate)
 	estimates.DELETE("/:id", s.deleteEstimate)
@@ -107,26 +119,26 @@ func (s *Server) Router() *gin.Engine {
 	catalog.GET("/search", s.searchCatalog)
 	catalog.GET("/codes/:code", s.catalogDetails)
 	catalog.POST("/rules/applicable", s.applicableRules)
-	catalog.POST("/import/preview", s.catalogImportPreview)
-	catalog.POST("/import/apply", s.catalogImportApply)
+	catalog.POST("/import/preview", s.requireAdmin, s.catalogImportPreview)
+	catalog.POST("/import/apply", s.requireAdmin, s.catalogImportApply)
 
 	tnvedDirectory := router.Group("/api/tnved-directory")
 	tnvedDirectory.Use(s.requireUser)
 	tnvedDirectory.GET("", s.listTNVEDDirectory)
-	tnvedDirectory.POST("", s.createTNVEDDirectory)
-	tnvedDirectory.PATCH("/:id", s.updateTNVEDDirectory)
-	tnvedDirectory.POST("/:id/archive", s.archiveTNVEDDirectory)
-	tnvedDirectory.POST("/:id/restore", s.restoreTNVEDDirectory)
-	tnvedDirectory.POST("/:id/copy", s.copyTNVEDDirectory)
+	tnvedDirectory.POST("", s.requireAdmin, s.createTNVEDDirectory)
+	tnvedDirectory.PATCH("/:id", s.requireAdmin, s.updateTNVEDDirectory)
+	tnvedDirectory.POST("/:id/archive", s.requireAdmin, s.archiveTNVEDDirectory)
+	tnvedDirectory.POST("/:id/restore", s.requireAdmin, s.restoreTNVEDDirectory)
+	tnvedDirectory.POST("/:id/copy", s.requireAdmin, s.copyTNVEDDirectory)
 
 	productsDirectory := router.Group("/api/product-directory")
 	productsDirectory.Use(s.requireUser)
 	productsDirectory.GET("", s.listProductDirectory)
-	productsDirectory.POST("", s.createProductDirectory)
-	productsDirectory.PATCH("/:id", s.updateProductDirectory)
-	productsDirectory.POST("/:id/archive", s.archiveProductDirectory)
-	productsDirectory.POST("/:id/restore", s.restoreProductDirectory)
-	productsDirectory.POST("/:id/copy", s.copyProductDirectory)
+	productsDirectory.POST("", s.requireAdmin, s.createProductDirectory)
+	productsDirectory.PATCH("/:id", s.requireAdmin, s.updateProductDirectory)
+	productsDirectory.POST("/:id/archive", s.requireAdmin, s.archiveProductDirectory)
+	productsDirectory.POST("/:id/restore", s.requireAdmin, s.restoreProductDirectory)
+	productsDirectory.POST("/:id/copy", s.requireAdmin, s.copyProductDirectory)
 
 	gloves := router.Group("/api/gloves")
 	gloves.Use(s.requireUser)

@@ -9,7 +9,7 @@ import { emptyInput, entryToInput } from './tnvedEntryForm'
 import { TNVEDDirectoryEntry, TNVEDDirectoryInput, TNVEDRate } from './types'
 
 // Создание и редактирование записи ТН ВЭД: код и описание, ставки, синонимы.
-export function TNVEDEntryPanel({ item, onClose, onSaved }: { item?: TNVEDDirectoryEntry; onClose: () => void; onSaved: () => void }) {
+export function TNVEDEntryPanel({ item, onClose, onSaved, readOnly = false }: { readOnly?: boolean; item?: TNVEDDirectoryEntry; onClose: () => void; onSaved: () => void }) {
   const initial = useMemo(() => item ? entryToInput(item) : emptyInput(), [item])
   const [form, setForm] = useState<TNVEDDirectoryInput>(initial)
   const [saving, setSaving] = useState(false)
@@ -22,7 +22,7 @@ export function TNVEDEntryPanel({ item, onClose, onSaved }: { item?: TNVEDDirect
     try { if (item) await tnvedDirectoryApi.update(item.id, form); else await tnvedDirectoryApi.create(form); onSaved() } catch (reason) { setError(errorMessage(reason)) } finally { setSaving(false) }
   }
 
-  return <DirectoryPanel title={item ? `Код ${item.code}` : 'Новый код ТН ВЭД'} subtitle={item ? 'Изменения попадут в новые подборы кода; уже сохранённые сметы не меняются' : 'Код, описание и ставки для предварительного расчёта'} dirty={dirty} saving={saving} error={error} onClose={onClose} onSubmit={() => void save()}>
+  return <DirectoryPanel title={item ? `Код ${item.code}` : 'Новый код ТН ВЭД'} subtitle={item ? 'Изменения попадут в новые подборы кода; уже сохранённые сметы не меняются' : 'Код, описание и ставки для предварительного расчёта'} dirty={dirty} saving={saving} error={error} readOnly={readOnly} onClose={onClose} onSubmit={() => void save()}>
     <section className="drawer-section">
       <h3>Код и описание</h3>
       <div className="drawer-row">

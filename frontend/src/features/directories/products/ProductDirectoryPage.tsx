@@ -3,7 +3,7 @@ import { tnvedDirectoryApi } from '../tnved/tnvedDirectoryApi'
 import { TNVEDDirectoryEntry } from '../tnved/types'
 import { rateLabel } from '../tnved/tnvedLabels'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { User } from '@/shared/types/user'
+import { isAdmin, User } from '@/shared/types/user'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { verificationStatusLabel } from '../directoryLabels'
@@ -16,6 +16,8 @@ import '../directory.css'
 import '../verificationStatus.css'
 
 export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout: () => void }) {
+  // Справочники меняет только администратор; остальные сотрудники их просматривают.
+  const canEdit = isAdmin(user)
   const [items, setItems] = useState<ProductDirectoryEntry[]>([])
   const [tnved, setTnved] = useState<TNVEDDirectoryEntry[]>([])
   const [query, setQuery] = useState('')
@@ -57,7 +59,7 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
           <h1>Справочник товаров{!loading && <span className="dir-count">{items.length}</span>}</h1>
           <p>Карточки товаров с кодом ТН ВЭД и ИТС. При выборе карточки в смете всё подставляется автоматически.</p>
         </div>
-        <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить товар</button>
+        {canEdit && <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить товар</button>}
       </div>
       <DirectoryToolbar query={query} placeholder="Поиск по названию, коду или синониму" status={status} showArchived={showArchived} onQuery={setQuery} onStatus={setStatus} onShowArchived={setShowArchived} />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
@@ -65,7 +67,7 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
         <table className="dir-table product-table">
           <thead><tr><th>Товар</th><th className="c-tnved">Код ТН ВЭД и ставки</th><th className="c-num">ИТС, USD/кг</th><th className="c-unit">Ед.</th><th className="c-status">Статус</th><th className="c-actions" aria-label="Действия" /></tr></thead>
           <tbody>
-            {items.length === 0 ? <tr><td colSpan={6} className="dir-empty">{loading ? 'Загрузка…' : filtered ? 'Ничего не найдено. Измените поиск или фильтр.' : 'Карточек товаров пока нет. Добавьте первую.'}</td></tr>
+            {items.length === 0 ? <tr><td colSpan={6} className="dir-empty">{loading ? 'Загрузка…' : filtered ? 'Ничего не найдено. Измените поиск или фильтр.' : canEdit ? 'Карточек товаров пока нет. Добавьте первую.' : 'Карточек товаров пока нет.'}</td></tr>
               : items.map((item) => <tr key={item.id} className={item.archivedAt ? 'archived' : undefined} onClick={() => setPanel({ item })}>
                 <td className="c-name">
                   <button type="button" className="dir-name" onClick={(event) => { event.stopPropagation(); setPanel({ item }) }} title={item.name}>{item.name}</button>
@@ -78,13 +80,13 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
                 <td className="c-num">{item.companyCoefficient || <span className="dir-none">—</span>}</td>
                 <td className="c-unit">{item.unit}</td>
                 <td className="c-status"><span className={`directory-status ${item.archivedAt ? 'archived' : item.verificationStatus}`}>{item.archivedAt ? 'В архиве' : verificationStatusLabel(item.verificationStatus)}</span></td>
-                <td className="c-actions"><RowActions name={item.name} archived={Boolean(item.archivedAt)} onEdit={() => setPanel({ item })} onCopy={() => void copy(item)} onArchive={() => void archive(item)} onRestore={() => void restore(item)} /></td>
+                <td className="c-actions">{canEdit && <RowActions name={item.name} archived={Boolean(item.archivedAt)} onEdit={() => setPanel({ item })} onCopy={() => void copy(item)} onArchive={() => void archive(item)} onRestore={() => void restore(item)} />}</td>
               </tr>)}
           </tbody>
         </table>
       </div>
       <p className="dir-foot">Карточка не меняет исходный файл. В смету записывается снимок выбранного кода ТН ВЭД и его ставок.</p>
     </section>
-    {panel && <ProductEntryPanel item={panel.item} tnved={tnved.filter((entry) => !entry.archivedAt)} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefresh((value) => value + 1) }} />}
+    {panel && <ProductEntryPanel item={panel.item} readOnly={!canEdit} tnved={tnved.filter((entry) => !entry.archivedAt)} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefresh((value) => value + 1) }} />}
   </main>
 }

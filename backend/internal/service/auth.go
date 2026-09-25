@@ -27,6 +27,7 @@ type AuthService struct {
 type authRepository interface {
 	UserByEmail(context.Context, string) (repository.User, error)
 	CreateUser(context.Context, string, string, ...string) (repository.User, error)
+	CreateUserWithRole(context.Context, string, string, string, string) (repository.User, error)
 	CreateSession(context.Context, string, int64, time.Time) error
 	DeleteSession(context.Context, string) error
 	UserBySessionToken(context.Context, string) (repository.User, error)
@@ -42,7 +43,8 @@ func newAuthService(repository authRepository, sessionTTL time.Duration) *AuthSe
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (repository.User, string, time.Time, error) {
 	user, err := s.repository.UserByEmail(ctx, email)
-	if err != nil || !passwordMatches(user.PasswordHash, password) {
+	// A blocked employee gets the same answer as a wrong password.
+	if err != nil || user.DisabledAt != nil || !passwordMatches(user.PasswordHash, password) {
 		return repository.User{}, "", time.Time{}, ErrInvalidCredentials
 	}
 
@@ -58,11 +60,8 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 	if !validEmail(email) {
 		return repository.User{}, "", time.Time{}, &ValidationError{Field: "email", Message: "Введите корректный email"}
 	}
-	if len([]rune(password)) < 8 {
-		return repository.User{}, "", time.Time{}, &ValidationError{Field: "password", Message: "Пароль должен содержать не менее 8 символов"}
-	}
-	if len([]byte(password)) > 1024 {
-		return repository.User{}, "", time.Time{}, &ValidationError{Field: "password", Message: "Пароль слишком длинный (максимум 1024 байта)"}
+	if err := validateNewPassword(password); err != nil {
+		return repository.User{}, "", time.Time{}, err
 	}
 	if _, err := s.repository.UserByEmail(ctx, email); err == nil {
 		return repository.User{}, "", time.Time{}, ErrEmailAlreadyExists
@@ -77,7 +76,7 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 	if err != nil {
 		// The database unique constraint is authoritative when two requests
 		// race after the pre-check.
-		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
+		if isUniqueViolation(err) {
 			return repository.User{}, "", time.Time{}, ErrEmailAlreadyExists
 		}
 		return repository.User{}, "", time.Time{}, fmt.Errorf("create user: %w", err)
@@ -127,7 +126,8 @@ func (s *AuthService) BootstrapUser(ctx context.Context, email, password string)
 	if err != nil {
 		return repository.User{}, fmt.Errorf("hash password: %w", err)
 	}
-	return s.repository.CreateUser(ctx, email, string(hash), "")
+	// The bootstrap employee manages everyone else, so it is an administrator.
+	return s.repository.CreateUserWithRole(ctx, email, string(hash), "", repository.RoleAdmin)
 }
 
 func (s *AuthService) UserForToken(ctx context.Context, token string) (repository.User, error) {

@@ -40,7 +40,8 @@ func (s *GlovesService) Calculate(ctx context.Context, input GlovesCalculationIn
 	}
 
 	deliveryMode := strings.ToLower(strings.TrimSpace(input.DeliveryMode))
-	if deliveryMode != "" && deliveryMode != "wagons" && deliveryMode != "total" {
+	// "none" — смета без доставки; пустой режим (старые черновики) считается так же.
+	if deliveryMode != "" && deliveryMode != "none" && deliveryMode != "wagons" && deliveryMode != "total" {
 		return GlovesCalculationResult{}, &ValidationError{Field: "deliveryMode", Message: "Выберите режим доставки"}
 	}
 
@@ -408,6 +409,9 @@ func (s *GlovesService) resolveDirectorySnapshot(ctx context.Context, item Glove
 		if product.CompanyCoefficient != nil {
 			snapshot["companyCoefficient"] = decimalString(product.CompanyCoefficient)
 		}
+		// Marks a product card (not just a TN ВЭД code): only then the row takes
+		// the product name instead of the supplier name from Excel.
+		snapshot["productDirectoryId"] = product.ID
 		return snapshot, nil
 	}
 	if item.DirectoryEntryID == nil || *item.DirectoryEntryID < 1 {

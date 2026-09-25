@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { authApi } from '@/features/auth/authApi'
-import { User } from '@/shared/types/user'
+import { isAdmin, User } from '@/shared/types/user'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { TNVEDDirectoryPage } from '@/features/directories/tnved/TNVEDDirectoryPage'
 import { ProductDirectoryPage } from '@/features/directories/products/ProductDirectoryPage'
 import { GlovesEstimatesPage } from '@/features/estimates/gloves/GlovesEstimatesPage'
 import { GoodsEstimatesPage } from '@/features/estimates/goods/GoodsEstimatesPage'
+import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
 export function App() {
@@ -18,7 +19,8 @@ export function App() {
   // Куда вернуться после входа, если страницу открыли без сессии.
   const returnTo = useRef<string | null>(null)
   const authPage = route?.page === 'login' || route?.page === 'register'
-  const knownRoute = route !== null
+  // Страница сотрудников есть только у администратора; остальных отправляем на главную.
+  const knownRoute = route !== null && !(route.page === 'employees' && user !== null && !isAdmin(user))
 
   useEffect(() => {
     const onSessionExpired = () => {
@@ -74,5 +76,6 @@ export function App() {
     case 'products': return <ProductDirectoryPage user={user} onLogout={() => void logout()} />
     case 'gloves': return <GlovesEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
+    case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null
   }
 }

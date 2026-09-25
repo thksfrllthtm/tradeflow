@@ -1,0 +1,37 @@
+/* Подбор цен под бюджет растаможки на этапе результата. */
+.budget-tool { display: grid; gap: 6px; padding: 10px 14px; border-bottom: 1px solid #e3eae5; background: #f7faf8; }
+.budget-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.budget-controls label { display: flex; align-items: center; gap: 8px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
+.budget-controls input { box-sizing: border-box; width: 96px; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-controls input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.budget-controls button { height: 30px; padding: 0 12px; border-radius: 6px; font-size: .78rem; font-weight: 650; white-space: nowrap; }
+.budget-controls button.budget-ai { border: 1px solid #c9d3e8; background: #fff; color: #2f4f8f; }
+.budget-controls button.budget-ai:hover:not(:disabled) { border-color: #2f4f8f; background: #f3f6fc; }
+.budget-status { display: grid; gap: 4px; }
+.budget-summary, .budget-notice, .budget-warning { margin: 0; font-size: .76rem; }
+.budget-summary { color: #34443b; }
+.budget-summary b { color: #1c5538; }
+.budget-summary span { color: #8a968f; }
+.budget-notice { color: #6b5a14; }
+.budget-warning { padding: 5px 10px; border: 1px solid #f0d58a; border-radius: 7px; background: #fff8e1; color: #6b4e00; }
+.budget-controls input::placeholder { color: #b3bdb6; }
+/* Поле цены со значком «!» в правом верхнем углу (цена от ИИ; пояснение — при наведении). */
+.price-field { position: relative; display: inline-block; vertical-align: middle; }
+.price-field:has(.budget-ai-mark) input { padding-right: 16px !important; }
+.budget-ai-mark { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 11px; height: 11px; border-radius: 50%; background: #24704a; color: #fff; font-size: 8px; font-weight: 800; line-height: 1; cursor: help; }
+/* Пояснения ИИ по кодам ТН ВЭД — одна строка на код, без повторов по строкам таблицы. */
+.ai-explanations { border: 1px solid #dde5f3; border-radius: 8px; background: #f7f9fd; }
+.ai-explanations > summary { padding: 6px 10px; color: #2f4f8f; font-size: .76rem; font-weight: 700; cursor: pointer; }
+.ai-explanations > summary span { color: #7d8aa6; font-weight: 500; }
+.ai-explanations ul { display: grid; gap: 2px; max-height: 160px; margin: 0; padding: 0 10px 8px; overflow-y: auto; list-style: none; }
+.ai-explanations li { display: grid; grid-template-columns: 96px minmax(120px, 260px) 90px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 3px 0; border-top: 1px solid #e8edf7; font-size: .76rem; }
+.ai-explanations li:first-child { border-top: 0; }
+.ai-explanations code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .72rem; font-weight: 700; }
+.ai-explanations .ai-names { overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
+.ai-explanations b { color: #1f2d24; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ai-explanations .ai-reason { color: #2f4f8f; }
+.ai-explanations small { color: #9aa59e; white-space: nowrap; }
+@media (max-width: 900px) {
+  .ai-explanations li { grid-template-columns: 1fr auto; }
+  .ai-explanations .ai-names, .ai-explanations small { display: none; }
+}

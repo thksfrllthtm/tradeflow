@@ -21,6 +21,8 @@ import { DirectoryPickerEntry, DirectoryPickerModal } from '../components/Direct
 import { PhotoLightbox } from '../components/PhotoLightbox/PhotoLightbox'
 import { columnMappingActions } from '../../shared/lib/columnMappingActions'
 import { resultPriceActions } from '../../shared/lib/resultPriceActions'
+import { exportItems } from '../../shared/lib/exportItems'
+import { useBudgetDistribution } from '../../shared/hooks/useBudgetDistribution'
 import { rowActions } from '../../shared/lib/rowActions'
 import '../../shared/styles/calculatorPage.css'
 
@@ -113,7 +115,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
 
   const { setItem, addManualPhoto, addEmptyRow, removeRow, resetAutomaticNet } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
   const { setMappingForHeader, setRawRowIncluded } = columnMappingActions(setMapping, setRawRows)
-  const { recalculateResultPrice, decreaseResultPrices, restoreInitialResult, undoLastBulkPriceDecrease } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
+  const { recalculateResultPrice, decreaseResultPrices, restoreInitialResult, undoLastBulkPriceDecrease, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
+  const budget = useBudgetDistribution({ kind: 'goods', estimateId, unit: 'шт', result, items, preview: previewCalculation, apply: applyDistributedPrices })
 
   function setParam(field: keyof GlovesParams, value: string) {
     setParams((current) => ({ ...current, [field]: value }))
@@ -238,7 +241,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     const selectedProduct = entry.productDirectory
     const companyCoefficient = selectedProduct?.companyCoefficient || ''
     const snapshot = { entryId: linked.id, category: linked.category, name: displayName, nameZh: displayNameZh, code: linked.code, ...(selectedProduct ? { companyCoefficient } : {}), antiDumpingPercent: linked.antiDumpingPercent, duty: linked.duty, vat: linked.vat, verificationStatus: linked.verificationStatus, sourceKind: 'operator' }
-    setItems((current) => current.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, name: fullDisplayName, supplierName: fullDisplayName, standardName: fullDisplayName, code: linked.code, coefficient: selectedProduct ? companyCoefficient : '', directoryEntryId: linked.id, productDirectoryId: selectedProduct?.id, directorySnapshot: snapshot } : item))
+    // Название строки меняется только при выборе товара из справочника товаров. Код ТН ВЭД
+    // сам по себе название не меняет — остаётся название из Excel.
+    const names = (item: GlovesItemInput) => selectedProduct ? { name: fullDisplayName, supplierName: fullDisplayName } : { name: item.name, supplierName: item.supplierName }
+    setItems((current) => current.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, ...names(item), standardName: fullDisplayName, code: linked.code, coefficient: selectedProduct ? companyCoefficient : '', directoryEntryId: linked.id, productDirectoryId: selectedProduct?.id, directorySnapshot: snapshot } : item))
     setSelectedForDirectory([])
     setDirectoryOpen(false)
     setResult(null)
@@ -289,14 +295,21 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     }
   }
 
+  // Пробный расчёт для подбора цен под бюджет: без показа результата и без сохранения черновика.
+  function previewCalculation(nextItems: GlovesItemInput[]) {
+    const itemsForRequest = nextItems.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
+    return goodsEstimatesApi.calculate({ ...params, items: itemsForRequest, source: sourceSnapshot ?? undefined })
+  }
+
   function returnToReview() {
+    budget.reset()
     // Цена, изменённая на этапе результата, является временной. При возврате
-    // к проверке нужно начать новый расчёт с исходных данных строк.
+    // к проверке нужно начать новый расчёт с исходных данных строк (цена из Excel остаётся).
     calculationRequestRef.current += 1
     setLoading(false)
     setPreviousBulkResult(null)
     setResult(null)
-    setItems((current) => current.map((item) => ({ ...item, pricePerPair: '' })))
+    setItems((current) => current.map((item) => ({ ...item, pricePerPair: item.sourcePricePerPair ?? '' })))
     setStep(2)
   }
 
@@ -325,8 +338,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   async function exportExcel() {
     setLoading(true); setError('')
     try {
-      const itemsForRequest = items.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
-      const blob = await goodsEstimatesApi.exportXlsx({ ...params, items: itemsForRequest })
+      const blob = await goodsEstimatesApi.exportXlsx({ ...params, items: exportItems(items, result), source: sourceSnapshot ?? undefined })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url; link.download = `Расчёт_товаров_${new Date().toISOString().slice(0, 10)}.xlsx`; link.click(); URL.revokeObjectURL(url)
@@ -349,7 +361,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const pickerRows = items.filter((item) => selectedForDirectory.includes(item.id ?? ''))
   const pickerTitle = pickerRows.length === 1 ? `Выбор товара или кода для строки ${pickerRows[0].sourceRow || 'новой'}${pickerRows[0].supplierName ? ` · ${pickerRows[0].supplierName}` : ''}` : pickerRows.length > 1 ? `Выбор товара или кода для ${pickerRows.length} выбранных строк` : 'Выберите товар или код ТН ВЭД'
   const pickerPhotos = pickerRows.flatMap((row) => photosOf(row).map((photo) => ({ photo, row })))
-  const deliverySummary = params.deliveryMode === 'wagons' ? (params.wagons ? `${params.wagons} ваг. × ${params.wagonTariffUsd} USD` : 'по вагонам') : params.deliveryMode === 'total' ? (params.deliveryTotalUsd ? `всего ${params.deliveryTotalUsd} USD` : 'общая сумма') : 'не задана'
+  const deliverySummary = params.deliveryMode === 'wagons' ? (params.wagons ? `${params.wagons} ваг. × ${params.wagonTariffUsd} USD` : 'по вагонам') : params.deliveryMode === 'total' ? (params.deliveryTotalUsd ? `всего ${params.deliveryTotalUsd} USD` : 'общая сумма') : params.deliveryMode === 'none' ? 'без доставки' : 'не задана'
   const feeSummary = params.customsFeeKzt ? `${params.customsFeeKzt} ₸` : params.mrp && params.feeMultiplier ? `${params.mrp} × ${params.feeMultiplier}` : '—'
   const stepList: { value: 1 | 2 | 3; label: string; available: boolean }[] = [
     { value: 1, label: 'Файл и колонки', available: true },
@@ -422,12 +434,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
         setLightbox={openPhotoGallery}
         addManualPhoto={addManualPhoto}
         resetAutomaticNet={resetAutomaticNet}
+        addEmptyRow={addEmptyRow}
         calculate={calculate}
         saveDraft={saveDraft}
         clearAll={clearAll}
       />}
 
-      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={restoreInitialResult} onUndoBulkPriceDecrease={undoLastBulkPriceDecrease} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} />}
+      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoBulkPriceDecrease={() => { budget.reset(); undoLastBulkPriceDecrease() }} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <DirectoryPickerModal
         title={pickerTitle}

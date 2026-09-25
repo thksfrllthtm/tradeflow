@@ -45,13 +45,28 @@ func (j JSON) MarshalJSON() ([]byte, error) {
 }
 
 type User struct {
-	ID           int64     `gorm:"primaryKey"`
-	Name         string    `gorm:"size:120;not null" json:"name"`
-	Email        string    `gorm:"size:320;not null;unique"`
-	PasswordHash string    `gorm:"not null"`
-	CreatedAt    time.Time `gorm:"not null"`
-	UpdatedAt    time.Time `gorm:"not null"`
+	ID           int64      `gorm:"primaryKey"`
+	Name         string     `gorm:"size:120;not null" json:"name"`
+	Email        string     `gorm:"size:320;not null;unique"`
+	PasswordHash string     `gorm:"not null"`
+	Role         string     `gorm:"size:16;not null"`
+	DisabledAt   *time.Time `gorm:"column:disabled_at"`
+	CreatedAt    time.Time  `gorm:"not null"`
+	UpdatedAt    time.Time  `gorm:"not null"`
 }
+
+// Роли сотрудников (users.role).
+const (
+	RoleAdmin      = "admin"      // полный доступ, управление сотрудниками и справочниками
+	RoleInvoicer   = "invoicer"   // калькуляторы; справочники только для просмотра
+	RoleTranslator = "translator" // пока те же права, что у инвойсера
+)
+
+func ValidRole(role string) bool {
+	return role == RoleAdmin || role == RoleInvoicer || role == RoleTranslator
+}
+
+func (u User) IsAdmin() bool { return u.Role == RoleAdmin }
 
 func (User) TableName() string { return "users" }
 

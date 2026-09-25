@@ -25,7 +25,7 @@ func (s *Server) getGoodsEstimateUSDRate(c *gin.Context) {
 }
 
 func (s *Server) listGoodsEstimates(c *gin.Context) {
-	estimates, err := s.goodsEstimates.ListEstimates(c.Request.Context(), currentUser(c).ID)
+	estimates, err := s.goodsEstimates.ListEstimates(c.Request.Context(), estimateScope(c))
 	if err != nil {
 		internalError(c)
 		return
@@ -52,7 +52,7 @@ func (s *Server) getGoodsEstimate(c *gin.Context) {
 	if !ok {
 		return
 	}
-	estimate, err := s.goodsEstimates.GetEstimate(c.Request.Context(), id, currentUser(c).ID)
+	estimate, err := s.goodsEstimates.GetEstimate(c.Request.Context(), id, estimateScope(c))
 	if !handleGoodsEstimateError(c, err) {
 		return
 	}
@@ -70,7 +70,7 @@ func (s *Server) updateGoodsEstimate(c *gin.Context) {
 		badRequest(c, "Проверьте данные сметы перчаток", "estimate")
 		return
 	}
-	estimate, err := s.goodsEstimates.UpdateEstimate(c.Request.Context(), id, currentUser(c).ID, input)
+	estimate, err := s.goodsEstimates.UpdateEstimate(c.Request.Context(), id, estimateScope(c), input)
 	if !handleGoodsEstimateError(c, err) {
 		return
 	}
@@ -82,7 +82,7 @@ func (s *Server) deleteGoodsEstimate(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := s.goodsEstimates.DeleteEstimate(c.Request.Context(), id, currentUser(c).ID); !handleGoodsEstimateError(c, err) {
+	if err := s.goodsEstimates.DeleteEstimate(c.Request.Context(), id, estimateScope(c)); !handleGoodsEstimateError(c, err) {
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -99,7 +99,7 @@ func (s *Server) saveGoodsEstimateDraft(c *gin.Context) {
 		badRequest(c, "Проверьте данные черновика перчаток", "draft")
 		return
 	}
-	saved, err := s.goodsEstimates.SaveEstimateDraft(c.Request.Context(), id, currentUser(c).ID, draft)
+	saved, err := s.goodsEstimates.SaveEstimateDraft(c.Request.Context(), id, estimateScope(c), draft)
 	if !handleGoodsEstimateError(c, err) {
 		return
 	}

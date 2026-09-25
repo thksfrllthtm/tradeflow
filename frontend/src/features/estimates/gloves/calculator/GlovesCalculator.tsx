@@ -22,6 +22,8 @@ import { TnvedPickerModal } from '../components/TnvedPickerModal/TnvedPickerModa
 import { PhotoPreview } from '../components/PhotoPreview/PhotoPreview'
 import { columnMappingActions } from '../../shared/lib/columnMappingActions'
 import { resultPriceActions } from '../../shared/lib/resultPriceActions'
+import { exportItems } from '../../shared/lib/exportItems'
+import { useBudgetDistribution } from '../../shared/hooks/useBudgetDistribution'
 import { rowActions } from '../../shared/lib/rowActions'
 import '../../shared/styles/calculatorPage.css'
 
@@ -129,7 +131,8 @@ export function GlovesCalculator({ estimateId, onEstimateSaved }: Props) {
 
   const { setItem, addManualPhoto, addEmptyRow, removeRow, resetAutomaticNet } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
   const { setMappingForHeader, setRawRowIncluded } = columnMappingActions(setMapping, setRawRows)
-  const { recalculateResultPrice, decreaseResultPrices, restoreInitialResult, undoLastBulkPriceDecrease } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
+  const { recalculateResultPrice, decreaseResultPrices, restoreInitialResult, undoLastBulkPriceDecrease, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
+  const budget = useBudgetDistribution({ kind: 'gloves', estimateId, unit: 'пар', result, items, preview: previewCalculation, apply: applyDistributedPrices })
 
   function setParam(field: keyof GlovesParams, value: string) {
     setParams((current) => ({ ...current, [field]: value }))
@@ -278,6 +281,12 @@ export function GlovesCalculator({ estimateId, onEstimateSaved }: Props) {
     }
   }
 
+  // Пробный расчёт для подбора цен под бюджет: без показа результата и без сохранения черновика.
+  function previewCalculation(nextItems: GlovesItemInput[]) {
+    const itemsForRequest = nextItems.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
+    return calculatorApi.calculate({ ...params, items: itemsForRequest, source: sourceSnapshot ?? undefined })
+  }
+
   function changeResultPrice(index: number, value: string) {
     setResult((current) => current ? { ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item) } : current)
   }
@@ -299,8 +308,7 @@ export function GlovesCalculator({ estimateId, onEstimateSaved }: Props) {
   async function exportExcel() {
     setLoading(true); setError('')
     try {
-      const itemsForRequest = items.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
-      const blob = await calculatorApi.exportXlsx({ ...params, items: itemsForRequest })
+      const blob = await calculatorApi.exportXlsx({ ...params, items: exportItems(items, result), source: sourceSnapshot ?? undefined })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url; link.download = `Расчёт_перчатки_${new Date().toISOString().slice(0, 10)}.xlsx`; link.click(); URL.revokeObjectURL(url)
@@ -323,7 +331,7 @@ export function GlovesCalculator({ estimateId, onEstimateSaved }: Props) {
   const pickerRows = items.filter((item) => selectedForDirectory.includes(item.id ?? ''))
   const pickerTitle = pickerRows.length === 1 ? `Карточка для строки ${pickerRows[0].sourceRow || 'новой'}${pickerRows[0].supplierName ? ` · ${pickerRows[0].supplierName}` : ''}` : pickerRows.length > 1 ? `Карточка для ${pickerRows.length} выбранных строк` : 'Выберите карточку перчаток'
   const pickerPhotos = pickerRows.flatMap((row) => photosOf(row).map((photo) => ({ photo, row })))
-  const deliverySummary = params.deliveryMode === 'wagons' ? (params.wagons ? `${params.wagons} ваг. × ${params.wagonTariffUsd} USD` : 'по вагонам') : params.deliveryMode === 'total' ? (params.deliveryTotalUsd ? `всего ${params.deliveryTotalUsd} USD` : 'общая сумма') : 'не задана'
+  const deliverySummary = params.deliveryMode === 'wagons' ? (params.wagons ? `${params.wagons} ваг. × ${params.wagonTariffUsd} USD` : 'по вагонам') : params.deliveryMode === 'total' ? (params.deliveryTotalUsd ? `всего ${params.deliveryTotalUsd} USD` : 'общая сумма') : params.deliveryMode === 'none' ? 'без доставки' : 'не задана'
   const feeSummary = params.customsFeeKzt ? `${params.customsFeeKzt} ₸` : params.mrp && params.feeMultiplier ? `${params.mrp} × ${params.feeMultiplier}` : '—'
   return <div className="gloves-calculator-embedded">
     <div className="gloves-page">
@@ -390,7 +398,7 @@ export function GlovesCalculator({ estimateId, onEstimateSaved }: Props) {
         onBackToImport={() => setStep(1)}
       />}
 
-      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={() => { setPreviousBulkResult(null); setStep(2) }} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={restoreInitialResult} onUndoBulkPriceDecrease={undoLastBulkPriceDecrease} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} />}
+      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={() => { budget.reset(); setPreviousBulkResult(null); setStep(2) }} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoBulkPriceDecrease={() => { budget.reset(); undoLastBulkPriceDecrease() }} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <TnvedPickerModal
         title={pickerTitle}

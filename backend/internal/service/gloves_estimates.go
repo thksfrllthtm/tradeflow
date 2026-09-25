@@ -32,12 +32,17 @@ func (s *GlovesService) ListEstimates(ctx context.Context, userID int64) ([]Glov
 	if err != nil {
 		return nil, err
 	}
+	owners, err := estimateOwnerNames(ctx, s.repository, userID)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]GlovesEstimateSummary, 0, len(rows))
 	for _, row := range rows {
 		record, decodeErr := decodeGlovesEstimate(row)
 		if decodeErr != nil {
 			return nil, decodeErr
 		}
+		record.OwnerName = owners[row.UserID]
 		result = append(result, record.GlovesEstimateSummary)
 	}
 	return result, nil
@@ -108,7 +113,7 @@ func (s *GlovesService) SaveEstimateDraft(ctx context.Context, id, userID int64,
 	if s.repository == nil {
 		return GlovesEstimateRecord{}, repository.ErrNotFound
 	}
-	if userID < 1 {
+	if userID < 1 && userID != repository.AllUsers {
 		return GlovesEstimateRecord{}, &ValidationError{Field: "draft", Message: "Пользователь не определён"}
 	}
 	if err := validateGlovesDraftItems(draft.Input.Items); err != nil {
@@ -296,4 +301,24 @@ func validateGlovesPhotoData(value string) error {
 		return fmt.Errorf("фото больше %d МБ", MaxImageBytes/(1024*1024))
 	}
 	return nil
+}
+
+// estimateOwnerNames returns employee names for the administrator's list of
+// all estimates; for an ordinary employee's own list it returns nothing.
+func estimateOwnerNames(ctx context.Context, repo *repository.Repository, userID int64) (map[int64]string, error) {
+	if userID != repository.AllUsers {
+		return nil, nil
+	}
+	users, err := repo.ListUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[int64]string, len(users))
+	for _, user := range users {
+		names[user.ID] = user.Name
+		if names[user.ID] == "" {
+			names[user.ID] = user.Email
+		}
+	}
+	return names, nil
 }

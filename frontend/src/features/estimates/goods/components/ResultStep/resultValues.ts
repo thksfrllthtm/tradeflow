@@ -22,15 +22,18 @@ export const displayNumber = (value: Value) => {
   return shown === '—' ? shown : formatDisplayNumber(shown)
 }
 
-type DisplayNameItem = { standardName?: string; name?: string; directorySnapshot?: Record<string, unknown> }
+type DisplayNameItem = { standardName?: string; name?: string; supplierName?: string; productDirectoryId?: number; directorySnapshot?: Record<string, unknown> }
 
-// Название строки в таблице результата: «русское / китайское» из карточки или название поставщика.
+// Название строки в таблице результата. Выбран товар из справочника товаров — его название
+// («русское / китайское»). Иначе — название из Excel (как в строке на этапе проверки), даже если
+// код ТН ВЭД подобран: описание кода ТН ВЭД не заменяет название товара.
 export function itemDisplayName(item: DisplayNameItem, source?: DisplayNameItem) {
   const snapshot = item.directorySnapshot
   const russian = typeof snapshot?.name === 'string' ? snapshot.name.trim() : ''
   const chinese = typeof snapshot?.nameZh === 'string' ? snapshot.nameZh.trim() : ''
-  if (russian && chinese) return `${russian} / ${chinese}`
-  return item.standardName || source?.standardName || source?.name || russian || chinese || '—'
+  const productChosen = Boolean(source?.productDirectoryId) || snapshot?.productDirectoryId != null
+  if (productChosen) return (russian && chinese ? `${russian} / ${chinese}` : '') || item.standardName || russian || chinese || source?.name || '—'
+  return source?.name?.trim() || item.supplierName?.trim() || item.standardName || russian || chinese || '—'
 }
 
 const isPositive = (value: Value) => (parseCalculatorNumber(value) ?? 0) > 0

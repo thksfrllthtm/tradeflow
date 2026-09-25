@@ -80,16 +80,20 @@ func (f *fakeAuthRepository) UserByEmail(_ context.Context, email string) (repos
 	return user, nil
 }
 
-func (f *fakeAuthRepository) CreateUser(_ context.Context, email, passwordHash string, name ...string) (repository.User, error) {
-	if f.createUserErr != nil {
-		return repository.User{}, f.createUserErr
-	}
-	f.nextID++
+func (f *fakeAuthRepository) CreateUser(ctx context.Context, email, passwordHash string, name ...string) (repository.User, error) {
 	displayName := ""
 	if len(name) > 0 {
 		displayName = name[0]
 	}
-	user := repository.User{ID: f.nextID, Name: displayName, Email: strings.ToLower(strings.TrimSpace(email)), PasswordHash: passwordHash}
+	return f.CreateUserWithRole(ctx, email, passwordHash, displayName, repository.RoleInvoicer)
+}
+
+func (f *fakeAuthRepository) CreateUserWithRole(_ context.Context, email, passwordHash, displayName, role string) (repository.User, error) {
+	if f.createUserErr != nil {
+		return repository.User{}, f.createUserErr
+	}
+	f.nextID++
+	user := repository.User{ID: f.nextID, Name: displayName, Email: strings.ToLower(strings.TrimSpace(email)), PasswordHash: passwordHash, Role: role}
 	if f.users == nil {
 		f.users = make(map[string]repository.User)
 	}

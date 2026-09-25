@@ -1,6 +1,6 @@
 /* Карточка итогов: растаможка, справочные суммы, калькулятор ИТП. */
 
-.rs-summary { display: flex; align-items: stretch; flex-wrap: wrap; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
+.rs-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 290px) auto; align-items: stretch; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
 .rs-block { display: flex; flex: 1 1 auto; flex-direction: column; gap: 8px; margin: 0; padding: 14px 20px; box-shadow: -1px -1px 0 #e6ece8; }
 .rs-title { color: #6b7a71; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .rs-op { align-self: center; color: #b3bdb6; font-size: 1.1rem; font-weight: 500; }
@@ -25,7 +25,23 @@
 .rs-summary .rs-its input { box-sizing: border-box; width: 100%; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; }
 .rs-summary .rs-its input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
 .rs-summary .rs-its input::placeholder { color: #b3bdb6; }
-@media (max-width: 900px) {
-  .rs-block { flex: 1 1 100%; }
+@media (max-width: 1100px) {
+  .rs-summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .rs-ref { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 700px) {
+  .rs-summary { grid-template-columns: 1fr; }
 }
 .rs-its-total { margin-left: 4px; }
+/* «Сверка по ИТП» свёрнута: заголовок-переключатель, поля — по раскрытию. */
+.rs-summary details.rs-its { grid-column: 1 / -1; gap: 0; padding-top: 9px; padding-bottom: 9px; }
+.rs-summary details.rs-its[open] { gap: 8px; }
+.rs-its > summary { width: fit-content; cursor: pointer; list-style: none; }
+.rs-its > summary::-webkit-details-marker { display: none; }
+.rs-its > summary::before { content: '▸'; display: inline-block; width: 14px; color: #9aa59e; }
+.rs-its[open] > summary::before { content: '▾'; }
+.rs-its > summary:hover { color: #24704a; }
+.rs-ref-note { margin: 2px 0 0; color: #9aa59e; font-size: .7rem; }
+/* Сохранить и Экспорт — справа в карточке итогов. */
+.rs-actions { justify-content: center; gap: 8px; }
+.rs-actions button { width: 100%; min-width: 160px; height: 36px; padding: 0 16px; font-size: .84rem; }

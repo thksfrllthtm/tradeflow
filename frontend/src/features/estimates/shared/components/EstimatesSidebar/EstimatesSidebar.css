@@ -64,6 +64,7 @@
 .es-item-sub { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 22px; color: #7a877f; font-size: .7rem; white-space: nowrap; }
 .es-item-sub span { overflow: hidden; text-overflow: ellipsis; }
 .es-item-sub span + span::before { content: '·'; margin-right: 6px; color: #b5bfb8; }
+.es-owner { color: #3d6b52; font-style: normal; }
 .es-status { flex: 0 0 auto; padding: 0 6px; border-radius: 4px; background: #eef1ef; color: #6b7a71; font-size: .64rem; font-style: normal; font-weight: 700; line-height: 16px; }
 .es-status.done { background: #dff0e6; color: #1c6b43; }
 

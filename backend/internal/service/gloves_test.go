@@ -276,3 +276,137 @@ func TestGlovesParseResultWriteJSONWithoutImages(t *testing.T) {
 		t.Fatalf("imageData must be an empty array, got %s", written.String())
 	}
 }
+
+func TestGlovesCalculationWithoutDelivery(t *testing.T) {
+	result, err := NewGlovesService().Calculate(context.Background(), GlovesCalculationInput{
+		AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "none", Wagons: "", PackageWeightKg: "0.3",
+		Items: []GlovesItemInput{{Name: "supplier", StandardName: "Резиновые перчатки", DirectorySnapshot: testGlovesSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65", DeliveryIncluded: true}},
+	})
+	if err != nil {
+		t.Fatalf("calculation without delivery must be allowed: %v", err)
+	}
+	item := result.Items[0]
+	if item.Status != "calculated" {
+		t.Fatalf("expected calculated item, got %s errors=%v warnings=%v", item.Status, item.Errors, item.Warnings)
+	}
+	if result.Totals.TotalDeliveryUSD != "" && result.Totals.TotalDeliveryUSD != "0" && result.Totals.TotalDeliveryUSD != "0.00" {
+		t.Fatalf("delivery must be zero without a delivery mode, got %s", result.Totals.TotalDeliveryUSD)
+	}
+}
+
+func TestGlovesCalculationUsesExcelPriceOnlyWhereGiven(t *testing.T) {
+	withPrice := GlovesItemInput{Name: "with price", StandardName: "Резиновые перчатки", DirectorySnapshot: testGlovesSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65", PricePerPair: "1.5", SourcePricePerPair: "1.5"}
+	withoutPrice := GlovesItemInput{Name: "without price", StandardName: "Резиновые перчатки", DirectorySnapshot: testGlovesSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65"}
+	input := GlovesCalculationInput{AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "none", PackageWeightKg: "0.3", Items: []GlovesItemInput{withPrice, withoutPrice}}
+	result, err := NewGlovesService().Calculate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("calculate: %v", err)
+	}
+	if got := result.Items[0].CostUSD; got != "1500.00" {
+		t.Fatalf("row with an Excel price must cost price × pairs (1.5 × 1000), got %s", got)
+	}
+	if got := result.Items[1].CostUSD; got != "45.50" {
+		t.Fatalf("row without a price must keep the usual ИТС × net cost (0.65 × 70), got %s", got)
+	}
+
+	encoded, _ := json.Marshal(input)
+	var restored GlovesCalculationInput
+	if err := json.Unmarshal(encoded, &restored); err != nil || restored.Items[0].SourcePricePerPair != "1.5" {
+		t.Fatalf("the Excel price must survive a saved draft, got %+v (%v)", restored.Items[0].SourcePricePerPair, err)
+	}
+}
+
+func TestGlovesCalculationFillsMissingQuantity(t *testing.T) {
+	for name, item := range map[string]GlovesItemInput{
+		"per place from quantity and places": {Pairs: "800", Places: "20", GrossKg: "1220"},
+		"places from quantity and per place": {Pairs: "800", PairsPerPlace: "40", GrossKg: "1220"},
+		"quantity from places and per place": {Places: "20", PairsPerPlace: "40", GrossKg: "1220"},
+	} {
+		item.Name, item.StandardName, item.DirectorySnapshot, item.Coefficient = "row", "Резиновые перчатки", testGlovesSnapshot(), "0.65"
+		result, err := NewGlovesService().Calculate(context.Background(), GlovesCalculationInput{AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "none", PackageWeightKg: "0.3", Items: []GlovesItemInput{item}})
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		got := result.Items[0]
+		if got.Pairs != "800" || got.Places != "20" || got.PairsPerPlace != "40" || got.NetKG != "1214" {
+			t.Fatalf("%s: got pairs=%s places=%s perPlace=%s net=%s", name, got.Pairs, got.Places, got.PairsPerPlace, got.NetKG)
+		}
+	}
+}
+
+func TestGoodsExportKeepsExcelNameUnlessProductChosen(t *testing.T) {
+	codeOnly := testGlovesSnapshot()
+	codeOnly["name"] = "Цистерны, бочки, барабаны"
+	product := testGlovesSnapshot()
+	product["name"], product["productDirectoryId"] = "Перчатки нитриловые", float64(5)
+	row := func(name string, snapshot map[string]any) GlovesItemInput {
+		return GlovesItemInput{Name: name, SupplierName: name, StandardName: snapshot["name"].(string), DirectorySnapshot: snapshot, Pairs: "10", Places: "1", GrossKg: "5", Coefficient: "1"}
+	}
+	buffer, err := NewGlovesService().Export(context.Background(), GlovesCalculationInput{
+		AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "none", GenericItems: true,
+		Items: []GlovesItemInput{row("Товар из Excel", codeOnly), row("Перчатки из Excel", product)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	book, err := excelize.OpenReader(buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sheet := book.GetSheetName(0)
+	codeRow, _ := book.GetCellValue(sheet, "C2")
+	productRow, _ := book.GetCellValue(sheet, "C3")
+	if codeRow != "Товар из Excel" {
+		t.Fatalf("a TN ВЭД code must not replace the Excel name, got %q", codeRow)
+	}
+	if productRow != "Перчатки нитриловые" {
+		t.Fatalf("a chosen product card must give its name, got %q", productRow)
+	}
+}
+
+func TestExportContainsRowsPhotoTotalsAndSummary(t *testing.T) {
+	var photo bytes.Buffer
+	if err := png.Encode(&photo, image.NewRGBA(image.Rect(0, 0, 4, 4))); err != nil {
+		t.Fatal(err)
+	}
+	snapshot := testGlovesSnapshot()
+	snapshot["duty"] = map[string]any{"type": "percentage", "percent": "10"}
+	snapshot["vat"] = map[string]any{"type": "percentage", "percent": "12"}
+	row := GlovesItemInput{Name: "Бочка", SupplierName: "Бочка", StandardName: "Резиновые перчатки", DirectorySnapshot: snapshot, Places: "10", PairsPerPlace: "80", GrossKg: "1220",
+		PricePerPair: "6.4792", PhotoURL: "data:image/png;base64," + base64.StdEncoding.EncodeToString(photo.Bytes())}
+	buffer, err := NewGlovesService().Export(context.Background(), GlovesCalculationInput{
+		AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "none", Mrp: "4325", FeeMultiplier: "6", GenericItems: true, Items: []GlovesItemInput{row},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	book, err := excelize.OpenReader(buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sheets := book.GetSheetList(); len(sheets) != 2 || sheets[0] != "Расчёт" || sheets[1] != "Итоги" {
+		t.Fatalf("expected sheets Расчёт and Итоги, got %v", sheets)
+	}
+	cell := func(sheet, name string) string { value, _ := book.GetCellValue(sheet, name); return value }
+	if cell("Расчёт", "C1") != "Наименование" || cell("Расчёт", "F2") != "10%" || cell("Расчёт", "G2") != "12%" || cell("Расчёт", "K2") != "800" {
+		t.Fatalf("unexpected row: name header %q duty %q vat %q quantity %q", cell("Расчёт", "C1"), cell("Расчёт", "F2"), cell("Расчёт", "G2"), cell("Расчёт", "K2"))
+	}
+	if price, _ := book.GetCellValue("Расчёт", "O2", excelize.Options{RawCellValue: true}); price != "6.4792" {
+		t.Fatalf("the price on screen must be exported, got %q", price)
+	}
+	if pictures, _ := book.GetPictures("Расчёт", "B2"); len(pictures) != 1 {
+		t.Fatalf("the row photo must be embedded, got %d pictures", len(pictures))
+	}
+	if cell("Расчёт", "C3") != "Итого" || cell("Расчёт", "Z3") == "" {
+		t.Fatalf("a total row with the customs payment is expected, got %q / %q", cell("Расчёт", "C3"), cell("Расчёт", "Z3"))
+	}
+	lineCustoms, _ := book.GetCellValue("Расчёт", "Z2", excelize.Options{RawCellValue: true})
+	payment, _ := book.GetCellValue("Итоги", "B18", excelize.Options{RawCellValue: true})
+	paymentUSD, _ := book.GetCellValue("Итоги", "C18", excelize.Options{RawCellValue: true})
+	if cell("Итоги", "A18") != "Растаможка к оплате" || payment != lineCustoms || paymentUSD == "" {
+		t.Fatalf("summary must show the customs payment in KZT and USD: %q %q %q (row %q)", cell("Итоги", "A18"), payment, paymentUSD, lineCustoms)
+	}
+	if cell("Итоги", "B9") != "МРП 4 325 × 6" {
+		t.Fatalf("fee parameters expected, got %q", cell("Итоги", "B9"))
+	}
+}

@@ -38,6 +38,7 @@ Render при каждом запуске применяет миграции, �
 | `SUPABASE_SECRET_KEY` | ключ из шага 1.4 |
 | `SUPABASE_STORAGE_BUCKET` | `uploads` |
 | `GIN_MODE` | `release` |
+| `DEEPSEEK_API_KEY` | ключ DeepSeek (platform.deepseek.com) — для «Распределить (ИИ + математика)»; без него работает только математика |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | как были (пароль не короче 12 символов) |
 
 Новый сервис: **New → Blueprint** → репозиторий `tradeflow`, ветка `main` — Render прочитает `render.yaml`
@@ -88,9 +89,17 @@ powershell -ExecutionPolicy Bypass -File deploy\copy-local-to-supabase.ps1
 ## Как пользоваться дальше
 
 - **Обновление** — `git push` в `main`: Vercel и Render пересоберут каждый свою часть.
-- **Добавить сотрудника.** Регистрация закрыта (`ALLOW_REGISTRATION=false`). В Render → **Environment**
-  замените `BOOTSTRAP_ADMIN_EMAIL` и `BOOTSTRAP_ADMIN_PASSWORD` на данные нового сотрудника — сервис
-  перезапустится и создаст аккаунт. `Bootstrap employee not created (probably already exists)` в логах — нормально.
+- **Сотрудники и роли.** Регистрация закрыта (`ALLOW_REGISTRATION=false`). Администратор заводит сотрудников,
+  меняет им роль и пароль и блокирует на странице **Сотрудники** (есть в меню только у администратора):
+
+  | Роль | Доступ |
+  |---|---|
+  | Администратор | всё: сметы всех сотрудников, изменение справочников, страница «Сотрудники» |
+  | Инвойсер | калькуляторы (свои сметы); справочники товаров и ТН ВЭД — только просмотр |
+  | Переводчик | пока то же, что инвойсер |
+
+  Сотрудник из `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` создаётся администратором — это запасной вход,
+  если доступ ко всем администраторам потерян. `Bootstrap employee not created (probably already exists)` в логах — нормально.
 
 ## Ограничения бесплатных тарифов
 

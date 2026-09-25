@@ -11,7 +11,7 @@ import { ProductDirectoryEntry, ProductDirectoryInput } from './types'
 import './TnvedPicker.css'
 
 // Создание и редактирование карточки товара: название, ИТС, привязка к коду ТН ВЭД, синонимы.
-export function ProductEntryPanel({ item, tnved, onClose, onSaved }: { item?: ProductDirectoryEntry; tnved: TNVEDDirectoryEntry[]; onClose: () => void; onSaved: () => void }) {
+export function ProductEntryPanel({ item, tnved, onClose, onSaved, readOnly = false }: { readOnly?: boolean; item?: ProductDirectoryEntry; tnved: TNVEDDirectoryEntry[]; onClose: () => void; onSaved: () => void }) {
   const initial = useMemo(() => item ? toInput(item) : emptyInput(), [item])
   const [form, setForm] = useState<ProductDirectoryInput>(initial)
   const [saving, setSaving] = useState(false)
@@ -24,7 +24,7 @@ export function ProductEntryPanel({ item, tnved, onClose, onSaved }: { item?: Pr
     try { if (item) await productDirectoryApi.update(item.id, form); else await productDirectoryApi.create(form); onSaved() } catch (reason) { setError(errorMessage(reason)) } finally { setSaving(false) }
   }
 
-  return <DirectoryPanel title={item ? item.name : 'Новый товар'} subtitle={item ? 'Карточка товара' : 'При выборе карточки в смете код, ставки и ИТС подставятся сами'} dirty={dirty} saving={saving} error={error} onClose={onClose} onSubmit={() => void save()}>
+  return <DirectoryPanel title={item ? item.name : 'Новый товар'} subtitle={item ? 'Карточка товара' : 'При выборе карточки в смете код, ставки и ИТС подставятся сами'} dirty={dirty} saving={saving} error={error} readOnly={readOnly} onClose={onClose} onSubmit={() => void save()}>
     <section className="drawer-section">
       <h3>Товар</h3>
       <label className="drawer-field"><span>Наименование <b className="req">*</b></span><input value={form.name} onChange={(event) => setField('name', event.target.value)} maxLength={300} required placeholder="Например, перчатки рабочие трикотажные" autoFocus={!item} /></label>
