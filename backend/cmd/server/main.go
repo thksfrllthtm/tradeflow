@@ -24,25 +24,10 @@ func main() {
 	if err := database.Ping(ctx); err != nil {
 		log.Fatalf("ping database: %v", err)
 	}
-	files, err := openFileStore(cfg)
-	if err != nil {
-		log.Fatalf("initialize private file storage: %v", err)
-	}
 
-	server := httpapi.NewServer(database, cfg, files)
+	server := httpapi.NewServer(database, cfg)
 	log.Printf("backend listening on :%s", cfg.Port)
 	if err := server.Router().Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)
 	}
-}
-
-// openFileStore выбирает хранилище файлов: Supabase Storage, если задан SUPABASE_URL
-// (сервер на Render), иначе папка на диске (Docker Compose).
-func openFileStore(cfg config.Config) (repository.FileStore, error) {
-	if cfg.SupabaseURL != "" {
-		log.Printf("file storage: Supabase Storage bucket %q", cfg.SupabaseStorageBucket)
-		return repository.NewSupabaseFileStore(cfg.SupabaseURL, cfg.SupabaseSecretKey, cfg.SupabaseStorageBucket)
-	}
-	log.Printf("file storage: local directory %s", cfg.FileStorageDir)
-	return repository.NewFileStore(cfg.FileStorageDir)
 }

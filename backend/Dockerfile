@@ -17,11 +17,10 @@ EXPOSE 8080
 CMD ["go", "run", "./cmd/server"]
 
 FROM alpine:3.21
-RUN apk add --no-cache su-exec && addgroup -S app && adduser -S app -G app
+RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 COPY --from=build /out/server /app/server
 COPY --from=build /out/bootstrap-admin /app/bootstrap-admin
-COPY --chmod=755 docker-entrypoint.sh /app/docker-entrypoint.sh
 EXPOSE 8080
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+USER app
 CMD ["/app/server"]

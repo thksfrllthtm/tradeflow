@@ -10,42 +10,6 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 )
 
-func TestEstimateListRequiresSession(t *testing.T) {
-	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
-	request := httptest.NewRequest(http.MethodGet, "/api/estimates", nil)
-	response := httptest.NewRecorder()
-
-	server.Router().ServeHTTP(response, request)
-
-	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, response.Code)
-	}
-}
-
-func TestProductImageRequiresSession(t *testing.T) {
-	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
-	request := httptest.NewRequest(http.MethodGet, "/api/products/1/images/1", nil)
-	response := httptest.NewRecorder()
-
-	server.Router().ServeHTTP(response, request)
-
-	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, response.Code)
-	}
-}
-
-func TestProductAIRequiresSession(t *testing.T) {
-	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
-	request := httptest.NewRequest(http.MethodPost, "/api/products/1/ai-analyze", nil)
-	response := httptest.NewRecorder()
-
-	server.Router().ServeHTTP(response, request)
-
-	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, response.Code)
-	}
-}
-
 func TestGlovesRequiresSession(t *testing.T) {
 	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
 	request := httptest.NewRequest(http.MethodPost, "/api/gloves/calculate", bytes.NewBufferString(`{}`))
@@ -59,15 +23,22 @@ func TestGlovesRequiresSession(t *testing.T) {
 	}
 }
 
-func TestProductAIDialogueRequiresSession(t *testing.T) {
+func TestEstimateRoutesRequireSession(t *testing.T) {
 	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
-	request := httptest.NewRequest(http.MethodGet, "/api/products/1/ai-dialog", nil)
-	response := httptest.NewRecorder()
+	for _, route := range []struct{ method, path string }{
+		{http.MethodGet, "/api/gloves-copy/estimates"},
+		{http.MethodPost, "/api/estimates/price-weights"},
+		{http.MethodPost, "/api/estimates/price-history"},
+	} {
+		request := httptest.NewRequest(route.method, route.path, bytes.NewBufferString(`{}`))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
 
-	server.Router().ServeHTTP(response, request)
+		server.Router().ServeHTTP(response, request)
 
-	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, response.Code)
+		if response.Code != http.StatusUnauthorized {
+			t.Fatalf("%s %s: expected status %d, got %d", route.method, route.path, http.StatusUnauthorized, response.Code)
+		}
 	}
 }
 

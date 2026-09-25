@@ -218,69 +218,6 @@ func validateGlovesDraftItems(items []GlovesItemInput) error {
 	return nil
 }
 
-func (s *GlovesService) LoadDraft(ctx context.Context, userID int64) (GlovesDraft, error) {
-	if s.repository == nil {
-		return GlovesDraft{}, repository.ErrNotFound
-	}
-	draft, err := s.repository.GlovesDraftByUser(ctx, userID)
-	if err != nil {
-		return GlovesDraft{}, err
-	}
-	var input GlovesCalculationInput
-	if err := json.Unmarshal(draft.InputSnapshot, &input); err != nil {
-		return GlovesDraft{}, fmt.Errorf("сохранённый черновик повреждён")
-	}
-	var result *GlovesCalculationResult
-	if len(draft.ResultSnapshot) > 0 && string(draft.ResultSnapshot) != "{}" && string(draft.ResultSnapshot) != "null" {
-		var decoded GlovesCalculationResult
-		if err := json.Unmarshal(draft.ResultSnapshot, &decoded); err == nil {
-			result = &decoded
-		}
-	}
-	return GlovesDraft{Input: input, Result: result, UpdatedAt: draft.UpdatedAt.UTC().Format(time.RFC3339)}, nil
-}
-
-func (s *GlovesService) SaveDraft(ctx context.Context, userID int64, draft GlovesDraft) (GlovesDraft, error) {
-	if s.repository == nil {
-		return draft, nil
-	}
-	if userID < 1 {
-		return GlovesDraft{}, &ValidationError{Field: "draft", Message: "Пользователь не определён"}
-	}
-	if len(draft.Input.Items) > MaxRowsPerSheet {
-		return GlovesDraft{}, &ValidationError{Field: "items", Message: fmt.Sprintf("В черновике не может быть больше %d строк", MaxRowsPerSheet)}
-	}
-	for index, item := range draft.Input.Items {
-		photos := append([]string{}, item.PhotoURLs...)
-		if item.PhotoURL != "" {
-			photos = append(photos, item.PhotoURL)
-		}
-		for _, photo := range photos {
-			if err := validateGlovesPhotoData(photo); err != nil {
-				return GlovesDraft{}, &ValidationError{Field: "items", Message: fmt.Sprintf("Строка %d: %s", index+1, err.Error())}
-			}
-		}
-	}
-	inputData, err := json.Marshal(draft.Input)
-	if err != nil {
-		return GlovesDraft{}, fmt.Errorf("не удалось сохранить черновик")
-	}
-	resultData := []byte("{}")
-	if draft.Result != nil {
-		resultData, err = json.Marshal(draft.Result)
-		if err != nil {
-			return GlovesDraft{}, fmt.Errorf("не удалось сохранить результат черновика")
-		}
-	}
-	now := time.Now().UTC()
-	saved, err := s.repository.SaveGlovesDraft(ctx, repository.GlovesCalculationDraft{UserID: userID, InputSnapshot: repository.JSON(inputData), ResultSnapshot: repository.JSON(resultData), UpdatedAt: now})
-	if err != nil {
-		return GlovesDraft{}, err
-	}
-	draft.UpdatedAt = saved.UpdatedAt.UTC().Format(time.RFC3339)
-	return draft, nil
-}
-
 func validateGlovesPhotoData(value string) error {
 	if strings.TrimSpace(value) == "" {
 		return nil

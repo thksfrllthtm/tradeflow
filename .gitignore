@@ -10,9 +10,6 @@ coverage/
 .gocache-*/
 backend/.gocache-*/
 
-# Загруженные файлы и локальные данные
-backend/data/
-
 # Папки редакторов и ИИ-инструментов
 .agents/
 .claude/

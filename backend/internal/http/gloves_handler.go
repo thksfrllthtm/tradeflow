@@ -170,39 +170,6 @@ func handleGlovesEstimateError(c *gin.Context, err error) bool {
 	return false
 }
 
-func (s *Server) getGlovesDraft(c *gin.Context) {
-	draft, err := s.gloves.LoadDraft(c.Request.Context(), currentUser(c).ID)
-	if errors.Is(err, repository.ErrNotFound) || service.IsNotFound(err) {
-		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Черновик перчаток ещё не сохранён"}})
-		return
-	}
-	if err != nil {
-		internalError(c)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"draft": draft})
-}
-
-func (s *Server) saveGlovesDraft(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<20)
-	var draft service.GlovesDraft
-	if err := c.ShouldBindJSON(&draft); err != nil {
-		badRequest(c, "Проверьте данные черновика перчаток", "draft")
-		return
-	}
-	saved, err := s.gloves.SaveDraft(c.Request.Context(), currentUser(c).ID, draft)
-	if err != nil {
-		var valErr *service.ValidationError
-		if errors.As(err, &valErr) {
-			badRequest(c, valErr.Message, valErr.Field)
-		} else {
-			internalError(c)
-		}
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"draft": saved})
-}
-
 func (s *Server) calculateGloves(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<20)
 	var input service.GlovesCalculationInput

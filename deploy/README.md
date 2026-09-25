@@ -5,12 +5,11 @@
 | Сайт (frontend) | Vercel | `frontend/vercel.json` |
 | API (backend) | Render | `render.yaml`, `deploy/render/Dockerfile`, `deploy/render/entrypoint.sh` |
 | База PostgreSQL | Supabase Database | `backend/migrations` (применяет Render при запуске) |
-| XLSX и изображения | Supabase Storage, приватный бакет `uploads` | `backend/internal/repository/supabase_files.go` |
 | Код | GitHub, репозиторий `tradeflow` | — |
 
 Браузер работает только с адресом Vercel. Запросы `/api/*` Vercel пересылает на Render
 (`rewrites` в `frontend/vercel.json`), поэтому cookie сессии остаётся на домене сайта и CORS не нужен.
-Render при каждом запуске применяет миграции, создаёт первого сотрудника и при необходимости бакет.
+Render при каждом запуске применяет миграции и создаёт первого сотрудника.
 
 ## 1. Supabase
 
@@ -21,11 +20,6 @@ Render при каждом запуске применяет миграции, �
    у Render нет IPv6, а Transaction pooler не поддерживает нужные приложению запросы). Скопируйте строку вида
    `postgresql://postgres.<ref>:[YOUR-PASSWORD]@aws-….pooler.supabase.com:5432/postgres`,
    подставьте пароль вместо `[YOUR-PASSWORD]` и допишите в конец `?sslmode=require`.
-3. **Project URL** — `https://<ref>.supabase.co`, где `<ref>` — Project ID из **Project Settings → General**.
-4. **Secret key**: **Project Settings → API Keys → Secret keys** — создайте ключ и скопируйте (`sb_secret_…`).
-   Ключ даёт полный доступ к проекту: храните его только в Render и никому не пересылайте.
-
-Бакет `uploads` создавать не нужно — его создаст сервер при первом запуске (приватным).
 
 ## 2. Render (API)
 
@@ -34,12 +28,12 @@ Render при каждом запуске применяет миграции, �
 | Переменная | Значение |
 |---|---|
 | `DATABASE_URL` | строка из шага 1.2 |
-| `SUPABASE_URL` | Project URL из шага 1.3 |
-| `SUPABASE_SECRET_KEY` | ключ из шага 1.4 |
-| `SUPABASE_STORAGE_BUCKET` | `uploads` |
 | `GIN_MODE` | `release` |
-| `DEEPSEEK_API_KEY` | ключ DeepSeek (platform.deepseek.com) — для «Распределить (ИИ + математика)»; без него работает только математика |
+| `DEEPSEEK_API_KEY` | ключ DeepSeek (platform.deepseek.com) — для «Подобрать с ИИ»; без него цены подбираются только математикой |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | как были (пароль не короче 12 символов) |
+
+Переменные `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_STORAGE_BUCKET`, `AI_PROVIDER`,
+`ANTHROPIC_*` и `GEMINI_*` больше не используются — если они остались в Render, их можно удалить.
 
 Новый сервис: **New → Blueprint** → репозиторий `tradeflow`, ветка `main` — Render прочитает `render.yaml`
 и спросит те же значения.
@@ -49,9 +43,8 @@ Render при каждом запуске применяет миграции, �
 ```text
 Applying database migrations
 …
-20/u row_level_security …
+22/u drop_legacy_module …
 employee created: you@example.com (id=1)
-file storage: Supabase Storage bucket "uploads"
 backend listening on :10000
 ```
 
@@ -65,24 +58,9 @@ backend listening on :10000
 3. **Root Directory** → `frontend`. Остальное Vercel возьмёт из `frontend/vercel.json`. **Deploy**.
 4. Откройте адрес проекта (вида `https://tradeflow.vercel.app`) и войдите.
 
-## 4. Перенести локальные данные
+## 4. Проверить после развёртывания
 
-Скрипт копирует локальную базу Docker Compose и загруженные файлы в Supabase.
-Нужны Docker Desktop и Go; сервис Render должен хотя бы раз запуститься (он создаёт таблицы).
-
-```powershell
-powershell -ExecutionPolicy Bypass -File deploy\copy-local-to-supabase.ps1
-```
-
-- Спросит строку подключения (шаг 1.2), Project URL и Secret key — ввод скрыт.
-- Покажет, что сейчас в базе Supabase, и попросит подтвердить (`yes`).
-- **Все данные в базе Supabase заменяются локальными**, в том числе сотрудник из `BOOTSTRAP_ADMIN_*`.
-  Входить потом — с локальными email и паролями. Замена идёт одной транзакцией: при ошибке база не меняется.
-- Переносятся только файлы, на которые ссылается база; повторный запуск безопасен.
-
-## 5. Проверить после развёртывания
-
-- Вход, открытие сметы, картинки товаров.
+- Вход, открытие сметы, фото товаров в строках сметы.
 - **Загрузка большого XLSX (10+ МБ) и сохранение сметы перчаток с фото.** Запросы к API идут через Vercel;
   если на больших запросах появится ошибка `413`, пришлите её — тогда загрузку нужно будет направить в обход Vercel.
 
@@ -106,13 +84,12 @@ powershell -ExecutionPolicy Bypass -File deploy\copy-local-to-supabase.ps1
 - Render **засыпает через 15 минут** без запросов; первое открытие после этого — около минуты
   (Vercel ждёт ответа до 2 минут).
 - Supabase приостанавливает бесплатный проект после **недели без запросов** — его включают кнопкой
-  **Restore** в панели Supabase. Лимиты: база 500 МБ, файлы 1 ГБ, один файл до 50 МБ.
+  **Restore** в панели Supabase. Лимит базы — 500 МБ.
 
 ## Если что-то не работает
 
 - `password authentication failed` / `no such host` / `network is unreachable` в логах Render — неверный
   `DATABASE_URL`: нужна строка **Session pooler** с подставленным паролем.
-- `supabase storage … HTTP 401/403` — неверный `SUPABASE_SECRET_KEY` или `SUPABASE_URL`.
 - Сайт открывается, но вход не работает / `404` на `/api/...` — адрес Render в `frontend/vercel.json`
   не совпадает с настоящим.
 - Сборка упала — откройте **Logs → Build** (Render) или **Deployments** (Vercel), пришлите последние строки.

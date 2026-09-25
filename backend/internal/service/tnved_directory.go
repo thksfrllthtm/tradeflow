@@ -409,21 +409,6 @@ func (s *TNVEDDirectoryService) Copy(ctx context.Context, id, userID int64, name
 	return saved, err
 }
 
-func (s *TNVEDDirectoryService) ApplyToProduct(ctx context.Context, productID, userID, entryID int64) (repository.ImportedProduct, error) {
-	entry, err := s.repository.TNVEDDirectoryEntryByID(ctx, entryID)
-	if err != nil {
-		return repository.ImportedProduct{}, err
-	}
-	if entry.ArchivedAt != nil {
-		return repository.ImportedProduct{}, &ValidationError{Field: "entryId", Message: "Архивную запись нельзя выбрать для нового расчёта"}
-	}
-	snapshot, err := json.Marshal(DirectorySnapshot(entry))
-	if err != nil {
-		return repository.ImportedProduct{}, err
-	}
-	return s.repository.UpdateProductTNVEDDirectorySelection(ctx, productID, userID, entryID, repository.JSON(snapshot), entry.Code)
-}
-
 // DirectorySnapshot returns the immutable set of operator-entered values that
 // is embedded into a calculation.  Keeping this construction in one place
 // prevents the standalone gloves calculator from trusting a client-provided

@@ -125,18 +125,6 @@ func allocateDelivery(items []CalculationItem, totalUSD *decimal.Decimal, rates 
 	}
 }
 
-func hasDeliveryInput(input CalculationInput) bool {
-	if strings.TrimSpace(input.Wagons) != "" || strings.TrimSpace(input.DeliveryTotalUSD) != "" {
-		return true
-	}
-	for _, item := range input.Items {
-		if strings.TrimSpace(item.DeliveryUSD) != "" || item.DeliveryManual {
-			return true
-		}
-	}
-	return false
-}
-
 func parseItemStringDecimal(value string) *decimal.Decimal {
 	if strings.TrimSpace(value) == "" {
 		return nil

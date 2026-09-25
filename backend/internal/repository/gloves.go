@@ -76,36 +76,3 @@ func (r *Repository) DeleteGlovesEstimate(ctx context.Context, id, userID int64)
 	}
 	return nil
 }
-
-func (r *Repository) GlovesDraftByUser(ctx context.Context, userID int64) (GlovesCalculationDraft, error) {
-	var draft GlovesCalculationDraft
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&draft).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return GlovesCalculationDraft{}, ErrNotFound
-	}
-	return draft, err
-}
-
-func (r *Repository) SaveGlovesDraft(ctx context.Context, draft GlovesCalculationDraft) (GlovesCalculationDraft, error) {
-	var existing GlovesCalculationDraft
-	err := r.db.WithContext(ctx).Where("user_id = ?", draft.UserID).First(&existing).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return GlovesCalculationDraft{}, err
-	}
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		if createErr := r.db.WithContext(ctx).Create(&draft).Error; createErr != nil {
-			return GlovesCalculationDraft{}, createErr
-		}
-		return draft, nil
-	}
-	draft.ID = existing.ID
-	draft.CreatedAt = existing.CreatedAt
-	if saveErr := r.db.WithContext(ctx).Model(&existing).Updates(map[string]any{
-		"input_snapshot":  draft.InputSnapshot,
-		"result_snapshot": draft.ResultSnapshot,
-		"updated_at":      draft.UpdatedAt,
-	}).Error; saveErr != nil {
-		return GlovesCalculationDraft{}, saveErr
-	}
-	return r.GlovesDraftByUser(ctx, draft.UserID)
-}

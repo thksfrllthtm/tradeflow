@@ -1,5 +1,5 @@
 # Образ API для Render: backend, миграции и команда создания сотрудника.
-# Сайт собирает и отдаёт Vercel (frontend/vercel.json), база и файлы — в Supabase.
+# Сайт собирает и отдаёт Vercel (frontend/vercel.json), база — в Supabase.
 # Собирается из корня репозитория (см. render.yaml). Локальный docker-compose его не использует.
 
 # 1. Сборка API и команды создания сотрудника
@@ -21,8 +21,6 @@ COPY --from=backend /out/server /out/bootstrap-admin /app/
 COPY --from=migrate /usr/local/bin/migrate /usr/local/bin/migrate
 COPY backend/migrations /app/migrations
 COPY --chmod=755 deploy/render/entrypoint.sh /app/entrypoint.sh
-# Используется, только если SUPABASE_URL не задан: тогда файлы лежат на временном диске.
-ENV FILE_STORAGE_DIR=/app/data/uploads
 # Бесплатный Render даёт 512 МБ: разбор XLSX с фото держит в памяти сотни МБ, поэтому
 # сборщик мусора Go должен освобождать память раньше, чем контейнер упрётся в лимит.
 ENV GOMEMLIMIT=400MiB

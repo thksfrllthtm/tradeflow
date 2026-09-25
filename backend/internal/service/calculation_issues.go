@@ -6,15 +6,6 @@ import (
 	"strings"
 )
 
-func totalsBlockUnsupported(blocking []string) bool {
-	for _, message := range blocking {
-		if strings.Contains(message, "Итог растаможки не выводится") {
-			return true
-		}
-	}
-	return false
-}
-
 func unsupportedSchemeIssue(issue string) bool {
 	return strings.HasPrefix(issue, "Пошлина поддерживается только процентная") ||
 		strings.HasPrefix(issue, "НДС поддерживается только процентный")

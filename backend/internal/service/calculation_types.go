@@ -3,8 +3,6 @@ package service
 // Input and output shapes of the customs calculation (shared by estimates and both gloves calculators).
 
 import (
-	"encoding/json"
-
 	"github.com/shopspring/decimal"
 )
 
@@ -27,34 +25,14 @@ type CalculationInput struct {
 	// Kept for backwards-compatible clients. The preliminary formula always
 	// includes the one-per-declaration fee in the VAT base; an explicit false
 	// is rejected instead of being silently ignored.
-	FeeIncluded    bool                   `json:"feeIncluded"`
-	feeIncludedSet bool                   `json:"-"`
-	CashUSD        string                 `json:"cashUsd"`
-	Items          []CalculationItemInput `json:"items"`
+	FeeIncluded bool                   `json:"feeIncluded"`
+	CashUSD     string                 `json:"cashUsd"`
+	Items       []CalculationItemInput `json:"items"`
 	// When supplied by the UI, this records that the employee has interacted
 	// with the new-mode default. A false value is important: it lets an
 	// employee explicitly turn the delivery-base flag off for every row on the
 	// first save instead of being mistaken for an untouched default.
 	DeliveryIncludedDefault *bool `json:"deliveryIncludedDefault,omitempty"`
-	// defaultDeliveryIncluded is set only by the service when an operator
-	// explicitly switches a new/legacy calculation to an active delivery mode.
-	// It is intentionally not part of the HTTP contract.
-	defaultDeliveryIncluded bool `json:"-"`
-}
-
-func (c *CalculationInput) UnmarshalJSON(data []byte) error {
-	type plain CalculationInput
-	var decoded plain
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		return err
-	}
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil {
-		return err
-	}
-	*c = CalculationInput(decoded)
-	_, c.feeIncludedSet = fields["feeIncluded"]
-	return nil
 }
 
 type CalculationItemInput struct {

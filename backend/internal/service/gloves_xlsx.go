@@ -18,6 +18,17 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// Ограничения на Excel и строки сметы. Разбор Excel не сохраняет файл, поэтому допускает
+// большие файлы: фото из них браузер сжимает до сохранения сметы.
+const (
+	MaxRowsPerSheet          = 5000
+	MaxWorkbookRows          = 10000
+	MaxColumns               = 100
+	MaxImageBytes            = 5 << 20
+	MaxGlovesXLSXBytes       = 100 << 20
+	MaxGlovesParseImageBytes = 25 << 20
+)
+
 type glovesXLSXRelationship struct {
 	ID     string `xml:"Id,attr"`
 	Target string `xml:"Target,attr"`

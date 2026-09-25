@@ -4,6 +4,7 @@ package httpapi
 // proportions and the unit price history of saved calculations.
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
@@ -45,4 +46,41 @@ func (s *Server) priceHistory(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"prices": prices})
+}
+
+// handleAIError answers with the AI error status and message; true means no error.
+func (s *Server) handleAIError(c *gin.Context, err error) bool {
+	if err == nil {
+		return true
+	}
+	if validation, ok := err.(*service.ValidationError); ok {
+		badRequest(c, validation.Message, validation.Field)
+		return false
+	}
+	var status int
+	var code string
+	switch {
+	case errors.Is(err, service.ErrAINotConfigured):
+		status, code = http.StatusServiceUnavailable, "ai_provider_not_configured"
+	case errors.Is(err, service.ErrAIRateLimited):
+		status, code = http.StatusTooManyRequests, "ai_rate_limited"
+	case errors.Is(err, service.ErrAITimeout):
+		status, code = http.StatusGatewayTimeout, "ai_timeout"
+	case errors.Is(err, service.ErrAIRequestTooLarge):
+		status, code = http.StatusRequestEntityTooLarge, "ai_request_too_large"
+	case errors.Is(err, service.ErrAIUnauthorized):
+		status, code = http.StatusBadGateway, "ai_unauthorized"
+	case errors.Is(err, service.ErrAIRequestRejected):
+		status, code = http.StatusBadGateway, "ai_request_rejected"
+	case errors.Is(err, service.ErrAIModelUnavailable):
+		status, code = http.StatusBadGateway, "ai_model_unavailable"
+	case errors.Is(err, service.ErrAIBadResponse):
+		status, code = http.StatusBadGateway, "ai_bad_response"
+	case errors.Is(err, service.ErrAIUnavailable):
+		status, code = http.StatusBadGateway, "ai_unavailable"
+	default:
+		status, code = http.StatusInternalServerError, "ai_error"
+	}
+	c.JSON(status, gin.H{"error": gin.H{"message": service.AIErrorMessage(err), "code": code}})
+	return false
 }

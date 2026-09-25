@@ -34,6 +34,8 @@ const DefaultDeepSeekModel = "deepseek-v4-pro"
 
 const (
 	maxPriceGroups       = 200
+	maxAIInputBytes      = 32 << 10
+	aiRequestTimeout     = 25 * time.Second
 	maxPriceReasonLength = 200
 )
 
@@ -152,17 +154,17 @@ type deepSeekResponse struct {
 // valid price remains the whole answer counts as invalid.
 func (c *DeepSeekClient) SuggestUnitPrices(ctx context.Context, userID int64, request PriceWeightsRequest) ([]SuggestedPrice, error) {
 	if c == nil || c.apiKey == "" || c.model == "" {
-		return nil, ErrGeminiNotConfigured
+		return nil, ErrAINotConfigured
 	}
 	if err := ValidatePriceWeightsRequest(&request); err != nil {
 		return nil, err
 	}
 	if !c.allow(userID) {
-		return nil, ErrGeminiRateLimited
+		return nil, ErrAIRateLimited
 	}
 	groupsJSON, err := json.Marshal(request.Groups)
 	if err != nil {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	if len(groupsJSON) > maxAIInputBytes {
 		return nil, ErrAIRequestTooLarge
@@ -178,53 +180,51 @@ func (c *DeepSeekClient) SuggestUnitPrices(ctx context.Context, userID int64, re
 		Thinking:       map[string]string{"type": "disabled"},
 	})
 	if err != nil {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 
-	overallCtx, cancelOverall := context.WithTimeout(ctx, geminiOverallTimeout)
-	defer cancelOverall()
-	requestCtx, cancel := context.WithTimeout(overallCtx, geminiTimeout)
+	requestCtx, cancel := context.WithTimeout(ctx, aiRequestTimeout)
 	defer cancel()
 	endpoint := strings.TrimRight(c.endpoint, "/") + "/chat/completions"
 	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(overallCtx.Err(), context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return nil, ErrGeminiTimeout
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(requestCtx.Err(), context.DeadlineExceeded) {
+			return nil, ErrAITimeout
 		}
 		return nil, ErrAIUnavailable
 	}
 	responseBytes, readErr := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 	resp.Body.Close()
 	if readErr != nil {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	switch resp.StatusCode {
 	case http.StatusUnauthorized, http.StatusForbidden, http.StatusPaymentRequired:
-		return nil, ErrGeminiUnauthorized
+		return nil, ErrAIUnauthorized
 	case http.StatusTooManyRequests:
-		return nil, ErrGeminiRateLimited
+		return nil, ErrAIRateLimited
 	case http.StatusBadRequest, http.StatusUnprocessableEntity:
-		return nil, ErrGeminiRequestRejected
+		return nil, ErrAIRequestRejected
 	case http.StatusNotFound:
-		return nil, ErrGeminiModelUnavailable
+		return nil, ErrAIModelUnavailable
 	case http.StatusRequestTimeout:
-		return nil, ErrGeminiTimeout
+		return nil, ErrAITimeout
 	}
 	if resp.StatusCode >= 500 {
 		return nil, ErrAIUnavailable
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	var parsed deepSeekResponse
 	if json.Unmarshal(responseBytes, &parsed) != nil || len(parsed.Choices) == 0 {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	return parseSuggestedPrices(parsed.Choices[0].Message.Content, request.Groups)
 }
@@ -243,7 +243,7 @@ func parseSuggestedPrices(content string, groups []PriceGroup) ([]SuggestedPrice
 		} `json:"prices"`
 	}
 	if content == "" || json.Unmarshal([]byte(content), &answer) != nil {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	requested := make(map[string]bool, len(groups))
 	for _, group := range groups {
@@ -264,7 +264,7 @@ func parseSuggestedPrices(content string, groups []PriceGroup) ([]SuggestedPrice
 		result = append(result, SuggestedPrice{Code: code, UnitPrice: value, Reason: truncateRunes(strings.TrimSpace(price.Reason), maxPriceReasonLength)})
 	}
 	if len(result) == 0 {
-		return nil, ErrGeminiBadResponse
+		return nil, ErrAIBadResponse
 	}
 	return result, nil
 }

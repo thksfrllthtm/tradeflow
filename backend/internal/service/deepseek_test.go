@@ -89,12 +89,12 @@ func TestDeepSeekRejectsGarbageAndErrors(t *testing.T) {
 		content string
 		want    error
 	}{
-		"not json":            {http.StatusOK, "Цены: бочки 7 долларов", ErrGeminiBadResponse},
-		"empty content":       {http.StatusOK, "", ErrGeminiBadResponse},
-		"no valid price":      {http.StatusOK, `{"prices":[{"code":"1","unitPrice":5},{"code":"7310299000","unitPrice":-1}]}`, ErrGeminiBadResponse},
-		"wrong key":           {http.StatusUnauthorized, "", ErrGeminiUnauthorized},
-		"insufficient credit": {http.StatusPaymentRequired, "", ErrGeminiUnauthorized},
-		"rate limit":          {http.StatusTooManyRequests, "", ErrGeminiRateLimited},
+		"not json":            {http.StatusOK, "Цены: бочки 7 долларов", ErrAIBadResponse},
+		"empty content":       {http.StatusOK, "", ErrAIBadResponse},
+		"no valid price":      {http.StatusOK, `{"prices":[{"code":"1","unitPrice":5},{"code":"7310299000","unitPrice":-1}]}`, ErrAIBadResponse},
+		"wrong key":           {http.StatusUnauthorized, "", ErrAIUnauthorized},
+		"insufficient credit": {http.StatusPaymentRequired, "", ErrAIUnauthorized},
+		"rate limit":          {http.StatusTooManyRequests, "", ErrAIRateLimited},
 		"server down":         {http.StatusServiceUnavailable, "", ErrAIUnavailable},
 	} {
 		_, err := deepSeekServer(t, testCase.status, testCase.content, nil).SuggestUnitPrices(context.Background(), 1, testPriceRequest)
@@ -121,7 +121,7 @@ func TestDeepSeekValidatesRequestBeforeCalling(t *testing.T) {
 	if called {
 		t.Fatal("an invalid request must not reach DeepSeek")
 	}
-	if _, err := NewDeepSeekClient("", DefaultDeepSeekModel).SuggestUnitPrices(context.Background(), 1, testPriceRequest); !errors.Is(err, ErrGeminiNotConfigured) {
+	if _, err := NewDeepSeekClient("", DefaultDeepSeekModel).SuggestUnitPrices(context.Background(), 1, testPriceRequest); !errors.Is(err, ErrAINotConfigured) {
 		t.Fatalf("missing key must report not configured, got %v", err)
 	}
 }

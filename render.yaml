@@ -1,5 +1,5 @@
 # Render Blueprint: бесплатный веб-сервис с API. Сайт — Vercel (frontend/vercel.json),
-# база и файлы — Supabase. Пошаговая инструкция — deploy/README.md.
+# база — Supabase. Пошаговая инструкция — deploy/README.md.
 services:
   - type: web
     name: tradeflow
@@ -14,15 +14,6 @@ services:
       # Supabase → Connect → Session pooler (порт 5432, пользователь postgres.<ref>)
       - key: DATABASE_URL
         sync: false
-      # Supabase → Project Settings → Data API: Project URL (https://<ref>.supabase.co)
-      - key: SUPABASE_URL
-        sync: false
-      # Supabase → Project Settings → API Keys → Secret key (sb_secret_...)
-      - key: SUPABASE_SECRET_KEY
-        sync: false
-      # Приватный бакет для XLSX и изображений; создаётся автоматически при запуске
-      - key: SUPABASE_STORAGE_BUCKET
-        value: uploads
       # Первый сотрудник создаётся при запуске; пароль не короче 12 символов
       - key: BOOTSTRAP_ADMIN_EMAIL
         sync: false
@@ -40,7 +31,6 @@ services:
         value: tradeflow_session
       - key: SESSION_TTL_HOURS
         value: "24"
-      # Ключи AI (ANTHROPIC_API_KEY / GEMINI_API_KEY / DEEPSEEK_API_KEY) для сметы не обязательны —
-      # добавьте их потом в Render → Environment. DEEPSEEK_API_KEY нужен для «Распределить (ИИ + математика)».
-      - key: AI_PROVIDER
-        value: anthropic
+      # Ключ DeepSeek для «Подобрать с ИИ» (без него цены подбираются только математикой)
+      - key: DEEPSEEK_API_KEY
+        sync: false

@@ -7,10 +7,6 @@ set -eu
 DATABASE_URL=$(printf '%s' "$DATABASE_URL" | sed -E 's/([?&])channel_binding=[^&]*&?/\1/; s/[?&]$//')
 export DATABASE_URL
 
-# Папка для файлов нужна, только если SUPABASE_URL не задан (диск на Render временный).
-mkdir -p /app/data/uploads
-chown -R app:app /app/data
-
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
   echo "Applying database migrations"
   migrate -path /app/migrations -database "$DATABASE_URL" up

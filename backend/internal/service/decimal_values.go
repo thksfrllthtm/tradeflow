@@ -119,28 +119,6 @@ func parseItemDecimal(value, label string, warnings *[]string) *decimal.Decimal 
 	return &parsed
 }
 
-func weightKG(value *decimal.Decimal, unit string) string {
-	if value == nil {
-		return ""
-	}
-	if strings.EqualFold(unit, "g") {
-		return value.Div(decimal.NewFromInt(1000)).String()
-	}
-	if strings.EqualFold(unit, "г") {
-		return value.Div(decimal.NewFromInt(1000)).String()
-	}
-	return value.String()
-}
-
-func normalizedWeightUnit(unit string) string {
-	switch strings.ToLower(strings.TrimSpace(unit)) {
-	case "kg", "кг", "g", "г":
-		return "kg"
-	default:
-		return strings.TrimSpace(unit)
-	}
-}
-
 func validWeightUnit(unit string) bool {
 	switch strings.ToLower(strings.TrimSpace(unit)) {
 	case "kg", "кг", "g", "г":
@@ -161,35 +139,7 @@ func decPtr(v decimal.Decimal) *decimal.Decimal { return &v }
 
 func mustDecimal(value string) decimal.Decimal { v, _ := decimal.NewFromString(value); return v }
 
-func addString(a, b string) string {
-	if a == "" {
-		return b
-	}
-	if b == "" {
-		return a
-	}
-	return mustDecimal(a).Add(mustDecimal(b)).String()
-}
-
-func mustDivString(a, b string) string {
-	if a == "" || b == "" || mustDecimal(b).IsZero() {
-		return "0"
-	}
-	return mustDecimal(a).Div(mustDecimal(b)).String()
-}
-
-func mustSubString(a, b string) string { return mustDecimal(a).Sub(mustDecimal(b)).String() }
-
 func stringValue(m map[string]any, key string) string { v, _ := m[key].(string); return v }
-
-func supportedCostCurrency(currency string) bool {
-	switch strings.ToUpper(strings.TrimSpace(currency)) {
-	case "", "USD", "EUR", "KZT":
-		return true
-	default:
-		return false
-	}
-}
 
 func decimalValue(m map[string]any, key string) (decimal.Decimal, bool) {
 	v := stringValue(m, key)

@@ -34,12 +34,6 @@ services:
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME}
       SESSION_TTL_HOURS: ${SESSION_TTL_HOURS}
       COOKIE_SECURE: ${COOKIE_SECURE}
-      FILE_STORAGE_DIR: /app/data/uploads
-      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-pro}
     depends_on:
@@ -47,8 +41,6 @@ services:
         condition: service_completed_successfully
     ports:
       - "8080:8080"
-    volumes:
-      - private_files:/app/data
 
   frontend:
     build: ./frontend
@@ -61,4 +53,3 @@ services:
 
 volumes:
   postgres_data:
-  private_files:

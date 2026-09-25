@@ -296,3 +296,10 @@ func (s *Server) handleProductDirectoryError(c *gin.Context, err error) bool {
 	internalError(c)
 	return false
 }
+
+func datePtrString(v *time.Time) string {
+	if v == nil {
+		return ""
+	}
+	return v.Format("2006-01-02")
+}

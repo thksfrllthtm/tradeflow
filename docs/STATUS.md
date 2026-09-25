@@ -1,5 +1,12 @@
 # Статус проекта
 
+## Удалён неиспользуемый старый модуль (2026-09-25)
+
+- Сайт работает только со сметами товаров и перчаток, справочниками товаров и ТН ВЭД и сотрудниками. Удалён код, который сайт не вызывал: старые сметы с импортом XLSX, рабочим черновиком и товарами (`/api/estimates/:id/...`, `/api/imports`, `/api/products`), классификатор ТН ВЭД (`/api/catalog`, команда `import-tnved`), старый расчёт растаможки сметы, ИИ-анализ и чат по товару (Anthropic, Gemini, `AI_PROVIDER`), черновик перчаток без сметы (`/api/gloves/draft`) и файловое хранилище (Supabase Storage / `FILE_STORAGE_DIR`, команда `upload-files`).
+- Миграция `000022_drop_legacy_module` удаляет таблицы этого модуля. Формула растаможки, общая для смет, не менялась.
+- Единственный ИИ в проекте — DeepSeek для «Подобрать с ИИ» (`DEEPSEEK_API_KEY`); ошибки провайдера переименованы из `ErrGemini*` в `ErrAI*`.
+- Проверены `go build`, `go vet`, `go test ./...`, `deadcode` и `staticcheck` (неиспользуемого кода нет), применение всех миграций на чистом PostgreSQL и откат `000022`.
+
 ## Исправления контрольной строки растаможки (2026-09-18)
 
 - Стоимость позиции теперь следует за актуальной ценой: при пересчёте цена пары обновляется из цены товара (`unit_price`), и стоимость считается как пары × цена пары. Прежняя сумма от ИТС × нетто больше не перезаписывает актуальную цену. Введённая вручную итоговая стоимость не меняется, но при расхождении с парами × ценой показывается предупреждение.
@@ -52,18 +59,7 @@
 - Реализован этап 1: React + TypeScript + Vite frontend, Go + Gin API, PostgreSQL и версионируемые SQL-миграции golang-migrate.
 - Есть регистрация и вход сотрудников, bcrypt-хеширование паролей, серверные сессии с хешированными непрозрачными токенами в PostgreSQL и выход из сессии. Регистрация создаёт только обычного пользователя и не принимает роль или владельца сметы.
 - Первый сотрудник создаётся отдельной командой с email и паролем только из переменных окружения; стандартного пароля нет.
-- Реализовано создание, список, открытие и редактирование собственных смет. Доступ к смете проверяется сервером по владельцу; автор и время создания/изменения хранятся в базе.
-- Сервер валидирует обязательное название, дату, валюту и положительный курс; для KZT курс равен 1. Курс хранится как PostgreSQL `NUMERIC`/`decimal` и передаётся JSON-строкой.
 - Добавлены Docker Compose, `.env.example`, README с запуском/миграциями и пустые состояния для ещё не реализованных возможностей.
-- Реализован этап 2: закрытое хранение исходного XLSX, безопасная проверка обычных XLSX через Excelize, выбор листа/строки заголовков, эвристическое сопоставление и предварительный просмотр строк.
-- Подтверждённый импорт сохраняет исходные и нормализованные значения, лист/строку источника, предупреждения и статус импорта. Позиции редактируются сервером, могут быть исключены с причиной и сохраняются после обновления страницы.
-- Поддержаны обычные встроенные JPG/PNG с привязкой к строке и ручная загрузка JPG/PNG до 5 МБ для позиции. Файлы не публикуются; маршрут изображения требует сессии и прав на смету.
-- Повторный файл распознаётся по SHA-256; замена существующих позиций требует явного подтверждения и выполняется транзакционно.
-- Этап 2 расширен серверным рабочим черновиком исходной таблицы: сохраняются исходные значения/формулы, стабильные ID строк и колонок, назначения полей, удалённые элементы для восстановления и данные партии.
-- Добавлен ручной редактор с выбором листа/строки заголовков/начала данных, редактированием ячеек, добавлением и перемещением колонок, массовым удалением строк, дополнительными полями и явным действием переноса ячейки в общий вес партии.
-- «Применить структуру» проверяет конфликты назначений, обязательные поля, числа, валюту, единицы веса и согласованность суммы; нормализованные товары записываются в фиксированном порядке одной транзакцией. Кнопка возврата открывает сохранённый черновик.
-- Миграция `000003_import_workspace` добавляет workspace и отдельные поля брутто/нетто, единицы количества, материал и дополнительные поля, не удаляя ранее импортированные товары.
-- Сохранение workspace версионируется полем `revision`; исходный файл и исходные значения строк остаются неизменными.
 
 ## Регистрация и вход (2026-09-15)
 
@@ -99,24 +95,8 @@
 - Нет утверждённого источника ставок и иных параметров расчёта, правил их версионирования и обновления.
 - Правила округления для предварительного расчёта определены: цена пары — 4 знака, остальные денежные значения — 2; официальные тарифные правила и новые типы ставок всё ещё не утверждены.
 - Не предоставлен пример входного XLSX и шаблон клиентского предложения.
-- Для ИИ-подбора выбраны серверные адаптеры Anthropic/Gemini и настройки через окружение; живой платный вызов без ключа не выполнялся.
 - Для MVP выбран локальный email/password-вход с серверными сессиями; остаются открытыми политика подтверждения email, восстановление пароля, 2FA/CAPTCHA и общий rate limiter для нескольких экземпляров. Сотрудник видит и редактирует только созданные им сметы.
 - Не предоставлен рабочий пример клиентского XLSX. Реализован документированный поддерживаемый формат и синтетические тесты; реальные нестандартные варианты будут явно отклоняться или потребуют отдельного расширения.
-
-## Исправления после запуска
-
-- Добавлена миграция `000004_workspace_revision_hotfix`: она восстанавливает колонку `import_workspaces.revision` в уже существующих базах, где миграция 3 была применена до добавления версии черновика. Миграция аддитивная и сохраняет данные рабочих пространств.
-- Интерфейс этапа 2 упрощён до компактного рабочего редактора; добавлены превью сохранённых встроенных и ручных JPG/PNG, метаданные изображений в товарах и защищённый маршрут просмотра фотографий с проверкой владельца.
-- При повторном применении структуры старые автоматически извлечённые изображения не накапливаются повторно; ручные фотографии сохраняются.
-- Старые черновики с `images: null` нормализуются в пустой список; редактор больше не падает при открытии повторного импорта.
-- Экран сметы разделён на отдельные страницы этапов 1 и 2; этап 2 оформлен коротким мастером «источник и цена → проверка строк → сохранение».
-- Этап 2 полностью переработан как отдельная большая страница: загрузка файла вынесена в понятное начало, сопоставление колонок отделено от редактирования строк, а сохранение вынесено в финальный шаг.
-- Поле общего веса теперь выбирает единицу из списка «кг / г»; backend также принимает русские обозначения единиц. Эвристика Excel больше не считает `KG` внутри имени документа колонкой веса.
-- В мастере импорта добавлена предварительная проверка обязательного сопоставления названия; количество, вес и цена поставщика могут отсутствовать. Для китайских заголовков поддержаны `品名`, `件数`, `数量`.
-
-## Следующий этап
-
-Следующий шаг: после утверждения официального источника загрузить реальный набор и выборочно сверить записи с первоисточником. ИИ-анализ, денежный расчёт и предложение не начинать до утверждения источников и правил.
 
 ## Операторский справочник ТН ВЭД (2026-09-15)
 
@@ -126,28 +106,6 @@
 - Ограничение данных: начальные коды перчаток и ставки не внесены. Пользовательские записи не являются официальным описанием или подтверждённой актуальной ставкой; требуется ручная сверка с разрешённым источником.
 - Проверено локально: `gofmt`, `go test ./...`, `go vet ./...`, `npm run check`, `npm run build` (живой Docker/PostgreSQL в текущем окружении недоступен).
 
-## Этап 3 (реализация 2026-09-08)
-
-- Готов программный механизм: версионируемый каталог кодов, отдельные документы пояснений/исключений, структурированные правила ставок, JSON/CSV preview и атомарный идемпотентный import по `versionKey`.
-- Добавлен экран поиска по коду/тексту и дате с карточкой источников; группировочный код не принимается как конечный. Неполные условия возвращают `ambiguous` с перечнем недостающих ключей, конфликт правил также явно обозначается.
-- DEMO-набор `demo-2026-09-08` изолирован от real и заблокирован для обычной проверки без явного `allowDemo=true`. Неизвестные ставки хранятся как `rateType=unknown`, нулевые требуют источника.
-- Реальная готовность данных отсутствует: официальный файл ТН ВЭД, пояснения, ставки, лицензия и дата покрытия не предоставлены (см. `docs/DATA_SOURCES.md`). База не объявляется актуальной.
-- Проверены страницы ЕЭК по ТН ВЭД/ЕТТ и пояснениям. Найдены фактические PDF группы 82 и `psn82.pdf` (редакция страницы включает решения до 11.08.2026), однако скачать бинарные документы в окружении не удалось: HTTPS-соединение закрывается. Реальные записи не импортированы.
-- Добавлена команда `cmd/import-tnved` для воспроизводимого preview/apply локального JSON/CSV после ручного получения и проверки официального документа. PDF намеренно не разбирается регулярными выражениями; требуется внешний `pdftotext` и ручная подготовка контракта.
-- `npm run check` и целевые Go-тесты проходят. Полный Docker-прогон миграции 000005 не выполнен: Docker Desktop недоступен в текущем окружении.
-
-## Последнее UX-изменение этапа 2 (2026-09-08)
-
-- Сопоставление колонок перенесено непосредственно в таблицу предпросмотра: у каждой колонки есть один выпадающий список назначения. Неиспользуемые колонки можно оставить без назначения.
-- В той же таблице строки можно оставить/исключить чекбоксом или убрать кнопкой «×». Отдельный экран со списком всех колонок удалён.
-- Рабочий процесс сокращён до двух понятных шагов: «Колонки и строки» → «Проверка и сохранение».
-- Проверка обязательных полей (название, количество, цена или сумма) и защита от дублирующих назначений сохранены на втором шаге.
-- Исправлен сбой применения рабочей копии без весовой колонки: backend сохраняет базу веса `unknown`, поэтому PostgreSQL больше не отклоняет товар из-за пустого `weight_basis`.
-- В интерфейсе добавлена предварительная проверка настроек назначенной весовой колонки: если в строках есть вес, до применения нужно выбрать `кг/г` и `строка/единица`; запрос с такой ошибкой больше не отправляется вслепую.
-- Исправлен строгий разбор малых цен: значения `0.041` и `0,041` теперь принимаются как однозначные десятичные числа, тогда как формат `1,000` по-прежнему требует ручного уточнения.
-- В таблице проверки добавлен просмотр фото в увеличенном виде по клику. Ручная загрузка теперь требует выбрать ровно одну строку, чтобы не привязать новое фото к соседней позиции.
-- Для широкой таблицы предпросмотра добавлена синхронная горизонтальная прокрутка сверху, над заголовками колонок.
-- Сохранённый черновик импорта теперь восстанавливается после обновления страницы даже до применения товаров; добавлен защищённый `DELETE /api/estimates/:id` с подтверждением в интерфейсе и каскадным удалением данных сметы.
 ## Отдельный расчёт перчаток (2026-09-17)
 
 - Добавлен самостоятельный защищённый раздел «Перчатки» с базовой стоимостью по формуле `ИТС карточки × нетто (кг)`. Цена пары округляется до 4 знаков, после чего стоимость строки считается как `цена пары × пары`. Количество из Excel трактуется как пары; скрытого деления на 2 нет.
@@ -164,41 +122,3 @@
 - При обновлении страницы сравниваются отметки локального и серверного черновика: более свежие несохранённые изменения браузера не заменяются старой серверной копией.
 - Проверено локально: `gofmt`, `go test ./...` (включая тесты формулы перчаток), `go vet ./...`, `npm run check`, `npm run build`, `docker compose --env-file .env.example config --quiet`. Живой Docker/PostgreSQL в окружении недоступен, поэтому миграция и браузерный сценарий требуют ручного запуска.
 
-## Gemini integration (2026-09-14)
-
-- Implemented a server-only Gemini REST adapter for explicit per-product TN VED suggestions. The configured default is the documented stable `gemini-3.8-flash` model; `GEMINI_API_KEY` and `GEMINI_MODEL` are read only by the backend and passed to Docker backend service.
-- Added authenticated routes: `POST /api/products/:id/ai-analyze`, `GET /api/products/:id/ai-analysis`, and `PATCH /api/products/:id/tnved`. Product analysis snapshots (input fields, model, response status, timestamp and re-check flag) are stored in `product_ai_analyses`; manual code is stored separately on `imported_products` and is never overwritten by an AI response.
-- Added versioned migration `000006_ai_analysis` for the product code fields and analysis history.
-- Added structured JSON schema request and strict server validation: status must be one of the three Russian statuses, final/alternative codes are empty or exactly 10 digits, and no rate/duty fields are requested. Missing characteristics remain explicit questions.
-- Added UI panel in product editor with loading/error/retry behavior, additional characteristics, result explanation/alternatives/questions, “Предложено ИИ — не проверено” label and explicit Apply action.
-- Reliability controls: 32 KiB input limit, 25-second request and 40-second overall timeout, one upstream request per explicit click (no automatic retries), one request per user per second, safe messages for missing/invalid credentials and malformed responses. No DEMO fallback and no automatic analysis of all Excel rows.
-- Verification: `gofmt`, `go test ./...`, `go vet ./...`, frontend `npm run check` and production `npm run build` pass. Mock tests cover valid structured output, malformed JSON, invalid codes, missing key, unauthorized response, single-request 429 handling, timeout and input-size limits. A live product analysis was not run (to avoid an unplanned paid call); model metadata and the provider payload validation were checked from the backend container.
-
-## Stage 2 workspace UX (2026-09-14)
-
-- Products are now presented in a full-height, scrollable table with sticky headers, search across name/SKU/TN VED, status filtering, configurable columns and a shown/total counter.
-- Selecting a row opens a keyboard-accessible right-side drawer instead of appending an editor below dozens of rows. The drawer has independent scrolling, sticky save actions, previous/next navigation, `Data` and `TN VED` tabs, compact AI output and enlarged product-photo preview.
-- The estimate sidebar can be collapsed; stage 2 uses the available content width. New XLSX upload and existing draft actions remain available from the toolbar, with existing duplicate-import behavior unchanged.
-- Product edits, manual code confirmation and image uploads continue to use the authenticated server API. No new local-only persistence or automatic Gemini requests were introduced.
-
-## Anthropic provider (2026-09-14)
-
-- Added a server-only Anthropic Messages API adapter. `AI_PROVIDER=anthropic` selects the active Claude Haiku 4.5 model `claude-haiku-4-5-20251001`; `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` are passed only to the backend. Gemini remains an explicit alternative with `AI_PROVIDER=gemini`.
-- The existing authenticated per-product action, strict result validation, input limits, timeout and one-request-per-click behavior are shared by both providers. No automatic fallback from one provider to another is performed, so a quota or configuration error is visible instead of silently spending another provider's quota.
-- Mock tests cover request headers, model selection, valid result parsing and provider error mapping. A live Anthropic request was not performed because no key was provided in the project environment.
-
-## Gemini/photo error fix (2026-09-14)
-
-- Updated the Gemini REST payload to the current `generationConfig.responseFormat.text` structured-output shape (`mimeType=APPLICATION_JSON`) and set low thinking for Gemini 3 models. The 25-second request timeout and 40-second overall deadline bound a single provider call so a failed request does not leave the UI waiting indefinitely.
-- Fixed a React remount race in the product drawer: opening the next product no longer requests the previous product's image IDs (the backend ownership check remains enforced).
-- Removed automatic Gemini retries: a click now produces exactly one upstream request; a retry is sent only after the employee presses the retry/analyze button again. Added an in-flight guard against double-clicks.
-- Hardened response parsing: all non-thought text parts are concatenated before strict JSON validation, and a presentation-only Markdown `json` fence is safely removed. This prevents a valid structured answer split across parts from being shown as an invalid response.
-
-## Диалог ИИ по товару (2026-09-14)
-
-- Добавлена миграция `000007_ai_dialog`: отдельный диалог и сообщения товара, статусы отправки, идентификатор запроса, вложения, модель, ревизия характеристик и связь с версией ответа анализа (`analysis_id`).
-- Добавлены защищённые маршруты `GET/POST /api/products/:id/ai-dialog` и `POST /api/products/:id/ai-dialog/apply`. Проверка владельца сметы выполняется на сервере; вложения принимаются только от выбранного товара.
-- В карточке товара появился компактный provider-neutral чат «Подбор кода с ИИ»: история сохраняется после обновления, есть отправка Enter/Shift+Enter, прикрепление JPG/PNG, увеличенный просмотр фото, состояния загрузки/ошибки и повторная отправка без потери текста.
-- Контекст запроса ограничен полями текущего товара, идентификаторами его закрытых фото, последним анализом и ограниченной историей. Бинарное изображение текущие текстовые адаптеры провайдеру не отправляют: файл сохраняется, проверяется по владельцу и показывается в истории. Запросы одного товара выполняются последовательно; повторный `clientRequestId` не создаёт новый вызов провайдера. Массового и автоматического анализа нет.
-- Ответ проходит строгую серверную проверку: коды-кандидаты пустые или 10-значные строки, изменения характеристик предлагаются отдельно и применяются только явной кнопкой. После применения увеличивается ревизия товара и прежний анализ помечается требующим повторной проверки; подтверждённый вручную код не перезаписывается.
-- Проверено: `gofmt`, `go test ./...`, `go vet ./...`, `npm run check`, `npm run build` и `docker compose --env-file .env.example config --quiet`. Живой платный запрос к Gemini/Anthropic не выполнялся; наличие и актуальность классификатора ТН ВЭД по-прежнему не подтверждены.
