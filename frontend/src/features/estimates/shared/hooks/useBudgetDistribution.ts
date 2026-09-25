@@ -39,6 +39,18 @@ function customsPaymentUsd(calculated: GlovesCalculationResult) {
   return kzt / rate
 }
 
+// Почему пробный расчёт не дал итог: какие строки не посчитаны и с какой ошибкой (первые три).
+function calculationProblem(calculated: GlovesCalculationResult) {
+  const rate = numberOf(calculated.usdKzt)
+  if (rate === null || !(rate > 0)) return 'не указан курс USD → KZT'
+  const rows = calculated.items
+    .map((item, index) => ({ item, row: index + 1 }))
+    .filter(({ item }) => !item.excluded && item.status !== 'calculated')
+  const shown = rows.slice(0, 3).map(({ item, row }) => `№ ${row} — ${[...(item.errors ?? []), ...(item.warnings ?? [])][0] ?? 'не рассчитана'}`)
+  if (rows.length > shown.length) shown.push(`и ещё ${rows.length - shown.length}`)
+  return shown.join('; ') || calculated.totals.blockingErrors?.[0] || ''
+}
+
 function sumOver(rows: Row[], indexes: number[], value: (row: Row) => number | null) {
   return indexes.reduce((sum, index) => sum + (value(rows[index]) ?? 0), 0)
 }
@@ -203,15 +215,23 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
       }
       const byProduct = answered.length > 0
 
+      let problem = ''
       const outcome = await distributeBudget(rows, amount, access, {
         weights: resolveWeights([...facts.values()]),
         productOf: byProduct ? productKey : undefined,
         productPrices: byProduct ? productPrices : undefined,
-        evaluate: async (candidate) => customsPaymentUsd(await preview(candidate.map((row) => row.item))),
+        evaluate: async (candidate) => {
+          const calculated = await preview(candidate.map((row) => row.item))
+          const total = customsPaymentUsd(calculated)
+          if (total === null) problem = calculationProblem(calculated)
+          return total
+        },
         onProgress: setEvaluations,
       })
       if (outcome.status === 'nothing') {
-        setWarning(outcome.message ?? 'Распределять нечего')
+        setWarning(outcome.notCalculated && problem
+          ? `Итог «Растаможка к оплате» не посчитан — исправьте строки и повторите: ${problem}`
+          : outcome.message ?? 'Распределять нечего')
         return
       }
       // Пояснения — только к строкам, цену которых поставил подбор (строки со своей ценой не менялись).

@@ -1,3 +1,4 @@
+import { priceText as formatPrice } from './priceText'
 // Распределение бюджета по ценам единицы товаров: цены подбираются так, чтобы итог
 // «Растаможка к оплате» (пошлина + антидемпинг + НДС + сбор) не доходил до бюджета на
 // minGap…maxGap USD (20–30). Итог считает сервер (ставки бывают за кг, пару, комбинированные),
@@ -61,6 +62,8 @@ export type BudgetDistribution<T> = {
   fixedRows: number
   evaluations: number
   message?: string
+  // Пробный расчёт вернул не все строки: в строках ошибки.
+  notCalculated?: boolean
 }
 
 // Строки без кода не объединяются: у каждой своя группа.
@@ -142,7 +145,7 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     const weight = options.weights?.[group.key]
     return weight !== undefined && Number.isFinite(weight) && weight > 0 ? weight : 1
   }
-  const priceText = (value: number) => value.toFixed(decimals).replace(/\.?0+$/, '') || '0'
+  const priceText = (value: number) => formatPrice(value, decimals)
   const relative = productShares(rows, groups, access, options.productOf, options.productPrices)
   const productOf = options.productOf
   // Строка без своей цены в группе с ценой: тот же товар — его цена; другой товар — цена первой
@@ -157,13 +160,16 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     const anchorShare = relative.get(group.pricedIndexes[0])
     return share && anchorShare ? price * share / anchorShare : price
   }
-  // Цены свободных групп — в целых «шагах» 10^−decimals.
-  const stepsFor = (factor: number) => new Map(free.map((group) => [group.key, Math.max(0, Math.round(weightOf(group) * factor * scale))]))
+  // Цены свободных групп — в целых «шагах» 10^−decimals, не меньше одного шага: строку с ценой 0
+  // сервер не считает («Укажите цену»), и подбор принял бы это за ошибку в строках.
+  // Ниже этого масштаба цены всех свободных групп — один шаг (0.0001), дальше опускать некуда.
+  const minFactor = Math.min(...free.map((group) => 1 / (weightOf(group) * scale)))
+  const stepsFor = (factor: number) => new Map(free.map((group) => [group.key, Math.max(1, Math.round(weightOf(group) * factor * scale))]))
   const rowsFor = (steps: Map<string, number>) => {
     const priceByIndex = new Map<number, string>()
     // В группе с ценой строки без цены получают цену группы; строки со своей ценой не трогаем.
     fixed.forEach((group) => group.indexes.filter((index) => !group.pricedIndexes.includes(index)).forEach((index) => priceByIndex.set(index, priceText(fixedPriceFor(group, index)))))
-    free.forEach((group) => group.indexes.forEach((index) => priceByIndex.set(index, priceText(Math.round((steps.get(group.key) ?? 0) * (relative.get(index) ?? 1)) / scale))))
+    free.forEach((group) => group.indexes.forEach((index) => priceByIndex.set(index, priceText(Math.max(1, Math.round((steps.get(group.key) ?? 1) * (relative.get(index) ?? 1))) / scale))))
     return rows.map((row, index) => priceByIndex.has(index) ? access.setPrice(row, priceByIndex.get(index) ?? '') : row)
   }
   const measure = async (steps: Map<string, number>) => {
@@ -191,7 +197,7 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     consider(trial)
     return trial
   }
-  const failed = () => nothing('Итог «Растаможка к оплате» не посчитан: сначала исправьте ошибки в строках (код ТН ВЭД, количество, вес) и повторите')
+  const failed = () => ({ ...nothing('Итог «Растаможка к оплате» не посчитан: сначала исправьте ошибки в строках (код ТН ВЭД, количество, вес) и повторите'), notCalculated: true })
 
   // Начальная догадка: масштаб, при котором стоимость свободных товаров равна цели.
   const weightedQuantity = free.reduce((sum, group) => sum + weightOf(group) * group.quantity, 0)
@@ -206,19 +212,19 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
   let next = first.total > 0 ? first.factor * target / first.total : first.factor * 2
   while (evaluations < maxEvaluations && penalty(budget - (best as Trial | null ?? first).total) > 0) {
     if (lower && upper && !(next > lower.factor && next < upper.factor)) next = (lower.factor + upper.factor) / 2
-    if (!(next >= 0) || !Number.isFinite(next)) next = 0
+    if (!Number.isFinite(next) || next < minFactor) next = minFactor
     const trial = await tryFactor(next)
     if (!trial) return failed()
     if (trial.total > target) upper = trial; else lower = trial
-    if (trial.factor === 0 && trial.total > budget - minGap) {
-      return nothing(`Даже без цен растаможка к оплате ${format(trial.total)} USD — это больше бюджета. Распределять нечего`, trial.total)
+    if (trial.factor <= minFactor && trial.total > budget - minGap) {
+      return nothing(`Даже при минимальных ценах растаможка к оплате ${format(trial.total)} USD — это больше бюджета ${format(budget)} USD. Её дают сбор, ставки за кг или штуку и строки с уже заданной ценой. Увеличьте бюджет или проверьте эти строки`, trial.total)
     }
     const slope = (trial.total - previous.total) / (trial.factor - previous.factor)
     const secant = Number.isFinite(slope) && slope > 0 ? trial.factor + (target - trial.total) / slope : NaN
     // Итог не растёт с ценами (или не удалось посчитать наклон) — сужаем интервал пополам.
     next = Number.isFinite(secant) ? secant : lower && upper ? (lower.factor + upper.factor) / 2 : trial.factor * 2
     previous = trial
-    if (upper && upper.factor === 0) break
+    if (upper && upper.factor <= minFactor) break
   }
 
   // Добор округления: цена группы с наименьшим количеством — самый мелкий шаг итога.
@@ -237,7 +243,7 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
       if (perStep > 0) {
         const gap = budget - chosen.total
         const shifted = new Map(chosen.steps)
-        shifted.set(adjust.key, Math.max(0, base + Math.round((gap - middle) / perStep)))
+        shifted.set(adjust.key, Math.max(1, base + Math.round((gap - middle) / perStep)))
         const shiftedTotal = await measure(shifted)
         if (shiftedTotal !== null) consider({ factor: chosen.factor, steps: shifted, total: shiftedTotal })
       }

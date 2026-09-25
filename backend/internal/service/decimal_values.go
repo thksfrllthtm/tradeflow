@@ -81,8 +81,12 @@ func parseNonNegativeDefault(value string, def decimal.Decimal, field string) (d
 	return parsed, nil
 }
 
+// parseDecimal reads a number the way it is written in Kazakhstan and Russia: a dot or a comma
+// separates the fraction («4.125» and «4,125» are both 4.125), thousands are separated only by
+// spaces («1 500,50»). The rule is the same for every number: typed on the site or from Excel.
+// A number with both a dot and a comma («1,500.50») or several separators is rejected.
 func parseDecimal(value string) (decimal.Decimal, error) {
-	value = strings.ReplaceAll(strings.TrimSpace(value), " ", "")
+	value = strings.NewReplacer(" ", "", " ", "", " ", "").Replace(strings.TrimSpace(value))
 	if strings.Contains(value, ",") && strings.Contains(value, ".") {
 		return decimal.Zero, fmt.Errorf("ambiguous decimal")
 	}
@@ -97,10 +101,6 @@ func parseDecimal(value string) (decimal.Decimal, error) {
 		parts := strings.Split(value, separator)
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 			return decimal.Zero, fmt.Errorf("invalid decimal")
-		}
-		integerPart := strings.TrimPrefix(parts[0], "-")
-		if len(parts[1]) == 3 && integerPart != "0" {
-			return decimal.Zero, fmt.Errorf("ambiguous decimal")
 		}
 	}
 	value = strings.ReplaceAll(value, ",", ".")

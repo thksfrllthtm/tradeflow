@@ -88,7 +88,24 @@ describe('distributeBudget', () => {
     // The minimum duty alone (0.5 × 5000 + VAT + fee) is above a 1000 USD budget.
     const tooSmall = await distributeBudget([{ code: 'A', quantity: 5000 }], 1000, access, { evaluate: customs })
     expect(tooSmall.status).toBe('nothing')
+    expect(tooSmall.message).toMatch(/минимальных ценах/)
     expect(tooSmall.items[0].price).toBeUndefined()
+  })
+
+  it('never tries a zero price: the server does not calculate such a row', async () => {
+    // Как сервер: строка без цены или с ценой 0 не рассчитана — итога нет.
+    const serverLike = async (rows: Row[]) => included(rows).some((row) => !(Number(row.price) > 0)) ? null : customs(rows)
+    const tried: string[] = []
+    const result = await distributeBudget([
+      { code: 'A', quantity: 100, price: '400' },
+      { code: 'B', quantity: 1000 },
+    ], 5000, access, { evaluate: async (rows) => { tried.push(rows[1].price ?? ''); return serverLike(rows) } })
+    // Строка A с заданной ценой сама даёт растаможку больше бюджета — честное сообщение,
+    // а не «исправьте ошибки в строках».
+    expect(result.status).toBe('nothing')
+    expect(result.notCalculated).toBeUndefined()
+    expect(result.message).toMatch(/минимальных ценах/)
+    expect(tried.every((price) => Number(price) > 0)).toBe(true)
   })
 
   it('splits by weights', async () => {

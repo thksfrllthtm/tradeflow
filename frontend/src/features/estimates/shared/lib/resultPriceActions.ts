@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction } from 'react'
 import { GlovesCalculationResult, GlovesItemInput } from '../types'
+import { priceText } from './priceText'
 
 type PriceState = {
   items: GlovesItemInput[]
@@ -34,10 +35,10 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
         const currentPrice = Number(resultItem?.pricePerPair || resultItem?.pairPrice || item.pricePerPair || '')
         if (!Number.isFinite(currentPrice)) return item
         if (selected && !selected.has(index)) {
-          return { ...item, pricePerPair: currentPrice.toFixed(4).replace(/\.?0+$/, '') }
+          return { ...item, pricePerPair: priceText(currentPrice) }
         }
         const nextPrice = Math.max(0, currentPrice - decrement)
-        return { ...item, pricePerPair: nextPrice.toFixed(4).replace(/\.?0+$/, '') }
+        return { ...item, pricePerPair: priceText(nextPrice) }
       })
       setPreviousBulkResult(result)
       void calculate(nextItems, false)
