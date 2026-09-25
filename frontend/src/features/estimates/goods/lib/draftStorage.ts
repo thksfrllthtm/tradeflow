@@ -1,14 +1,33 @@
 import { createPhotoStore } from '../../shared/lib/photoStore'
 import { todayIso } from '../../shared/lib/dates'
 import { storageKey } from '../../shared/lib/localDraft'
-import { GlovesItemInput, GlovesParams } from '../../shared/types'
+import { GlovesCalculationResult, GlovesItemInput, GlovesParams } from '../../shared/types'
 
-// Черновик сметы товаров в браузере: параметры и строки — в localStorage,
+// Черновик сметы товаров в браузере: параметры, строки и результат расчёта — в localStorage,
 // фотографии — в IndexedDB. Ключи не менять: по ним читаются уже сохранённые черновики.
 export const PARAMS_KEY = 'tradeflow.gloves-copy.params'
 export const ITEMS_KEY = 'tradeflow.gloves-copy.items'
+export const RESULT_KEY = 'tradeflow.gloves-copy.result'
 export const FILE_KEY = 'tradeflow.gloves-copy.file'
+// Есть правки, которых нет на сервере. Ставится, только когда черновик отличается от сохранённого.
 export const LOCAL_UPDATED_KEY = 'tradeflow.gloves-copy.localUpdatedAt'
+
+// Последний результат расчёта (фото в нём нет): смета снова открывается на этапе результата
+// с ценами, изменёнными на этом этапе.
+export function storedResult(estimateId: number): GlovesCalculationResult | null {
+  try {
+    const raw = localStorage.getItem(storageKey(RESULT_KEY, estimateId))
+    const value = raw ? JSON.parse(raw) as GlovesCalculationResult : null
+    return value && Array.isArray(value.items) && value.totals ? value : null
+  } catch {
+    return null
+  }
+}
+
+// Черновик без фото — чтобы сравнить его с сохранённым на сервере.
+export function draftSnapshot(params: GlovesParams, items: GlovesItemInput[], result: GlovesCalculationResult | null) {
+  return JSON.stringify({ params, items: items.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => item), result })
+}
 
 export const goodsPhotoStore = createPhotoStore('tradeflow-gloves-copy-photos')
 

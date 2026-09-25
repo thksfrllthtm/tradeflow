@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { goodsEstimatesApi } from './goodsEstimatesApi'
-import { GlovesEstimate, GlovesEstimateInput, GlovesEstimateSummary } from '../shared/types'
+import { GlovesEstimateInput, GlovesEstimateSummary } from '../shared/types'
 import { User } from '@/shared/types/user'
 import { GoodsCalculator } from './calculator/GoodsCalculator'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -85,7 +85,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     }
   }
 
-  function onEstimateSaved(saved: GlovesEstimate) {
+  function onEstimateSaved(saved: GlovesEstimateSummary) {
     setEstimates((current) => current.map((item) => item.id === saved.id ? {
       id: saved.id,
       name: saved.name,

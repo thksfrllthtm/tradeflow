@@ -3,14 +3,15 @@ import { mappedFieldForHeader, normalizeStoredMapping } from '../../shared/lib/e
 import { mergeStoredPhotos, photosOf } from '../../shared/lib/itemPhotos'
 import { storageKey } from '../../shared/lib/localDraft'
 import { useSyncedHorizontalScroll } from '../../shared/hooks/useSyncedHorizontalScroll'
-import { GlovesCalculationInput, GlovesCalculationResult, GlovesEstimate, GlovesItemInput, GlovesParams, GlovesParseRow, GlovesSourceSnapshot, SheetInfo } from '../../shared/types'
+import { GlovesCalculationInput, GlovesCalculationResult, GlovesEstimateSummary, GlovesItemInput, GlovesParams, GlovesParseRow, GlovesSourceSnapshot, SheetInfo } from '../../shared/types'
 import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { GlovesMapping } from '../types'
-import { emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, storedItems, storedParams } from '../lib/draftStorage'
+import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
 import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes } from '../lib/importMapping'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 import { useDirectorySearch } from '../hooks/useDirectorySearch'
 import { useDraftAutosave } from '../hooks/useDraftAutosave'
+import { useServerAutosave } from '../hooks/useServerAutosave'
 import '../../shared/styles/calculatorCommon.css'
 import '../styles/calculator.css'
 import './GoodsCalculator.css'
@@ -26,7 +27,7 @@ import { useBudgetDistribution } from '../../shared/hooks/useBudgetDistribution'
 import { rowActions } from '../../shared/lib/rowActions'
 import '../../shared/styles/calculatorPage.css'
 
-type Props = { estimateId: number; onEstimateSaved?: (estimate: GlovesEstimate) => void; headerSlot: ReactNode }
+type Props = { estimateId: number; onEstimateSaved?: (estimate: GlovesEstimateSummary) => void; headerSlot: ReactNode }
 
 export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Props) {
   const paramsStorageKey = storageKey(PARAMS_KEY, estimateId)
@@ -35,8 +36,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const localUpdatedStorageKey = storageKey(LOCAL_UPDATED_KEY, estimateId)
   const [params, setParams] = useState<GlovesParams>(() => storedParams(estimateId))
   const [items, setItems] = useState<GlovesItemInput[]>(() => storedItems(estimateId))
-  const [step, setStep] = useState<1 | 2 | 3>(() => storedItems(estimateId).length > 0 ? 2 : 1)
-  const [result, setResult] = useState<GlovesCalculationResult | null>(null)
+  const [step, setStep] = useState<1 | 2 | 3>(() => storedResult(estimateId) ? 3 : storedItems(estimateId).length > 0 ? 2 : 1)
+  const [result, setResult] = useState<GlovesCalculationResult | null>(() => storedResult(estimateId))
   const [previousBulkResult, setPreviousBulkResult] = useState<GlovesCalculationResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [usdRateLoading, setUsdRateLoading] = useState(false)
@@ -64,6 +65,14 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const nbkRateDateRef = useRef('')
   const rateRequestRef = useRef(0)
   const hydrationRef = useRef(false)
+  // Черновик, который сейчас лежит на сервере (draftSnapshot): отличается от него только то,
+  // что изменено в этом браузере и ещё не сохранено.
+  const savedSnapshotRef = useRef<string | null>(null)
+  const [savedVersion, setSavedVersion] = useState(0)
+  function markSaved(savedParams: GlovesParams, savedItems: GlovesItemInput[], savedResult: GlovesCalculationResult | null) {
+    savedSnapshotRef.current = draftSnapshot(savedParams, savedItems, savedResult)
+    setSavedVersion((version) => version + 1)
+  }
   const { tableWrapRef, topScrollRef, syncHorizontalScroll } = useSyncedHorizontalScroll(step === 2)
   const calculationRequestRef = useRef(0)
 
@@ -72,7 +81,21 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     setLightbox({ photos, index: Math.max(0, Math.min(index, photos.length - 1)) })
   }
 
-  useDraftAutosave({ estimateId, params, items, photoStorageReady, hydrationRef, onNotice: setStorageNotice })
+  useDraftAutosave({ estimateId, params, items, result, photoStorageReady, hydrationRef, savedSnapshotRef, savedVersion, onNotice: setStorageNotice })
+  // Смета загружена с сервера: с этого момента правки сами сохраняются на сервер.
+  const [serverReady, setServerReady] = useState(false)
+  const autosave = useServerAutosave({
+    estimateId,
+    state: { params, items, result, source: sourceSnapshot },
+    enabled: serverReady,
+    onSaving: () => setStorageNotice('Сохраняем на сервере…'),
+    onSaved: (summary, saved) => {
+      markSaved(saved.params, saved.items, saved.result)
+      onEstimateSaved?.(summary)
+      setStorageNotice(`Сохранено на сервере · ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`)
+    },
+    onError: (message) => setStorageNotice(`Не сохранено на сервере: ${message}. Повторим автоматически`),
+  })
   const directorySearch = useDirectorySearch(setError)
 
   useEffect(() => {
@@ -83,29 +106,41 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
       const serverUpdatedAt = Date.parse(estimate.updatedAt) || 0
       const localDraftExists = localStorage.getItem(localUpdatedStorageKey) !== null
       const draft = { input: estimate.input, result: estimate.result, updatedAt: estimate.updatedAt }
-      if (!localDraftExists || localUpdatedAt <= serverUpdatedAt) {
-        const { items: _items, ...savedParams } = draft.input ?? ({} as GlovesCalculationInput)
-        setParams(normalizeParams(savedParams))
-        const restoredItems = Array.isArray(draft.input?.items) ? ensureItemIds(draft.input.items) : []
+      const { items: _items, ...savedParams } = draft.input ?? ({} as GlovesCalculationInput)
+      const serverParams = normalizeParams(savedParams)
+      const restoredItems = Array.isArray(draft.input?.items) ? ensureItemIds(draft.input.items) : []
+      const serverSource = draft.input?.source
+        ? { ...draft.input.source, mapping: normalizeStoredMapping(emptyMapping(), draft.input.source.mapping as Partial<GlovesMapping> | undefined) }
+        : null
+      markSaved(serverParams, restoredItems, draft.result ?? null)
+      autosave.setBaseline({ params: serverParams, items: restoredItems, result: draft.result ?? null, source: serverSource })
+      // Исходная таблица Excel хранится только на сервере — берём её в любом случае, иначе
+      // автосохранение стёрло бы её на сервере.
+      if (serverSource) {
+        setSourceSnapshot(serverSource)
+        setSheet(serverSource.sheet || '')
+        setHeaderRow(serverSource.headerRow || 1)
+        setDataStartRow(serverSource.dataStartRow || 2)
+        setHeaders(serverSource.headers ?? [])
+        setRawRows(serverSource.rows ?? [])
+        setMapping(serverSource.mapping)
+      }
+      // Прежняя версия сайта ставила отметку «в браузере новее» при простом открытии сметы. Если
+      // строки и параметры совпадают с сервером, а своего результата в браузере нет, отметка
+      // ложная: берём серверную версию вместе с результатом расчёта.
+      const spuriousLocalMark = !storedResult(estimateId) && draftSnapshot(params, items, null) === draftSnapshot(serverParams, restoredItems, null)
+      if (!localDraftExists || localUpdatedAt <= serverUpdatedAt || spuriousLocalMark) {
+        setParams(serverParams)
         setItems(mergeStoredPhotos(restoredItems, storedPhotos))
-        if (draft.input?.source) {
-          const savedMapping = normalizeStoredMapping(emptyMapping(), draft.input.source.mapping as Partial<GlovesMapping> | undefined)
-          setSourceSnapshot({ ...draft.input.source, mapping: savedMapping })
-          setSheet(draft.input.source.sheet || '')
-          setHeaderRow(draft.input.source.headerRow || 1)
-          setDataStartRow(draft.input.source.dataStartRow || 2)
-          setHeaders(draft.input.source.headers ?? [])
-          setRawRows(draft.input.source.rows ?? [])
-          setMapping(savedMapping)
-        }
         setResult(draft.result ?? null)
         setStep(draft.result ? 3 : Array.isArray(draft.input?.items) && draft.input.items.length > 0 ? 2 : 1)
         setStorageNotice(`Смета загружена: ${new Date(draft.updatedAt).toLocaleString('ru-RU')}`)
       } else {
         setItems((current) => mergeStoredPhotos(current, storedPhotos))
-        setStorageNotice('Оставлены более свежие несохранённые изменения этого браузера')
+        setStorageNotice('Показаны изменения из этого браузера — сохраняем их на сервер')
       }
       hydrationRef.current = true
+      setServerReady(true)
     }).catch((reason) => {
       if (!active) return
       setStorageNotice(`Серверный черновик недоступен: ${requestErrorMessage(reason)}`)
@@ -283,7 +318,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     setResult(null)
   }
 
-  async function calculate(itemsOverride?: GlovesItemInput[], saveServerDraft = true, updateInputItems = true) {
+  // Результат сохраняется на сервер автосохранением, как и любая другая правка.
+  async function calculate(itemsOverride?: GlovesItemInput[], updateInputItems = true) {
     const itemsToCalculate = itemsOverride ?? items
     if (itemsToCalculate.filter((item) => !item.excluded).length === 0) {
       setError('Добавьте хотя бы одну включённую строку')
@@ -299,14 +335,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
       if (requestId !== calculationRequestRef.current) return
       setResult(calculated)
       setStep(3)
-      // The calculation response does not contain photos.  Saving a draft may
-      // take longer because it validates and stores Base64 image data, so it
-      // must not keep the calculator in the blocking "Считаем…" state.
-      setLoading(false)
-      setStorageNotice('Расчёт готов. Сохраняем черновик…')
-      if (saveServerDraft) void goodsEstimatesApi.saveDraft(estimateId, { input: { ...params, items: itemsToCalculate, source: sourceSnapshot ?? undefined }, result: calculated })
-        .then((saved) => { onEstimateSaved?.(saved); setStorageNotice('Черновик сохранён на сервере и в этом браузере') })
-        .catch((reason) => setStorageNotice(`Расчёт выполнен, но серверный черновик не сохранён: ${requestErrorMessage(reason)}`))
     } catch (reason) {
       if (requestId === calculationRequestRef.current) setError(requestErrorMessage(reason))
     } finally {
@@ -340,13 +368,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     setResult((current) => current ? { ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item) } : current)
   }
 
+  // Кнопка «Сохранить»: не ждать паузы автосохранения. Уходят только изменения.
   async function saveDraft() {
     if (loading) return
     setLoading(true); setError('')
     try {
-      const saved = await goodsEstimatesApi.saveDraft(estimateId, { input: { ...params, items, source: sourceSnapshot ?? undefined }, result: result ?? undefined })
-      onEstimateSaved?.(saved)
-      setStorageNotice('Черновик сохранён на сервере и в этом браузере')
+      await autosave.saveNow()
+      setStorageNotice(`Сохранено на сервере · ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`)
     } catch (reason) {
       setError(requestErrorMessage(reason))
     } finally {
@@ -369,8 +397,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   }
 
   function clearAll() {
-    if (!window.confirm('Очистить параметры и все строки этой сметы?')) return
-    setParams(emptyParams()); autoRateRequestedRef.current = false; nbkRateDateRef.current = ''; setItems([]); setResult(null); setStep(1); setSourceSnapshot(null); setSelectedForDirectory([]); setDirectoryOpen(false); directorySearch.reset(); localStorage.removeItem(paramsStorageKey); localStorage.removeItem(itemsStorageKey); localStorage.removeItem(fileStorageKey); localStorage.removeItem(localUpdatedStorageKey)
+    if (!window.confirm('Очистить параметры и все строки этой сметы? Смета очистится и на сервере.')) return
+    setParams(emptyParams()); autoRateRequestedRef.current = false; nbkRateDateRef.current = ''; setItems([]); setResult(null); setStep(1); setSourceSnapshot(null); setSelectedForDirectory([]); setDirectoryOpen(false); directorySearch.reset(); localStorage.removeItem(paramsStorageKey); localStorage.removeItem(itemsStorageKey); localStorage.removeItem(storageKey(RESULT_KEY, estimateId)); localStorage.removeItem(fileStorageKey); localStorage.removeItem(localUpdatedStorageKey)
     void goodsPhotoStore.remove(estimateId)
   }
 

@@ -92,12 +92,6 @@ type GlovesCalculationResult struct {
 	Totals           CalculationTotals `json:"totals"`
 }
 
-type GlovesDraft struct {
-	Input     GlovesCalculationInput   `json:"input"`
-	Result    *GlovesCalculationResult `json:"result,omitempty"`
-	UpdatedAt string                   `json:"updatedAt"`
-}
-
 type GlovesEstimateInput struct {
 	Name           string `json:"name"`
 	Client         string `json:"client"`

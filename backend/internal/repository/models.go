@@ -147,9 +147,9 @@ type ProductDirectoryEntry struct {
 
 func (ProductDirectoryEntry) TableName() string { return "product_directory_entries" }
 
-// GoodsEstimate is the independent storage for the copied gloves
-// calculator. It intentionally has its own table so the original gloves
-// estimates cannot be changed from the copied section.
+// GoodsEstimate is a goods estimate: parameters and rows (input_snapshot, without photos)
+// and the last calculation result. Row photos live in goods_estimate_photos. The table name
+// is left from the first version of the calculator (gloves).
 type GoodsEstimate struct {
 	ID             int64     `gorm:"primaryKey" json:"id"`
 	UserID         int64     `gorm:"column:user_id;not null;index" json:"userId"`
@@ -163,3 +163,24 @@ type GoodsEstimate struct {
 }
 
 func (GoodsEstimate) TableName() string { return "gloves_copy_estimates" }
+
+// GoodsEstimateSummary is a goods estimate without rows, result and photos: the estimates list.
+type GoodsEstimateSummary struct {
+	ID             int64
+	UserID         int64
+	Name           string
+	Client         string
+	AssessmentDate time.Time
+	HasResult      bool
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+// GoodsEstimatePhoto holds the photos of one estimate row (data URLs, the first is the main one).
+type GoodsEstimatePhoto struct {
+	EstimateID int64  `gorm:"column:estimate_id;primaryKey"`
+	ItemID     string `gorm:"column:item_id;primaryKey"`
+	Photos     JSON   `gorm:"column:photos;type:jsonb;not null"`
+}
+
+func (GoodsEstimatePhoto) TableName() string { return "goods_estimate_photos" }

@@ -3,16 +3,9 @@ package repository
 import (
 	"context"
 	"errors"
-	"time"
 
 	"gorm.io/gorm"
 )
-
-func (r *Repository) ListGoodsEstimates(ctx context.Context, userID int64) ([]GoodsEstimate, error) {
-	var estimates []GoodsEstimate
-	err := ownedBy(r.db.WithContext(ctx), userID).Order("updated_at DESC").Find(&estimates).Error
-	return estimates, err
-}
 
 func (r *Repository) GoodsEstimateByIDForUser(ctx context.Context, id, userID int64) (GoodsEstimate, error) {
 	var estimate GoodsEstimate
@@ -46,24 +39,6 @@ func (r *Repository) UpdateGoodsEstimate(ctx context.Context, estimate GoodsEsti
 		return GoodsEstimate{}, ErrNotFound
 	}
 	return r.GoodsEstimateByIDForUser(ctx, estimate.ID, estimate.UserID)
-}
-
-func (r *Repository) SaveGoodsEstimateDraft(ctx context.Context, id, userID int64, inputSnapshot, resultSnapshot JSON, assessmentDate time.Time, updatedAt time.Time) (GoodsEstimate, error) {
-	result := ownedBy(r.db.WithContext(ctx).Model(&GoodsEstimate{}), userID).
-		Where("id = ?", id).
-		Updates(map[string]any{
-			"assessment_date": assessmentDate,
-			"input_snapshot":  inputSnapshot,
-			"result_snapshot": resultSnapshot,
-			"updated_at":      updatedAt,
-		})
-	if result.Error != nil {
-		return GoodsEstimate{}, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return GoodsEstimate{}, ErrNotFound
-	}
-	return r.GoodsEstimateByIDForUser(ctx, id, userID)
 }
 
 func (r *Repository) DeleteGoodsEstimate(ctx context.Context, id, userID int64) error {

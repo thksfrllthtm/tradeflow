@@ -99,7 +99,7 @@ func (s *Server) Router() *gin.Engine {
 	goodsEstimates.GET("/estimates/:id", s.getGoodsEstimate)
 	goodsEstimates.PATCH("/estimates/:id", s.updateGoodsEstimate)
 	goodsEstimates.DELETE("/estimates/:id", s.deleteGoodsEstimate)
-	goodsEstimates.PUT("/estimates/:id/draft", s.saveGoodsEstimateDraft)
+	goodsEstimates.PATCH("/estimates/:id/draft", s.saveGoodsEstimateDraft)
 
 	s.serveFrontend(router)
 	return router

@@ -93,13 +93,14 @@ func (s *Server) saveGoodsEstimateDraft(c *gin.Context) {
 	if !ok {
 		return
 	}
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<20)
-	var draft service.GlovesDraft
-	if err := c.ShouldBindJSON(&draft); err != nil {
-		badRequest(c, "Проверьте данные черновика перчаток", "draft")
+	// Автосохранение присылает только изменённые части; фото — порциями по несколько МБ.
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 32<<20)
+	var patch service.GoodsDraftPatch
+	if err := c.ShouldBindJSON(&patch); err != nil {
+		badRequest(c, "Проверьте данные черновика сметы", "draft")
 		return
 	}
-	saved, err := s.goodsEstimates.SaveEstimateDraft(c.Request.Context(), id, estimateScope(c), draft)
+	saved, err := s.goodsEstimates.PatchEstimateDraft(c.Request.Context(), id, estimateScope(c), patch)
 	if !handleGoodsEstimateError(c, err) {
 		return
 	}

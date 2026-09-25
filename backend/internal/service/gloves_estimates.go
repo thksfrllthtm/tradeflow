@@ -54,24 +54,6 @@ func parseGlovesEstimateDate(value string) (time.Time, error) {
 	return date, nil
 }
 
-func validateGlovesDraftItems(items []GlovesItemInput) error {
-	if len(items) > MaxRowsPerSheet {
-		return &ValidationError{Field: "items", Message: fmt.Sprintf("В черновике не может быть больше %d строк", MaxRowsPerSheet)}
-	}
-	for index, item := range items {
-		photos := append([]string{}, item.PhotoURLs...)
-		if item.PhotoURL != "" {
-			photos = append(photos, item.PhotoURL)
-		}
-		for _, photo := range photos {
-			if err := validateGlovesPhotoData(photo); err != nil {
-				return &ValidationError{Field: "items", Message: fmt.Sprintf("Строка %d: %s", index+1, err.Error())}
-			}
-		}
-	}
-	return nil
-}
-
 func validateGlovesPhotoData(value string) error {
 	if strings.TrimSpace(value) == "" {
 		return nil

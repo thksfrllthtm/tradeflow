@@ -7,8 +7,8 @@ type PriceState = {
   previousBulkResult: GlovesCalculationResult | null
   setResult: Dispatch<SetStateAction<GlovesCalculationResult | null>>
   setPreviousBulkResult: Dispatch<SetStateAction<GlovesCalculationResult | null>>
-  // Пересчёт без сохранения черновика на сервер и без замены исходных строк.
-  calculate: (itemsOverride?: GlovesItemInput[], saveServerDraft?: boolean, updateInputItems?: boolean) => Promise<void>
+  // Пересчёт без замены исходных строк (updateInputItems = false).
+  calculate: (itemsOverride?: GlovesItemInput[], updateInputItems?: boolean) => Promise<void>
 }
 
 // Этап 3: временные цены единицы — ручная правка, массовое уменьшение и откат.
@@ -21,7 +21,7 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
         ? { ...item, pricePerPair: value }
         : { ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair })
       setResult((current) => current ? { ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item) } : current)
-      void calculate(nextItems, false, false)
+      void calculate(nextItems, false)
     },
 
     decreaseResultPrices(value: string, selectedIndexes?: number[]) {
@@ -40,18 +40,18 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
         return { ...item, pricePerPair: nextPrice.toFixed(4).replace(/\.?0+$/, '') }
       })
       setPreviousBulkResult(result)
-      void calculate(nextItems, false, false)
+      void calculate(nextItems, false)
     },
 
     // Цены после распределения бюджета: как массовый вычет — прежний результат остаётся для отката.
     applyDistributedPrices(nextItems: GlovesItemInput[]) {
       if (result) setPreviousBulkResult(result)
-      void calculate(nextItems, false, false)
+      void calculate(nextItems, false)
     },
 
     restoreInitialResult() {
       setPreviousBulkResult(null)
-      void calculate(undefined, false, false)
+      void calculate(undefined, false)
     },
 
     undoLastBulkPriceDecrease() {
