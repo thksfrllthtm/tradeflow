@@ -7,6 +7,7 @@ import { TNVEDDirectoryPage } from '@/features/directories/tnved/TNVEDDirectoryP
 import { ProductDirectoryPage } from '@/features/directories/products/ProductDirectoryPage'
 import { GoodsEstimatesPage } from '@/features/estimates/goods/GoodsEstimatesPage'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
+import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
 export function App() {
@@ -75,5 +76,6 @@ export function App() {
     case 'products': return <ProductDirectoryPage user={user} onLogout={() => void logout()} />
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
     case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null
+    case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
   }
 }

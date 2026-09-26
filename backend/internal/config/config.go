@@ -16,6 +16,12 @@ type Config struct {
 	CookieSecure      bool
 	DeepSeekAPIKey    string
 	DeepSeekModel     string
+	// Ceramics module AI: any OpenAI-compatible Chat Completions API. Empty key and model fall
+	// back to DeepSeek; CeramicsAIVision sends product photos (deepseek-flash accepts images).
+	CeramicsAIAPIKey  string
+	CeramicsAIBaseURL string
+	CeramicsAIModel   string
+	CeramicsAIVision  bool
 	// RegistrationDisabled: запретить самостоятельную регистрацию (ALLOW_REGISTRATION=false).
 	// На публичном сервере сотрудников заводит bootstrap-admin.
 	RegistrationDisabled bool
@@ -40,6 +46,11 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	ceramicsVision, err := boolEnv("CERAMICS_AI_VISION", true)
+	if err != nil {
+		return Config{}, err
+	}
+
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if databaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
@@ -54,6 +65,10 @@ func Load() (Config, error) {
 		CookieSecure:         cookieSecure,
 		DeepSeekAPIKey:       strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
 		DeepSeekModel:        stringEnv("DEEPSEEK_MODEL", "deepseek-flash"),
+		CeramicsAIAPIKey:     stringEnv("CERAMICS_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
+		CeramicsAIBaseURL:    stringEnv("CERAMICS_AI_BASE_URL", "https://api.deepseek.com"),
+		CeramicsAIModel:      stringEnv("CERAMICS_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
+		CeramicsAIVision:     ceramicsVision,
 		RegistrationDisabled: !allowRegistration,
 		StaticDir:            strings.TrimSpace(os.Getenv("STATIC_DIR")),
 	}, nil

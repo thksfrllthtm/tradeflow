@@ -21,6 +21,7 @@ type Server struct {
 	goodsEstimates   *service.GoodsEstimateService
 	employees        *service.EmployeeService
 	pricing          *service.PricingService
+	ceramics         *service.CeramicsService
 	authMu           sync.Mutex
 	authRates        map[string]authRate
 }
@@ -35,6 +36,9 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		goodsEstimates:   service.NewGoodsEstimateService(database),
 		employees:        service.NewEmployeeService(database),
 		pricing:          service.NewPricingService(database, service.NewDeepSeekClient(cfg.DeepSeekAPIKey, cfg.DeepSeekModel)),
+		ceramics: service.NewCeramicsService(database, service.NewCeramicsAIClient(service.CeramicsAIConfig{
+			APIKey: cfg.CeramicsAIAPIKey, BaseURL: cfg.CeramicsAIBaseURL, Model: cfg.CeramicsAIModel, Vision: cfg.CeramicsAIVision,
+		})),
 	}
 }
 
@@ -100,6 +104,20 @@ func (s *Server) Router() *gin.Engine {
 	goodsEstimates.PATCH("/estimates/:id", s.updateGoodsEstimate)
 	goodsEstimates.DELETE("/estimates/:id", s.deleteGoodsEstimate)
 	goodsEstimates.PATCH("/estimates/:id/draft", s.saveGoodsEstimateDraft)
+
+	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
+	ceramics := router.Group("/api/ceramics")
+	ceramics.Use(s.requireUser)
+	ceramics.GET("/status", s.ceramicsStatus)
+	ceramics.GET("/types", s.listCeramicsTypes)
+	ceramics.GET("/products", s.listCeramicsProducts)
+	ceramics.POST("/products", s.createCeramicsProduct)
+	ceramics.PATCH("/products/:id", s.updateCeramicsProduct)
+	ceramics.DELETE("/products/:id", s.requireAdmin, s.deleteCeramicsProduct)
+	ceramics.POST("/products/import", s.requireAdmin, s.importCeramicsProducts)
+	ceramics.POST("/lookup", s.lookupCeramicsMarks)
+	ceramics.POST("/analyze", s.analyzeCeramics)
+	ceramics.POST("/price", s.ceramicsPrice)
 
 	s.serveFrontend(router)
 	return router

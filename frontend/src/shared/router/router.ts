@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react'
 //   /directory/products      — справочник товаров
 //   /directory/tnved         — справочник ТН ВЭД
 //   /employees               — сотрудники и роли (только администратор)
+//   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /login, /register        — вход и регистрация
 export type Route =
   | { page: 'goods'; estimateId: number | null }
   | { page: 'products' }
   | { page: 'tnved' }
   | { page: 'employees' }
+  | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'login' }
   | { page: 'register' }
 
@@ -21,6 +23,8 @@ export const paths = {
   products: '/directory/products',
   tnved: '/directory/tnved',
   employees: '/employees',
+  ceramics: '/ceramics',
+  ceramicsBase: '/ceramics/base',
   login: '/login',
   register: '/register',
 }
@@ -40,6 +44,8 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.products) return { page: 'products' }
   if (path === paths.tnved) return { page: 'tnved' }
   if (path === paths.employees) return { page: 'employees' }
+  if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
+  if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }
   if (path === paths.login) return { page: 'login' }
   if (path === paths.register) return { page: 'register' }
   return null
