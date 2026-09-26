@@ -8,6 +8,7 @@ import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { verificationStatusLabel } from '../directoryLabels'
 import { DirectoryToolbar } from '../components/DirectoryToolbar'
+import { useDirectoryTransfer } from '../components/DirectoryTransfer'
 import { RowActions } from '../components/RowActions'
 import { ProductEntryPanel } from './ProductEntryPanel'
 import { productDirectoryApi } from './productDirectoryApi'
@@ -28,6 +29,10 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
   const [panel, setPanel] = useState<{ item?: ProductDirectoryEntry } | null>(null)
   const [refresh, setRefresh] = useState(0)
   const search = useDebouncedValue(query.trim(), 250)
+  const transfer = useDirectoryTransfer({
+    apiPath: '/api/product-directory', title: 'Справочник товаров', onImported: () => setRefresh((value) => value + 1),
+    hint: 'Обязательна колонка «Наименование»; код ТН ВЭД должен уже быть в справочнике ТН ВЭД. Товар с тем же наименованием и категорией обновляется, остальные добавляются.',
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -59,8 +64,12 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
           <h1>Справочник товаров{!loading && <span className="dir-count">{items.length}</span>}</h1>
           <p>Карточки товаров с кодом ТН ВЭД и ИТС. При выборе карточки в смете всё подставляется автоматически.</p>
         </div>
-        {canEdit && <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить товар</button>}
+        {canEdit && <div className="dir-head-actions">
+          {transfer.buttons}
+          <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить товар</button>
+        </div>}
       </div>
+      {canEdit && transfer.panel}
       <DirectoryToolbar query={query} placeholder="Поиск по названию, коду или синониму" status={status} showArchived={showArchived} onQuery={setQuery} onStatus={setStatus} onShowArchived={setShowArchived} />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>

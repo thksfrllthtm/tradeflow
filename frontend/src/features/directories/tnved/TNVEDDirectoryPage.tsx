@@ -5,6 +5,7 @@ import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { verificationStatusLabel } from '../directoryLabels'
 import { DirectoryToolbar } from '../components/DirectoryToolbar'
+import { useDirectoryTransfer } from '../components/DirectoryTransfer'
 import { RowActions } from '../components/RowActions'
 import { TNVEDEntryPanel } from './TNVEDEntryPanel'
 import { tnvedDirectoryApi } from './tnvedDirectoryApi'
@@ -25,6 +26,10 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
   const [panel, setPanel] = useState<{ item?: TNVEDDirectoryEntry } | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const search = useDebouncedValue(query.trim(), 250)
+  const transfer = useDirectoryTransfer({
+    apiPath: '/api/tnved-directory', title: 'Справочник ТН ВЭД', onImported: () => setRefreshKey((value) => value + 1),
+    hint: 'Обязательна колонка «Код ТН ВЭД»; остальные колонки — как в выгрузке. Запись с тем же кодом, категорией и описанием обновляется, остальные добавляются.',
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -56,8 +61,12 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
           <h1>Справочник ТН ВЭД{!loading && <span className="dir-count">{items.length}</span>}</h1>
           <p>Коды и ставки для предварительного расчёта. Ручные записи — не официальное подтверждение.</p>
         </div>
-        {canEdit && <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить код</button>}
+        {canEdit && <div className="dir-head-actions">
+          {transfer.buttons}
+          <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить код</button>
+        </div>}
       </div>
+      {canEdit && transfer.panel}
       <DirectoryToolbar query={query} placeholder="Поиск по коду, описанию или синониму" status={status} showArchived={showArchived} onQuery={setQuery} onStatus={setStatus} onShowArchived={setShowArchived} />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
