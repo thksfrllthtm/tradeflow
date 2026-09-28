@@ -11,3 +11,6 @@ export const roleLabels: Record<Role, string> = {
 // Администратор управляет сотрудниками и справочниками и видит сметы всех сотрудников.
 // Остальные работают в калькуляторах, а справочники только просматривают.
 export const isAdmin = (user: User) => user.role === 'admin'
+
+// Исключение: инвойсер добавляет недостающий код ТН ВЭД сам, но «Проверено» ставит только администратор.
+export const canAddTNVED = (user: User) => user.role === 'admin' || user.role === 'invoicer'

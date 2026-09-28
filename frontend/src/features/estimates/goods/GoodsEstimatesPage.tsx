@@ -3,6 +3,7 @@ import { goodsEstimatesApi } from './goodsEstimatesApi'
 import { GlovesEstimateInput, GlovesEstimateSummary } from '../shared/types'
 import { User } from '@/shared/types/user'
 import { GoodsCalculator } from './calculator/GoodsCalculator'
+import { estimateTitle } from './lib/estimateTitle'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuDate, todayIso } from '../shared/lib/dates'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
@@ -116,10 +117,4 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
       </section>
     </div>
   </main>
-}
-
-function estimateTitle(value: string) {
-  const name = value.trim()
-  const suffix = name.replace(/^Копия\s+(?:перчаток|товаров)\s*[·–-]?\s*/i, '')
-  return suffix !== name ? `Смета товаров${suffix ? ` · ${suffix}` : ''}` : name || 'Смета товаров'
 }

@@ -22,7 +22,9 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
   const canAdd = canAddTNVED(user)
   const [items, setItems] = useState<TNVEDDirectoryEntry[]>([])
   const [query, setQuery] = useState('')
-  const [status, setStatus] = useState('all')
+  // Ссылки с главной: ?check=1 открывает проверку кодов, ?status=needs_review — фильтр.
+  const [linked] = useState(() => new URLSearchParams(window.location.search))
+  const [status, setStatus] = useState(linked.get('status') === 'needs_review' ? 'needs_review' : 'all')
   const [showArchived, setShowArchived] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -33,7 +35,7 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
     apiPath: '/api/tnved-directory', title: 'Справочник ТН ВЭД', onImported: () => setRefreshKey((value) => value + 1),
     hint: 'Обязательна колонка «Код ТН ВЭД»; остальные колонки — как в выгрузке. Запись с тем же кодом, категорией и описанием обновляется, остальные добавляются.',
   })
-  const codeCheck = useTNVEDCodeCheck({ canAdd, canRestore: canEdit, refreshKey, onAdd: (code) => setPanel({ code }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
+  const codeCheck = useTNVEDCodeCheck({ canAdd, canRestore: canEdit, refreshKey, initialOpen: linked.get('check') === '1', onAdd: (code) => setPanel({ code }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
 
   useEffect(() => {
     let cancelled = false

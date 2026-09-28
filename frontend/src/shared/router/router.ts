@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 
 // Адреса страниц приложения. Обычные пути (без #): Vite отдаёт index.html на любой путь,
 // поэтому прямые ссылки и обновление страницы работают.
-//   /estimates/goods[/id]    — сметы товаров (главная)
+//   /                        — главная: быстрые действия и последние сметы
+//   /estimates/goods[/id]    — сметы товаров
 //   /directory/products      — справочник товаров
 //   /directory/tnved         — справочник ТН ВЭД
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /login, /register        — вход и регистрация
 export type Route =
+  | { page: 'home' }
   | { page: 'goods'; estimateId: number | null }
   | { page: 'products' }
   | { page: 'tnved' }
@@ -18,7 +20,7 @@ export type Route =
   | { page: 'register' }
 
 export const paths = {
-  home: '/estimates/goods',
+  home: '/',
   goods: (id?: number | null) => id ? `/estimates/goods/${id}` : '/estimates/goods',
   products: '/directory/products',
   tnved: '/directory/tnved',
@@ -39,6 +41,7 @@ const legacyHashes: Record<string, string> = {
 // null — неизвестный адрес (приложение перенаправит на главную).
 export function parseRoute(pathname: string): Route | null {
   const path = pathname.replace(/\/+$/, '') || '/'
+  if (path === paths.home) return { page: 'home' }
   const estimate = /^\/estimates\/goods(?:\/(\d+))?$/.exec(path)
   if (estimate) return { page: 'goods', estimateId: estimate[1] ? Number(estimate[1]) : null }
   if (path === paths.products) return { page: 'products' }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { verificationStatusLabel } from '../directoryLabels'
 import { checkCodes, CodeCheckRow, parsePastedCodes, PastedCodes } from './pastedCodes'
@@ -12,6 +12,8 @@ type Props = {
   canRestore: boolean
   // Меняется после сохранения записи — проверка повторяется, добавленный код уходит из «нет».
   refreshKey: number
+  // Панель открыта сразу — переход с главной по «Проверить коды ТН ВЭД».
+  initialOpen?: boolean
   onAdd: (code: string) => void
   onOpen: (entry: TNVEDDirectoryEntry) => void
   onRestore: (entry: TNVEDDirectoryEntry) => void
@@ -21,14 +23,18 @@ const statusText = { missing: 'Нет в справочнике', archived: 'Т�
 
 // Вставить колонку кодов из Excel и сразу увидеть, каких нет в справочнике, — вместо поиска
 // каждого кода по одному. button — в шапку страницы, panel — под шапку.
-export function useTNVEDCodeCheck({ canAdd, canRestore, refreshKey, onAdd, onOpen, onRestore }: Props) {
-  const [open, setOpen] = useState(false)
+export function useTNVEDCodeCheck({ canAdd, canRestore, refreshKey, initialOpen = false, onAdd, onOpen, onRestore }: Props) {
+  const [open, setOpen] = useState(initialOpen)
   const [text, setText] = useState('')
   const [pasted, setPasted] = useState<PastedCodes | null>(null)
   const [rows, setRows] = useState<CodeCheckRow[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const input = useRef<HTMLTextAreaElement>(null)
+
+  // Фокус после монтирования, а не autoFocus: иначе его забирает поиск справочника ниже.
+  useEffect(() => { if (open) input.current?.focus() }, [open])
 
   useEffect(() => {
     if (!pasted) return
@@ -70,7 +76,7 @@ export function useTNVEDCodeCheck({ canAdd, canRestore, refreshKey, onAdd, onOpe
       </div>
       <button type="button" className="dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
     </div>
-    <textarea className="code-check-input" rows={5} value={text} onChange={(event) => setText(event.target.value)} placeholder={'4015190000\n6116102000\n6116990000'} spellCheck={false} autoFocus
+    <textarea className="code-check-input" rows={5} value={text} onChange={(event) => setText(event.target.value)} placeholder={'4015190000\n6116102000\n6116990000'} spellCheck={false} ref={input}
       onKeyDown={(event) => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); check() } }} />
     <div className="dir-transfer-row">
       <span className="code-check-note">{pasted ? `Строк с кодами: ${pasted.rows}, разных кодов: ${pasted.codes.length}` : 'Ctrl+Enter — проверить'}</span>

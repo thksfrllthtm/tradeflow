@@ -8,6 +8,7 @@ import { ProductDirectoryPage } from '@/features/directories/products/ProductDir
 import { GoodsEstimatesPage } from '@/features/estimates/goods/GoodsEstimatesPage'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
+import { HomePage } from '@/features/home/HomePage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
 export function App() {
@@ -72,6 +73,7 @@ export function App() {
   if (!route || authPage) return null
 
   switch (route.page) {
+    case 'home': return <HomePage user={user} onLogout={() => void logout()} />
     case 'tnved': return <TNVEDDirectoryPage user={user} onLogout={() => void logout()} />
     case 'products': return <ProductDirectoryPage user={user} onLogout={() => void logout()} />
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />

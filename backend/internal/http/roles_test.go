@@ -17,6 +17,7 @@ func routerAs(role string) *gin.Engine {
 	router := gin.New()
 	signedIn := func(c *gin.Context) { c.Set(userContextKey, repository.User{ID: 7, Role: role}) }
 	router.POST("/admin-only", signedIn, server.requireAdmin, func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	router.POST("/tnved-author", signedIn, server.requireTNVEDAuthor, func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	router.GET("/scope", signedIn, func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"scope": estimateScope(c)}) })
 	return router
 }
@@ -30,6 +31,21 @@ func TestRequireAdminAllowsOnlyAdministrators(t *testing.T) {
 	} {
 		response := httptest.NewRecorder()
 		routerAs(role).ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/admin-only", nil))
+		if response.Code != want {
+			t.Fatalf("role %q: expected %d, got %d", role, want, response.Code)
+		}
+	}
+}
+
+func TestRequireTNVEDAuthorAllowsAdministratorsAndInvoicers(t *testing.T) {
+	for role, want := range map[string]int{
+		repository.RoleAdmin:      http.StatusNoContent,
+		repository.RoleInvoicer:   http.StatusNoContent,
+		repository.RoleTranslator: http.StatusForbidden,
+		"":                        http.StatusForbidden,
+	} {
+		response := httptest.NewRecorder()
+		routerAs(role).ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/tnved-author", nil))
 		if response.Code != want {
 			t.Fatalf("role %q: expected %d, got %d", role, want, response.Code)
 		}

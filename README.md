@@ -215,10 +215,11 @@ features/directories/        справочники: tnved/ (коды ТН ВЭ�
 features/estimates/
   shared/                    типы, calculatorApi (разбор XLSX, расчёт, экспорт), подбор цен под бюджет,
                              хранилище фото, операции со строками, общие стили
-  goods/                     «Сметы товаров» (главная, API /api/gloves-copy)
+  goods/                     «Сметы товаров» (API /api/gloves-copy)
     calculator/              калькулятор: состояние и шаги
     components/              этапы (ImportStep, ReviewStep, ResultStep) и окна
     lib/, hooks/             хранилище черновика, сопоставление колонок, хуки
+features/home/               главная: быстрые действия, коды на проверке, последние сметы
 features/employees/          сотрудники и роли (только администратор)
 features/ceramics/           подбор наименования и цены керамики (отдельно от смет; API /api/ceramics)
 ```
@@ -227,9 +228,10 @@ features/ceramics/           подбор наименования и цены �
 
 | Адрес | Страница |
 |---|---|
-| `/estimates/goods`, `/estimates/goods/12` | Сметы товаров (главная), смета № 12 |
+| `/` | Главная: новая смета, проверка кодов ТН ВЭД, керамика, последние сметы; у администратора — сколько кодов ждут проверки |
+| `/estimates/goods`, `/estimates/goods/12` | Сметы товаров, смета № 12 |
 | `/directory/products` | Справочник товаров |
-| `/directory/tnved` | Справочник ТН ВЭД |
+| `/directory/tnved` | Справочник ТН ВЭД (`?check=1` — сразу открыть проверку кодов, `?status=needs_review` — только коды на проверке) |
 | `/employees` | Сотрудники (только администратор) |
 | `/login`, `/register` | Вход и регистрация |
 

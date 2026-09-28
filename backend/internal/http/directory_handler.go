@@ -36,6 +36,10 @@ func (s *Server) createTNVEDDirectory(c *gin.Context) {
 		badRequest(c, "Проверьте поля записи справочника", "entry")
 		return
 	}
+	// Код, добавленный не администратором, всегда ждёт проверки администратора.
+	if !currentUser(c).IsAdmin() {
+		input.VerificationStatus = "needs_review"
+	}
 	entry, err := s.tnvedDirectory.Create(c.Request.Context(), currentUser(c).ID, input)
 	if !s.handleDirectoryError(c, err) {
 		return

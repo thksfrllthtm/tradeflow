@@ -73,7 +73,7 @@ func (s *Server) Router() *gin.Engine {
 	tnvedDirectory.GET("", s.listTNVEDDirectory)
 	tnvedDirectory.GET("/export", s.requireAdmin, s.exportTNVEDDirectory)
 	tnvedDirectory.POST("/import", s.requireAdmin, s.importTNVEDDirectory)
-	tnvedDirectory.POST("", s.requireAdmin, s.createTNVEDDirectory)
+	tnvedDirectory.POST("", s.requireTNVEDAuthor, s.createTNVEDDirectory)
 	tnvedDirectory.PATCH("/:id", s.requireAdmin, s.updateTNVEDDirectory)
 	tnvedDirectory.POST("/:id/archive", s.requireAdmin, s.archiveTNVEDDirectory)
 	tnvedDirectory.POST("/:id/restore", s.requireAdmin, s.restoreTNVEDDirectory)

@@ -3,7 +3,8 @@ import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
 import './AppHeader.css'
 
-export type AppSection = 'estimates' | 'products' | 'tnved' | 'ceramics' | 'employees'
+// home — главная: ни один раздел меню не подсвечен, на неё ведёт логотип.
+export type AppSection = 'home' | 'estimates' | 'products' | 'tnved' | 'ceramics' | 'employees'
 
 const sections: { value: AppSection; label: string; href: string }[] = [
   { value: 'estimates', label: 'Сметы', href: paths.goods() },
