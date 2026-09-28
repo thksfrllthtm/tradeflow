@@ -1,0 +1,40 @@
+/* Проверка колонки кодов из Excel. Рамка панели и крестик — из DirectoryTransfer.css. */
+
+.code-check-input { width: 100%; min-height: 96px; margin: 0; padding: 8px 10px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fbfcfb; color: #1f2d24; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; line-height: 1.45; resize: vertical; }
+.code-check-input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.code-check-note { color: #7a877f; font-size: .78rem; }
+p.code-check-note { margin: 0; }
+.code-check-actions, .code-check-row-actions { display: flex; flex: 0 0 auto; gap: 6px; }
+
+.code-check .code-check-primary, .code-check .code-check-secondary { height: 32px; padding: 0 14px; border-radius: 8px; font-size: .8rem; font-weight: 650; white-space: nowrap; }
+.code-check .code-check-primary { border: 0; background: var(--c-green); color: #fff; }
+.code-check .code-check-primary:hover:not(:disabled) { background: var(--c-green-dark); }
+.code-check .code-check-secondary { border: 1px solid #d3ddd6; background: #fff; color: #34443b; }
+.code-check .code-check-secondary:hover:not(:disabled) { background: #f3f7f4; }
+.code-check-row-actions .code-check-primary, .code-check-row-actions .code-check-secondary { height: 28px; padding: 0 10px; font-size: .76rem; }
+
+.code-check-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: .82rem; font-weight: 650; }
+.code-check-summary .missing { color: #9a3024; }
+.code-check-summary .archived { color: #8a5a00; }
+.code-check-summary .found, .code-check-summary .ok { color: #1a4d33; }
+.code-check-summary button { margin-left: auto; }
+
+.code-check-list { display: grid; max-height: 320px; margin: 0; padding: 0; overflow: auto; border: 1px solid #e6ece8; border-radius: 8px; list-style: none; }
+.code-check-list li { display: grid; grid-template-columns: 104px 136px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; padding: 5px 10px; border-top: 1px solid #eef2ef; font-size: .8rem; }
+.code-check-list li:first-child { border-top: 0; }
+.code-check-list li.missing { background: #fff8f6; }
+.code-check-list code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
+.code-check-list li.missing code { color: #9a3024; }
+.code-check-status { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.code-check-status.missing { background: #fde7e3; color: #9a3024; }
+.code-check-status.archived { background: #fbefd6; color: #8a5a00; }
+.code-check-status.found { background: #e3f1e8; color: #1a4d33; }
+.code-check-name { overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
+.code-check-name em { color: #8a968f; font-style: normal; }
+
+@media (max-width: 640px) {
+  .code-check-list li { grid-template-columns: auto minmax(0, 1fr); }
+  .code-check-name { grid-column: 1 / -1; white-space: normal; }
+  .code-check-row-actions { grid-column: 1 / -1; }
+  .code-check-summary button { margin-left: 0; }
+}

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { isAdmin, User } from '@/shared/types/user'
+import { canAddTNVED, isAdmin, User } from '@/shared/types/user'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { verificationStatusLabel } from '../directoryLabels'
 import { DirectoryToolbar } from '../components/DirectoryToolbar'
 import { useDirectoryTransfer } from '../components/DirectoryTransfer'
 import { RowActions } from '../components/RowActions'
+import { useTNVEDCodeCheck } from './TNVEDCodeCheck'
 import { TNVEDEntryPanel } from './TNVEDEntryPanel'
 import { tnvedDirectoryApi } from './tnvedDirectoryApi'
 import { entrySubline, rateLabel } from './tnvedLabels'
@@ -17,19 +18,22 @@ import '../verificationStatus.css'
 export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   // Справочники меняет только администратор; остальные сотрудники их просматривают.
   const canEdit = isAdmin(user)
+  // Инвойсер тоже добавляет недостающие коды, но без статуса «Проверено».
+  const canAdd = canAddTNVED(user)
   const [items, setItems] = useState<TNVEDDirectoryEntry[]>([])
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [showArchived, setShowArchived] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [panel, setPanel] = useState<{ item?: TNVEDDirectoryEntry } | null>(null)
+  const [panel, setPanel] = useState<{ item?: TNVEDDirectoryEntry; code?: string } | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const search = useDebouncedValue(query.trim(), 250)
   const transfer = useDirectoryTransfer({
     apiPath: '/api/tnved-directory', title: 'Справочник ТН ВЭД', onImported: () => setRefreshKey((value) => value + 1),
     hint: 'Обязательна колонка «Код ТН ВЭД»; остальные колонки — как в выгрузке. Запись с тем же кодом, категорией и описанием обновляется, остальные добавляются.',
   })
+  const codeCheck = useTNVEDCodeCheck({ canAdd, canRestore: canEdit, refreshKey, onAdd: (code) => setPanel({ code }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
 
   useEffect(() => {
     let cancelled = false
@@ -61,11 +65,13 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
           <h1>Справочник ТН ВЭД{!loading && <span className="dir-count">{items.length}</span>}</h1>
           <p>Коды и ставки для предварительного расчёта. Ручные записи — не официальное подтверждение.</p>
         </div>
-        {canEdit && <div className="dir-head-actions">
-          {transfer.buttons}
-          <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить код</button>
-        </div>}
+        <div className="dir-head-actions">
+          {codeCheck.button}
+          {canEdit && transfer.buttons}
+          {canAdd && <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить код</button>}
+        </div>
       </div>
+      {codeCheck.panel}
       {canEdit && transfer.panel}
       <DirectoryToolbar query={query} placeholder="Поиск по коду, описанию или синониму" status={status} showArchived={showArchived} onQuery={setQuery} onStatus={setStatus} onShowArchived={setShowArchived} />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
@@ -73,7 +79,7 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
         <table className="dir-table tnved-table">
           <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Описание</th><th className="c-rate">Пошлина</th><th className="c-rate">НДС</th><th className="c-rate">Антидемпинг</th><th className="c-status">Статус</th><th className="c-actions" aria-label="Действия" /></tr></thead>
           <tbody>
-            {items.length === 0 ? <tr><td colSpan={7} className="dir-empty">{loading ? 'Загрузка…' : filtered ? 'Ничего не найдено. Измените поиск или фильтр.' : canEdit ? 'Кодов пока нет. Добавьте первый.' : 'Кодов пока нет.'}</td></tr>
+            {items.length === 0 ? <tr><td colSpan={7} className="dir-empty">{loading ? 'Загрузка…' : filtered ? 'Ничего не найдено. Измените поиск или фильтр.' : canAdd ? 'Кодов пока нет. Добавьте первый.' : 'Кодов пока нет.'}</td></tr>
               : items.map((item) => <tr key={item.id} className={item.archivedAt ? 'archived' : undefined} onClick={() => setPanel({ item })}>
                 <td className="c-code"><code>{item.code}</code></td>
                 <td className="c-name">
@@ -91,6 +97,6 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
       </div>
       <p className="dir-foot">Код проверяется только по формату 10 цифр. Существование кода, актуальность ставки и официальные пояснения нужно проверить отдельно.</p>
     </section>
-    {panel && <TNVEDEntryPanel item={panel.item} readOnly={!canEdit} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefreshKey((value) => value + 1) }} />}
+    {panel && <TNVEDEntryPanel item={panel.item} initialCode={panel.code} readOnly={panel.item ? !canEdit : !canAdd} canVerify={canEdit} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefreshKey((value) => value + 1) }} />}
   </main>
 }

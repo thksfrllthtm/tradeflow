@@ -9,8 +9,10 @@ import { emptyInput, entryToInput } from './tnvedEntryForm'
 import { TNVEDDirectoryEntry, TNVEDDirectoryInput, TNVEDRate } from './types'
 
 // Создание и редактирование записи ТН ВЭД: код и описание, ставки, синонимы.
-export function TNVEDEntryPanel({ item, onClose, onSaved, readOnly = false }: { readOnly?: boolean; item?: TNVEDDirectoryEntry; onClose: () => void; onSaved: () => void }) {
-  const initial = useMemo(() => item ? entryToInput(item) : emptyInput(), [item])
+// initialCode — код новой записи, например из проверки вставленных кодов.
+// canVerify = false — инвойсер добавляет код, но статус «Проверено» ставит только администратор.
+export function TNVEDEntryPanel({ item, initialCode = '', onClose, onSaved, readOnly = false, canVerify = true }: { readOnly?: boolean; canVerify?: boolean; item?: TNVEDDirectoryEntry; initialCode?: string; onClose: () => void; onSaved: () => void }) {
+  const initial = useMemo(() => item ? entryToInput(item) : { ...emptyInput(), code: initialCode }, [item, initialCode])
   const [form, setForm] = useState<TNVEDDirectoryInput>(initial)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -27,7 +29,7 @@ export function TNVEDEntryPanel({ item, onClose, onSaved, readOnly = false }: { 
       <h3>Код и описание</h3>
       <div className="drawer-row">
         <label className="drawer-field"><span>Код ТН ВЭД <b className="req">*</b><em>{form.code.length}/10</em></span><input className="mono" value={form.code} onChange={(event) => setField('code', event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" maxLength={10} placeholder="0000000000" required pattern="\d{10}" title="10 цифр" autoFocus={!item} /></label>
-        <div className="drawer-field drawer-status-field"><span>Статус проверки</span><StatusToggle value={form.verificationStatus} onChange={(value) => setField('verificationStatus', value)} /></div>
+        <div className="drawer-field drawer-status-field"><span>Статус проверки</span><StatusToggle value={form.verificationStatus} onChange={(value) => setField('verificationStatus', value)} canVerify={canVerify} />{!canVerify && !readOnly && <p className="drawer-hint">«Проверено» отмечает администратор</p>}</div>
       </div>
       <label className="drawer-field"><span>Описание на русском</span><textarea rows={3} value={form.name} onChange={(event) => setField('name', event.target.value)} maxLength={300} placeholder="Как в тарифе: например, «Перчатки трикотажные…»" /></label>
       <label className="drawer-field"><span>Описание на китайском</span><input value={form.nameZh} onChange={(event) => setField('nameZh', event.target.value)} maxLength={300} placeholder="Необязательно" /></label>
