@@ -13,29 +13,33 @@ import (
 const userContextKey = "authenticated_user"
 
 type Server struct {
-	config           config.Config
-	auth             *service.AuthService
-	tnvedDirectory   *service.TNVEDDirectoryService
-	productDirectory *service.ProductDirectoryService
-	gloves           *service.GlovesService
-	goodsEstimates   *service.GoodsEstimateService
-	employees        *service.EmployeeService
-	pricing          *service.PricingService
-	ceramics         *service.CeramicsService
-	authMu           sync.Mutex
-	authRates        map[string]authRate
+	config            config.Config
+	auth              *service.AuthService
+	tnvedDirectory    *service.TNVEDDirectoryService
+	tnvedNomenclature *service.TNVEDNomenclatureService
+	kzRates           *service.TNVEDKZRateService
+	productDirectory  *service.ProductDirectoryService
+	gloves            *service.GlovesService
+	goodsEstimates    *service.GoodsEstimateService
+	employees         *service.EmployeeService
+	pricing           *service.PricingService
+	ceramics          *service.CeramicsService
+	authMu            sync.Mutex
+	authRates         map[string]authRate
 }
 
 func NewServer(database *repository.Repository, cfg config.Config) *Server {
 	return &Server{
-		config:           cfg,
-		auth:             service.NewAuthService(database, cfg.SessionTTL),
-		tnvedDirectory:   service.NewTNVEDDirectoryService(database),
-		productDirectory: service.NewProductDirectoryService(database),
-		gloves:           service.NewGlovesService(database),
-		goodsEstimates:   service.NewGoodsEstimateService(database),
-		employees:        service.NewEmployeeService(database),
-		pricing:          service.NewPricingService(database, service.NewDeepSeekClient(cfg.DeepSeekAPIKey, cfg.DeepSeekModel)),
+		config:            cfg,
+		auth:              service.NewAuthService(database, cfg.SessionTTL),
+		tnvedDirectory:    service.NewTNVEDDirectoryService(database),
+		tnvedNomenclature: service.NewTNVEDNomenclatureService(database),
+		kzRates:           service.NewTNVEDKZRateService(database),
+		productDirectory:  service.NewProductDirectoryService(database),
+		gloves:            service.NewGlovesService(database),
+		goodsEstimates:    service.NewGoodsEstimateService(database),
+		employees:         service.NewEmployeeService(database),
+		pricing:           service.NewPricingService(database, service.NewDeepSeekClient(cfg.DeepSeekAPIKey, cfg.DeepSeekModel)),
 		ceramics: service.NewCeramicsService(database, service.NewCeramicsAIClient(service.CeramicsAIConfig{
 			APIKey: cfg.CeramicsAIAPIKey, BaseURL: cfg.CeramicsAIBaseURL, Model: cfg.CeramicsAIModel, Vision: cfg.CeramicsAIVision,
 		})),
@@ -78,6 +82,17 @@ func (s *Server) Router() *gin.Engine {
 	tnvedDirectory.POST("/:id/archive", s.requireAdmin, s.archiveTNVEDDirectory)
 	tnvedDirectory.POST("/:id/restore", s.requireAdmin, s.restoreTNVEDDirectory)
 	tnvedDirectory.POST("/:id/copy", s.requireAdmin, s.copyTNVEDDirectory)
+
+	tnvedNomenclature := router.Group("/api/tnved-nomenclature")
+	tnvedNomenclature.Use(s.requireUser)
+	tnvedNomenclature.GET("", s.listTNVEDNomenclature)
+	tnvedNomenclature.POST("/import", s.requireAdmin, s.importTNVEDNomenclature)
+
+	kzRates := router.Group("/api/tnved-kz-rates")
+	kzRates.Use(s.requireUser, s.requireAdmin)
+	kzRates.POST("/excel", s.kzRatesExcel)
+	kzRates.POST("/import-pdf", s.importKZRatesPDF)
+	kzRates.POST("/import", s.importKZRatesExcel)
 
 	productsDirectory := router.Group("/api/product-directory")
 	productsDirectory.Use(s.requireUser)

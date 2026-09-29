@@ -1,0 +1,40 @@
+/* Номенклатура ТН ВЭД: таблица справочников (directory.css) с многострочным наименованием,
+   загрузка файла TWS и «Показать ещё» под таблицей. */
+
+.dir-transfer .nom-upload { position: relative; display: inline-flex; align-items: center; margin: 0; cursor: pointer; }
+.dir-transfer .nom-upload.busy { opacity: .7; cursor: progress; }
+.nom-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.nom-note { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.nom-note button { flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 1rem; line-height: 1; opacity: .6; }
+.nom-note button:hover:not(:disabled) { background: rgba(0, 0, 0, .06); opacity: 1; }
+
+.nom-found { flex: 0 0 auto; color: #7a877f; font-size: .8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.nom-table tbody tr { cursor: default; }
+.nom-table .nom-name { max-width: 0; line-height: 1.35; }
+.nom-table .nom-name small { display: block; margin-bottom: 1px; overflow: hidden; color: #8a968f; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.nom-table .nom-name span { display: -webkit-box; overflow: hidden; color: #1f2d24; font-weight: 600; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.nom-table .nom-rate { width: 170px; color: #1f2d24; font-variant-numeric: tabular-nums; }
+.nom-table .nom-state { width: 120px; text-align: right; }
+.nom-in { padding: 2px 9px; border-radius: 999px; background: #e3f1e8; color: #1c6b43; font-size: .72rem; font-weight: 700; }
+.nom-table .nom-add { height: 28px; padding: 0 12px; border: 1px solid #c4d9c9; border-radius: 7px; background: #fff; color: #1b6b43; font-size: .76rem; font-weight: 650; }
+.nom-table .nom-add:hover:not(:disabled) { border-color: #24704a; background: #e8f3ec; }
+
+.nom-more { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 14px; border-top: 1px solid #eef2ef; color: #7a877f; font-size: .8rem; }
+.nom-more .dir-transfer-button { height: 34px; padding: 0 14px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fff; color: #34443b; font-size: .8rem; font-weight: 600; }
+.nom-more .dir-transfer-button:hover:not(:disabled) { background: #f3f7f4; }
+.nom-table .nom-kz { width: 170px; color: #7a877f; font-variant-numeric: tabular-nums; }
+.nom-table .nom-kz.active { color: #1a4d33; font-weight: 650; }
+.nom-table .nom-kz small { display: block; margin-top: 1px; color: #8a968f; font-size: .7rem; font-weight: 500; }
+.nom-table .nom-vat { width: 64px; color: #1f2d24; font-variant-numeric: tabular-nums; }
+.nom-table .nom-link { width: 96px; }
+.nom-table .nom-link a { color: #1b6b43; font-size: .78rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.nom-table .nom-link a::after { content: " ↗"; }
+.nom-table .nom-link a:hover { text-decoration: underline; }
+.dir-foot a { color: inherit; }
+
+@media (max-width: 760px) {
+  .nom-table .nom-rate { width: 130px; }
+  .nom-found { flex-basis: 100%; }
+}

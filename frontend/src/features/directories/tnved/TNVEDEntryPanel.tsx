@@ -9,14 +9,17 @@ import { emptyInput, entryToInput } from './tnvedEntryForm'
 import { TNVEDDirectoryEntry, TNVEDDirectoryInput, TNVEDRate } from './types'
 
 // Создание и редактирование записи ТН ВЭД: код и описание, ставки, синонимы.
-// initialCode — код новой записи, например из проверки вставленных кодов.
+// draft — заполненные поля новой записи: код из проверки вставленных кодов или код,
+// описание и ставки из номенклатуры.
 // canVerify = false — инвойсер добавляет код, но статус «Проверено» ставит только администратор.
-export function TNVEDEntryPanel({ item, initialCode = '', onClose, onSaved, readOnly = false, canVerify = true }: { readOnly?: boolean; canVerify?: boolean; item?: TNVEDDirectoryEntry; initialCode?: string; onClose: () => void; onSaved: () => void }) {
-  const initial = useMemo(() => item ? entryToInput(item) : { ...emptyInput(), code: initialCode }, [item, initialCode])
+export function TNVEDEntryPanel({ item, draft, onClose, onSaved, readOnly = false, canVerify = true }: { readOnly?: boolean; canVerify?: boolean; item?: TNVEDDirectoryEntry; draft?: Partial<TNVEDDirectoryInput>; onClose: () => void; onSaved: () => void }) {
+  const initial = useMemo(() => item ? entryToInput(item) : { ...emptyInput(), ...draft }, [item, draft])
   const [form, setForm] = useState<TNVEDDirectoryInput>(initial)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const dirty = JSON.stringify(form) !== JSON.stringify(initial)
+  // Новая запись сравнивается с пустой формой: заполненный черновик уже можно сохранить.
+  const baseline = useMemo(() => item ? initial : emptyInput(), [item, initial])
+  const dirty = JSON.stringify(form) !== JSON.stringify(baseline)
   function setField<K extends keyof TNVEDDirectoryInput>(field: K, value: TNVEDDirectoryInput[K]) { setForm((previous) => ({ ...previous, [field]: value })) }
   function setRate(field: 'duty' | 'vat', rate: Partial<TNVEDRate>) { setForm((previous) => ({ ...previous, [field]: { ...previous[field], ...rate } })) }
   async function save() {

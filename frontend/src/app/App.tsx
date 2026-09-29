@@ -4,6 +4,7 @@ import { isAdmin, User } from '@/shared/types/user'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { TNVEDDirectoryPage } from '@/features/directories/tnved/TNVEDDirectoryPage'
+import { NomenclaturePage } from '@/features/directories/nomenclature/NomenclaturePage'
 import { ProductDirectoryPage } from '@/features/directories/products/ProductDirectoryPage'
 import { GoodsEstimatesPage } from '@/features/estimates/goods/GoodsEstimatesPage'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
@@ -75,6 +76,7 @@ export function App() {
   switch (route.page) {
     case 'home': return <HomePage user={user} onLogout={() => void logout()} />
     case 'tnved': return <TNVEDDirectoryPage user={user} onLogout={() => void logout()} />
+    case 'nomenclature': return <NomenclaturePage user={user} onLogout={() => void logout()} />
     case 'products': return <ProductDirectoryPage user={user} onLogout={() => void logout()} />
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
     case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null

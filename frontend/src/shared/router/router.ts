@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 //   /estimates/goods[/id]    — сметы товаров
 //   /directory/products      — справочник товаров
 //   /directory/tnved         — справочник ТН ВЭД
+//   /directory/nomenclature  — полная номенклатура ТН ВЭД ЕАЭС (выгрузка TWS.BY)
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /login, /register        — вход и регистрация
@@ -14,6 +15,7 @@ export type Route =
   | { page: 'goods'; estimateId: number | null }
   | { page: 'products' }
   | { page: 'tnved' }
+  | { page: 'nomenclature' }
   | { page: 'employees' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'login' }
@@ -24,6 +26,7 @@ export const paths = {
   goods: (id?: number | null) => id ? `/estimates/goods/${id}` : '/estimates/goods',
   products: '/directory/products',
   tnved: '/directory/tnved',
+  nomenclature: '/directory/nomenclature',
   employees: '/employees',
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
@@ -46,6 +49,7 @@ export function parseRoute(pathname: string): Route | null {
   if (estimate) return { page: 'goods', estimateId: estimate[1] ? Number(estimate[1]) : null }
   if (path === paths.products) return { page: 'products' }
   if (path === paths.tnved) return { page: 'tnved' }
+  if (path === paths.nomenclature) return { page: 'nomenclature' }
   if (path === paths.employees) return { page: 'employees' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }

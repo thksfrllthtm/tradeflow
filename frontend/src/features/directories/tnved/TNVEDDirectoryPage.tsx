@@ -11,7 +11,7 @@ import { useTNVEDCodeCheck } from './TNVEDCodeCheck'
 import { TNVEDEntryPanel } from './TNVEDEntryPanel'
 import { tnvedDirectoryApi } from './tnvedDirectoryApi'
 import { entrySubline, rateLabel } from './tnvedLabels'
-import { TNVEDDirectoryEntry } from './types'
+import { TNVEDDirectoryEntry, TNVEDDirectoryInput } from './types'
 import '../directory.css'
 import '../verificationStatus.css'
 
@@ -28,14 +28,14 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
   const [showArchived, setShowArchived] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [panel, setPanel] = useState<{ item?: TNVEDDirectoryEntry; code?: string } | null>(null)
+  const [panel, setPanel] = useState<{ item?: TNVEDDirectoryEntry; draft?: Partial<TNVEDDirectoryInput> } | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const search = useDebouncedValue(query.trim(), 250)
   const transfer = useDirectoryTransfer({
     apiPath: '/api/tnved-directory', title: 'Справочник ТН ВЭД', onImported: () => setRefreshKey((value) => value + 1),
     hint: 'Обязательна колонка «Код ТН ВЭД»; остальные колонки — как в выгрузке. Запись с тем же кодом, категорией и описанием обновляется, остальные добавляются.',
   })
-  const codeCheck = useTNVEDCodeCheck({ canAdd, canRestore: canEdit, refreshKey, initialOpen: linked.get('check') === '1', onAdd: (code) => setPanel({ code }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
+  const codeCheck = useTNVEDCodeCheck({ canAdd, canRestore: canEdit, refreshKey, initialOpen: linked.get('check') === '1', onAdd: (code) => setPanel({ draft: { code } }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
 
   useEffect(() => {
     let cancelled = false
@@ -99,6 +99,6 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
       </div>
       <p className="dir-foot">Код проверяется только по формату 10 цифр. Существование кода, актуальность ставки и официальные пояснения нужно проверить отдельно.</p>
     </section>
-    {panel && <TNVEDEntryPanel item={panel.item} initialCode={panel.code} readOnly={panel.item ? !canEdit : !canAdd} canVerify={canEdit} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefreshKey((value) => value + 1) }} />}
+    {panel && <TNVEDEntryPanel item={panel.item} draft={panel.draft} readOnly={panel.item ? !canEdit : !canAdd} canVerify={canEdit} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefreshKey((value) => value + 1) }} />}
   </main>
 }
