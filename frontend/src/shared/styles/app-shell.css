@@ -24,7 +24,7 @@
 }
 .button-link:hover:not(:disabled) { background: transparent; color: #fff; border-bottom-color: rgba(255,255,255,.3); }
 
-/* ── Баннер ошибки ── */
+/* ── Всплывающее сообщение: ошибка (по умолчанию) или успех (.ok) ── */
 .banner {
   position: fixed;
   z-index: 50;
@@ -50,4 +50,7 @@
   line-height: 1;
 }
 .banner button:hover:not(:disabled) { background: transparent; }
+/* Сообщение об успехе — зелёное, чтобы не выглядело ошибкой */
+.banner.ok { border-color: #c4dfcc; background: #eef7f1; color: #1a4d33; }
+.banner.ok button { color: #1a4d33; }
 

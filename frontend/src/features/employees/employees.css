@@ -42,3 +42,25 @@
 @media (max-width: 900px) {
   .emp-card { grid-template-columns: 1fr; }
 }
+
+/* Правка имени и email в строке, число смет, панель смет сотрудника */
+.emp-edit { display: grid; gap: 6px; }
+.emp-edit input { height: 32px; margin: 0; padding: 0 9px; border: 1px solid #d3ddd6; border-radius: 7px; font-size: .82rem; }
+.emp-edit input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.emp-table .emp-count-col { width: 80px; text-align: center; }
+.emp-table .emp-count { min-width: 40px; height: 30px; padding: 0 10px; border: 1px solid #c4d9c9; border-radius: 999px; background: #fff; color: #1b6b43; font-size: .8rem; font-weight: 700; }
+.emp-table .emp-count:hover:not(:disabled) { border-color: #24704a; background: #e8f3ec; }
+.emp-table .emp-count:disabled { border-color: #e3eae5; color: #9aa59e; opacity: 1; cursor: default; }
+.emp-actions { flex-wrap: wrap; }
+
+.emp-estimates { width: min(520px, 100%); }
+.emp-estimates-list { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.emp-estimates-list a { display: grid; gap: 3px; padding: 11px 14px; border: 1px solid #e1e8e3; border-radius: 10px; color: #1f2d24; text-decoration: none; transition: border-color .12s, background .12s; }
+.emp-estimates-list a:hover { border-color: #c4d9c9; background: #f7faf8; }
+.emp-estimate-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.emp-estimate-top strong { overflow: hidden; font-size: .86rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.emp-estimate-top i { flex: 0 0 auto; padding: 1px 8px; border-radius: 999px; background: #eff2f0; color: #6b7a71; font-size: .7rem; font-style: normal; font-weight: 700; }
+.emp-estimate-top i.done { background: #e3f1e8; color: #1c6b43; }
+.emp-estimates-list small { color: #7a877f; font-size: .76rem; }
+.emp-estimates-empty { margin: 16px 0 0; color: #7a877f; font-size: .84rem; }
+.emp-estimates-error { margin: 16px 0 0; color: #9a3024; font-size: .84rem; font-weight: 600; }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { goodsEstimatesApi } from './goodsEstimatesApi'
 import { GlovesEstimateInput, GlovesEstimateSummary } from '../shared/types'
-import { User } from '@/shared/types/user'
+import { isAdmin, User } from '@/shared/types/user'
+import { Link } from '@/shared/router/Link'
 import { GoodsCalculator } from './calculator/GoodsCalculator'
 import { estimateTitle } from './lib/estimateTitle'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -19,7 +20,11 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
   const [loading, setLoading] = useState(true)
   const [savingMeta, setSavingMeta] = useState(false)
   const [error, setError] = useState('')
-  const selected = useMemo(() => estimates.find((estimate) => estimate.id === estimateId) ?? null, [estimates, estimateId])
+  // Смета сотрудника, открытая администратором по ссылке со страницы «Сотрудники»: в его
+  // списке её нет, но открыть, изменить и пересчитать её он может.
+  const [foreign, setForeign] = useState<GlovesEstimateSummary | null>(null)
+  const [foreignFailed, setForeignFailed] = useState<number | null>(null)
+  const selected = useMemo(() => estimates.find((estimate) => estimate.id === estimateId) ?? (foreign?.id === estimateId ? foreign : null), [estimates, estimateId, foreign])
   const [meta, setMeta] = useState<GlovesEstimateInput>({ name: '', client: '', assessmentDate: todayIso() })
 
   useEffect(() => {
@@ -35,11 +40,20 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     return () => { active = false }
   }, [])
 
-  // Адрес без номера или с номером удалённой/чужой сметы — открываем первую из списка.
+  // Адрес без номера или с номером удалённой/недоступной сметы — открываем первую из списка.
+  // Администратор сначала пробует открыть смету сотрудника по номеру.
   useEffect(() => {
     if (loading || selected) return
+    if (estimateId && isAdmin(user) && foreignFailed !== estimateId) {
+      let active = true
+      goodsEstimatesApi.get(estimateId)
+        .then((estimate) => { if (active) setForeign({ id: estimate.id, name: estimate.name, client: estimate.client, assessmentDate: estimate.assessmentDate, status: estimate.status, createdAt: estimate.createdAt, updatedAt: estimate.updatedAt, ownerId: estimate.ownerId, ownerName: estimate.ownerName }) })
+        .catch(() => { if (active) setForeignFailed(estimateId) })
+      return () => { active = false }
+    }
     navigate(paths.goods(estimates[0]?.id), { replace: true })
-  }, [loading, selected, estimates])
+  }, [loading, selected, estimates, estimateId, user, foreignFailed])
+  const employeeEstimate = selected !== null && selected === foreign && foreign.ownerId !== undefined && foreign.ownerId !== user.id
 
   useEffect(() => {
     if (!selected) return
@@ -65,6 +79,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
       const saved = await goodsEstimatesApi.update(selected.id, normalizedMeta)
       setMeta(normalizedMeta)
       setEstimates((current) => current.map((item) => item.id === saved.id ? saved : item))
+      setForeign((current) => current?.id === saved.id ? { ...current, ...saved, ownerId: current.ownerId, ownerName: current.ownerName } : current)
       return true
     } catch (reason) {
       setError(errorMessage(reason))
@@ -87,6 +102,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
   }
 
   function onEstimateSaved(saved: GlovesEstimateSummary) {
+    setForeign((current) => current?.id === saved.id ? { ...current, name: saved.name, client: saved.client, assessmentDate: saved.assessmentDate, status: saved.status, updatedAt: saved.updatedAt } : current)
     setEstimates((current) => current.map((item) => item.id === saved.id ? {
       id: saved.id,
       name: saved.name,
@@ -111,6 +127,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
           headerSlot={<div className="estimate-bar-meta">
             <h1 title={estimateTitle(selected.name)}>{estimateTitle(selected.name)}</h1>
             <span className="estimate-bar-sub">{selected.client || 'Клиент не указан'} · {formatRuDate(selected.assessmentDate)}</span>
+            {employeeEstimate && <span className="estimate-owner" title="Изменения и расчёт сохраняются в смете сотрудника">Смета сотрудника: {foreign?.ownerName || 'сотрудник'} · <Link href={paths.employees}>к сотрудникам</Link></span>}
             <details className="estimate-bar-editor"><summary>Изменить</summary><div className="estimate-bar-fields"><label>Название<input value={estimateTitle(meta.name)} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta || !meta.name.trim()}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
           </div>}
         /> : !loading && estimates.length === 0 && <div className="estimates-empty"><div><h1>Начните с новой сметы</h1><p>Загрузите инвойс в Excel, проверьте строки и получите расчёт растаможки. Все сметы сохраняются в списке слева.</p><button type="button" onClick={() => void create()}>+ Создать смету</button></div></div>}

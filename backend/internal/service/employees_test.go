@@ -14,10 +14,11 @@ type fakeEmployeeRepository struct {
 	users          map[int64]repository.User
 	nextID         int64
 	loggedOutUsers []int64
+	estimates      map[int64]int64
 }
 
 func newFakeEmployees(users ...repository.User) *fakeEmployeeRepository {
-	f := &fakeEmployeeRepository{users: map[int64]repository.User{}}
+	f := &fakeEmployeeRepository{users: map[int64]repository.User{}, estimates: map[int64]int64{}}
 	for _, user := range users {
 		f.users[user.ID] = user
 		if user.ID > f.nextID {
@@ -67,6 +68,8 @@ func (f *fakeEmployeeRepository) UpdateUser(_ context.Context, id int64, changes
 		switch key {
 		case "name":
 			user.Name = value.(string)
+		case "email":
+			user.Email = strings.ToLower(value.(string))
 		case "role":
 			user.Role = value.(string)
 		case "password_hash":
@@ -92,6 +95,21 @@ func (f *fakeEmployeeRepository) CountActiveAdmins(context.Context) (int64, erro
 		}
 	}
 	return count, nil
+}
+
+func (f *fakeEmployeeRepository) EstimateCountsByUser(context.Context) (map[int64]int64, error) {
+	return f.estimates, nil
+}
+
+func (f *fakeEmployeeRepository) DeleteUser(_ context.Context, id, heirID int64) (int64, error) {
+	if _, ok := f.users[id]; !ok {
+		return 0, repository.ErrNotFound
+	}
+	delete(f.users, id)
+	moved := f.estimates[id]
+	f.estimates[heirID] += moved
+	delete(f.estimates, id)
+	return moved, nil
 }
 
 func (f *fakeEmployeeRepository) DeleteUserSessions(_ context.Context, id int64) error {
@@ -195,5 +213,54 @@ func TestLoginRejectsBlockedEmployee(t *testing.T) {
 	}}
 	if _, _, _, err := newAuthService(fake, time.Hour).Login(context.Background(), "blocked@example.com", "password1"); !errors.Is(err, ErrInvalidCredentials) {
 		t.Fatalf("blocked employee must not log in, got %v", err)
+	}
+}
+
+func TestDeleteEmployeeHandsEstimatesToAdministrator(t *testing.T) {
+	repo := newFakeEmployees(testAdmin, testInvoicer)
+	repo.estimates[testInvoicer.ID] = 3
+	service := &EmployeeService{repository: repo}
+	moved, err := service.Delete(context.Background(), testAdmin, testInvoicer.ID)
+	if err != nil || moved != 3 {
+		t.Fatalf("expected 3 estimates moved, got %d, %v", moved, err)
+	}
+	if _, ok := repo.users[testInvoicer.ID]; ok || repo.estimates[testAdmin.ID] != 3 {
+		t.Fatalf("employee must be gone and estimates with the administrator: %v %v", repo.users, repo.estimates)
+	}
+	list, _ := service.List(context.Background())
+	if len(list) != 1 || list[0].EstimateCount != 3 {
+		t.Fatalf("the list must count the administrator's estimates: %+v", list)
+	}
+}
+
+func TestDeleteEmployeeRefusesSelfAndLastAdministrator(t *testing.T) {
+	otherAdmin := repository.User{ID: 3, Email: "boss@example.com", Role: repository.RoleAdmin}
+	blocked := time.Now()
+	otherAdmin.DisabledAt = &blocked
+	service := &EmployeeService{repository: newFakeEmployees(testAdmin, testInvoicer, otherAdmin)}
+	if _, err := service.Delete(context.Background(), testAdmin, testAdmin.ID); validationField(err) != "id" {
+		t.Fatalf("deleting yourself must be refused, got %v", err)
+	}
+	// A blocked administrator does not count: deleting them leaves the active one.
+	if _, err := service.Delete(context.Background(), testAdmin, otherAdmin.ID); err != nil {
+		t.Fatalf("a blocked administrator may be deleted: %v", err)
+	}
+	if _, err := service.Delete(context.Background(), testAdmin, 99); !errors.Is(err, repository.ErrNotFound) {
+		t.Fatalf("expected not found, got %v", err)
+	}
+}
+
+func TestUpdateEmployeeEmail(t *testing.T) {
+	repo := newFakeEmployees(testAdmin, testInvoicer)
+	service := &EmployeeService{repository: repo}
+	updated, err := service.Update(context.Background(), testAdmin, testInvoicer.ID, EmployeeUpdate{Email: ptr(" New@Example.com ")})
+	if err != nil || updated.Email != "new@example.com" {
+		t.Fatalf("email must change, got %+v %v", updated, err)
+	}
+	if _, err := service.Update(context.Background(), testAdmin, testInvoicer.ID, EmployeeUpdate{Email: ptr("admin@example.com")}); !errors.Is(err, ErrEmailAlreadyExists) {
+		t.Fatalf("a taken email must be refused, got %v", err)
+	}
+	if _, err := service.Update(context.Background(), testAdmin, testInvoicer.ID, EmployeeUpdate{Email: ptr("not-an-email")}); validationField(err) != "email" {
+		t.Fatalf("an invalid email must be refused, got %v", err)
 	}
 }

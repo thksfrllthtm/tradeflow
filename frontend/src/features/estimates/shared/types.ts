@@ -27,5 +27,5 @@ export type GlovesCalculationInput = { assessmentDate: string; origin: string; u
 export type GlovesParams = Omit<GlovesCalculationInput, 'items'>
 
 export type GlovesEstimateInput = { name: string; client: string; assessmentDate: string }
-export type GlovesEstimateSummary = { id: number; name: string; client: string; assessmentDate: string; status: string; createdAt: string; updatedAt: string; ownerName?: string }
+export type GlovesEstimateSummary = { id: number; name: string; client: string; assessmentDate: string; status: string; createdAt: string; updatedAt: string; ownerId?: number; ownerName?: string }
 export type GlovesEstimate = GlovesEstimateSummary & { input: GlovesCalculationInput; result?: GlovesCalculationResult }

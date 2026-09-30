@@ -1,6 +1,7 @@
 package httpapi
 
-// Employee management (administrators only): list, create, change role, name, password, block.
+// Employee management (administrators only): list, create, change name/email/role/password,
+// block, delete.
 
 import (
 	"errors"
@@ -52,6 +53,21 @@ func (s *Server) updateEmployee(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"item": employee})
+}
+
+// deleteEmployee removes an employee; their estimates and directory entries pass to the
+// administrator. Answers with the number of estimates moved.
+func (s *Server) deleteEmployee(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id < 1 {
+		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Сотрудник не найден"}})
+		return
+	}
+	moved, err := s.employees.Delete(c.Request.Context(), currentUser(c), id)
+	if !handleEmployeeError(c, err) {
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"movedEstimates": moved})
 }
 
 // handleEmployeeError writes the error response and reports whether the

@@ -12,6 +12,8 @@ export type DraftPatch = { input?: Record<string, unknown>; result?: GlovesCalcu
 // а разбор Excel, расчёт и экспорт используют общий calculatorApi.
 export const goodsEstimatesApi = {
   list: async () => (await request<{ estimates: GlovesEstimateSummary[] }>('/api/gloves-copy/estimates')).estimates,
+  // Сметы сотрудника — только для администратора (страница «Сотрудники»).
+  listForUser: async (userId: number) => (await request<{ estimates: GlovesEstimateSummary[] }>(`/api/gloves-copy/estimates?userId=${userId}`)).estimates,
   create: async (input: GlovesEstimateInput) => (await request<{ estimate: GlovesEstimateSummary }>('/api/gloves-copy/estimates', { method: 'POST', body: JSON.stringify(input) })).estimate,
   get: async (id: number) => (await request<{ estimate: GlovesEstimate }>('/api/gloves-copy/estimates/' + id)).estimate,
   update: async (id: number, input: GlovesEstimateInput) => (await request<{ estimate: GlovesEstimateSummary }>('/api/gloves-copy/estimates/' + id, { method: 'PATCH', body: JSON.stringify(input) })).estimate,

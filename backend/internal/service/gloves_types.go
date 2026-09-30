@@ -106,7 +106,9 @@ type GlovesEstimateSummary struct {
 	Status         string `json:"status"`
 	CreatedAt      string `json:"createdAt"`
 	UpdatedAt      string `json:"updatedAt"`
-	// OwnerName is filled only in the administrator's list of all estimates.
+	// OwnerID and OwnerName are filled when an administrator opens an estimate: the page
+	// marks an employee's estimate.
+	OwnerID   int64  `json:"ownerId,omitempty"`
 	OwnerName string `json:"ownerName,omitempty"`
 }
 

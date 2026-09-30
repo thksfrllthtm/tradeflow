@@ -65,6 +65,7 @@ func (s *Server) Router() *gin.Engine {
 	employees.GET("", s.listEmployees)
 	employees.POST("", s.createEmployee)
 	employees.PATCH("/:id", s.updateEmployee)
+	employees.DELETE("/:id", s.deleteEmployee)
 
 	// Подсказки для подбора цен под бюджет — общие для смет перчаток и товаров.
 	pricing := router.Group("/api/estimates")

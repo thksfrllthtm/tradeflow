@@ -1,6 +1,7 @@
 package service
 
-// Employee management for administrators: list, create, change role/name/password, block.
+// Employee management for administrators: list, create, change name/email/role/password,
+// block and delete (estimates and directory authorship pass to the administrator).
 
 import (
 	"context"
@@ -19,6 +20,8 @@ type Employee struct {
 	Role      string `json:"role"`
 	Disabled  bool   `json:"disabled"`
 	CreatedAt string `json:"createdAt"`
+	// Сколько смет товаров у сотрудника.
+	EstimateCount int64 `json:"estimateCount"`
 }
 
 type EmployeeInput struct {
@@ -31,6 +34,7 @@ type EmployeeInput struct {
 // EmployeeUpdate changes only the fields that are set.
 type EmployeeUpdate struct {
 	Name     *string `json:"name"`
+	Email    *string `json:"email"`
 	Role     *string `json:"role"`
 	Disabled *bool   `json:"disabled"`
 	Password *string `json:"password"`
@@ -44,6 +48,8 @@ type employeeRepository interface {
 	UpdateUser(context.Context, int64, map[string]any) (repository.User, error)
 	CountActiveAdmins(context.Context) (int64, error)
 	DeleteUserSessions(context.Context, int64) error
+	EstimateCountsByUser(context.Context) (map[int64]int64, error)
+	DeleteUser(context.Context, int64, int64) (int64, error)
 }
 
 type EmployeeService struct {
@@ -62,11 +68,39 @@ func (s *EmployeeService) List(ctx context.Context) ([]Employee, error) {
 	if err != nil {
 		return nil, err
 	}
+	counts, err := s.repository.EstimateCountsByUser(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]Employee, 0, len(users))
 	for _, user := range users {
-		result = append(result, employeeFromUser(user))
+		employee := employeeFromUser(user)
+		employee.EstimateCount = counts[user.ID]
+		result = append(result, employee)
 	}
 	return result, nil
+}
+
+// Delete удаляет сотрудника; его сметы и записи справочников переходят к actor. Нельзя удалить
+// себя и последнего активного администратора. Возвращает число переданных смет.
+func (s *EmployeeService) Delete(ctx context.Context, actor repository.User, id int64) (int64, error) {
+	if id == actor.ID {
+		return 0, &ValidationError{Field: "id", Message: "Нельзя удалить себя"}
+	}
+	target, err := s.repository.UserByID(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+	if target.IsAdmin() && target.DisabledAt == nil {
+		admins, err := s.repository.CountActiveAdmins(ctx)
+		if err != nil {
+			return 0, err
+		}
+		if admins <= 1 {
+			return 0, &ValidationError{Field: "id", Message: "Это последний администратор: сначала назначьте другого"}
+		}
+	}
+	return s.repository.DeleteUser(ctx, id, actor.ID)
 }
 
 func (s *EmployeeService) Create(ctx context.Context, input EmployeeInput) (Employee, error) {
@@ -123,6 +157,18 @@ func (s *EmployeeService) Update(ctx context.Context, actor repository.User, id 
 		}
 		changes["name"] = name
 	}
+	if update.Email != nil && !strings.EqualFold(strings.TrimSpace(*update.Email), target.Email) {
+		email := strings.TrimSpace(*update.Email)
+		if !validEmail(email) {
+			return Employee{}, &ValidationError{Field: "email", Message: "Введите корректный email"}
+		}
+		if other, err := s.repository.UserByEmail(ctx, email); err == nil && other.ID != id {
+			return Employee{}, ErrEmailAlreadyExists
+		} else if err != nil && !errors.Is(err, repository.ErrNotFound) {
+			return Employee{}, err
+		}
+		changes["email"] = email
+	}
 	if update.Role != nil && *update.Role != target.Role {
 		if !repository.ValidRole(*update.Role) {
 			return Employee{}, &ValidationError{Field: "role", Message: "Выберите роль"}
@@ -171,6 +217,9 @@ func (s *EmployeeService) Update(ctx context.Context, actor repository.User, id 
 
 	updated, err := s.repository.UpdateUser(ctx, id, changes)
 	if err != nil {
+		if isUniqueViolation(err) {
+			return Employee{}, ErrEmailAlreadyExists
+		}
 		return Employee{}, err
 	}
 	if logout {

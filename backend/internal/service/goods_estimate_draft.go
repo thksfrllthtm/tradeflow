@@ -62,6 +62,15 @@ func (s *GoodsEstimateService) GetEstimate(ctx context.Context, id, userID int64
 	if err != nil {
 		return GlovesEstimateRecord{}, err
 	}
+	if userID == repository.AllUsers {
+		record.OwnerID = row.UserID
+		if owner, err := s.repository.UserByID(ctx, row.UserID); err == nil {
+			record.OwnerName = owner.Name
+			if record.OwnerName == "" {
+				record.OwnerName = owner.Email
+			}
+		}
+	}
 	photos, err := s.repository.GoodsEstimatePhotos(ctx, id)
 	if err != nil {
 		return GlovesEstimateRecord{}, err

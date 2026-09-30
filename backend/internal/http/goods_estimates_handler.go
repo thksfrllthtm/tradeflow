@@ -24,8 +24,20 @@ func (s *Server) getGoodsEstimateUSDRate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"rate": rate})
 }
 
+// listGoodsEstimates — свои сметы. Администратор со страницы «Сотрудники» запрашивает сметы
+// сотрудника: ?userId=<id>. Открыть и изменить любую смету по ссылке администратор может
+// (estimateScope), но в своём списке видит только свои.
 func (s *Server) listGoodsEstimates(c *gin.Context) {
-	estimates, err := s.goodsEstimates.ListEstimates(c.Request.Context(), estimateScope(c))
+	owner := currentUser(c).ID
+	if value := c.Query("userId"); value != "" && currentUser(c).IsAdmin() {
+		id, err := strconv.ParseInt(value, 10, 64)
+		if err != nil || id < 1 {
+			badRequest(c, "Некорректный сотрудник", "userId")
+			return
+		}
+		owner = id
+	}
+	estimates, err := s.goodsEstimates.ListEstimates(c.Request.Context(), owner)
 	if err != nil {
 		internalError(c)
 		return

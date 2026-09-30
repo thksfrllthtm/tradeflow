@@ -205,7 +205,7 @@ export function MatchTab({ types, ai, onBaseChanged }: Props) {
 
   return <div className="cer-match">
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
-    {notice && <p className="banner" role="status">{notice}<button type="button" onClick={() => setNotice('')}>×</button></p>}
+    {notice && <p className="banner ok" role="status">{notice}<button type="button" onClick={() => setNotice('')}>×</button></p>}
     {ai && !ai.configured && <p className="cer-note warn">ИИ не настроен на сервере: неизвестные марки определяются только по совпадениям с базой.</p>}
 
     {!parsed

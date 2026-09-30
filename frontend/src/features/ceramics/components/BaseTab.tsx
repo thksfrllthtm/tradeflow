@@ -75,7 +75,7 @@ export function BaseTab({ user, types, onBaseChanged }: Props) {
 
   return <div className="cer-base">
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
-    {notice && <p className="banner" role="status">{notice}<button type="button" onClick={() => setNotice('')}>×</button></p>}
+    {notice && <p className="banner ok" role="status">{notice}<button type="button" onClick={() => setNotice('')}>×</button></p>}
     <div className="dir-toolbar">
       <label className="dir-search"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Марка или наименование" aria-label="Поиск по базе" /></label>
       <select className="cer-type-filter" value={type} onChange={(event) => setType(event.target.value)} aria-label="Тип товара">
