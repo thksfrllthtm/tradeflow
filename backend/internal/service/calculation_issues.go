@@ -14,7 +14,7 @@ func unsupportedSchemeIssue(issue string) bool {
 func filterRateWarnings(values []string) []string {
 	result := values[:0]
 	for _, value := range values {
-		if strings.Contains(value, "Пошлина") || strings.Contains(value, "НДС") {
+		if strings.Contains(value, "Пошлина") || strings.Contains(value, "НДС") || strings.HasPrefix(value, rateErrorPrefix) {
 			continue
 		}
 		result = append(result, value)
@@ -54,6 +54,7 @@ func isBlockingCalculationIssue(value string) bool {
 		"Таможенная стоимость в тенге не может", "Для таможенной стоимости нужна",
 		"Валюта стоимости не поддерживается", "Для стоимости в EUR укажите",
 		"Пошлина поддерживается только процентная", "НДС поддерживается только процентный",
+		rateErrorPrefix,
 	} {
 		if strings.HasPrefix(value, prefix) {
 			return true

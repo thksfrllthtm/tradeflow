@@ -86,6 +86,7 @@ func (s *Server) Router() *gin.Engine {
 	tnvedNomenclature := router.Group("/api/tnved-nomenclature")
 	tnvedNomenclature.Use(s.requireUser)
 	tnvedNomenclature.GET("", s.listTNVEDNomenclature)
+	tnvedNomenclature.POST("/lookup", s.lookupTNVEDNomenclature)
 	tnvedNomenclature.POST("/import", s.requireAdmin, s.importTNVEDNomenclature)
 
 	kzRates := router.Group("/api/tnved-kz-rates")

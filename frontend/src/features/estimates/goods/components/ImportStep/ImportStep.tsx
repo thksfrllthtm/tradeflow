@@ -63,7 +63,7 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
       </div>
       <div className="im-mapping">
         <span className="im-mapping-title">Колонки файла:</span>
-        {mappingFieldOptions.map((option) => <span key={option.value} className={mapping[option.value] ? 'im-chip set' : 'im-chip'} title={option.value === 'code' ? 'Если указать колонку с кодом, строки автоматически сопоставятся со справочником ТН ВЭД' : option.label}>
+        {mappingFieldOptions.map((option) => <span key={option.value} className={mapping[option.value] ? 'im-chip set' : 'im-chip'} title={option.value === 'code' ? 'Если указать колонку с кодом, коды сверятся с номенклатурой ТН ВЭД ЕАЭС и строки получат её ставки' : option.label}>
           {shortLabel[option.value]}{mapping[option.value] ? <b>{mapping[option.value]}</b> : <i>не выбрана</i>}
         </span>)}
       </div>

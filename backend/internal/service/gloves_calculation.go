@@ -90,16 +90,36 @@ func (s *GlovesService) Calculate(ctx context.Context, input GlovesCalculationIn
 		return GlovesCalculationResult{}, err
 	}
 
-	items := make([]CalculationItem, 0, len(input.Items))
+	// A browser may keep a stale snapshot in local storage.  In the running
+	// server the directory entry id is the only trusted reference; names and
+	// ИТС are reloaded from PostgreSQL for every calculation, and duty/VAT come
+	// from the nomenclature by the row's code.  This keeps a user from changing
+	// a coefficient or duty by editing the request body.
+	snapshots := make([]map[string]any, len(input.Items))
+	codes := []string{}
 	for index, inItem := range input.Items {
-		// A browser may keep a stale snapshot in local storage.  In the running
-		// server the directory entry id is the only trusted reference; rates and
-		// names are reloaded from PostgreSQL for every calculation.  This keeps a
-		// user from changing a coefficient or duty by editing the request body.
 		snapshot, snapshotErr := s.resolveDirectorySnapshot(ctx, inItem, input.GenericItems)
 		if snapshotErr != nil {
 			return GlovesCalculationResult{}, &ValidationError{Field: "items", Message: fmt.Sprintf("Строка %d: %s", index+1, snapshotErr.Error())}
 		}
+		snapshots[index] = snapshot
+		if code := rowTNVEDCode(snapshot, inItem.Code); code != "" {
+			codes = append(codes, code)
+		}
+	}
+	if s.repository != nil {
+		rates, err := s.loadNomenclatureRates(ctx, codes)
+		if err != nil {
+			return GlovesCalculationResult{}, err
+		}
+		for index, inItem := range input.Items {
+			snapshots[index] = applyNomenclatureRates(snapshots[index], inItem.Code, rates)
+		}
+	}
+
+	items := make([]CalculationItem, 0, len(input.Items))
+	for index, inItem := range input.Items {
+		snapshot := snapshots[index]
 		coefficient := inItem.Coefficient
 		if input.DirectoryCoefficientOnly {
 			// The copied calculator has no manual ИТС field. Only a trusted

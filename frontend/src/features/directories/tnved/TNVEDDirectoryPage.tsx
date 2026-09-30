@@ -35,7 +35,7 @@ export function TNVEDDirectoryPage({ user, onLogout }: { user: User; onLogout: (
     apiPath: '/api/tnved-directory', title: 'Справочник ТН ВЭД', onImported: () => setRefreshKey((value) => value + 1),
     hint: 'Обязательна колонка «Код ТН ВЭД»; остальные колонки — как в выгрузке. Запись с тем же кодом, категорией и описанием обновляется, остальные добавляются.',
   })
-  const codeCheck = useTNVEDCodeCheck({ canAdd, canRestore: canEdit, refreshKey, initialOpen: linked.get('check') === '1', onAdd: (code) => setPanel({ draft: { code } }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
+  const codeCheck = useTNVEDCodeCheck({ mode: 'directory', canAdd, canRestore: canEdit, refreshKey, initialOpen: linked.get('check') === '1', onAdd: (draft) => setPanel({ draft }), onOpen: (item) => setPanel({ item }), onRestore: (item) => void restore(item) })
 
   useEffect(() => {
     let cancelled = false

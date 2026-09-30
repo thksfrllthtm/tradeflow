@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { checkCodes, parsePastedCodes } from './pastedCodes'
+import { checkCodes, checkNomenclature, parsePastedCodes } from './pastedCodes'
+import { NomenclatureCode } from '../nomenclature/nomenclatureApi'
 import { TNVEDDirectoryEntry } from './types'
 
 const entry = (id: number, code: string, archivedAt = '') => ({ id, code, archivedAt }) as TNVEDDirectoryEntry
@@ -34,6 +35,29 @@ describe('checkCodes', () => {
       ['2222222222', 'missing', []],
       ['3333333333', 'archived', [2]],
       ['1111111111', 'found', [1]],
+    ])
+  })
+
+  it('keeps the directory check about the directory, the nomenclature only fills the new card', () => {
+    const { codes } = parsePastedCodes('1111111111\n2222222222\n4015190000')
+    const official = [{ code: '4015190000', name: 'перчатки: 🠺 прочие' }] as NomenclatureCode[]
+    const rows = checkCodes(codes, [entry(1, '1111111111')], official)
+    expect(rows.map((row) => [row.code, row.status, row.nomenclature?.name ?? null])).toEqual([
+      ['2222222222', 'missing', null],
+      ['4015190000', 'missing', 'перчатки: 🠺 прочие'],
+      ['1111111111', 'found', null],
+    ])
+  })
+})
+
+describe('checkNomenclature', () => {
+  it('puts codes the EAEU nomenclature does not have first', () => {
+    const { codes } = parsePastedCodes('4015190000\n1111111111\n4203291000')
+    const found = [{ code: '4015190000', name: 'перчатки: 🠺 прочие' }, { code: '4203291000', name: 'защитные' }] as NomenclatureCode[]
+    expect(checkNomenclature(codes, found).map((row) => [row.code, row.status, row.entries.length])).toEqual([
+      ['1111111111', 'unknown', 0],
+      ['4015190000', 'official', 0],
+      ['4203291000', 'official', 0],
     ])
   })
 })

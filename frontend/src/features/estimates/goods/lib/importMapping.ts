@@ -1,8 +1,7 @@
-import { tnvedDirectoryApi } from '@/features/directories/tnved/tnvedDirectoryApi'
 import { GlovesItemInput, GlovesParseRow } from '../../shared/types'
-import { TNVEDDirectoryEntry } from '@/features/directories/tnved/types'
 import { GlovesMapping } from '../types'
 import { excelPrice, imageDataUrl, mappedValue, rowId } from '../../shared/lib/excelColumns'
+import { lookupNomenclature, normalizeTnvedCode, withNomenclatureRates } from './nomenclatureRates'
 
 // Этап 1: сопоставление колонок Excel с полями строки и сборка строк сметы.
 const mappingPatterns: Record<keyof GlovesMapping, string[]> = {
@@ -51,60 +50,28 @@ export function buildGloveItems(rows: GlovesParseRow[], images: { sourceRow: num
   })
 }
 
-function normalizeTnvedCode(value: string): string {
-  const compact = String(value ?? '').trim().replace(/^['`]/, '').replace(/\s+/g, '')
-  if (/^\d{10}$/.test(compact)) return compact
-  const decimalCode = compact.match(/^(\d{10})\.0+$/)
-  return decimalCode?.[1] ?? ''
-}
-
-function tnvedDisplayName(entry: TNVEDDirectoryEntry): string {
-  return [entry.name, entry.nameZh].map((value) => value?.trim()).filter(Boolean).join(' / ')
-}
-
-export async function matchImportedTnvedCodes(input: GlovesItemInput[]): Promise<{ items: GlovesItemInput[]; matched: number; missing: number }> {
-  const rowsWithCodes = input.filter((item) => normalizeTnvedCode(item.code) !== '')
-  if (rowsWithCodes.length === 0) return { items: input, matched: 0, missing: 0 }
-
-  const entries = await tnvedDirectoryApi.list()
-  const byCode = new Map<string, TNVEDDirectoryEntry>()
-  entries.filter((entry) => !entry.archivedAt).forEach((entry) => {
-    const code = normalizeTnvedCode(entry.code)
-    if (code && !byCode.has(code)) byCode.set(code, entry)
-  })
+// Коды из файла сверяются с номенклатурой ТН ВЭД ЕАЭС: найденный код получает наименование и
+// ставки из номенклатуры (пошлина ЕТТ и НДС), справочник ТН ВЭД для ставок не используется.
+// Номенклатура не загружена (nomenclatureLoaded = false) — коды остаются как есть.
+export async function matchImportedTnvedCodes(input: GlovesItemInput[]): Promise<{ items: GlovesItemInput[]; matched: number; missing: number; nomenclatureLoaded: boolean }> {
+  const codes = input.map((item) => normalizeTnvedCode(item.code)).filter(Boolean)
+  if (codes.length === 0) return { items: input, matched: 0, missing: 0, nomenclatureLoaded: true }
+  const found = await lookupNomenclature(codes)
+  if (!found) return { items: input.map((item) => ({ ...item, code: normalizeTnvedCode(item.code) || item.code })), matched: 0, missing: codes.length, nomenclatureLoaded: false }
 
   let matched = 0
   let missing = 0
   const items = input.map((item) => {
     const code = normalizeTnvedCode(item.code)
     if (!code) return item
-    const entry = byCode.get(code)
-    if (!entry) {
+    const official = found.byCode.get(code)
+    if (!official) {
       missing += 1
       return { ...item, code }
     }
     matched += 1
-    const displayName = tnvedDisplayName(entry)
-    const snapshot = {
-      entryId: entry.id,
-      category: entry.category,
-      name: entry.name,
-      nameZh: entry.nameZh,
-      code: entry.code,
-      antiDumpingPercent: entry.antiDumpingPercent,
-      duty: entry.duty,
-      vat: entry.vat,
-      verificationStatus: entry.verificationStatus,
-      sourceKind: 'operator',
-    }
-    return {
-      ...item,
-      code: entry.code,
-      standardName: displayName,
-      directoryEntryId: entry.id,
-      productDirectoryId: undefined,
-      directorySnapshot: snapshot,
-    }
+    const snapshot = withNomenclatureRates(official, found.source)
+    return { ...item, code, standardName: String(snapshot.name), directoryEntryId: undefined, productDirectoryId: undefined, directorySnapshot: snapshot }
   })
-  return { items, matched, missing }
+  return { items, matched, missing, nomenclatureLoaded: true }
 }

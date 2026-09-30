@@ -218,9 +218,10 @@ func calculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 			}
 		}
 	}
-	if strings.TrimSpace(out.StandardName) == "" {
+	// Код есть, но его нет в номенклатуре: об этом скажет rateError, второе сообщение не нужно.
+	if strings.TrimSpace(out.StandardName) == "" && stringValue(out.DirectorySnapshot, "rateError") == "" {
 		if in.GenericItems {
-			warnings = append(warnings, "Не выбрана карточка ТН ВЭД из справочника")
+			warnings = append(warnings, "Не выбрана карточка ТН ВЭД: укажите код ТН ВЭД в строке")
 		} else {
 			warnings = append(warnings, "Не выбрана карточка перчаток из справочника")
 		}
@@ -243,7 +244,7 @@ func calculateTariff(out *CalculationItem, net, pairs, places *decimal.Decimal, 
 	_ = places
 	snap := out.DirectorySnapshot
 	if snap == nil {
-		*warnings = append(*warnings, "Не выбраны ставки из справочника")
+		*warnings = append(*warnings, "Не выбраны ставки: укажите код ТН ВЭД")
 		return
 	}
 	customs, customsKnown := customsValueForItem(out, usd, euro, warnings)
@@ -252,6 +253,12 @@ func calculateTariff(out *CalculationItem, net, pairs, places *decimal.Decimal, 
 		return
 	}
 	out.CustomsValueKZT = customs.Round(2).StringFixed(2)
+	// Ставки берутся из номенклатуры; кода в ней нет — пошлину и НДС не посчитать.
+	if message := stringValue(snap, "rateError"); message != "" {
+		*warnings = append(*warnings, message)
+		out.DutyKZT, out.AntiDumpingKZT, out.VATKZT = "", "", ""
+		return
+	}
 	duty, dutyKnown := percentageDuty(snap, customs.Round(2), warnings)
 	if !dutyKnown {
 		out.DutyKZT = ""

@@ -311,13 +311,40 @@ func (s *TNVEDNomenclatureService) List(ctx context.Context, query string, limit
 	if err != nil {
 		return nil, 0, err
 	}
+	items, err := s.withKZRates(ctx, rows)
+	return items, total, err
+}
+
+const maxNomenclatureLookup = 2000
+
+// Lookup находит вставленные коды (колонку из Excel); кодов, которых нет в номенклатуре,
+// в ответе нет.
+func (s *TNVEDNomenclatureService) Lookup(ctx context.Context, codes []string) ([]NomenclatureCode, error) {
+	if len(codes) > maxNomenclatureLookup {
+		return nil, &ValidationError{Field: "codes", Message: fmt.Sprintf("Не больше %d кодов за раз", maxNomenclatureLookup)}
+	}
+	valid := make([]string, 0, len(codes))
+	for _, code := range codes {
+		if nomenclatureCodePattern.MatchString(code) {
+			valid = append(valid, code)
+		}
+	}
+	rows, err := s.repository.TNVEDNomenclatureByCodes(ctx, valid)
+	if err != nil {
+		return nil, err
+	}
+	return s.withKZRates(ctx, rows)
+}
+
+// withKZRates — строки номенклатуры для ответа вместе со ставками перечня РК.
+func (s *TNVEDNomenclatureService) withKZRates(ctx context.Context, rows []repository.TNVEDNomenclatureCode) ([]NomenclatureCode, error) {
 	codes := make([]string, 0, len(rows))
 	for _, row := range rows {
 		codes = append(codes, row.Code)
 	}
 	kzRates, err := kzRatesForCodes(ctx, s.repository, codes)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	items := make([]NomenclatureCode, 0, len(rows))
 	for _, row := range rows {
@@ -327,7 +354,7 @@ func (s *TNVEDNomenclatureService) List(ctx context.Context, query string, limit
 			Duty: NomenclatureDuty{Type: row.DutyType, Percent: decimalText(row.DutyPercent), Amount: decimalText(row.DutyAmount), Currency: row.DutyCurrency, Unit: row.DutyUnit},
 		})
 	}
-	return items, total, nil
+	return items, nil
 }
 
 // LatestImport is nil while nothing has been imported.

@@ -8,6 +8,7 @@ import { canAddTNVED, isAdmin, User } from '@/shared/types/user'
 import { formatRuDate } from '@/features/estimates/shared/lib/dates'
 import { SearchIcon } from '../components/icons'
 import { DirectoryImportResult } from '../directoryTransfer'
+import { useTNVEDCodeCheck } from '../tnved/TNVEDCodeCheck'
 import { TNVEDEntryPanel } from '../tnved/TNVEDEntryPanel'
 import { TNVEDDirectoryInput } from '../tnved/types'
 import { useKzListPanel } from '../kzList/KzListPanel'
@@ -74,6 +75,8 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
     } finally { setUploading(false) }
   }
 
+  // Проверка по номенклатуре: есть ли код в ТН ВЭД ЕАЭС, со ставками; справочник — на своей странице.
+  const codeCheck = useTNVEDCodeCheck({ mode: 'nomenclature', canAdd, refreshKey, onAdd: setDraft })
   const kzList = useKzListPanel({ current: kzSource, onImported: () => setRefreshKey((value) => value + 1) })
   const empty = !loading && total === 0
   return <main className="app-shell directory-shell">
@@ -84,15 +87,17 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
           <h1>Номенклатура ТН ВЭД ЕАЭС{source && <span className="dir-count">{formatDisplayNumber(source.codeCount)}</span>}</h1>
           <p>{source ? <>Источник: {source.source}{source.actualDate && <> · данные на {formatRuDate(source.actualDate)}</>} · загружено {formatRuDate(source.importedAt.slice(0, 10))}{source.importedByName && `, ${source.importedByName}`}</> : 'Все коды со ставками ввозной пошлины Единого таможенного тарифа.'}</p>
         </div>
-        {admin && <div className="dir-head-actions dir-transfer">
-          {kzList.button}
-          <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
+        <div className="dir-head-actions dir-transfer">
+          {codeCheck.button}
+          {admin && kzList.button}
+          {admin && <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
             {uploading ? 'Загружаем…' : source ? 'Обновить из файла TWS' : 'Загрузить файл TWS'}
             <input type="file" accept=".xlsx" onChange={(event) => void upload(event)} disabled={uploading} />
-          </label>
-        </div>}
+          </label>}
+        </div>
       </div>
 
+      {codeCheck.panel}
       {admin && kzList.panel}
       {uploaded && <p className="dir-transfer-ok nom-note" role="status">
         Загружено {formatDisplayNumber(uploaded.codeCount)} {plural(uploaded.codeCount, 'код', 'кода', 'кодов')}: новых {formatDisplayNumber(uploaded.addedCount)}, удалено {formatDisplayNumber(uploaded.removedCount)}, изменились наименование или ставка — {formatDisplayNumber(uploaded.changedCount)}.

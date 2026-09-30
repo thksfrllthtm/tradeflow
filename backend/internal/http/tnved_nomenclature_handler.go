@@ -32,6 +32,39 @@ func (s *Server) listTNVEDNomenclature(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": items, "total": total, "import": info, "kzImport": kzInfo})
 }
 
+// lookupTNVEDNomenclature finds a pasted column of codes: every employee checks codes before
+// an estimate. Codes the nomenclature does not have are absent from items.
+func (s *Server) lookupTNVEDNomenclature(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 256<<10)
+	var input struct {
+		Codes []string `json:"codes"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		badRequest(c, "Некорректный список кодов", "codes")
+		return
+	}
+	items, err := s.tnvedNomenclature.Lookup(c.Request.Context(), input.Codes)
+	if err != nil {
+		if validation, ok := err.(*service.ValidationError); ok {
+			badRequest(c, validation.Message, validation.Field)
+			return
+		}
+		internalError(c)
+		return
+	}
+	info, err := s.tnvedNomenclature.LatestImport(c.Request.Context())
+	if err != nil {
+		internalError(c)
+		return
+	}
+	kzInfo, err := s.kzRates.LatestImport(c.Request.Context())
+	if err != nil {
+		internalError(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": items, "import": info, "kzImport": kzInfo})
+}
+
 // importTNVEDNomenclature answers 200 with the import summary, or 400 with the rows to fix
 // (nothing saved).
 func (s *Server) importTNVEDNomenclature(c *gin.Context) {

@@ -8,6 +8,7 @@ import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { GlovesMapping } from '../types'
 import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
 import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes } from '../lib/importMapping'
+import { lookupNomenclature, withNomenclatureRates } from '../lib/nomenclatureRates'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 import { useDirectorySearch } from '../hooks/useDirectorySearch'
 import { useDraftAutosave } from '../hooks/useDraftAutosave'
@@ -275,8 +276,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
       setSourceSnapshot((current) => current ? { ...current, sheet, headerRow, dataStartRow, headers, rows: rawRows, mapping } : current)
       setSelectedForDirectory([])
       setResult(null)
-      if (matched.matched > 0 || matched.missing > 0) {
-        setStorageNotice(`Коды ТН ВЭД: автоматически сопоставлено ${matched.matched}${matched.missing > 0 ? `, не найдено ${matched.missing}` : ''}.`)
+      if (!matched.nomenclatureLoaded) {
+        setStorageNotice('Коды ТН ВЭД из файла не проверены: номенклатура ТН ВЭД ЕАЭС не загружена — ставки для расчёта брать неоткуда.')
+      } else if (matched.matched > 0 || matched.missing > 0) {
+        setStorageNotice(`Коды ТН ВЭД сверены с номенклатурой: найдено ${matched.matched}${matched.missing > 0 ? `, нет в номенклатуре ${matched.missing}` : ''}. Ставки — пошлина ЕТТ и НДС из номенклатуры.`)
       }
       setStep(2)
     } catch (reason) {
@@ -286,7 +289,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     }
   }
 
-  function applyDirectoryEntry(entry: DirectoryPickerEntry) {
+  async function applyDirectoryEntry(entry: DirectoryPickerEntry) {
     if (selectedForDirectory.length === 0) return
     const linked = entry.productDirectory?.tnved ?? entry
     const displayName = entry.productDirectory?.name || linked.name
@@ -294,7 +297,14 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     const fullDisplayName = [displayName, displayNameZh].filter((value) => value?.trim()).join(' / ')
     const selectedProduct = entry.productDirectory
     const companyCoefficient = selectedProduct?.companyCoefficient || ''
-    const snapshot = { entryId: linked.id, category: linked.category, name: displayName, nameZh: displayNameZh, code: linked.code, ...(selectedProduct ? { companyCoefficient } : {}), antiDumpingPercent: linked.antiDumpingPercent, duty: linked.duty, vat: linked.vat, verificationStatus: linked.verificationStatus, sourceKind: 'operator' }
+    const card = { entryId: linked.id, category: linked.category, name: displayName, nameZh: displayNameZh, code: linked.code, ...(selectedProduct ? { companyCoefficient } : {}) }
+    // Ставки — из номенклатуры по коду карточки, не из справочника; окончательно их подставит сервер.
+    let snapshot: Record<string, unknown> = card
+    try {
+      const found = await lookupNomenclature([linked.code])
+      const official = found?.byCode.get(linked.code)
+      if (official) snapshot = withNomenclatureRates(official, found?.source ?? null, card)
+    } catch { /* ставки покажет расчёт */ }
     // Название строки меняется только при выборе товара из справочника товаров. Код ТН ВЭД
     // сам по себе название не меняет — остаётся название из Excel.
     const names = (item: GlovesItemInput) => selectedProduct ? { name: fullDisplayName, supplierName: fullDisplayName } : { name: item.name, supplierName: item.supplierName }
@@ -503,10 +513,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
         onQueryChange={directorySearch.changeQuery}
         onSearchNow={directorySearch.searchNow}
         onShowAll={directorySearch.restart}
-        onPick={applyDirectoryEntry}
+        onPick={(entry) => void applyDirectoryEntry(entry)}
         onPreview={openPhotoGallery}
       />}
-      <p className="gloves-disclaimer">Это внутренний предварительный расчёт. ИТС, код и ставки берутся из выбранной операторской карточки и не являются официальным подтверждением.</p>
+      <p className="gloves-disclaimer">Это внутренний предварительный расчёт. Пошлина (ЕТТ) и НДС берутся из номенклатуры ТН ВЭД ЕАЭС по коду строки, ИТС — из карточки товара; это не официальное подтверждение.</p>
     </div>
     {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.index} onClose={() => setLightbox(null)} />}
   </div>

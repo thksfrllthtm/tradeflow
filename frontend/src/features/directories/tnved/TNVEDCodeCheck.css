@@ -22,11 +22,12 @@ p.code-check-note { margin: 0; }
 .code-check-list { display: grid; max-height: 320px; margin: 0; padding: 0; overflow: auto; border: 1px solid #e6ece8; border-radius: 8px; list-style: none; }
 .code-check-list li { display: grid; grid-template-columns: 104px 136px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; padding: 5px 10px; border-top: 1px solid #eef2ef; font-size: .8rem; }
 .code-check-list li:first-child { border-top: 0; }
-.code-check-list li.missing { background: #fff8f6; }
+.code-check-list li.missing, .code-check-list li.unknown { background: #fff8f6; }
 .code-check-list code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
-.code-check-list li.missing code { color: #9a3024; }
+.code-check-list li.missing code, .code-check-list li.unknown code { color: #9a3024; }
 .code-check-status { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .code-check-status.missing { background: #fde7e3; color: #9a3024; }
+.code-check-status.unknown { background: #9a3024; color: #fff; }
 .code-check-status.archived { background: #fbefd6; color: #8a5a00; }
 .code-check-status.found { background: #e3f1e8; color: #1a4d33; }
 .code-check-name { overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
@@ -38,3 +39,9 @@ p.code-check-note { margin: 0; }
   .code-check-row-actions { grid-column: 1 / -1; }
   .code-check-summary button { margin-left: 0; }
 }
+
+/* Номенклатура: код есть в ТН ВЭД, ссылка на страницу кода в источнике */
+.code-check-status.official { background: #e3f1e8; color: #1a4d33; }
+.code-check-link { align-self: center; margin-right: 4px; color: #1b6b43; font-size: .76rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.code-check-link::after { content: " ↗"; }
+.code-check-link:hover { text-decoration: underline; }

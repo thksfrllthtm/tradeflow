@@ -3,7 +3,7 @@ import { GlovesCalculationResult, GlovesItemInput } from '../../../shared/types'
 import { autoNetFor, formatWeight, netHint } from '../../../shared/lib/netWeight'
 import { photosOf } from '../../../shared/lib/itemPhotos'
 import { autoQuantityHint, QuantityField } from '../../../shared/lib/quantities'
-import { reviewStatus } from './reviewStatus'
+import { hasNomenclatureRates, reviewStatus } from './reviewStatus'
 import '../../../shared/styles/calculatorCommon.css'
 import './ReviewRow.css'
 
@@ -44,7 +44,7 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
   const id = item.id ?? ''
   const value = (field: keyof GlovesItemInput) => String(item[field] ?? '')
   const photos = photosOf(item)
-  const verified = item.directorySnapshot?.verificationStatus === 'operator_verified'
+  const verified = hasNomenclatureRates(item)
   const ownPackage = item.packageWeightKg !== defaultPackageWeight
   // Пустая своя упаковка на сервере заменяется общей — считаем подсказку так же.
   const netItem = item.packageWeightKg.trim() ? item : { ...item, packageWeightKg: defaultPackageWeight }
@@ -74,8 +74,8 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
           </div>
           <input className="rv-input rv-name" value={value('name')} onChange={(event) => onChange(id, 'name', event.target.value)} onKeyDown={moveFocus} placeholder="Название товара" aria-label={`Название товара, строка ${rowNumber}`} />
           <div className="rv-code-line">
-            <button type="button" className={`rv-code ${item.code ? (verified ? 'ok' : 'warn') : 'missing'}`} onClick={() => onOpenPicker(id)} title={item.code ? `${verified ? 'Проверено оператором' : 'Ставки не проверены оператором'} · изменить товар или код` : 'Выбрать товар или код ТН ВЭД'}>{item.code || 'Выбрать код ТН ВЭД'}</button>
-            {item.code && !verified && <span className="rv-code-note">проверьте ставки</span>}
+            <button type="button" className={`rv-code ${item.code ? (verified ? 'ok' : 'warn') : 'missing'}`} onClick={() => onOpenPicker(id)} title={item.code ? `${verified ? 'Ставки из номенклатуры ТН ВЭД ЕАЭС' : 'Кода нет в номенклатуре ТН ВЭД ЕАЭС или она не загружена'} · изменить товар или код` : 'Выбрать товар или код ТН ВЭД'}>{item.code || 'Выбрать код ТН ВЭД'}</button>
+            {item.code && !verified && <span className="rv-code-note">нет в номенклатуре</span>}
             {item.code && <button type="button" className="rv-code-clear" onClick={() => onClearDirectory(id)} title="Снять товар и код">снять</button>}
           </div>
         </div>

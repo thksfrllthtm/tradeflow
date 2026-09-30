@@ -17,6 +17,8 @@ type ImportError = Error & { rows?: DirectoryImportResult['errors'] }
 
 export const nomenclatureApi = {
   list: (params: { q: string; offset: number; limit: number }) => request<NomenclaturePage>(`/api/tnved-nomenclature?${new URLSearchParams({ q: params.q, offset: String(params.offset), limit: String(params.limit) })}`),
+  // Вставленные коды: найденные в номенклатуре (остальных в items нет) и откуда она загружена.
+  lookup: (codes: string[]) => request<Omit<NomenclaturePage, 'total'>>('/api/tnved-nomenclature/lookup', { method: 'POST', body: JSON.stringify({ codes }) }),
 
   // При ошибках в строках сервер ничего не сохраняет и возвращает их в error.rows.
   async upload(file: File): Promise<NomenclatureImport> {

@@ -93,6 +93,19 @@ func (r *Repository) ListTNVEDNomenclature(ctx context.Context, filter TNVEDNome
 	return codes, total, err
 }
 
+// TNVEDNomenclatureByCodes finds the given codes (a pasted column) with the same fields as
+// the list; codes the nomenclature does not have are simply absent.
+func (r *Repository) TNVEDNomenclatureByCodes(ctx context.Context, codes []string) ([]TNVEDNomenclatureCode, error) {
+	var found []TNVEDNomenclatureCode
+	if len(codes) == 0 {
+		return found, nil
+	}
+	err := r.db.WithContext(ctx).Table("tnved_nomenclature AS n").Where("n.code IN ?", codes).
+		Select("n.*, EXISTS (SELECT 1 FROM tnved_directory_entries d WHERE d.code = n.code AND d.archived_at IS NULL) AS in_directory").
+		Order("n.code ASC").Scan(&found).Error
+	return found, err
+}
+
 // AllTNVEDNomenclature reads the whole list: an import compares it with the new file.
 func (r *Repository) AllTNVEDNomenclature(ctx context.Context) ([]TNVEDNomenclatureCode, error) {
 	var codes []TNVEDNomenclatureCode
