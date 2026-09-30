@@ -15,7 +15,8 @@ import (
 const nbkRatesURL = "https://nationalbank.kz/rss/get_rates.cfm?fdate="
 const nbkLatestRatesURL = "https://nationalbank.kz/rss/rates_all.xml"
 
-// NBKRate is the official National Bank exchange rate for one unit of USD.
+// NBKRate is the official National Bank exchange rate for one unit of a currency (USD for
+// the calculation; EUR is shown for reference on the home page).
 // The copy calculator uses this value as a convenient starting point, while
 // the user can still edit the rate manually before calculating.
 type NBKRate struct {
@@ -38,10 +39,15 @@ type nbkRateItem struct {
 	Quant       string `xml:"quant"`
 }
 
-// FetchNBKUSD reads the official NBK RSS service for the selected date.
+// FetchNBKUSD reads the USD rate: the calculation works in dollars.
+func (s *GlovesService) FetchNBKUSD(ctx context.Context, assessmentDate string) (NBKRate, error) {
+	return s.FetchNBKRate(ctx, assessmentDate, "USD")
+}
+
+// FetchNBKRate reads the official NBK RSS service for the selected date and currency.
 // NBK documents this service with a DD.MM.YYYY date parameter and returns the
 // rate in <description>, with the nominal in <quant>.
-func (s *GlovesService) FetchNBKUSD(ctx context.Context, assessmentDate string) (NBKRate, error) {
+func (s *GlovesService) FetchNBKRate(ctx context.Context, assessmentDate, currency string) (NBKRate, error) {
 	date, err := time.Parse("2006-01-02", strings.TrimSpace(assessmentDate))
 	if err != nil {
 		return NBKRate{}, &ValidationError{Field: "assessmentDate", Message: "Укажите дату в формате ГГГГ-ММ-ДД"}
@@ -51,7 +57,7 @@ func (s *GlovesService) FetchNBKUSD(ctx context.Context, assessmentDate string) 
 
 	// First try the selected date itself. The documented service uses
 	// DD.MM.YYYY; the other two forms cover older NBK deployments.
-	if rate, ok, parseErr := fetchNBKRateForDate(ctx, client, date, "НБРК"); parseErr != nil {
+	if rate, ok, parseErr := fetchNBKRateForDate(ctx, client, date, currency, "НБРК"); parseErr != nil {
 		return NBKRate{}, parseErr
 	} else if ok {
 		return rate, nil
@@ -68,7 +74,7 @@ func (s *GlovesService) FetchNBKUSD(ctx context.Context, assessmentDate string) 
 			if latestParsed.Equal(date) {
 				source = "НБРК"
 			}
-			if rate, ok, rateErr := parseNBKUSD(latestFeed.Channel.Items, latestDate, source); rateErr != nil {
+			if rate, ok, rateErr := parseNBKRate(latestFeed.Channel.Items, currency, latestDate, source); rateErr != nil {
 				return NBKRate{}, rateErr
 			} else if ok {
 				return rate, nil
@@ -80,23 +86,23 @@ func (s *GlovesService) FetchNBKUSD(ctx context.Context, assessmentDate string) 
 	// previous published business day, never a later date.
 	for daysBack := 1; daysBack <= 7; daysBack++ {
 		candidateDate := date.AddDate(0, 0, -daysBack)
-		if rate, ok, parseErr := fetchNBKRateForDate(ctx, client, candidateDate, "НБРК · предыдущий опубликованный курс"); parseErr != nil {
+		if rate, ok, parseErr := fetchNBKRateForDate(ctx, client, candidateDate, currency, "НБРК · предыдущий опубликованный курс"); parseErr != nil {
 			return NBKRate{}, parseErr
 		} else if ok {
 			return rate, nil
 		}
 	}
 
-	return NBKRate{}, fmt.Errorf("НБРК не вернул курс USD за %s и не предоставил последний доступный курс", date.Format("02.01.2006"))
+	return NBKRate{}, fmt.Errorf("НБРК не вернул курс %s за %s и не предоставил последний доступный курс", currency, date.Format("02.01.2006"))
 }
 
-func fetchNBKRateForDate(ctx context.Context, client *http.Client, date time.Time, source string) (NBKRate, bool, error) {
+func fetchNBKRateForDate(ctx context.Context, client *http.Client, date time.Time, currency, source string) (NBKRate, bool, error) {
 	for _, dateQuery := range []string{date.Format("02.01.2006"), date.Format("2006-01-02"), date.Format("02.01.06")} {
 		feed, fetchErr := fetchNBKFeed(ctx, client, nbkRatesURL+dateQuery)
 		if fetchErr != nil {
 			continue
 		}
-		if rate, ok, parseErr := parseNBKUSD(feed.Channel.Items, date.Format("2006-01-02"), source); parseErr != nil {
+		if rate, ok, parseErr := parseNBKRate(feed.Channel.Items, currency, date.Format("2006-01-02"), source); parseErr != nil {
 			return NBKRate{}, false, parseErr
 		} else if ok {
 			return rate, true, nil
@@ -136,23 +142,23 @@ func decodeNBKFeed(reader io.Reader) (nbkRatesFeed, error) {
 	return feed, nil
 }
 
-func parseNBKUSD(items []nbkRateItem, date, source string) (NBKRate, bool, error) {
+func parseNBKRate(items []nbkRateItem, currency, date, source string) (NBKRate, bool, error) {
 	for _, item := range items {
-		if !strings.EqualFold(strings.TrimSpace(item.Title), "USD") {
+		if !strings.EqualFold(strings.TrimSpace(item.Title), currency) {
 			continue
 		}
 		rate, err := decimal.NewFromString(strings.TrimSpace(strings.ReplaceAll(item.Description, ",", ".")))
 		if err != nil || !rate.GreaterThan(decimal.Zero) {
-			return NBKRate{}, false, fmt.Errorf("НБРК вернул некорректный курс USD")
+			return NBKRate{}, false, fmt.Errorf("НБРК вернул некорректный курс %s", currency)
 		}
 		quant := decimal.NewFromInt(1)
 		if strings.TrimSpace(item.Quant) != "" {
 			quant, err = decimal.NewFromString(strings.TrimSpace(strings.ReplaceAll(item.Quant, ",", ".")))
 			if err != nil || !quant.GreaterThan(decimal.Zero) {
-				return NBKRate{}, false, fmt.Errorf("НБРК вернул некорректный номинал USD")
+				return NBKRate{}, false, fmt.Errorf("НБРК вернул некорректный номинал %s", currency)
 			}
 		}
-		return NBKRate{Currency: "USD", Rate: rate.Div(quant).String(), Date: date, Source: source}, true, nil
+		return NBKRate{Currency: strings.ToUpper(currency), Rate: rate.Div(quant).String(), Date: date, Source: source}, true, nil
 	}
 	return NBKRate{}, false, nil
 }

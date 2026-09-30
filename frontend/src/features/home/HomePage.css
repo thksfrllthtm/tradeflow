@@ -9,6 +9,7 @@
 .home-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .home-date { margin: 0 0 6px; color: #7a877f; font-size: .82rem; font-weight: 500; }
 .home-hero h1 { margin: 0; color: #13241a; font-size: 1.9rem; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; }
+.home-rates { display: flex; flex: 0 0 auto; gap: 28px; }
 .home-rate { display: grid; flex: 0 0 auto; justify-items: end; gap: 1px; color: #13241a; }
 .home-rate span { color: #7a877f; font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .home-rate strong { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }

@@ -4,14 +4,22 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
+// getGoodsEstimateUSDRate — курс НБРК на дату: USD по умолчанию, ?currency=EUR — евро
+// (показывается на главной справочно; расчёт идёт в долларах).
 func (s *Server) getGoodsEstimateUSDRate(c *gin.Context) {
-	rate, err := s.gloves.FetchNBKUSD(c.Request.Context(), c.Query("date"))
+	currency := strings.ToUpper(strings.TrimSpace(c.DefaultQuery("currency", "USD")))
+	if currency != "USD" && currency != "EUR" {
+		badRequest(c, "Поддерживаются только USD и EUR", "currency")
+		return
+	}
+	rate, err := s.gloves.FetchNBKRate(c.Request.Context(), c.Query("date"), currency)
 	if err != nil {
 		var validationErr *service.ValidationError
 		if errors.As(err, &validationErr) {

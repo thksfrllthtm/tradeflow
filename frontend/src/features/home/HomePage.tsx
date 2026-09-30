@@ -27,7 +27,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
   const admin = isAdmin(user)
   const [estimates, setEstimates] = useState<GlovesEstimateSummary[] | null>(null)
   const [reviewCount, setReviewCount] = useState(0)
-  const [rate, setRate] = useState<{ rate: string; date: string } | null>(null)
+  const [rates, setRates] = useState<{ currency: string; rate: string; date: string }[]>([])
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
   const now = new Date()
@@ -39,7 +39,9 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
       .then((items) => { if (active) setEstimates([...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) })
       .catch((reason) => { if (active) { setEstimates([]); setError(errorMessage(reason)) } })
     // Курс и счётчик кодов — дополнительные подсказки: без них главная работает.
-    goodsEstimatesApi.usdRate(todayIso()).then((value) => { if (active) setRate(value) }).catch(() => undefined)
+    // Курсы USD и EUR — справка; не пришёл один, второй всё равно показываем.
+    Promise.allSettled([goodsEstimatesApi.usdRate(todayIso()), goodsEstimatesApi.eurRate(todayIso())])
+      .then((results) => { if (active) setRates(results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])) })
     if (admin) tnvedDirectoryApi.list({ status: 'needs_review' }).then((items) => { if (active) setReviewCount(items.length) }).catch(() => undefined)
     return () => { active = false }
   }, [admin])
@@ -65,10 +67,12 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
             <p className="home-date">{longDate(now)}</p>
             <h1>{greeting(now.getHours())}{firstName ? `, ${firstName}` : ''}</h1>
           </div>
-          {rate && <div className="home-rate" title="Официальный курс Национального банка РК">
-            <span>1 USD</span>
-            <strong>{formatDisplayNumber(rate.rate)} ₸</strong>
-            <small>НБРК · {formatRuDate(rate.date)}</small>
+          {rates.length > 0 && <div className="home-rates" title="Официальный курс Национального банка РК">
+            {rates.map((rate) => <div className="home-rate" key={rate.currency}>
+              <span>1 {rate.currency}</span>
+              <strong>{formatDisplayNumber(rate.rate)} ₸</strong>
+              <small>НБРК · {formatRuDate(rate.date)}</small>
+            </div>)}
           </div>}
         </header>
 
