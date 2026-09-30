@@ -8,7 +8,7 @@ import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { GlovesMapping } from '../types'
 import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
 import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes } from '../lib/importMapping'
-import { lookupNomenclature, withNomenclatureRates } from '../lib/nomenclatureRates'
+import { withNomenclatureRates } from '../lib/nomenclatureRates'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 import { useDirectorySearch } from '../hooks/useDirectorySearch'
 import { useDraftAutosave } from '../hooks/useDraftAutosave'
@@ -289,26 +289,20 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     }
   }
 
-  async function applyDirectoryEntry(entry: DirectoryPickerEntry) {
+  // Товар даёт строке название, код и ИТС; код номенклатуры — только код. Ставки в обоих случаях —
+  // пошлина ЕТТ и НДС из номенклатуры (окончательно их подставит сервер при расчёте).
+  function applyDirectoryEntry(entry: DirectoryPickerEntry) {
     if (selectedForDirectory.length === 0) return
-    const linked = entry.productDirectory?.tnved ?? entry
-    const displayName = entry.productDirectory?.name || linked.name
-    const displayNameZh = entry.productDirectory?.nameZh || entry.productDirectory?.tnvedNameZh || linked.nameZh
-    const fullDisplayName = [displayName, displayNameZh].filter((value) => value?.trim()).join(' / ')
-    const selectedProduct = entry.productDirectory
-    const companyCoefficient = selectedProduct?.companyCoefficient || ''
-    const card = { entryId: linked.id, category: linked.category, name: displayName, nameZh: displayNameZh, code: linked.code, ...(selectedProduct ? { companyCoefficient } : {}) }
-    // Ставки — из номенклатуры по коду карточки, не из справочника; окончательно их подставит сервер.
-    let snapshot: Record<string, unknown> = card
-    try {
-      const found = await lookupNomenclature([linked.code])
-      const official = found?.byCode.get(linked.code)
-      if (official) snapshot = withNomenclatureRates(official, found?.source ?? null, card)
-    } catch { /* ставки покажет расчёт */ }
+    const product = entry.kind === 'product' ? entry.product : null
+    const fullDisplayName = product ? [product.name, product.nameZh || product.tnvedNameZh].filter((value) => value?.trim()).join(' / ') : ''
+    const companyCoefficient = product?.companyCoefficient || ''
+    const card: Record<string, unknown> = product ? { entryId: product.tnved?.id, category: product.category, name: product.name, nameZh: product.nameZh || product.tnvedNameZh, code: entry.code, companyCoefficient } : { code: entry.code }
+    const snapshot = entry.nomenclature ? withNomenclatureRates(entry.nomenclature, directorySearch.source, card) : card
+    const standardName = product ? fullDisplayName : String(snapshot.name ?? '')
     // Название строки меняется только при выборе товара из справочника товаров. Код ТН ВЭД
     // сам по себе название не меняет — остаётся название из Excel.
-    const names = (item: GlovesItemInput) => selectedProduct ? { name: fullDisplayName, supplierName: fullDisplayName } : { name: item.name, supplierName: item.supplierName }
-    setItems((current) => current.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, ...names(item), standardName: fullDisplayName, code: linked.code, coefficient: selectedProduct ? companyCoefficient : '', directoryEntryId: linked.id, productDirectoryId: selectedProduct?.id, directorySnapshot: snapshot } : item))
+    const names = (item: GlovesItemInput) => product ? { name: fullDisplayName, supplierName: fullDisplayName } : { name: item.name, supplierName: item.supplierName }
+    setItems((current) => current.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, ...names(item), standardName, code: entry.code, coefficient: companyCoefficient, directoryEntryId: product?.tnved?.id, productDirectoryId: product?.id, directorySnapshot: snapshot } : item))
     setSelectedForDirectory([])
     setDirectoryOpen(false)
     setResult(null)
@@ -507,13 +501,14 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
         query={directorySearch.query}
         entries={directorySearch.entries}
         counts={directorySearch.counts}
+        moreCodes={directorySearch.moreCodes}
         loading={directorySearch.loading}
         onClose={() => setDirectoryOpen(false)}
         onModeChange={directorySearch.changeMode}
         onQueryChange={directorySearch.changeQuery}
         onSearchNow={directorySearch.searchNow}
         onShowAll={directorySearch.restart}
-        onPick={(entry) => void applyDirectoryEntry(entry)}
+        onPick={applyDirectoryEntry}
         onPreview={openPhotoGallery}
       />}
       <p className="gloves-disclaimer">Это внутренний предварительный расчёт. Пошлина (ЕТТ) и НДС берутся из номенклатуры ТН ВЭД ЕАЭС по коду строки, ИТС — из карточки товара; это не официальное подтверждение.</p>

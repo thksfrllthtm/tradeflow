@@ -1,13 +1,17 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { NomenclatureCode } from '@/features/directories/nomenclature/nomenclatureApi'
+import { nameParts } from '@/features/directories/nomenclature/nomenclatureDraft'
 import { ProductDirectoryEntry } from '@/features/directories/products/types'
-import { TNVEDDirectoryEntry } from '@/features/directories/tnved/types'
-import { directoryStatusLabel, rateText } from '../../../shared/lib/tnvedRateText'
 import { GlovesItemInput } from '../../../shared/types'
 import '../../../shared/styles/pickerModal.css'
 import './DirectoryPickerModal.css'
 import '@/features/directories/verificationStatus.css'
 
-export type DirectoryPickerEntry = TNVEDDirectoryEntry & { productDirectory?: ProductDirectoryEntry }
+// Товар — карточка справочника товаров (название, ИТС, код); код — строка номенклатуры ТН ВЭД
+// ЕАЭС. nomenclature — ставки кода из номенклатуры (null — кода в номенклатуре нет).
+export type DirectoryPickerEntry =
+  | { kind: 'product'; key: string; code: string; product: ProductDirectoryEntry; nomenclature: NomenclatureCode | null }
+  | { kind: 'code'; key: string; code: string; nomenclature: NomenclatureCode }
 export type DirectoryPickerMode = 'products' | 'tnved'
 
 type Props = {
@@ -18,6 +22,8 @@ type Props = {
   query: string
   entries: DirectoryPickerEntry[]
   counts: Record<DirectoryPickerMode, number>
+  // Кодов номенклатуры больше, чем показано.
+  moreCodes: number
   loading: boolean
   onClose: () => void
   onModeChange: (mode: DirectoryPickerMode) => void
@@ -29,13 +35,13 @@ type Props = {
 }
 
 const modes: { value: DirectoryPickerMode; label: string; placeholder: string; hint: string }[] = [
-  { value: 'products', label: 'Товары', placeholder: 'Название товара, синоним или код', hint: 'Код ТН ВЭД и ИТС подставятся из карточки товара.' },
-  { value: 'tnved', label: 'Коды ТН ВЭД', placeholder: 'Код или описание', hint: 'Подставится только код и ставки; цену за единицу можно ввести вручную.' },
+  { value: 'products', label: 'Товары', placeholder: 'Название товара, синоним или код', hint: 'Название, код и ИТС — из карточки товара; пошлина и НДС — из номенклатуры ТН ВЭД ЕАЭС.' },
+  { value: 'tnved', label: 'Коды ТН ВЭД', placeholder: 'Начало кода (4015 19) или слова из наименования', hint: 'Номенклатура ТН ВЭД ЕАЭС: подставятся код, пошлина ЕТТ и НДС; название строки останется из Excel.' },
 ]
 
 // Окно выбора товара или кода ТН ВЭД для одной или нескольких строк сметы.
 // Поиск по мере ввода; ↑ ↓ выбирают карточку, Enter применяет, Esc закрывает.
-export function DirectoryPickerModal({ title, photos, multipleRows, mode, query, entries, counts, loading, onClose, onModeChange, onQueryChange, onSearchNow, onShowAll, onPick, onPreview }: Props) {
+export function DirectoryPickerModal({ title, photos, multipleRows, mode, query, entries, counts, moreCodes, loading, onClose, onModeChange, onQueryChange, onSearchNow, onShowAll, onPick, onPreview }: Props) {
   const [active, setActive] = useState(-1)
   const listRef = useRef<HTMLDivElement | null>(null)
   const current = modes.find((option) => option.value === mode)!
@@ -83,20 +89,23 @@ export function DirectoryPickerModal({ title, photos, multipleRows, mode, query,
           {!loading && counts[other.value] > 0 && <button type="button" className="secondary" onClick={() => onModeChange(other.value)}>Посмотреть в «{other.label}» ({counts[other.value]})</button>}
           {!loading && query.trim() !== '' && <button type="button" className="dp-link" onClick={onShowAll}>Сбросить поиск</button>}
         </div> : entries.map((entry, index) => {
-          const zh = entry.productDirectory?.nameZh || entry.nameZh
-          const itc = entry.productDirectory?.companyCoefficient || (entry.productDirectory ? 'не указан' : entry.companyCoefficient || 'не указан')
-          return <button type="button" role="option" aria-selected={index === active} className={index === active ? 'dp-item active' : 'dp-item'} key={entry.id} onMouseEnter={() => setActive(index)} onClick={() => onPick(entry)}>
-            <span className="dp-item-name">{entry.productDirectory?.name || entry.name}</span>
-            <span className={`directory-status ${entry.verificationStatus}`}>{directoryStatusLabel(entry)}</span>
+          const official = entry.nomenclature
+          const product = entry.kind === 'product' ? entry.product : null
+          const parts = official ? nameParts(official.name) : []
+          return <button type="button" role="option" aria-selected={index === active} className={index === active ? 'dp-item active' : 'dp-item'} key={entry.key} onMouseEnter={() => setActive(index)} onClick={() => onPick(entry)}>
+            <span className="dp-item-name">{product ? product.name : parts[parts.length - 1]}</span>
+            {!official && <span className="directory-status needs_review">Нет в номенклатуре</span>}
             <span className="dp-item-meta">
               <code>{entry.code}</code>
-              {zh && <span>{zh}</span>}
-              <span>ИТС {itc}</span>
-              <span>Пошлина {rateText(entry.duty)}</span>
-              <span>НДС {rateText(entry.vat)}</span>
+              {product?.nameZh && <span>{product.nameZh}</span>}
+              {!product && parts.length > 1 && <span className="dp-item-context">{parts.slice(0, -1).join(' ')}</span>}
+              {product && <span>ИТС {product.companyCoefficient || 'не указан'}</span>}
+              {official && <span>Пошлина ЕТТ {official.tariffText || 'не указана'}</span>}
+              {official && <span>НДС {official.vatPercent || '16'}%</span>}
             </span>
           </button>
         })}
+        {mode === 'tnved' && moreCodes > 0 && entries.length > 0 && <p className="dp-more">Показаны первые {entries.length} из {counts.tnved}. Уточните поиск — начало кода или слова из наименования.</p>}
       </div>
     </div>
   </div>

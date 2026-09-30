@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
+import { NomenclatureImport, nomenclatureApi } from '@/features/directories/nomenclature/nomenclatureApi'
 import { productDirectoryApi } from '@/features/directories/products/productDirectoryApi'
-import { tnvedDirectoryApi } from '@/features/directories/tnved/tnvedDirectoryApi'
 import { DirectoryPickerEntry, DirectoryPickerMode } from '../components/DirectoryPickerModal/DirectoryPickerModal'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 
 type Results = Record<DirectoryPickerMode, DirectoryPickerEntry[]>
 
-// Поиск для окна выбора: один запрос возвращает и карточки товаров (со связанным кодом),
-// и коды ТН ВЭД, поэтому переключение вкладок мгновенное. Ввод ищет с задержкой 300 мс;
-// устаревшие ответы (пользователь уже ввёл другое) отбрасываются.
+// Сколько кодов номенклатуры показывать за раз: их ~13 000, уточняйте поиском.
+const codeLimit = 50
+
+// Поиск для окна выбора: карточки товаров (название, ИТС, код) и коды номенклатуры ТН ВЭД
+// ЕАЭС. Ставки у обеих вкладок — из номенклатуры, как в расчёте. Ввод ищет с задержкой
+// 300 мс; устаревшие ответы (пользователь уже ввёл другое) отбрасываются.
 export function useDirectorySearch(onError: (message: string) => void) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Results>({ products: [], tnved: [] })
+  const [codeTotal, setCodeTotal] = useState(0)
+  const [source, setSource] = useState<NomenclatureImport | null>(null)
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<DirectoryPickerMode>('products')
   const timer = useRef<ReturnType<typeof window.setTimeout> | null>(null)
@@ -23,10 +28,18 @@ export function useDirectorySearch(onError: (message: string) => void) {
     setQuery(nextQuery)
     setLoading(true)
     try {
-      const [codes, products] = await Promise.all([tnvedDirectoryApi.list({ q: nextQuery }), productDirectoryApi.list({ q: nextQuery })])
+      const [codes, products] = await Promise.all([nomenclatureApi.list({ q: nextQuery.trim(), offset: 0, limit: codeLimit }), productDirectoryApi.list({ q: nextQuery })])
+      const withCode = products.filter((product) => product.tnvedCode && !product.tnved?.archivedAt)
+      // Ставки товаров — из номенклатуры по их кодам (одним запросом).
+      const official = withCode.length ? await nomenclatureApi.lookup([...new Set(withCode.map((product) => product.tnvedCode))]) : null
       if (requestId !== requestRef.current) return
-      const productCards: DirectoryPickerEntry[] = products.filter((product) => product.tnved && !product.tnved.archivedAt).map((product) => ({ ...product.tnved!, id: -product.id, name: product.name, nameZh: product.nameZh || product.tnved!.nameZh, code: product.tnvedCode, companyCoefficient: product.companyCoefficient, antiDumpingPercent: product.antiDumpingPercent, productDirectory: product }))
-      setResults({ products: productCards, tnved: codes })
+      const byCode = new Map((official?.items ?? []).map((item) => [item.code, item]))
+      setResults({
+        products: withCode.map((product) => ({ kind: 'product', key: `product-${product.id}`, code: product.tnvedCode, product, nomenclature: byCode.get(product.tnvedCode) ?? null })),
+        tnved: codes.items.map((item) => ({ kind: 'code', key: `code-${item.code}`, code: item.code, nomenclature: item })),
+      })
+      setCodeTotal(codes.total)
+      setSource(codes.import)
     } catch (reason) {
       if (requestId === requestRef.current) onError(requestErrorMessage(reason))
     } finally {
@@ -43,8 +56,11 @@ export function useDirectorySearch(onError: (message: string) => void) {
     query,
     mode,
     loading,
+    source,
     entries: results[mode],
-    counts: { products: results.products.length, tnved: results.tnved.length },
+    counts: { products: results.products.length, tnved: codeTotal },
+    // Кодов больше, чем показано: подсказать уточнить поиск.
+    moreCodes: Math.max(0, codeTotal - results.tnved.length),
     changeMode: setMode,
     changeQuery(value: string) {
       setQuery(value)
