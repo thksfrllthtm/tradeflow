@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"sync"
 
@@ -24,11 +25,14 @@ type Server struct {
 	employees         *service.EmployeeService
 	pricing           *service.PricingService
 	ceramics          *service.CeramicsService
+	decisions         *service.CodeDecisionService
+	agent             *service.TNVEDAgentService
 	authMu            sync.Mutex
 	authRates         map[string]authRate
 }
 
 func NewServer(database *repository.Repository, cfg config.Config) *Server {
+	decisions := service.NewCodeDecisionService(database)
 	return &Server{
 		config:            cfg,
 		auth:              service.NewAuthService(database, cfg.SessionTTL),
@@ -43,7 +47,17 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		ceramics: service.NewCeramicsService(database, service.NewCeramicsAIClient(service.CeramicsAIConfig{
 			APIKey: cfg.CeramicsAIAPIKey, BaseURL: cfg.CeramicsAIBaseURL, Model: cfg.CeramicsAIModel, Vision: cfg.CeramicsAIVision,
 		})),
+		decisions: decisions,
+		agent: service.NewTNVEDAgentService(database, service.NewAgentModelClient(service.AgentModelConfig{
+			APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision,
+			PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
+		}), decisions, service.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule}),
 	}
+}
+
+// RecoverInterrupted помечает ошибкой подборы ИИ, прерванные перезапуском сервера.
+func (s *Server) RecoverInterrupted(ctx context.Context) error {
+	return s.agent.RecoverInterrupted(ctx)
 }
 
 func (s *Server) Router() *gin.Engine {
@@ -125,6 +139,32 @@ func (s *Server) Router() *gin.Engine {
 	goodsEstimates.PATCH("/estimates/:id", s.updateGoodsEstimate)
 	goodsEstimates.DELETE("/estimates/:id", s.deleteGoodsEstimate)
 	goodsEstimates.PATCH("/estimates/:id/draft", s.saveGoodsEstimateDraft)
+
+	// База решений «товар из инвойса → код ТН ВЭД»: проверка, правка и импорт — администратор.
+	decisions := router.Group("/api/code-decisions")
+	decisions.Use(s.requireUser)
+	decisions.GET("", s.listCodeDecisions)
+	decisions.GET("/stats", s.codeDecisionStats)
+	decisions.GET("/:id", s.getCodeDecision)
+	decisions.POST("", s.createCodeDecision)
+	decisions.POST("/import", s.requireAdmin, s.importCodeDecisions)
+	decisions.PATCH("/:id", s.requireAdmin, s.updateCodeDecision)
+	decisions.POST("/:id/verify", s.requireAdmin, s.verifyCodeDecision)
+	decisions.POST("/:id/reject", s.requireAdmin, s.rejectCodeDecision)
+	decisions.DELETE("/:id", s.requireAdmin, s.deleteCodeDecision)
+
+	// ИИ-агент подбора кода ТН ВЭД для строки сметы.
+	agent := router.Group("/api/tnved-agent")
+	agent.Use(s.requireUser)
+	agent.GET("/status", s.agentStatus)
+	agent.GET("/usage", s.requireAdmin, s.agentUsage)
+	agent.GET("/sessions", s.listAgentSessions)
+	agent.POST("/sessions", s.startAgentSession)
+	agent.GET("/sessions/:id", s.getAgentSession)
+	agent.POST("/sessions/:id/messages", s.messageAgentSession)
+	agent.POST("/sessions/:id/rerun", s.rerunAgentSession)
+	agent.POST("/sessions/:id/cancel", s.cancelAgentSession)
+	agent.POST("/sessions/:id/apply", s.applyAgentSession)
 
 	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
 	ceramics := router.Group("/api/ceramics")

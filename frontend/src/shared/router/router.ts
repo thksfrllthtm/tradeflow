@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 //   /directory/products      — справочник товаров
 //   /directory/tnved         — справочник ТН ВЭД
 //   /directory/nomenclature  — полная номенклатура ТН ВЭД ЕАЭС (выгрузка TWS.BY)
+//   /decisions               — база решений «товар из инвойса → код ТН ВЭД»
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /login, /register        — вход и регистрация
@@ -16,6 +17,7 @@ export type Route =
   | { page: 'products' }
   | { page: 'tnved' }
   | { page: 'nomenclature' }
+  | { page: 'decisions' }
   | { page: 'employees' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'login' }
@@ -27,6 +29,7 @@ export const paths = {
   products: '/directory/products',
   tnved: '/directory/tnved',
   nomenclature: '/directory/nomenclature',
+  decisions: '/decisions',
   employees: '/employees',
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
@@ -50,6 +53,7 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.products) return { page: 'products' }
   if (path === paths.tnved) return { page: 'tnved' }
   if (path === paths.nomenclature) return { page: 'nomenclature' }
+  if (path === paths.decisions) return { page: 'decisions' }
   if (path === paths.employees) return { page: 'employees' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }

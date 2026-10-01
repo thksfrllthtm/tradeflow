@@ -8,7 +8,7 @@ import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { GlovesMapping } from '../types'
 import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
 import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes } from '../lib/importMapping'
-import { withNomenclatureRates } from '../lib/nomenclatureRates'
+import { lookupNomenclature, withNomenclatureRates } from '../lib/nomenclatureRates'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 import { useDirectorySearch } from '../hooks/useDirectorySearch'
 import { useDraftAutosave } from '../hooks/useDraftAutosave'
@@ -27,6 +27,9 @@ import { exportItems } from '../../shared/lib/exportItems'
 import { useBudgetDistribution } from '../../shared/hooks/useBudgetDistribution'
 import { rowActions } from '../../shared/lib/rowActions'
 import '../../shared/styles/calculatorPage.css'
+import { AgentPanel, agentItemFrom, agentPhotosFrom } from '@/features/tnvedAgent/AgentPanel'
+import { agentApi } from '@/features/tnvedAgent/agentApi'
+import { useAgentRows } from '@/features/tnvedAgent/useAgentRows'
 
 type Props = { estimateId: number; onEstimateSaved?: (estimate: GlovesEstimateSummary) => void; headerSlot: ReactNode }
 
@@ -60,6 +63,9 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const [directoryOpen, setDirectoryOpen] = useState(false)
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   const [paramsOpen, setParamsOpen] = useState<boolean>(() => !storedParams(estimateId).usdKzt)
+  // Строка, для которой открыт чат подбора кода ИИ, и пакетный подбор для строк без кода.
+  const [agentRowId, setAgentRowId] = useState<string | null>(null)
+  const [agentBatch, setAgentBatch] = useState<{ done: number; total: number } | null>(null)
   const selectedFileRef = useRef<File | null>(null)
   const autoRateRequestedRef = useRef(false)
   // Дата, на которую курс взят из НБРК; пусто — курс введён вручную или его нет.
@@ -98,6 +104,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     onError: (message) => setStorageNotice(`Не сохранено на сервере: ${message}. Повторим автоматически`),
   })
   const directorySearch = useDirectorySearch(setError)
+  const agentRows = useAgentRows(estimateId, step === 2)
 
   useEffect(() => {
     let active = true
@@ -309,6 +316,42 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     setError('')
   }
 
+  // Код из подбора ИИ: ставки — пошлина ЕТТ и НДС из номенклатуры, как при выборе кода вручную.
+  async function applyAgentCode(id: string, code: string) {
+    const found = await lookupNomenclature([code]).catch(() => null)
+    const nomenclature = found?.byCode.get(code)
+    const snapshot = nomenclature ? withNomenclatureRates(nomenclature, found?.source ?? null, { code }) : { code }
+    setItems((current) => current.map((item) => item.id === id ? { ...item, code, directoryEntryId: undefined, productDirectoryId: undefined, directorySnapshot: snapshot } : item))
+    setResult(null)
+  }
+
+  function applyAgentName(id: string, name: string) {
+    setItems((current) => current.map((item) => item.id === id ? { ...item, name, supplierName: item.supplierName || item.name, standardName: name } : item))
+    setResult(null)
+  }
+
+  // Подбор ИИ для всех включённых строк без кода, где подбора ещё не было: запуски идут на
+  // сервере в фоне, значки в таблице обновляются сами.
+  async function startAgentBatch() {
+    const rows = items.filter((item) => item.id && !item.excluded && !item.code && !agentRows.statuses[item.id])
+    if (rows.length === 0) return
+    if (!window.confirm(`Подобрать коды ИИ для ${rows.length} строк без кода? Подбор идёт на сервере, результат — в чате каждой строки (кнопка «ИИ»).`)) return
+    setAgentBatch({ done: 0, total: rows.length })
+    setError('')
+    try {
+      for (const [index, item] of rows.entries()) {
+        await agentApi.start({ estimateId, itemId: item.id ?? '', item: agentItemFrom(item), photos: await agentPhotosFrom(item) })
+        setAgentBatch({ done: index + 1, total: rows.length })
+        agentRows.refresh()
+      }
+    } catch (reason) {
+      setError(requestErrorMessage(reason))
+    } finally {
+      setAgentBatch(null)
+      agentRows.refresh()
+    }
+  }
+
   function openDirectoryPicker(ids: string[]) {
     if (ids.length === 0) return
     setSelectedForDirectory(ids)
@@ -489,6 +532,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
         calculate={calculate}
         saveDraft={saveDraft}
         clearAll={clearAll}
+        agentStatuses={agentRows.statuses}
+        agentBatch={agentBatch}
+        openAgent={setAgentRowId}
+        startAgentBatch={() => void startAgentBatch()}
       />}
 
       {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoBulkPriceDecrease={() => { budget.reset(); undoLastBulkPriceDecrease() }} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} budget={budget} />}
@@ -513,6 +560,12 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
       />}
       <p className="gloves-disclaimer">Это внутренний предварительный расчёт. Пошлина (ЕТТ) и НДС берутся из номенклатуры ТН ВЭД ЕАЭС по коду строки, ИТС — из карточки товара; это не официальное подтверждение.</p>
     </div>
+    {agentRowId && (() => {
+      const index = items.findIndex((item) => item.id === agentRowId)
+      if (index < 0) return null
+      return <AgentPanel estimateId={estimateId} item={items[index]} rowNumber={index + 1} onClose={() => setAgentRowId(null)}
+        onApplyCode={(code) => applyAgentCode(agentRowId, code)} onApplyName={(name) => applyAgentName(agentRowId, name)} onChanged={agentRows.refresh} />
+    })()}
     {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.index} onClose={() => setLightbox(null)} />}
   </div>
 }

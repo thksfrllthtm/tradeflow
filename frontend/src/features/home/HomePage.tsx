@@ -7,6 +7,7 @@ import { Link } from '@/shared/router/Link'
 import { navigate, paths } from '@/shared/router/router'
 import { isAdmin, User } from '@/shared/types/user'
 import { tnvedDirectoryApi } from '@/features/directories/tnved/tnvedDirectoryApi'
+import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { goodsEstimatesApi } from '@/features/estimates/goods/goodsEstimatesApi'
 import { estimateTitle } from '@/features/estimates/goods/lib/estimateTitle'
 import { formatRuDate, todayIso } from '@/features/estimates/shared/lib/dates'
@@ -27,6 +28,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
   const admin = isAdmin(user)
   const [estimates, setEstimates] = useState<GlovesEstimateSummary[] | null>(null)
   const [reviewCount, setReviewCount] = useState(0)
+  const [decisionCount, setDecisionCount] = useState(0)
   const [rates, setRates] = useState<{ currency: string; rate: string; date: string }[]>([])
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
@@ -45,6 +47,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
       // не знает ?currency=EUR и отдаёт доллар — второй «1 USD» не нужен.
       .then((results) => { if (active) setRates(results.flatMap((result, index) => result.status === 'fulfilled' && result.value.currency === ['USD', 'EUR'][index] ? [result.value] : [])) })
     if (admin) tnvedDirectoryApi.list({ status: 'needs_review' }).then((items) => { if (active) setReviewCount(items.length) }).catch(() => undefined)
+    if (admin) decisionsApi.stats().then((stats) => { if (active) setDecisionCount(stats.pending) }).catch(() => undefined)
     return () => { active = false }
   }, [admin])
 
@@ -95,6 +98,12 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
         {admin && reviewCount > 0 && <Link className="home-notice" href={`${paths.tnved}?status=needs_review`}>
           <span className="home-notice-dot" aria-hidden="true" />
           <span><b>{reviewCount} {plural(reviewCount, 'код', 'кода', 'кодов')} ТН ВЭД</b> {plural(reviewCount, 'ждёт', 'ждут', 'ждут')} вашей проверки</span>
+          <ArrowIcon />
+        </Link>}
+
+        {admin && decisionCount > 0 && <Link className="home-notice" href={`${paths.decisions}?status=pending`}>
+          <span className="home-notice-dot" aria-hidden="true" />
+          <span><b>{decisionCount} {plural(decisionCount, 'решение', 'решения', 'решений')} по кодам</b> {plural(decisionCount, 'ждёт', 'ждут', 'ждут')} вашей проверки в базе решений</span>
           <ArrowIcon />
         </Link>}
 

@@ -9,6 +9,7 @@ import { ProductDirectoryPage } from '@/features/directories/products/ProductDir
 import { GoodsEstimatesPage } from '@/features/estimates/goods/GoodsEstimatesPage'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
+import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
@@ -80,6 +81,7 @@ export function App() {
     case 'products': return <ProductDirectoryPage user={user} onLogout={() => void logout()} />
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
     case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null
+    case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
   }
 }

@@ -26,6 +26,9 @@ func main() {
 	}
 
 	server := httpapi.NewServer(database, cfg)
+	if err := server.RecoverInterrupted(ctx); err != nil {
+		log.Printf("recover interrupted agent sessions: %v", err)
+	}
 	log.Printf("backend listening on :%s", cfg.Port)
 	if err := server.Router().Run(":" + cfg.Port); err != nil {
 		log.Fatal(err)

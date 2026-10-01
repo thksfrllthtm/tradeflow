@@ -4,13 +4,14 @@ import { paths } from '@/shared/router/router'
 import './AppHeader.css'
 
 // home — главная: ни один раздел меню не подсвечен, на неё ведёт логотип.
-export type AppSection = 'home' | 'estimates' | 'products' | 'tnved' | 'nomenclature' | 'ceramics' | 'employees'
+export type AppSection = 'home' | 'estimates' | 'products' | 'tnved' | 'nomenclature' | 'decisions' | 'ceramics' | 'employees'
 
 const sections: { value: AppSection; label: string; href: string }[] = [
   { value: 'estimates', label: 'Сметы', href: paths.goods() },
   { value: 'products', label: 'Справочник товаров', href: paths.products },
   { value: 'tnved', label: 'Справочник ТН ВЭД', href: paths.tnved },
   { value: 'nomenclature', label: 'Номенклатура', href: paths.nomenclature },
+  { value: 'decisions', label: 'База решений', href: paths.decisions },
   { value: 'ceramics', label: 'Керамика', href: paths.ceramics },
 ]
 

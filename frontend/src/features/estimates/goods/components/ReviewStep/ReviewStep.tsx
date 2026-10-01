@@ -5,6 +5,7 @@ import { reviewStatus } from '../ReviewRow/reviewStatus'
 import { formatWeight } from '../../../shared/lib/netWeight'
 import { reviewTotals } from './reviewTotals'
 import { useStableCallback } from '@/shared/hooks/useStableCallback'
+import { AgentRowStatus } from '@/features/tnvedAgent/agentApi'
 import '../../../shared/styles/calculatorCommon.css'
 import '../../styles/calculator.css'
 import './ReviewStep.css'
@@ -42,9 +43,14 @@ type Props = {
   calculate: () => void
   saveDraft: () => void
   clearAll: () => void
+  // Подбор кода ИИ: состояние по строкам, открыть чат строки, подобрать для всех строк без кода.
+  agentStatuses: Record<string, AgentRowStatus>
+  agentBatch: { done: number; total: number } | null
+  openAgent: (id: string) => void
+  startAgentBatch: () => void
 }
 
-export function ReviewStep({ params, items, result, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, tableWrapRef, topScrollRef, includedCount, allDirectorySelected, setItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, syncHorizontalScroll, openDirectoryPicker, clearRowDirectory, setItem, removeRow, setLightbox, addManualPhoto, resetAutomaticNet, addEmptyRow, calculate, saveDraft, clearAll }: Props) {
+export function ReviewStep({ params, items, result, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, tableWrapRef, topScrollRef, includedCount, allDirectorySelected, setItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, syncHorizontalScroll, openDirectoryPicker, clearRowDirectory, setItem, removeRow, setLightbox, addManualPhoto, resetAutomaticNet, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, agentBatch, openAgent, startAgentBatch }: Props) {
   const excludedCount = items.length - includedCount
   const storageFailed = /не сохранён|недоступен|не удалось|отклонил|ошиб/i.test(storageNotice)
   const setSelectedExcluded = (excluded: boolean) => setItems((current) => current.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, excluded } : item))
@@ -58,6 +64,8 @@ export function ReviewStep({ params, items, result, selectedForDirectory, params
   const onPreview = useStableCallback(setLightbox)
   const onUpload = useStableCallback(addManualPhoto)
   const onResetNet = useStableCallback(resetAutomaticNet)
+  const onAgent = useStableCallback(openAgent)
+  const agentPending = items.filter((item) => item.id && !item.excluded && !item.code && !agentStatuses[item.id]).length
   const ownPackageCount = items.filter((item) => item.packageWeightKg !== params.packageWeightKg).length
   const withoutCodeCount = items.filter((item) => !item.excluded && !item.code).length
   const errorCount = items.filter((item, index) => reviewStatus(item, result?.items[index]).tone === 'bad').length
@@ -110,6 +118,8 @@ export function ReviewStep({ params, items, result, selectedForDirectory, params
           <span>Строк: <b>{items.length}</b> · в расчёте: <b>{includedCount}</b>{excludedCount > 0 && <> · исключено: <b>{excludedCount}</b></>}</span>
           {withoutCodeCount > 0 && <span className="rv-bar-count warn" title="Выберите код ТН ВЭД — без него строка не рассчитается">без кода: {withoutCodeCount}</span>}
           {errorCount > 0 && <span className="rv-bar-count bad" title="Причина — в подсказке у значка «!» в конце строки">с ошибками: {errorCount}</span>}
+          {agentBatch ? <span className="rv-bar-count">ИИ запускает подбор: {agentBatch.done} из {agentBatch.total}</span>
+            : agentPending > 0 && <button type="button" className="rv-bar-button rv-agent-batch" onClick={startAgentBatch} disabled={loading} title="ИИ-агент подберёт коды для включённых строк без кода; результат — в чате строки (кнопка «ИИ»)">Подобрать коды ИИ ({agentPending})</button>}
           <span className="rv-bar-end">
             <small className="rv-bar-hint">Enter, ↑ ↓ — переход по строкам</small>
             <button type="button" className="rv-bar-button" onClick={addEmptyRow} disabled={loading}>+ Строка</button>
@@ -133,7 +143,7 @@ export function ReviewStep({ params, items, result, selectedForDirectory, params
             <th className="rv-remove-col" aria-label="Удалить" />
           </tr></thead>
           <tbody>
-            {items.map((item, index) => <ReviewRow key={item.id ?? index} item={item} rowNumber={index + 1} resultItem={result?.items[index]} selected={selectedIds.has(item.id ?? '')} onSelect={onSelect} onOpenPicker={onOpenPicker} onClearDirectory={onClearDirectory} onChange={onChange} onRemove={onRemove} onPreview={onPreview} onUpload={onUpload} onResetNet={onResetNet} defaultPackageWeight={params.packageWeightKg} />)}
+            {items.map((item, index) => <ReviewRow key={item.id ?? index} item={item} rowNumber={index + 1} resultItem={result?.items[index]} selected={selectedIds.has(item.id ?? '')} onSelect={onSelect} onOpenPicker={onOpenPicker} onClearDirectory={onClearDirectory} onChange={onChange} onRemove={onRemove} onPreview={onPreview} onUpload={onUpload} onResetNet={onResetNet} defaultPackageWeight={params.packageWeightKg} agentStatus={agentStatuses[item.id ?? '']} onAgent={onAgent} />)}
             {items.length === 0 && <tr><td colSpan={11} className="gloves-empty"><h3>Строк пока нет</h3><p>Загрузите XLSX или добавьте строку вручную.</p></td></tr>}
           </tbody>
           {items.length > 0 && <tfoot><tr>

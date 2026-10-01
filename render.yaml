@@ -34,3 +34,6 @@ services:
       # Ключ DeepSeek для «Подобрать с ИИ» (без него цены подбираются только математикой)
       - key: DEEPSEEK_API_KEY
         sync: false
+      # ИИ-агент подбора кода ТН ВЭД: без своих TNVED_AI_* берёт DEEPSEEK_API_KEY и deepseek-flash.
+      - key: TNVED_AI_DAILY_LIMIT
+        value: "100"

@@ -62,3 +62,13 @@
 .gloves-page .rv-grid .rv-remove { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #b3bdb6; font-size: 1.05rem; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .12s; }
 .gloves-page .rv-grid tr:hover .rv-remove, .gloves-page .rv-grid .rv-remove:focus-visible { opacity: 1; }
 .gloves-page .rv-grid .rv-remove:hover { background: #fdecec; color: #a33232; }
+
+/* Кнопка чата подбора кода ИИ: подпись и цвет — состояние подбора строки. */
+.rv-code-line button.rv-agent { flex: 0 0 auto; height: 20px; padding: 0 7px; border: 1px solid #cfdcd3; border-radius: 999px; background: #fff; color: #3d5245; font-size: .66rem; font-weight: 750; letter-spacing: .02em; white-space: nowrap; }
+.rv-code-line button.rv-agent:hover:not(:disabled) { border-color: #24704a; background: #e8f3ec; color: #1a4d33; }
+.rv-code-line button.rv-agent.running { border-color: #9cc7ab; background: #eef6f1; color: #24704a; animation: rv-agent-pulse 1.2s infinite ease-in-out; }
+.rv-code-line button.rv-agent.waiting { border-color: #e7c86b; background: #fff8e3; color: #7a5810; }
+.rv-code-line button.rv-agent.error { border-color: #e2a99d; background: #fff1ee; color: #9a3024; }
+.rv-code-line button.rv-agent.same { border-color: #9cc7ab; background: #e3f1e8; color: #1c5c38; }
+.rv-code-line button.rv-agent.suggest { border-color: #e7c86b; background: #fff8e3; color: #6b4d0c; font-family: ui-monospace, Consolas, monospace; }
+@keyframes rv-agent-pulse { 50% { opacity: .55; } }

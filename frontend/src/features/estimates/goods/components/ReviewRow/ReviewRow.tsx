@@ -4,6 +4,7 @@ import { autoNetFor, formatWeight, netHint } from '../../../shared/lib/netWeight
 import { photosOf } from '../../../shared/lib/itemPhotos'
 import { autoQuantityHint, QuantityField } from '../../../shared/lib/quantities'
 import { hasNomenclatureRates, reviewStatus } from './reviewStatus'
+import { AgentRowStatus, formatCode } from '@/features/tnvedAgent/agentApi'
 import '../../../shared/styles/calculatorCommon.css'
 import './ReviewRow.css'
 
@@ -24,6 +25,9 @@ export type ReviewRowProps = {
   onResetNet: (id: string) => void
   // Общая упаковка из параметров расчёта: строка с другим значением считается «со своей упаковкой».
   defaultPackageWeight: string
+  // Последний подбор кода ИИ для строки и открытие его чата.
+  agentStatus?: AgentRowStatus
+  onAgent: (id: string) => void
 }
 
 // Spreadsheet-style navigation: Enter / ↓ go to the same column in the next row, Shift+Enter / ↑ go up.
@@ -40,7 +44,7 @@ function moveFocus(event: KeyboardEvent<HTMLInputElement>) {
   input.select()
 }
 
-export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, selected, onSelect, onOpenPicker, onClearDirectory, onChange, onRemove, onPreview, onUpload, onResetNet, defaultPackageWeight }: ReviewRowProps) {
+export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, selected, onSelect, onOpenPicker, onClearDirectory, onChange, onRemove, onPreview, onUpload, onResetNet, defaultPackageWeight, agentStatus, onAgent }: ReviewRowProps) {
   const id = item.id ?? ''
   const value = (field: keyof GlovesItemInput) => String(item[field] ?? '')
   const photos = photosOf(item)
@@ -77,6 +81,7 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
             <button type="button" className={`rv-code ${item.code ? (verified ? 'ok' : 'warn') : 'missing'}`} onClick={() => onOpenPicker(id)} title={item.code ? `${verified ? 'Ставки из номенклатуры ТН ВЭД ЕАЭС' : 'Кода нет в номенклатуре ТН ВЭД ЕАЭС или она не загружена'} · изменить товар или код` : 'Выбрать товар или код ТН ВЭД'}>{item.code || 'Выбрать код ТН ВЭД'}</button>
             {item.code && !verified && <span className="rv-code-note">нет в номенклатуре</span>}
             {item.code && <button type="button" className="rv-code-clear" onClick={() => onClearDirectory(id)} title="Снять товар и код">снять</button>}
+            <AgentButton status={agentStatus} code={item.code} onClick={() => onAgent(id)} />
           </div>
         </div>
       </td>
@@ -101,3 +106,18 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
     </tr>
   )
 })
+
+// Кнопка чата подбора ИИ: подпись показывает, что сейчас с подбором строки.
+function AgentButton({ status, code, onClick }: { status?: AgentRowStatus; code: string; onClick: () => void }) {
+  let label = 'ИИ'
+  let tone = ''
+  let title = 'Подобрать код ТН ВЭД ИИ-агентом'
+  if (status?.status === 'running') { label = 'ИИ…'; tone = 'running'; title = 'ИИ подбирает код — открыть чат' }
+  else if (status?.status === 'waiting') { label = 'ИИ ?'; tone = 'waiting'; title = 'ИИ ждёт ответа на вопрос — открыть чат' }
+  else if (status?.status === 'error') { label = 'ИИ !'; tone = 'error'; title = 'Подбор прервался — открыть чат' }
+  else if (status?.status === 'done' && status.bestCode) {
+    if (status.bestCode === code) { label = 'ИИ ✓'; tone = 'same'; title = 'Код совпадает с подбором ИИ — открыть чат' }
+    else { label = `ИИ: ${formatCode(status.bestCode)}`; tone = 'suggest'; title = 'ИИ предлагает другой код — открыть чат' }
+  } else if (status) { title = 'Открыть чат подбора ИИ' }
+  return <button type="button" className={`rv-agent ${tone}`.trim()} onClick={onClick} title={title}>{label}</button>
+}
