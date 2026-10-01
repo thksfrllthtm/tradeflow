@@ -1,9 +1,10 @@
-import { ChangeEvent } from 'react'
+import { ChangeEvent, useState } from 'react'
 import { GlovesParseRow, SheetInfo } from '../../../shared/types'
 import { GlovesMapping } from '../../types'
 import '../../../shared/styles/calculatorCommon.css'
 import '../../styles/calculator.css'
 import './ImportStep.css'
+import { ExcelPreview } from './ExcelPreview'
 
 type MappingOption = { value: keyof GlovesMapping; label: string }
 
@@ -31,11 +32,23 @@ type Props = {
   applyMapping: () => void
 }
 
+// Вид таблицы строк файла: обычная или пробный «Как в Excel» (Jspreadsheet CE). Выбор помнит браузер.
+type View = 'table' | 'excel'
+const viewKey = 'tradeflow.importView'
+function storedView(): View {
+  try { return localStorage.getItem(viewKey) === 'excel' ? 'excel' : 'table' } catch { return 'table' }
+}
+
 // Короткие подписи — те же, что в заголовках таблицы на этапе проверки.
 const shortLabel: Record<keyof GlovesMapping, string> = { name: 'Наименование', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт', places: 'Места', pairsPerPlace: 'Шт. в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
 
 export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, headers, rawRows, mapping, fileName, selectedFileAvailable, mappingFieldOptions, upload, addEmptyRow, setSheet, setHeaderRow, setDataStartRow, reparseSelectedSheet, mappedFieldForHeader, setMappingForHeader, setRawRowIncluded, applyMapping }: Props) {
   const fileInput = <input type="file" accept=".xlsx" onChange={upload} disabled={loading} />
+  const [view, setViewState] = useState<View>(storedView)
+  function setView(next: View) {
+    setViewState(next)
+    try { localStorage.setItem(viewKey, next) } catch { /* выбор просто не запомнится */ }
+  }
 
   if (headers.length === 0 && sheets.length === 0) return <div className="gloves-step-page im-step">
     <label className={loading ? 'im-drop busy' : 'im-drop'}>
@@ -63,11 +76,18 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
       </div>
       <div className="im-mapping">
         <span className="im-mapping-title">Колонки файла:</span>
+        <div className="im-view" role="radiogroup" aria-label="Вид таблицы">
+          <button type="button" role="radio" aria-checked={view === 'table'} className={view === 'table' ? 'active' : undefined} onClick={() => setView('table')}>Таблица</button>
+          <button type="button" role="radio" aria-checked={view === 'excel'} className={view === 'excel' ? 'active' : undefined} onClick={() => setView('excel')} title="Пробный режим: выделение ячеек мышью и копирование в Excel">Как в Excel</button>
+        </div>
         {mappingFieldOptions.map((option) => <span key={option.value} className={mapping[option.value] ? 'im-chip set' : 'im-chip'} title={option.value === 'code' ? 'Если указать колонку с кодом, коды сверятся с номенклатурой ТН ВЭД ЕАЭС и строки получат её ставки' : option.label}>
           {shortLabel[option.value]}{mapping[option.value] ? <b>{mapping[option.value]}</b> : <i>не выбрана</i>}
         </span>)}
       </div>
-      <div className="im-table-wrap">
+      {view === 'excel' ? <>
+        <p className="im-xp-hint">Нажмите на заголовок колонки, чтобы выбрать, что в ней. Выделяйте ячейки мышью (с Shift — диапазон), Ctrl+C — скопировать в Excel. Флажок в первой колонке — импортировать строку.</p>
+        <ExcelPreview headers={headers} rows={rawRows} fields={mappingFieldOptions.map((option) => ({ value: option.value, label: shortLabel[option.value] }))} fieldForHeader={(header) => mappedFieldForHeader(header, mapping)} onFieldChange={(header, field) => setMappingForHeader(header, field as keyof GlovesMapping | '')} onIncludedChange={setRawRowIncluded} />
+      </> : <div className="im-table-wrap">
         <table className="im-table">
           <thead><tr>
             <th className="im-check"><input type="checkbox" checked={rawRows.length > 0 && includedCount === rawRows.length} onChange={(event) => rawRows.forEach((row) => setRawRowIncluded(row.sourceRow, event.target.checked))} aria-label="Импортировать все строки" title="Импортировать все строки" /></th>
@@ -83,7 +103,7 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
             {headers.map((header, index) => <td key={header} className={fieldByHeader[index] ? 'im-mapped' : ''} title={row.values[header] || undefined}>{row.values[header]}</td>)}
           </tr>)}</tbody>
         </table>
-      </div>
+      </div>}
       <div className="rv-actions">
         <span className="rv-actions-note">К импорту <b>{includedCount}</b> из {rawRows.length} строк · колонок выбрано <b>{mappedCount}</b> из {mappingFieldOptions.length}{!mapping.name && <em className="im-need"> · выберите колонку «Наименование»</em>}</span>
         <button type="button" className="rv-clear im-manual" onClick={addEmptyRow}>+ Строка вручную</button>

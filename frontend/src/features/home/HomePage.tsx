@@ -41,7 +41,9 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
     // Курс и счётчик кодов — дополнительные подсказки: без них главная работает.
     // Курсы USD и EUR — справка; не пришёл один, второй всё равно показываем.
     Promise.allSettled([goodsEstimatesApi.usdRate(todayIso()), goodsEstimatesApi.eurRate(todayIso())])
-      .then((results) => { if (active) setRates(results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])) })
+      // Курс показывается, только если сервер вернул именно запрошенную валюту: старый сервер
+      // не знает ?currency=EUR и отдаёт доллар — второй «1 USD» не нужен.
+      .then((results) => { if (active) setRates(results.flatMap((result, index) => result.status === 'fulfilled' && result.value.currency === ['USD', 'EUR'][index] ? [result.value] : [])) })
     if (admin) tnvedDirectoryApi.list({ status: 'needs_review' }).then((items) => { if (active) setReviewCount(items.length) }).catch(() => undefined)
     return () => { active = false }
   }, [admin])
