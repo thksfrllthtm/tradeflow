@@ -5,15 +5,22 @@
 /* Панель: слева подбор цен под бюджет, справа правка цен. */
 .rs-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px; border-bottom: 1px solid #e6ece8; }
 .rs-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
-.rs-price-tool label { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
-.rs-price-tool input { box-sizing: border-box; width: 64px; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
-.rs-price-tool input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.rs-price-tool input::placeholder { color: #b3bdb6; }
 /* Кнопки правки цен: контурные, тёмный текст; неактивные — серые, но читаемые. */
-.rs-price-tool .rs-tool-button { height: 30px; padding: 0 11px; border: 1px solid #cfd9d2; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .78rem; font-weight: 600; white-space: nowrap; opacity: 1; }
-.rs-price-tool .rs-tool-button:hover:not(:disabled) { border-color: #24704a; background: #f3f8f5; color: #1c5538; }
-.rs-price-tool .rs-tool-button:disabled { border-color: #e3e9e5; background: #f7f9f8; color: #9aa59e; opacity: 1; }
 .rs-selected { color: #1c5538; font-size: .78rem; white-space: nowrap; }
+.rs-decrease { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
+.rs-joined { display: inline-flex; align-items: stretch; height: 32px; border: 1px solid #d4dcd6; border-radius: 8px; background: #fff; overflow: hidden; }
+.rs-joined:focus-within { border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.rs-joined input { box-sizing: border-box; width: 64px; height: 100%; margin: 0; padding: 0 4px 0 10px; border: 0; background: transparent; font-size: .84rem; text-align: right; font-variant-numeric: tabular-nums; }
+.rs-joined input:focus { outline: none; box-shadow: none; }
+.rs-joined input::placeholder { color: #b3bdb6; }
+.rs-joined i { display: flex; align-items: center; padding: 0 8px 0 2px; color: #8a968f; font-size: .72rem; font-style: normal; }
+.rs-price-tool .rs-joined button { height: 100%; padding: 0 12px; border: 0; border-left: 1px solid #e3e9e5; border-radius: 0; background: #f5f8f6; color: #1c5538; font-size: .78rem; font-weight: 650; white-space: nowrap; }
+.rs-price-tool .rs-joined button:hover:not(:disabled) { background: #e8f3ec; }
+.rs-price-tool .rs-joined button:disabled { background: #f7f9f8; color: #a3aea7; opacity: 1; }
+.rs-tool-sep { width: 1px; height: 20px; background: #e1e8e3; }
+.rs-price-tool button.rs-quiet { height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #34443b; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.rs-price-tool button.rs-quiet:hover:not(:disabled) { background: #f1f6f2; color: #1c5538; }
+.rs-price-tool button.rs-quiet:disabled { background: transparent; color: #a3aea7; opacity: 1; }
 .rv-card > .budget-status { padding: 6px 14px; border-bottom: 1px solid #e6ece8; background: #f7faf8; }
 
 /* Таблица: на всю ширину, название забирает свободное место. */

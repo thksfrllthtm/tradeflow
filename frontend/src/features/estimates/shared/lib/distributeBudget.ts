@@ -1,7 +1,8 @@
 import { priceText as formatPrice } from './priceText'
 // Распределение бюджета по ценам единицы товаров: цены подбираются так, чтобы итог
 // «Растаможка к оплате» (пошлина + антидемпинг + НДС + сбор) не доходил до бюджета на
-// minGap…maxGap USD (20–30). Итог считает сервер (ставки бывают за кг, пару, комбинированные),
+// minGap…maxGap USD (по умолчанию 20–30, сотрудник меняет), а в режиме over — превышал бюджет
+// на столько же (перерасход). Итог считает сервер (ставки бывают за кг, пару, комбинированные),
 // поэтому функция получает evaluate — пробный расчёт строк с ценами, — и подбирает общий
 // масштаб цен, не зная формул. Строки любые (перчатки, товары): доступ через аксессоры.
 //
@@ -18,8 +19,8 @@ import { priceText as formatPrice } from './priceText'
 //    в пропорции их цен, сумма кода (цена × количество) не меняется. Одинаковый товар — одна цена.
 //    Без этих опций у всех строк кода одна цена.
 
-const BUDGET_MIN_GAP = 20
-const BUDGET_MAX_GAP = 30
+export const BUDGET_MIN_GAP = 20
+export const BUDGET_MAX_GAP = 30
 const BUDGET_PRICE_DECIMALS = 4
 const BUDGET_MAX_EVALUATIONS = 14
 
@@ -48,6 +49,8 @@ export type BudgetOptions<T> = {
   productPrices?: Record<string, number>
   minGap?: number
   maxGap?: number
+  // true — итог больше бюджета на minGap…maxGap (перерасход), иначе меньше (недостача).
+  over?: boolean
   decimals?: number
   maxEvaluations?: number
   onProgress?: (evaluations: number) => void
@@ -136,11 +139,17 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
   let evaluations = 0
   const nothing = (message: string, total = 0): BudgetDistribution<T> => ({ items: rows, status: 'nothing', total, gap: money(budget - total), fixedRows, evaluations, message })
 
-  if (!(budget > minGap)) return nothing('Укажите бюджет больше нуля')
+  if (!(budget > 0)) return nothing('Укажите бюджет больше нуля')
+  const over = options.over === true
+  if (!(minGap >= 0) || !(maxGap >= minGap)) return nothing(`${over ? 'Перерасход' : 'Недостача'}: «от» не меньше нуля и не больше «до»`)
+  if (!over && !(budget > minGap)) return nothing(`Бюджет должен быть больше недостачи (${format(minGap)} USD)`)
   if (groups.length === 0) return nothing('Нет строк с количеством больше нуля — распределять нечего')
   if (free.length === 0) return nothing('У всех строк цена уже задана. Чтобы распределить заново, нажмите «Сбросить цены»')
 
-  const target = budget - (minGap + maxGap) / 2
+  // Окно для «бюджет − итог»: недостача — от minGap до maxGap, перерасход — от −maxGap до −minGap.
+  const windowLow = over ? -maxGap : minGap
+  const windowHigh = over ? -minGap : maxGap
+  const target = budget - (windowLow + windowHigh) / 2
   const weightOf = (group: BudgetGroup) => {
     const weight = options.weights?.[group.key]
     return weight !== undefined && Number.isFinite(weight) && weight > 0 ? weight : 1
@@ -178,9 +187,10 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     const total = await options.evaluate(rowsFor(steps))
     return total === null || !Number.isFinite(total) ? null : money(total)
   }
+  // В режиме недостачи перерасход штрафуется очень сильно; в режиме перерасхода — просто расстояние до окна.
   const penalty = (gap: number) => {
-    if (gap < minGap) return (minGap - gap) + (gap < 0 ? 1e9 + -gap * 1e3 : 0)
-    if (gap > maxGap) return gap - maxGap
+    if (gap < windowLow) return (windowLow - gap) + (!over && gap < 0 ? 1e9 + -gap * 1e3 : 0)
+    if (gap > windowHigh) return gap - windowHigh
     return 0
   }
 
@@ -216,8 +226,8 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     const trial = await tryFactor(next)
     if (!trial) return failed()
     if (trial.total > target) upper = trial; else lower = trial
-    if (trial.factor <= minFactor && trial.total > budget - minGap) {
-      return nothing(`Даже при минимальных ценах растаможка к оплате ${format(trial.total)} USD — это больше бюджета ${format(budget)} USD. Её дают сбор, ставки за кг или штуку и строки с уже заданной ценой. Увеличьте бюджет или проверьте эти строки`, trial.total)
+    if (trial.factor <= minFactor && trial.total > budget - windowLow) {
+      return nothing(`Даже при минимальных ценах растаможка к оплате ${format(trial.total)} USD — это больше ${over ? `бюджета с перерасходом (${format(budget - windowLow)} USD)` : `бюджета ${format(budget)} USD`}. Её дают сбор, ставки за кг или штуку и строки с уже заданной ценой. Увеличьте бюджет или проверьте эти строки`, trial.total)
     }
     const slope = (trial.total - previous.total) / (trial.factor - previous.factor)
     const secant = Number.isFinite(slope) && slope > 0 ? trial.factor + (target - trial.total) / slope : NaN

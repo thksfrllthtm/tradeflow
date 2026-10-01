@@ -1,11 +1,41 @@
 /* Подбор цен под бюджет растаможки на этапе результата. */
-.budget-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.budget-controls label { display: flex; align-items: center; gap: 8px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
-.budget-controls input { box-sizing: border-box; width: 96px; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
-.budget-controls input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.budget-controls button { height: 30px; padding: 0 12px; border-radius: 6px; font-size: .78rem; font-weight: 650; white-space: nowrap; }
+.budget-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.budget-field { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
+.budget-input { position: relative; display: inline-flex; }
+.budget-input input { box-sizing: border-box; width: 128px; height: 32px; margin: 0; padding: 0 38px 0 10px; border: 1px solid #d4dcd6; border-radius: 8px; background: #fff; color: #1f2d24; font-size: .86rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-input input::placeholder { color: #b3bdb6; font-weight: 500; }
+.budget-input input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.budget-input i { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); color: #8a968f; font-size: .72rem; font-style: normal; font-weight: 600; pointer-events: none; }
+.budget-controls button.budget-run, .budget-controls button.budget-ai { height: 32px; padding: 0 14px; border-radius: 8px; font-size: .8rem; font-weight: 650; white-space: nowrap; }
 .budget-controls button.budget-ai { border: 1px solid #c9d3e8; background: #fff; color: #2f4f8f; }
 .budget-controls button.budget-ai:hover:not(:disabled) { border-color: #2f4f8f; background: #f3f6fc; }
+.budget-controls button.budget-ai:disabled { border-color: #e3e8f1; background: #fafbfd; color: #a7b1c6; opacity: 1; }
+
+/* Разница с бюджетом: значок и окошко под ним. */
+.budget-gap { position: relative; }
+.budget-controls button.budget-gap-chip { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border: 1px solid #dfe7e1; border-radius: 999px; background: #f5f8f6; color: #56665c; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.budget-controls button.budget-gap-chip:hover:not(:disabled), .budget-controls button.budget-gap-chip.open { border-color: #b9cbbf; background: #fff; color: #1f2d24; }
+.budget-controls button.budget-gap-chip.changed { border-color: #b8d3c1; background: #eef7f1; color: #1c5538; }
+.budget-controls button.budget-gap-chip.invalid { border-color: #e2a99d; background: #fff1ee; color: #9a3024; }
+.budget-gap-chip svg { transition: transform .15s; }
+.budget-gap-chip.open svg { transform: rotate(180deg); }
+.budget-gap-pop { position: fixed; z-index: 60; display: grid; gap: 10px; width: 280px; padding: 12px; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(20, 45, 30, .14); animation: budget-pop .12s ease-out; }
+@keyframes budget-pop { from { opacity: 0; transform: translateY(-4px); } }
+.budget-gap-title { margin: 0; color: #56665c; font-size: .7rem; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+.budget-gap-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border: 1px solid #dfe7e1; border-radius: 8px; background: #f5f8f6; }
+.budget-gap-seg button { height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: #56665c; font-size: .76rem; font-weight: 600; }
+.budget-gap-seg button:hover:not(:disabled) { background: #eaf1ec; color: #1f2d24; }
+.budget-gap-seg button.active, .budget-gap-seg button.active:hover:not(:disabled) { background: #fff; color: #1a4d33; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+.budget-gap-range { display: flex; align-items: center; gap: 6px; color: #56665c; font-size: .8rem; }
+.budget-gap-range input { box-sizing: border-box; width: 64px; height: 30px; margin: 0; padding: 0 8px; border: 1px solid #d4dcd6; border-radius: 7px; font-size: .84rem; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-gap-range input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.budget-gap-example { margin: 0; padding: 6px 8px; border-radius: 7px; background: #f5f8f6; color: #34443b; font-size: .74rem; font-variant-numeric: tabular-nums; }
+.budget-gap-example.invalid { background: #fff1ee; color: #9a3024; }
+.budget-gap-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.budget-gap-pop button.budget-gap-link { height: auto; padding: 0; border: 0; background: transparent; color: #1b6b43; font-size: .74rem; font-weight: 600; }
+.budget-gap-pop button.budget-gap-link:hover:not(:disabled) { background: transparent; text-decoration: underline; }
+.budget-gap-pop button.budget-gap-link:disabled { color: #a3aea7; opacity: 1; }
+.budget-gap-pop button.budget-gap-done { height: 28px; padding: 0 14px; border-radius: 7px; font-size: .76rem; font-weight: 650; }
 .budget-status { display: grid; gap: 4px; }
 .budget-summary, .budget-notice, .budget-warning { margin: 0; font-size: .76rem; }
 .budget-summary { color: #34443b; }
@@ -13,7 +43,6 @@
 .budget-summary span { color: #8a968f; }
 .budget-notice { color: #6b5a14; }
 .budget-warning { padding: 5px 10px; border: 1px solid #f0d58a; border-radius: 7px; background: #fff8e1; color: #6b4e00; }
-.budget-controls input::placeholder { color: #b3bdb6; }
 /* Поле цены со значком «!» в правом верхнем углу (цена от ИИ; пояснение — при наведении). */
 .price-field { position: relative; display: inline-block; vertical-align: middle; }
 .price-field:has(.budget-ai-mark) input { padding-right: 16px !important; }

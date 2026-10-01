@@ -78,10 +78,17 @@ export function ResultStep({
             {selectedRows.length > 0
               ? <span className="rs-selected">Выбрано: <b>{selectedRows.length}</b> <button type="button" className="button-link" onClick={() => setSelectedRows([])} disabled={loading}>снять</button></span>
               : null}
-            <label title="Вычесть сумму из цены единицы у всех строк или у выбранных галочкой">Снизить цену на<input inputMode="decimal" value={bulkPriceDecrease} onChange={(event) => setBulkPriceDecrease(event.target.value.replace(',', '.'))} placeholder="USD" aria-label="Сколько вычесть из цены единицы" /></label>
-            <button type="button" className="rs-tool-button" onClick={() => { onBulkPriceDecrease(bulkPriceDecrease, applyTo); setBulkPriceDecrease('') }} disabled={!validBulkPriceDecrease || loading}>{applyTo ? `Вычесть у выбранных` : 'Вычесть у всех'}</button>
-            <button type="button" className="rs-tool-button" onClick={onUndoBulkPriceDecrease} disabled={!canUndoBulkPriceDecrease || loading} title="Вернуть цены до последнего вычета или подбора">↶ Отменить</button>
-            <button type="button" className="rs-tool-button" onClick={onRestoreInitial} disabled={loading} title="Вернуть исходные цены всех строк (из Excel, по ИТП)">Сбросить цены</button>
+            <label className="rs-decrease" title="Вычесть сумму из цены единицы у всех строк или у выбранных галочкой">
+              <span>Снизить цену на</span>
+              <span className="rs-joined">
+                <input inputMode="decimal" value={bulkPriceDecrease} onChange={(event) => setBulkPriceDecrease(event.target.value.replace(',', '.'))} placeholder="0.00" aria-label="Сколько вычесть из цены единицы, USD" />
+                <i>USD</i>
+                <button type="button" onClick={(event) => { event.preventDefault(); onBulkPriceDecrease(bulkPriceDecrease, applyTo); setBulkPriceDecrease('') }} disabled={!validBulkPriceDecrease || loading}>{applyTo ? 'у выбранных' : 'у всех'}</button>
+              </span>
+            </label>
+            <span className="rs-tool-sep" aria-hidden="true" />
+            <button type="button" className="rs-quiet" onClick={onUndoBulkPriceDecrease} disabled={!canUndoBulkPriceDecrease || loading} title="Вернуть цены до последнего вычета или подбора">↶ Отменить</button>
+            <button type="button" className="rs-quiet" onClick={onRestoreInitial} disabled={loading} title="Вернуть исходные цены всех строк (из Excel, по ИТП)">Сбросить цены</button>
           </div>
         </div>
         <BudgetStatus budget={budget} />
