@@ -30,7 +30,9 @@
 p.dc-warn { margin: 0; font-size: .78rem; }
 
 .dc-photos { display: flex; flex-wrap: wrap; gap: 8px; }
-.dc-photos img { width: 150px; height: 150px; border: 1px solid #e6ece8; border-radius: 9px; object-fit: cover; }
+.dc-photos button.dc-photo { display: block; height: auto; margin: 0; padding: 0; border: 0; border-radius: 9px; background: none; cursor: zoom-in; }
+.dc-photos button.dc-photo:hover img { border-color: #24704a; }
+.dc-photos img { display: block; width: 150px; height: 150px; border: 1px solid #e6ece8; border-radius: 9px; object-fit: cover; }
 .dc-text { margin: 0; color: #1f2d24; font-size: .88rem; font-weight: 600; line-height: 1.4; }
 .dc-sub { margin: 0; color: #56665c; font-size: .8rem; line-height: 1.45; }
 .dc-sub a { color: #1b6b43; font-weight: 600; text-decoration: none; }

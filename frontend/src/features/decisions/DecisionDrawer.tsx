@@ -3,6 +3,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuDate } from '@/shared/lib/dates'
 import { decisionSourceLabels, decisionsApi } from './decisionsApi'
 import '@/shared/styles/drawer.css'
+import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
 import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
 
@@ -23,6 +24,8 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Фото открываются здесь же: data:-адрес Chrome не даёт открыть в новой вкладке.
+  const [photoIndex, setPhotoIndex] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -34,10 +37,12 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
   }, [id])
 
   useEffect(() => {
+    // Пока открыто фото, Esc закрывает только его.
+    if (photoIndex !== null) return
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  }, [onClose, photoIndex])
 
   const edit = () => ({ code: code.replace(/\D/g, ''), finalName, reason, note })
   const codeValid = /^\d{10}$/.test(code.replace(/\D/g, ''))
@@ -76,7 +81,7 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
         {error && <p className="dc-error" role="alert">{error}</p>}
         {!decision && !error && <p className="dc-muted">Загрузка…</p>}
         {decision && <>
-          {decision.photos.length > 0 && <section className="drawer-section"><div className="dc-photos">{decision.photos.map((photo, index) => <a key={index} href={photo} target="_blank" rel="noreferrer"><img src={photo} alt={`Фото ${index + 1}`} /></a>)}</div>
+          {decision.photos.length > 0 && <section className="drawer-section"><div className="dc-photos">{decision.photos.map((photo, index) => <button key={index} type="button" className="dc-photo" onClick={() => setPhotoIndex(index)} title="Открыть фото крупно"><img src={photo} alt={`Фото ${index + 1}`} /></button>)}</div>
             <p className="dc-sub">{decision.photoDescription ? <>На фото (ИИ): {decision.photoDescription}</> : 'Описание фото для поиска похожих ИИ составит в течение нескольких минут.'}</p></section>}
           <section className="drawer-section">
             <h3>Как было в инвойсе</h3>
@@ -119,5 +124,6 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
         <button type="button" className="dc-delete" onClick={() => { if (window.confirm('Удалить запись из базы решений?')) void run(() => decisionsApi.remove(decision.id), true) }} disabled={busy}>Удалить</button>
       </footer>}
     </aside>
+    {photoIndex !== null && decision && decision.photos.length > 0 && <PhotoLightbox photos={decision.photos} startIndex={photoIndex} onClose={() => setPhotoIndex(null)} />}
   </div>
 }
