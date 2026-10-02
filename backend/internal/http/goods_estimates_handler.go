@@ -4,33 +4,12 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/goods"
 	"github.com/gin-gonic/gin"
 )
-
-// getGoodsEstimateUSDRate — курс НБРК на дату: USD по умолчанию, ?currency=EUR — евро
-// (показывается на главной справочно; расчёт идёт в долларах).
-func (s *Server) getGoodsEstimateUSDRate(c *gin.Context) {
-	currency := strings.ToUpper(strings.TrimSpace(c.DefaultQuery("currency", "USD")))
-	if currency != "USD" && currency != "EUR" {
-		badRequest(c, "Поддерживаются только USD и EUR", "currency")
-		return
-	}
-	rate, err := s.gloves.FetchNBKRate(c.Request.Context(), c.Query("date"), currency)
-	if err != nil {
-		var validationErr *service.ValidationError
-		if errors.As(err, &validationErr) {
-			badRequest(c, validationErr.Message, validationErr.Field)
-			return
-		}
-		c.JSON(http.StatusBadGateway, gin.H{"error": gin.H{"message": err.Error(), "field": "usdKzt"}})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"rate": rate})
-}
 
 // listGoodsEstimates — свои сметы. Администратор со страницы «Сотрудники» запрашивает сметы
 // сотрудника: ?userId=<id>. Открыть и изменить любую смету по ссылке администратор может
@@ -55,7 +34,7 @@ func (s *Server) listGoodsEstimates(c *gin.Context) {
 
 func (s *Server) createGoodsEstimate(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<10)
-	var input service.GlovesEstimateInput
+	var input goods.GoodsEstimateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте данные сметы", "estimate")
 		return
@@ -85,7 +64,7 @@ func (s *Server) updateGoodsEstimate(c *gin.Context) {
 		return
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16<<10)
-	var input service.GlovesEstimateInput
+	var input goods.GoodsEstimateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте данные сметы", "estimate")
 		return
@@ -115,7 +94,7 @@ func (s *Server) saveGoodsEstimateDraft(c *gin.Context) {
 	}
 	// Автосохранение присылает только изменённые части; фото — порциями по несколько МБ.
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 32<<20)
-	var patch service.GoodsDraftPatch
+	var patch goods.GoodsDraftPatch
 	if err := c.ShouldBindJSON(&patch); err != nil {
 		badRequest(c, "Проверьте данные черновика сметы", "draft")
 		return

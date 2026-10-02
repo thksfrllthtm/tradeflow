@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { splitLines } from '../directoryLabels'
+import { splitLines } from '../common/directoryLabels'
 
 type Synonyms = { synonymsRu: string[]; synonymsZh: string[]; synonymsEn: string[] }
 

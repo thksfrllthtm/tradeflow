@@ -36,9 +36,6 @@ type Config struct {
 	// RegistrationDisabled: запретить самостоятельную регистрацию (ALLOW_REGISTRATION=false).
 	// На публичном сервере сотрудников заводит bootstrap-admin.
 	RegistrationDisabled bool
-	// StaticDir: папка собранного фронтенда. Если задана, сервер сам отдаёт сайт
-	// (один адрес для сайта и API). На сервере сайт отдаёт Vercel, поэтому там не задаётся.
-	StaticDir string
 }
 
 func Load() (Config, error) {
@@ -107,7 +104,6 @@ func Load() (Config, error) {
 		TNVEDAIPriceCached:   prices["TNVED_AI_PRICE_CACHED"],
 		TNVEDAIPriceOutput:   prices["TNVED_AI_PRICE_OUTPUT"],
 		RegistrationDisabled: !allowRegistration,
-		StaticDir:            strings.TrimSpace(os.Getenv("STATIC_DIR")),
 	}, nil
 }
 

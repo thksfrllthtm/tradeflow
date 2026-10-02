@@ -1,4 +1,4 @@
-import { SearchIcon } from './icons'
+import { SearchIcon } from '@/shared/components/icons'
 
 const statuses = [
   { value: 'all', label: 'Все' },

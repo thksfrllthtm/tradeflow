@@ -1,4 +1,4 @@
-/* Номенклатура ТН ВЭД: таблица справочников (directory.css) с многострочным наименованием,
+/* Номенклатура ТН ВЭД: таблица страниц-списков (shared/styles/list-page.css) с многострочным наименованием,
    загрузка файла TWS и «Показать ещё» под таблицей. */
 
 .dir-transfer .nom-upload { position: relative; display: inline-flex; align-items: center; margin: 0; cursor: pointer; }

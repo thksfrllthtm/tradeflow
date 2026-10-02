@@ -6,15 +6,15 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { isAdmin, User } from '@/shared/types/user'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
-import { verificationStatusLabel } from '../directoryLabels'
+import { verificationStatusLabel } from '../common/directoryLabels'
 import { DirectoryToolbar } from '../components/DirectoryToolbar'
 import { useDirectoryTransfer } from '../components/DirectoryTransfer'
 import { RowActions } from '../components/RowActions'
 import { ProductEntryPanel } from './ProductEntryPanel'
 import { productDirectoryApi } from './productDirectoryApi'
 import { ProductDirectoryEntry } from './types'
-import '../directory.css'
-import '../verificationStatus.css'
+import '@/shared/styles/list-page.css'
+import '@/shared/styles/verification-status.css'
 
 export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   // Справочники меняет только администратор; остальные сотрудники их просматривают.

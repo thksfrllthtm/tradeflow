@@ -1,5 +1,5 @@
-/* База решений: таблица справочников (directory.css) с миниатюрой фото, счётчики над таблицей,
-   карточка записи и импорт — в боковой панели (DirectoryPanel.css). */
+/* База решений: таблица страниц-списков (shared/styles/list-page.css) с миниатюрой фото, счётчики над таблицей,
+   карточка записи и импорт — в боковой панели (shared/styles/drawer.css). */
 
 .dc-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .dc-stats .dc-stat { display: inline-flex; align-items: center; gap: 5px; height: 30px; margin: 0; padding: 0 12px; border: 1px solid #dfe7e1; border-radius: 999px; background: #fff; color: #56665c; font-size: .78rem; font-weight: 500; }

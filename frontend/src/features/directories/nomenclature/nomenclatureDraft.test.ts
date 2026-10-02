@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { directoryDraft, directoryName, nameParts } from './nomenclatureDraft'
-import { NomenclatureCode } from './nomenclatureApi'
+import { directoryDraft, directoryName } from './nomenclatureDraft'
+import { nameParts } from '@/shared/tnved/codes'
+import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 
 const code = (tariff: Partial<NomenclatureCode['duty']>, name = 'перчатки, рукавицы и митенки: 🠺 прочие'): NomenclatureCode =>
   ({ code: '4015190000', name, tariffText: '', vatPercent: '16', detailsUrl: '', inDirectory: false, kz: null, duty: { type: 'unknown', percent: '', amount: '', currency: '', unit: '', ...tariff } })

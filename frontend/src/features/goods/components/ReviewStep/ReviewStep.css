@@ -1,0 +1,70 @@
+/* Этап 2: параметры расчёта и таблица строк (шапка, колонки, закрепление, итоги). */
+
+.rv-step { gap: 10px; }
+.rv-step .goods-params { border-radius: 10px; background: #fff; }
+.rv-step .goods-params > summary { padding: 9px 14px; }
+
+/* Параметры расчёта: одна строка, связанные значения — в одном поле */
+.rv-params { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 28px; padding: 10px 14px 12px; border-top: 1px solid #e6ece8; }
+.rv-params-group { display: flex; align-items: flex-end; gap: 10px; }
+.rv-params .rv-field { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0; color: #6b7a71; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.rv-field small { display: inline-block; max-width: 150px; margin-left: 6px; overflow: hidden; color: #28734b; font-weight: 500; text-overflow: ellipsis; vertical-align: bottom; }
+.rv-params input, .rv-params select { box-sizing: border-box; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .84rem; }
+.rv-params input[inputmode="decimal"] { text-align: right; font-variant-numeric: tabular-nums; }
+.rv-params input:focus, .rv-params select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.rv-params .rv-w-date { width: 136px; }
+.rv-params .rv-w-country { width: 150px; }
+.rv-params .rv-w-md { width: 88px; }
+.rv-params .rv-w-sm { width: 56px; }
+.rv-joined { display: inline-flex; align-items: stretch; height: 30px; box-sizing: border-box; overflow: hidden; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; }
+.rv-joined:focus-within { border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.rv-params .rv-joined input, .rv-params .rv-joined select { height: 28px; border: 0; border-radius: 0; box-shadow: none; }
+.rv-params .rv-joined select { width: auto; padding-right: 4px; border-right: 1px solid #e6ece8; background: #f8faf8; font-size: .8rem; }
+.rv-joined-sep { display: flex; align-items: center; color: #9aa59e; font-size: .8rem; }
+.rv-joined-unit { display: flex; align-items: center; padding: 0 8px; border-left: 1px solid #e6ece8; background: #f5f8f6; color: #7a877f; font-size: .74rem; font-weight: 600; }
+.rv-params .rv-rate-button { min-width: 52px; margin: 0; padding: 0 10px; border: 0; border-left: 1px solid #e6ece8; border-radius: 0; background: #eef7f1; color: #24704a; font-size: .74rem; font-weight: 700; }
+.rv-params .rv-rate-button:hover:not(:disabled) { background: #24704a; color: #fff; }
+
+/* Панель над таблицей: счётчики слева, подсказка и «+ Строка» справа */
+.rv-bar-count { padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 650; white-space: nowrap; cursor: help; }
+.rv-bar-count.warn { background: #fdf3d8; color: #85640a; }
+.rv-bar-count.bad { background: #fde8e8; color: #a33232; }
+.rv-bar-end { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.rv-bar-end .rv-bar-button:disabled { opacity: .5; cursor: not-allowed; }
+
+.rv-card .goods-table-top-scroll { margin: 0; border: 0; border-bottom: 1px solid #e6ece8; border-radius: 0; }
+
+/* Таблица — в стиле этапа 3: компактные строки, числа по правому краю.
+   Правый отступ заголовков и итогов = отступ ячейки + отступ текста в поле, чтобы цифры стояли в одну линию. */
+.goods-page .rv-grid { width: 100%; min-width: 1040px !important; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: .82rem; line-height: 1.3; }
+.goods-page .rv-grid th, .goods-page .rv-grid td { padding: 5px 6px !important; border-bottom: 1px solid #edf1ee; background: #fff; color: #1f2d24; font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; vertical-align: middle; }
+.goods-page .rv-grid tbody tr:last-child td { border-bottom: 0; }
+.goods-page .rv-grid th { position: sticky; top: 0; z-index: 3; padding: 8px 6px !important; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; color: #5d6d63; font-size: .72rem !important; font-weight: 650; white-space: nowrap; }
+.goods-page .rv-grid th small, .goods-page .rv-grid tfoot small { color: #9aa59e; font-size: .72rem; font-weight: 500; }
+.goods-page .rv-grid .rv-product { text-align: left; }
+.goods-page .rv-grid th.rv-product { padding-left: 55px !important; }
+.goods-page .rv-grid th.rv-qty, .goods-page .rv-grid th.rv-net, .goods-page .rv-grid tfoot .rv-qty, .goods-page .rv-grid tfoot .rv-net { padding-right: 15px !important; }
+.rv-grid .rv-check { width: 36px; text-align: center !important; }
+.rv-grid .rv-num { width: 32px; color: #8a968f; text-align: center !important; }
+.rv-grid .rv-qty { width: 88px; }
+.rv-grid .rv-net { width: 118px; }
+.rv-grid .rv-include { width: 72px; text-align: center !important; }
+.rv-grid .rv-status { width: 30px; text-align: center !important; }
+.rv-grid .rv-remove-col { width: 34px; text-align: center !important; }
+
+/* Выбор и номер строки остаются видны при горизонтальной прокрутке */
+.goods-page .rv-grid .rv-check { position: sticky; left: 0; z-index: 2; }
+.goods-page .rv-grid .rv-num { position: sticky; left: 36px; z-index: 2; box-shadow: inset -1px 0 0 #edf1ee; }
+.goods-page .rv-grid th.rv-check, .goods-page .rv-grid th.rv-num { z-index: 4; }
+.goods-page .rv-grid input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #24704a; cursor: pointer; }
+
+.goods-page .rv-grid tbody tr:hover td { background: #f7faf8; }
+.goods-page .rv-grid tbody tr.rv-selected td { background: #eef7f1; }
+.goods-page .rv-grid tbody tr.rv-error td:first-child { box-shadow: inset 2px 0 0 #e08a8a; }
+.goods-page .rv-grid tbody tr.rv-excluded td:not(.rv-check):not(.rv-include):not(.rv-remove-col) > * { opacity: .45; }
+.goods-page .rv-grid tbody tr.rv-excluded .rv-num { color: #c3cbc5; }
+
+/* Итого — закреплено внизу, как на этапе 3 */
+.goods-page .rv-grid tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid #cfd9d2; border-bottom: 0; background: #f5f8f6; color: #1c3b28; font-weight: 700; }
+.goods-page .rv-grid tfoot td.rv-product { padding-left: 55px !important; }
+.goods-page .rv-grid tfoot td.rv-check, .goods-page .rv-grid tfoot td.rv-num { z-index: 4; }

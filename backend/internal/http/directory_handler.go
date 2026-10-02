@@ -11,12 +11,13 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 )
 
 func (s *Server) listTNVEDDirectory(c *gin.Context) {
-	entries, err := s.tnvedDirectory.List(c.Request.Context(), service.TNVEDDirectoryFilter{
+	entries, err := s.tnvedDirectory.List(c.Request.Context(), directory.TNVEDDirectoryFilter{
 		Query: c.Query("q"), Category: c.Query("category"), Status: c.Query("status"), IncludeArchived: c.Query("includeArchived") == "true",
 	})
 	if !s.handleDirectoryError(c, err) {
@@ -31,7 +32,7 @@ func (s *Server) listTNVEDDirectory(c *gin.Context) {
 
 func (s *Server) createTNVEDDirectory(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var input service.TNVEDDirectoryInput
+	var input directory.TNVEDDirectoryInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте поля записи справочника", "entry")
 		return
@@ -53,7 +54,7 @@ func (s *Server) updateTNVEDDirectory(c *gin.Context) {
 		return
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var input service.TNVEDDirectoryInput
+	var input directory.TNVEDDirectoryInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте поля записи справочника", "entry")
 		return
@@ -110,7 +111,7 @@ func (s *Server) copyTNVEDDirectory(c *gin.Context) {
 }
 
 func (s *Server) listProductDirectory(c *gin.Context) {
-	entries, err := s.productDirectory.List(c.Request.Context(), service.ProductDirectoryFilter{
+	entries, err := s.productDirectory.List(c.Request.Context(), directory.ProductDirectoryFilter{
 		Query: c.Query("q"), Category: c.Query("category"), Status: c.Query("status"), IncludeArchived: c.Query("includeArchived") == "true",
 	})
 	if !s.handleDirectoryError(c, err) {
@@ -125,7 +126,7 @@ func (s *Server) listProductDirectory(c *gin.Context) {
 
 func (s *Server) createProductDirectory(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var input service.ProductDirectoryInput
+	var input directory.ProductDirectoryInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте поля карточки товара", "entry")
 		return
@@ -143,7 +144,7 @@ func (s *Server) updateProductDirectory(c *gin.Context) {
 		return
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var input service.ProductDirectoryInput
+	var input directory.ProductDirectoryInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте поля карточки товара", "entry")
 		return
@@ -265,7 +266,7 @@ func (s *Server) handleDirectoryError(c *gin.Context, err error) bool {
 		notFound(c)
 		return false
 	}
-	if errors.Is(err, service.ErrTNVEDDirectoryConflict) {
+	if errors.Is(err, directory.ErrTNVEDDirectoryConflict) {
 		c.JSON(http.StatusConflict, gin.H{"error": gin.H{"message": "Такая запись уже существует. Измените название или откройте существующую запись", "code": "directory_duplicate"}})
 		return false
 	}
@@ -285,11 +286,11 @@ func (s *Server) handleProductDirectoryError(c *gin.Context, err error) bool {
 		notFound(c)
 		return false
 	}
-	if errors.Is(err, service.ErrProductDirectoryConflict) {
+	if errors.Is(err, directory.ErrProductDirectoryConflict) {
 		c.JSON(http.StatusConflict, gin.H{"error": gin.H{"message": "Такая карточка товара уже существует. Измените наименование или откройте существующую запись", "code": "product_directory_duplicate"}})
 		return false
 	}
-	if errors.Is(err, service.ErrTNVEDDirectoryConflict) {
+	if errors.Is(err, directory.ErrTNVEDDirectoryConflict) {
 		c.JSON(http.StatusConflict, gin.H{"error": gin.H{"message": "Такая запись уже существует", "code": "directory_duplicate"}})
 		return false
 	}

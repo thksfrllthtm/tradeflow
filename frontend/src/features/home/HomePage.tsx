@@ -8,10 +8,10 @@ import { navigate, paths } from '@/shared/router/router'
 import { isAdmin, User } from '@/shared/types/user'
 import { tnvedDirectoryApi } from '@/features/directories/tnved/tnvedDirectoryApi'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
-import { goodsEstimatesApi } from '@/features/estimates/goods/goodsEstimatesApi'
-import { estimateTitle } from '@/features/estimates/goods/lib/estimateTitle'
-import { formatRuDate, todayIso } from '@/features/estimates/shared/lib/dates'
-import { GlovesEstimateSummary } from '@/features/estimates/shared/types'
+import { goodsEstimatesApi } from '@/features/goods/goodsEstimatesApi'
+import { estimateTitle } from '@/shared/lib/estimateTitle'
+import { formatRuDate, todayIso } from '@/shared/lib/dates'
+import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { greeting, longDate, updatedText } from './homeText'
 import './HomePage.css'
 
@@ -26,7 +26,7 @@ const ArrowIcon = () => <svg {...icon} width={16} height={16}><path d="M7 5l5 5-
 // Главная: приветствие, три быстрых действия, что ждёт проверки и последние сметы.
 export function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const admin = isAdmin(user)
-  const [estimates, setEstimates] = useState<GlovesEstimateSummary[] | null>(null)
+  const [estimates, setEstimates] = useState<GoodsEstimateSummary[] | null>(null)
   const [reviewCount, setReviewCount] = useState(0)
   const [decisionCount, setDecisionCount] = useState(0)
   const [rates, setRates] = useState<{ currency: string; rate: string; date: string }[]>([])

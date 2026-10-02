@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
-import { goodsEstimatesApi } from '@/features/estimates/goods/goodsEstimatesApi'
-import { estimateTitle } from '@/features/estimates/goods/lib/estimateTitle'
-import { formatRuDate } from '@/features/estimates/shared/lib/dates'
-import { GlovesEstimateSummary } from '@/features/estimates/shared/types'
+import { goodsEstimatesApi } from '@/features/goods/goodsEstimatesApi'
+import { estimateTitle } from '@/shared/lib/estimateTitle'
+import { formatRuDate } from '@/shared/lib/dates'
+import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { Employee } from './employeesApi'
-import '../directories/components/DirectoryPanel.css'
+import '@/shared/styles/drawer.css'
 
 // Сметы сотрудника (администратор): список справа, каждая открывается по ссылке — там её
 // можно смотреть, менять и пересчитывать. В своих «Сметах» администратор чужих не видит.
 export function EmployeeEstimatesPanel({ employee, onClose }: { employee: Employee; onClose: () => void }) {
-  const [items, setItems] = useState<GlovesEstimateSummary[] | null>(null)
+  const [items, setItems] = useState<GoodsEstimateSummary[] | null>(null)
   const [error, setError] = useState('')
   const who = employee.name || employee.email
 

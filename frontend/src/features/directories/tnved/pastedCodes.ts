@@ -1,5 +1,5 @@
-import { NomenclatureCode } from '../nomenclature/nomenclatureApi'
 import { TNVEDDirectoryEntry } from './types'
+import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 
 // Проверка списка кодов, вставленного из колонки Excel. На странице справочника — какие коды
 // уже есть в справочнике, каких нет и какие лежат только в архиве; на странице номенклатуры —

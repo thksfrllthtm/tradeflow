@@ -102,7 +102,7 @@ func (r *Repository) PatchGoodsEstimateDraft(ctx context.Context, id, userID int
 		}
 		if len(patch.Photos) > 0 {
 			var ids []string
-			if err := tx.Raw(`SELECT item->>'id' FROM gloves_copy_estimates e
+			if err := tx.Raw(`SELECT item->>'id' FROM goods_estimates e
 				CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(e.input_snapshot->'items') = 'array' THEN e.input_snapshot->'items' ELSE '[]'::jsonb END) AS item
 				WHERE e.id = ?`, id).Scan(&ids).Error; err != nil {
 				return err

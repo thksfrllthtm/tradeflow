@@ -2,7 +2,7 @@ import { request } from '@/shared/api/client'
 import { Role } from '@/shared/types/user'
 
 export type Employee = { id: number; name: string; email: string; role: Role; disabled: boolean; createdAt: string; estimateCount: number }
-export type EmployeeInput = { name: string; email: string; password: string; role: Role }
+type EmployeeInput = { name: string; email: string; password: string; role: Role }
 export type EmployeeUpdate = Partial<{ name: string; email: string; role: Role; disabled: boolean; password: string }>
 
 // Управление сотрудниками — только для администратора (/api/employees).

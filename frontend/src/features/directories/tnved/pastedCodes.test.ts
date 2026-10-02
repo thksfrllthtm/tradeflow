@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { checkCodes, checkNomenclature, parsePastedCodes } from './pastedCodes'
-import { NomenclatureCode } from '../nomenclature/nomenclatureApi'
 import { TNVEDDirectoryEntry } from './types'
+import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 
 const entry = (id: number, code: string, archivedAt = '') => ({ id, code, archivedAt }) as TNVEDDirectoryEntry
 

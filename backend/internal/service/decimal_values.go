@@ -9,57 +9,57 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func parsePositive(value, field string, allowEmpty bool) (decimal.Decimal, error) {
+func ParsePositive(value, field string, allowEmpty bool) (decimal.Decimal, error) {
 	if strings.TrimSpace(value) == "" && allowEmpty {
 		return decimal.Zero, nil
 	}
-	parsed, err := parseDecimal(value)
+	parsed, err := ParseDecimal(value)
 	if err != nil || !parsed.IsPositive() {
 		return decimal.Zero, &ValidationError{Field: field, Message: "Значение должно быть положительным числом"}
 	}
 	return parsed, nil
 }
 
-func parseOptionalPositive(value, field string) (*decimal.Decimal, error) {
+func ParseOptionalPositive(value, field string) (*decimal.Decimal, error) {
 	if strings.TrimSpace(value) == "" {
 		return nil, nil
 	}
-	parsed, err := parseDecimal(value)
+	parsed, err := ParseDecimal(value)
 	if err != nil || !parsed.IsPositive() {
 		return nil, &ValidationError{Field: field, Message: "Значение должно быть положительным числом"}
 	}
 	return &parsed, nil
 }
 
-func calcOptionalNonNegative(value, field string) (*decimal.Decimal, error) {
+func CalcOptionalNonNegative(value, field string) (*decimal.Decimal, error) {
 	if strings.TrimSpace(value) == "" {
 		return nil, nil
 	}
-	parsed, err := parseDecimal(value)
+	parsed, err := ParseDecimal(value)
 	if err != nil || parsed.IsNegative() {
 		return nil, &ValidationError{Field: field, Message: "Значение не может быть отрицательным"}
 	}
 	return &parsed, nil
 }
 
-func resolveCustomsFee(directKZT, mrpValue, multiplierValue string) (*decimal.Decimal, error) {
+func ResolveCustomsFee(directKZT, mrpValue, multiplierValue string) (*decimal.Decimal, error) {
 	direct := strings.TrimSpace(directKZT)
 	if direct != "" {
-		return calcOptionalNonNegative(direct, "customsFeeKzt")
+		return CalcOptionalNonNegative(direct, "customsFeeKzt")
 	}
 	mrp := strings.TrimSpace(mrpValue)
 	multiplier := strings.TrimSpace(multiplierValue)
 	if mrp == "" && multiplier == "" {
 		return nil, nil
 	}
-	mrpDecimal, err := calcOptionalNonNegative(mrp, "mrp")
+	mrpDecimal, err := CalcOptionalNonNegative(mrp, "mrp")
 	if err != nil {
 		return nil, err
 	}
 	if mrpDecimal == nil {
 		return nil, &ValidationError{Field: "mrp", Message: "Укажите МРП для расчёта таможенного сбора"}
 	}
-	mult, err := calcOptionalNonNegative(multiplier, "feeMultiplier")
+	mult, err := CalcOptionalNonNegative(multiplier, "feeMultiplier")
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +70,11 @@ func resolveCustomsFee(directKZT, mrpValue, multiplierValue string) (*decimal.De
 	return &total, nil
 }
 
-func parseNonNegativeDefault(value string, def decimal.Decimal, field string) (decimal.Decimal, error) {
+func ParseNonNegativeDefault(value string, def decimal.Decimal, field string) (decimal.Decimal, error) {
 	if strings.TrimSpace(value) == "" {
 		return def, nil
 	}
-	parsed, err := parseDecimal(value)
+	parsed, err := ParseDecimal(value)
 	if err != nil || parsed.IsNegative() {
 		return decimal.Zero, &ValidationError{Field: field, Message: "Значение не может быть отрицательным"}
 	}
@@ -85,7 +85,7 @@ func parseNonNegativeDefault(value string, def decimal.Decimal, field string) (d
 // separates the fraction («4.125» and «4,125» are both 4.125), thousands are separated only by
 // spaces («1 500,50»). The rule is the same for every number: typed on the site or from Excel.
 // A number with both a dot and a comma («1,500.50») or several separators is rejected.
-func parseDecimal(value string) (decimal.Decimal, error) {
+func ParseDecimal(value string) (decimal.Decimal, error) {
 	value = strings.NewReplacer(" ", "", " ", "", " ", "").Replace(strings.TrimSpace(value))
 	if strings.Contains(value, ",") && strings.Contains(value, ".") {
 		return decimal.Zero, fmt.Errorf("ambiguous decimal")
@@ -107,11 +107,11 @@ func parseDecimal(value string) (decimal.Decimal, error) {
 	return decimal.NewFromString(value)
 }
 
-func parseItemDecimal(value, label string, warnings *[]string) *decimal.Decimal {
+func ParseItemDecimal(value, label string, warnings *[]string) *decimal.Decimal {
 	if strings.TrimSpace(value) == "" {
 		return nil
 	}
-	parsed, err := parseDecimal(value)
+	parsed, err := ParseDecimal(value)
 	if err != nil {
 		*warnings = append(*warnings, label+": исправьте число")
 		return nil
@@ -119,7 +119,7 @@ func parseItemDecimal(value, label string, warnings *[]string) *decimal.Decimal 
 	return &parsed
 }
 
-func validWeightUnit(unit string) bool {
+func ValidWeightUnit(unit string) bool {
 	switch strings.ToLower(strings.TrimSpace(unit)) {
 	case "kg", "кг", "g", "г":
 		return true
@@ -128,34 +128,34 @@ func validWeightUnit(unit string) bool {
 	}
 }
 
-func decimalPtrString(value *decimal.Decimal) string {
+func DecimalPtrString(value *decimal.Decimal) string {
 	if value == nil {
 		return ""
 	}
 	return value.String()
 }
 
-func decPtr(v decimal.Decimal) *decimal.Decimal { return &v }
+func DecPtr(v decimal.Decimal) *decimal.Decimal { return &v }
 
-func mustDecimal(value string) decimal.Decimal { v, _ := decimal.NewFromString(value); return v }
+func MustDecimal(value string) decimal.Decimal { v, _ := decimal.NewFromString(value); return v }
 
-func stringValue(m map[string]any, key string) string { v, _ := m[key].(string); return v }
+func StringValue(m map[string]any, key string) string { v, _ := m[key].(string); return v }
 
-func decimalValue(m map[string]any, key string) (decimal.Decimal, bool) {
-	v := stringValue(m, key)
+func DecimalValue(m map[string]any, key string) (decimal.Decimal, bool) {
+	v := StringValue(m, key)
 	if v == "" {
 		if n, ok := m[key].(float64); ok {
 			return decimal.NewFromFloat(n), true
 		}
 	}
-	d, err := parseDecimal(v)
+	d, err := ParseDecimal(v)
 	return d, err == nil
 }
 
-func decimalValueFromAny(value any) (decimal.Decimal, bool) {
+func DecimalValueFromAny(value any) (decimal.Decimal, bool) {
 	switch typed := value.(type) {
 	case string:
-		parsed, err := parseDecimal(typed)
+		parsed, err := ParseDecimal(typed)
 		return parsed, err == nil
 	case float64:
 		return decimal.NewFromFloat(typed), true
@@ -164,14 +164,22 @@ func decimalValueFromAny(value any) (decimal.Decimal, bool) {
 	case decimal.Decimal:
 		return typed, true
 	default:
-		parsed, err := parseDecimal(fmt.Sprint(value))
+		parsed, err := ParseDecimal(fmt.Sprint(value))
 		return parsed, err == nil
 	}
 }
 
-func decimalValueOrZero(value *decimal.Decimal) decimal.Decimal {
+func DecimalValueOrZero(value *decimal.Decimal) decimal.Decimal {
 	if value == nil {
 		return decimal.Zero
 	}
 	return *value
+}
+
+// decimalText — число или пусто, если его нет.
+func DecimalText(value *decimal.Decimal) string {
+	if value == nil {
+		return ""
+	}
+	return value.String()
 }

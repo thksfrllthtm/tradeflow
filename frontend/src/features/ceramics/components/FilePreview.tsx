@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { PhotoLightbox } from '@/features/estimates/goods/components/PhotoLightbox/PhotoLightbox'
-import { GlovesParseResult } from '@/features/estimates/shared/types'
+import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
+import { GoodsParseResult } from '@/shared/types/goods'
 import { MatchMapping, PHOTO_FROM_IMAGES } from '../lib/matchGroups'
 import { toDataUrl } from '../lib/photos'
 
@@ -12,7 +12,7 @@ const roles: { value: Role; label: string }[] = [
 ]
 
 type Props = {
-  parsed: GlovesParseResult
+  parsed: GoodsParseResult
   mapping: MatchMapping
   disabled: boolean
   onMapping: (mapping: MatchMapping) => void

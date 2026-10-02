@@ -1,6 +1,6 @@
 import { ChangeEvent, useMemo, useState } from 'react'
-import { calculatorApi } from '@/features/estimates/shared/api/calculatorApi'
-import { GlovesParseResult } from '@/features/estimates/shared/types'
+import { goodsApi } from '@/shared/api/goodsApi'
+import { GoodsParseResult } from '@/shared/types/goods'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { ceramicsApi } from '../ceramicsApi'
 import { CeramicsProductInput } from '../types'
@@ -31,7 +31,7 @@ function guess(headers: string[]): Mapping {
 // Загрузка имеющегося прайса в базу: наименование, марка и цена. Строки с ошибками
 // показываются и не загружаются.
 export function BaseImport({ onCancel, onImported }: { onCancel: () => void; onImported: (message: string) => void }) {
-  const [parsed, setParsed] = useState<GlovesParseResult | null>(null)
+  const [parsed, setParsed] = useState<GoodsParseResult | null>(null)
   const [fileName, setFileName] = useState('')
   const [headerRow, setHeaderRow] = useState(1)
   const [file, setFile] = useState<File | null>(null)
@@ -44,7 +44,7 @@ export function BaseImport({ onCancel, onImported }: { onCancel: () => void; onI
   async function parse(nextFile: File, nextHeaderRow: number) {
     setBusy(true); setError('')
     try {
-      const result = await calculatorApi.parseXlsx(nextFile, { headerRow: nextHeaderRow, dataStartRow: nextHeaderRow + 1 })
+      const result = await goodsApi.parseXlsx(nextFile, { headerRow: nextHeaderRow, dataStartRow: nextHeaderRow + 1 })
       setParsed(result)
       setFileName(nextFile.name)
       setMapping(guess(result.headers))

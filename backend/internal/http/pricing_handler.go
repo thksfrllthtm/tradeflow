@@ -8,12 +8,13 @@ import (
 	"net/http"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
 	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) suggestPriceWeights(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var request service.PriceWeightsRequest
+	var request ai.PriceWeightsRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		badRequest(c, "Некорректные группы товаров", "groups")
 		return
@@ -59,27 +60,27 @@ func (s *Server) handleAIError(c *gin.Context, err error) bool {
 	var status int
 	var code string
 	switch {
-	case errors.Is(err, service.ErrAINotConfigured):
+	case errors.Is(err, ai.ErrAINotConfigured):
 		status, code = http.StatusServiceUnavailable, "ai_provider_not_configured"
-	case errors.Is(err, service.ErrAIRateLimited):
+	case errors.Is(err, ai.ErrAIRateLimited):
 		status, code = http.StatusTooManyRequests, "ai_rate_limited"
-	case errors.Is(err, service.ErrAITimeout):
+	case errors.Is(err, ai.ErrAITimeout):
 		status, code = http.StatusGatewayTimeout, "ai_timeout"
-	case errors.Is(err, service.ErrAIRequestTooLarge):
+	case errors.Is(err, ai.ErrAIRequestTooLarge):
 		status, code = http.StatusRequestEntityTooLarge, "ai_request_too_large"
-	case errors.Is(err, service.ErrAIUnauthorized):
+	case errors.Is(err, ai.ErrAIUnauthorized):
 		status, code = http.StatusBadGateway, "ai_unauthorized"
-	case errors.Is(err, service.ErrAIRequestRejected):
+	case errors.Is(err, ai.ErrAIRequestRejected):
 		status, code = http.StatusBadGateway, "ai_request_rejected"
-	case errors.Is(err, service.ErrAIModelUnavailable):
+	case errors.Is(err, ai.ErrAIModelUnavailable):
 		status, code = http.StatusBadGateway, "ai_model_unavailable"
-	case errors.Is(err, service.ErrAIBadResponse):
+	case errors.Is(err, ai.ErrAIBadResponse):
 		status, code = http.StatusBadGateway, "ai_bad_response"
-	case errors.Is(err, service.ErrAIUnavailable):
+	case errors.Is(err, ai.ErrAIUnavailable):
 		status, code = http.StatusBadGateway, "ai_unavailable"
 	default:
 		status, code = http.StatusInternalServerError, "ai_error"
 	}
-	c.JSON(status, gin.H{"error": gin.H{"message": service.AIErrorMessage(err), "code": code}})
+	c.JSON(status, gin.H{"error": gin.H{"message": ai.AIErrorMessage(err), "code": code}})
 	return false
 }

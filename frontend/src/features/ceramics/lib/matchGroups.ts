@@ -1,4 +1,4 @@
-import { GlovesParseResult, GlovesParseRow } from '@/features/estimates/shared/types'
+import { GoodsParseResult, GoodsParseRow } from '@/shared/types/goods'
 import { CeramicsProduct, CeramicSize, PriceResult, Resolution, ResolutionStatus, SizeUnit } from '../types'
 import { normalizeMark } from './marks'
 import { toDataUrl } from './photos'
@@ -40,7 +40,7 @@ const HAN = /\p{Script=Han}/u
 
 // Колонки по содержимому, когда названия не подошли: китайское — где в большинстве ячеек есть
 // иероглифы; марка — короткие коды с буквами или дефисом (6G, 721-7, A004-1), не количества.
-function guessByContent(headers: string[], rows: GlovesParseRow[], used: Set<string>) {
+function guessByContent(headers: string[], rows: GoodsParseRow[], used: Set<string>) {
   const sample = rows.filter((row) => row.included).slice(0, 50)
   const share = (header: string, test: (value: string) => boolean) => {
     const values = sample.map((row) => (row.values[header] ?? '').trim()).filter(Boolean)
@@ -63,7 +63,7 @@ function guessByContent(headers: string[], rows: GlovesParseRow[], used: Set<str
 }
 
 // Колонки по названиям заголовков, а если не нашлись — по содержимому; оператор может поменять.
-export function guessMapping(headers: string[], hasImages: boolean, rows: GlovesParseRow[] = []): MatchMapping {
+export function guessMapping(headers: string[], hasImages: boolean, rows: GoodsParseRow[] = []): MatchMapping {
   const used = new Set<string>()
   const pick = (pattern: RegExp) => {
     const header = headers.find((value) => !used.has(value) && pattern.test(value)) ?? ''
@@ -81,12 +81,12 @@ export function guessMapping(headers: string[], hasImages: boolean, rows: Gloves
   return { mark, chineseName, russianName, photo: hasImages ? PHOTO_FROM_IMAGES : '' }
 }
 
-export function groupKey(mark: string, chineseName: string) {
+function groupKey(mark: string, chineseName: string) {
   const markKey = normalizeMark(mark)
   return markKey || `zh:${chineseName.trim()}`
 }
 
-export function buildGroups(parsed: GlovesParseResult, mapping: MatchMapping): MatchGroup[] {
+export function buildGroups(parsed: GoodsParseResult, mapping: MatchMapping): MatchGroup[] {
   const imageByRow = new Map<number, string>()
   if (mapping.photo === PHOTO_FROM_IMAGES) {
     for (const image of parsed.images) if (!imageByRow.has(image.sourceRow)) imageByRow.set(image.sourceRow, toDataUrl(image))
@@ -152,14 +152,14 @@ export function draftSize(draft: Draft): CeramicSize | null {
   return draft.sizeValue && draft.sizeUnit ? { value: draft.sizeValue, unit: draft.sizeUnit } : null
 }
 
-export const statusLabels: Record<ResolutionStatus, string> = {
+const statusLabels: Record<ResolutionStatus, string> = {
   FOUND_BY_MARK: '✅ Найдено по марке',
   AUTO: '🤖 Определено автоматически',
   NEED_REVIEW: '⚠ Требует проверки',
   NOT_DETERMINED: '❌ Не определено',
 }
 
-export function groupStatusLabel(group: MatchGroup) {
+function groupStatusLabel(group: MatchGroup) {
   if (group.state === 'pending') return 'Ожидает'
   if (group.state === 'running') return 'Анализ…'
   if (group.state === 'error' || !group.resolution) return `❌ Ошибка${group.error ? `: ${group.error}` : ''}`
@@ -194,7 +194,7 @@ export function resultCsv(groups: MatchGroup[]) {
 // Строка заголовков, если в первой строке файла не названия колонок, а, например, номер
 // заказа («P70-3817606-3474件»): первая из строк файла, где есть ячейка «型号», «Марка», «Артикул»…
 // null — такой строки нет.
-export function findHeaderRow(parsed: GlovesParseResult): number | null {
+export function findHeaderRow(parsed: GoodsParseResult): number | null {
   for (const row of parsed.rows.slice(0, 15)) {
     const cells = Object.values(row.values).map((value) => value.trim()).filter(Boolean)
     if (cells.some((value) => value.length <= 30 && patterns.mark.test(value)) && cells.length >= 2) return row.sourceRow

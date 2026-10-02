@@ -8,7 +8,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
-	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/auth"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	user, err := service.NewAuthService(repository, cfg.SessionTTL).BootstrapUser(
+	user, err := auth.NewAuthService(repository, cfg.SessionTTL).BootstrapUser(
 		ctx,
 		os.Getenv("BOOTSTRAP_ADMIN_EMAIL"),
 		os.Getenv("BOOTSTRAP_ADMIN_PASSWORD"),

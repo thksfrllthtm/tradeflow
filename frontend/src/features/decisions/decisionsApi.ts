@@ -1,40 +1,7 @@
 import { request } from '@/shared/api/client'
-import { NomenclatureCode } from '@/features/directories/nomenclature/nomenclatureApi'
+import { CodeDecision } from '@/shared/tnved/decisions'
 
 // База решений «товар из инвойса → код ТН ВЭД»: проверенные примеры с фото и обоснованием.
-
-export type DecisionStatus = 'pending' | 'verified' | 'rejected'
-export type RejectedCode = { code: string; why: string }
-
-export type CodeDecision = {
-  id: number
-  status: DecisionStatus
-  source: 'agent' | 'manual' | 'import'
-  invoiceName: string
-  supplierName: string
-  finalName: string
-  code: string
-  reason: string
-  quote: string
-  sourceUrl: string
-  rejectedCodes: RejectedCode[]
-  unitNetKg: string
-  unitPriceUsd: string
-  photos: string[]
-  thumb: string
-  agentCode: string
-  agentCorrect: boolean | null
-  estimateId?: number
-  itemId?: string
-  sessionId?: number
-  note: string
-  createdByName: string
-  verifiedByName: string
-  verifiedAt: string | null
-  createdAt: string
-  updatedAt: string
-  nomenclature: NomenclatureCode | null
-}
 
 export type DecisionStats = { pending: number; verified: number; rejected: number; agentChecked: number; agentCorrect: number }
 
@@ -55,9 +22,9 @@ export type DecisionInput = {
   note?: string
 }
 
-export type DecisionEdit = Partial<{ code: string; finalName: string; invoiceName: string; supplierName: string; reason: string; note: string }>
+type DecisionEdit = Partial<{ code: string; finalName: string; invoiceName: string; supplierName: string; reason: string; note: string }>
 
-export const decisionStatusLabels: Record<DecisionStatus, string> = { pending: 'Не проверено', verified: 'Проверено', rejected: 'Отклонено' }
+
 export const decisionSourceLabels: Record<CodeDecision['source'], string> = { agent: 'подбор ИИ', manual: 'вручную', import: 'импорт' }
 
 export const decisionsApi = {

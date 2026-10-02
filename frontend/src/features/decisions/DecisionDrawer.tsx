@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { formatRuDate } from '@/features/estimates/shared/lib/dates'
-import { nameParts } from '@/features/directories/nomenclature/nomenclatureDraft'
-import { formatCode } from '@/features/tnvedAgent/agentApi'
-import { CodeDecision, decisionSourceLabels, decisionStatusLabels, decisionsApi } from './decisionsApi'
-import '../directories/components/DirectoryPanel.css'
+import { formatRuDate } from '@/shared/lib/dates'
+import { decisionSourceLabels, decisionsApi } from './decisionsApi'
+import '@/shared/styles/drawer.css'
+import { nameParts, formatCode } from '@/shared/tnved/codes'
+import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
 
 type Props = {
   id: number

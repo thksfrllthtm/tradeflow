@@ -10,18 +10,20 @@ import (
 	"strconv"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
 	"github.com/gin-gonic/gin"
 )
 
 func (s *Server) agentError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, service.ErrAINotConfigured):
+	case errors.Is(err, ai.ErrAINotConfigured):
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": gin.H{"message": "ИИ для подбора кодов не настроен на сервере (ключ TNVED_AI_API_KEY или DEEPSEEK_API_KEY)"}})
-	case errors.Is(err, service.ErrAgentDailyLimit):
+	case errors.Is(err, tnvedagent.ErrAgentDailyLimit):
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": gin.H{"message": fmt.Sprintf("Дневной лимит подборов исчерпан (%d в сутки). Попробуйте завтра или попросите администратора увеличить лимит.", s.config.TNVEDAIDailyLimit)}})
-	case errors.Is(err, service.ErrAgentBusy):
+	case errors.Is(err, tnvedagent.ErrAgentBusy):
 		c.JSON(http.StatusConflict, gin.H{"error": gin.H{"message": "Подбор ещё идёт — дождитесь ответа или остановите его"}})
-	case errors.Is(err, service.ErrAgentForbidden), service.IsNotFound(err):
+	case errors.Is(err, tnvedagent.ErrAgentForbidden), service.IsNotFound(err):
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Подбор или смета не найдены"}})
 	default:
 		if validation, ok := err.(*service.ValidationError); ok {
@@ -61,7 +63,7 @@ func (s *Server) agentUsage(c *gin.Context) {
 
 func (s *Server) startAgentSession(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20)
-	var input service.AgentStartInput
+	var input tnvedagent.AgentStartInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Некорректный запрос подбора", "")
 		return
@@ -154,7 +156,7 @@ func (s *Server) applyAgentSession(c *gin.Context) {
 	if !ok {
 		return
 	}
-	var input service.AgentApplyInput
+	var input tnvedagent.AgentApplyInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Не указан код", "code")
 		return

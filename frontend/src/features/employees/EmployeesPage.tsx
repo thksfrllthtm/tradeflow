@@ -5,8 +5,8 @@ import { plural } from '@/shared/lib/plural'
 import { Role, roleLabels, User } from '@/shared/types/user'
 import { EmployeeEstimatesPanel } from './EmployeeEstimatesPanel'
 import { Employee, employeesApi, EmployeeUpdate } from './employeesApi'
-import '../directories/directory.css'
-import '../directories/verificationStatus.css'
+import '@/shared/styles/list-page.css'
+import '@/shared/styles/verification-status.css'
 import './employees.css'
 
 const roles = Object.keys(roleLabels) as Role[]

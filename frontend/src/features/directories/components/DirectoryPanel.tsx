@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect } from 'react'
-import './DirectoryPanel.css'
+import '@/shared/styles/drawer.css'
 
 type Props = {
   title: string

@@ -1,5 +1,5 @@
 import { request } from '@/shared/api/client'
-import { directoryQuery, DirectoryListParams } from '../directoryQuery'
+import { directoryQuery, DirectoryListParams } from '../common/directoryQuery'
 import { ProductDirectoryEntry, ProductDirectoryInput } from './types'
 
 export const productDirectoryApi = {

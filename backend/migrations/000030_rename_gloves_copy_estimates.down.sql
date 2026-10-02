@@ -1,0 +1,5 @@
+ALTER TABLE goods_estimates RENAME CONSTRAINT goods_estimates_user_id_fkey TO gloves_copy_estimates_user_id_fkey;
+ALTER TABLE goods_estimates RENAME CONSTRAINT goods_estimates_pkey TO gloves_copy_estimates_pkey;
+ALTER INDEX goods_estimates_user_updated_idx RENAME TO gloves_copy_estimates_user_updated_idx;
+ALTER SEQUENCE goods_estimates_id_seq RENAME TO gloves_copy_estimates_id_seq;
+ALTER TABLE goods_estimates RENAME TO gloves_copy_estimates;

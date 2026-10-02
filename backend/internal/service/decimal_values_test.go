@@ -14,13 +14,13 @@ func TestParseDecimalSeparators(t *testing.T) {
 		"12":       "12",
 		"-2.5":     "-2.5",
 	} {
-		got, err := parseDecimal(input)
+		got, err := ParseDecimal(input)
 		if err != nil || got.String() != want {
 			t.Fatalf("%q: want %s, got %s (%v)", input, want, got.String(), err)
 		}
 	}
 	for _, input := range []string{"1,500.50", "1.500.000", "1,2,3", "4.", ".5", "abc", ""} {
-		if _, err := parseDecimal(input); err == nil {
+		if _, err := ParseDecimal(input); err == nil {
 			t.Fatalf("%q must be rejected", input)
 		}
 	}

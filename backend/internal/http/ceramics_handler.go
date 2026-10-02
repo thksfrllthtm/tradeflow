@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ceramics"
 	"github.com/gin-gonic/gin"
 )
 
@@ -63,7 +64,7 @@ func (s *Server) listCeramicsProducts(c *gin.Context) {
 
 func (s *Server) createCeramicsProduct(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var input service.CeramicsProductInput
+	var input ceramics.CeramicsProductInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте поля записи", "mark")
 		return
@@ -81,7 +82,7 @@ func (s *Server) updateCeramicsProduct(c *gin.Context) {
 		return
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 64<<10)
-	var input service.CeramicsProductInput
+	var input ceramics.CeramicsProductInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте поля записи", "mark")
 		return
@@ -108,8 +109,8 @@ func (s *Server) importCeramicsProducts(c *gin.Context) {
 	// Up to 5000 rows of name, mark and price.
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 8<<20)
 	var input struct {
-		Items     []service.CeramicsProductInput `json:"items"`
-		Overwrite bool                           `json:"overwrite"`
+		Items     []ceramics.CeramicsProductInput `json:"items"`
+		Overwrite bool                            `json:"overwrite"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Проверьте строки для загрузки", "items")
@@ -142,7 +143,7 @@ func (s *Server) analyzeCeramics(c *gin.Context) {
 	// A few products with photos compressed for the model.
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4<<20)
 	var input struct {
-		Items []service.CeramicsInputItem `json:"items"`
+		Items []ceramics.CeramicsInputItem `json:"items"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Некорректные товары для подбора", "items")

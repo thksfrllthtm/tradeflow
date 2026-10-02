@@ -1,13 +1,8 @@
-import { formatRuDate } from '@/features/estimates/shared/lib/dates'
+import { nameParts } from '@/shared/tnved/codes'
+import { formatRuDate } from '@/shared/lib/dates'
 import { TNVEDDirectoryInput, TNVEDRate } from '../tnved/types'
 import { KzImport } from '../kzList/kzListApi'
-import { NomenclatureCode, NomenclatureImport } from './nomenclatureApi'
-
-// Наименование в выгрузке TWS — последние уровни дерева через «🠺»:
-// «перчатки, рукавицы и митенки: 🠺 прочие».
-export function nameParts(name: string) {
-  return name.split('🠺').map((part) => part.trim()).filter(Boolean)
-}
+import { NomenclatureCode, NomenclatureImport } from '@/shared/tnved/nomenclature'
 
 // Описание в справочнике — не длиннее 300 символов: целиком, а если не помещается —
 // последний уровень.

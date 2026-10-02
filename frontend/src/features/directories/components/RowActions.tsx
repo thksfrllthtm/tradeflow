@@ -1,4 +1,4 @@
-import { ArchiveIcon, CopyIcon, EditIcon, RestoreIcon } from './icons'
+import { ArchiveIcon, CopyIcon, EditIcon, RestoreIcon } from '@/shared/components/icons'
 
 // Действия строки справочника. Клик по самой строке тоже открывает редактирование,
 // поэтому здесь клики не всплывают до строки.

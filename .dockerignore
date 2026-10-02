@@ -7,7 +7,6 @@
 graphify-out
 .gocache-*
 backend/.gocache-*
-backend/data
 backend/bin
 **/*.tsbuildinfo
 # Сайт собирает Vercel — в образ API он не нужен.

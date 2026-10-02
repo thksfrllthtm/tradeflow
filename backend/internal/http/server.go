@@ -7,7 +7,14 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
-	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/auth"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ceramics"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/employees"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/goods"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,43 +22,43 @@ const userContextKey = "authenticated_user"
 
 type Server struct {
 	config            config.Config
-	auth              *service.AuthService
-	tnvedDirectory    *service.TNVEDDirectoryService
-	tnvedNomenclature *service.TNVEDNomenclatureService
-	kzRates           *service.TNVEDKZRateService
-	productDirectory  *service.ProductDirectoryService
-	gloves            *service.GlovesService
-	goodsEstimates    *service.GoodsEstimateService
-	employees         *service.EmployeeService
-	pricing           *service.PricingService
-	ceramics          *service.CeramicsService
-	decisions         *service.CodeDecisionService
-	agent             *service.TNVEDAgentService
+	auth              *auth.AuthService
+	tnvedDirectory    *directory.TNVEDDirectoryService
+	tnvedNomenclature *directory.TNVEDNomenclatureService
+	kzRates           *directory.TNVEDKZRateService
+	productDirectory  *directory.ProductDirectoryService
+	goods             *goods.GoodsService
+	goodsEstimates    *goods.GoodsEstimateService
+	employees         *employees.EmployeeService
+	pricing           *goods.PricingService
+	ceramics          *ceramics.CeramicsService
+	decisions         *decisions.CodeDecisionService
+	agent             *tnvedagent.TNVEDAgentService
 	authMu            sync.Mutex
 	authRates         map[string]authRate
 }
 
 func NewServer(database *repository.Repository, cfg config.Config) *Server {
-	decisions := service.NewCodeDecisionService(database)
+	decisions := decisions.NewCodeDecisionService(database)
 	return &Server{
 		config:            cfg,
-		auth:              service.NewAuthService(database, cfg.SessionTTL),
-		tnvedDirectory:    service.NewTNVEDDirectoryService(database),
-		tnvedNomenclature: service.NewTNVEDNomenclatureService(database),
-		kzRates:           service.NewTNVEDKZRateService(database),
-		productDirectory:  service.NewProductDirectoryService(database),
-		gloves:            service.NewGlovesService(database),
-		goodsEstimates:    service.NewGoodsEstimateService(database),
-		employees:         service.NewEmployeeService(database),
-		pricing:           service.NewPricingService(database, service.NewDeepSeekClient(cfg.DeepSeekAPIKey, cfg.DeepSeekModel)),
-		ceramics: service.NewCeramicsService(database, service.NewCeramicsAIClient(service.CeramicsAIConfig{
+		auth:              auth.NewAuthService(database, cfg.SessionTTL),
+		tnvedDirectory:    directory.NewTNVEDDirectoryService(database),
+		tnvedNomenclature: directory.NewTNVEDNomenclatureService(database),
+		kzRates:           directory.NewTNVEDKZRateService(database),
+		productDirectory:  directory.NewProductDirectoryService(database),
+		goods:             goods.NewGoodsService(database),
+		goodsEstimates:    goods.NewGoodsEstimateService(database),
+		employees:         employees.NewEmployeeService(database),
+		pricing:           goods.NewPricingService(database, ai.NewDeepSeekClient(cfg.DeepSeekAPIKey, cfg.DeepSeekModel)),
+		ceramics: ceramics.NewCeramicsService(database, ceramics.NewCeramicsAIClient(ceramics.CeramicsAIConfig{
 			APIKey: cfg.CeramicsAIAPIKey, BaseURL: cfg.CeramicsAIBaseURL, Model: cfg.CeramicsAIModel, Vision: cfg.CeramicsAIVision,
 		})),
 		decisions: decisions,
-		agent: service.NewTNVEDAgentService(database, service.NewAgentModelClient(service.AgentModelConfig{
+		agent: tnvedagent.NewTNVEDAgentService(database, tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
 			APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision,
 			PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
-		}), decisions, service.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule}),
+		}), decisions, tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule}),
 	}
 }
 
@@ -121,24 +128,27 @@ func (s *Server) Router() *gin.Engine {
 	productsDirectory.POST("/:id/restore", s.requireAdmin, s.restoreProductDirectory)
 	productsDirectory.POST("/:id/copy", s.requireAdmin, s.copyProductDirectory)
 
-	// Разбор Excel, расчёт растаможки и экспорт для смет товаров (адрес остался от первой
-	// версии калькулятора — сметы перчаток).
-	gloves := router.Group("/api/gloves")
-	gloves.Use(s.requireUser)
-	gloves.POST("/parse-xlsx", s.parseGlovesXlsx)
-	gloves.POST("/calculate", s.calculateGloves)
-	gloves.POST("/export", s.exportGloves)
+	// Разбор Excel, расчёт растаможки и экспорт смет товаров.
+	goods := router.Group("/api/goods")
+	goods.Use(s.requireUser)
+	goods.POST("/parse-xlsx", s.parseGoodsXlsx)
+	goods.POST("/calculate", s.calculateGoods)
+	goods.POST("/export", s.exportGoods)
 
 	// Сметы товаров: список, карточка и сохранённый черновик с результатом.
-	goodsEstimates := router.Group("/api/gloves-copy")
+	goodsEstimates := router.Group("/api/goods-estimates")
 	goodsEstimates.Use(s.requireUser)
-	goodsEstimates.GET("/usd-rate", s.getGoodsEstimateUSDRate)
-	goodsEstimates.GET("/estimates", s.listGoodsEstimates)
-	goodsEstimates.POST("/estimates", s.createGoodsEstimate)
-	goodsEstimates.GET("/estimates/:id", s.getGoodsEstimate)
-	goodsEstimates.PATCH("/estimates/:id", s.updateGoodsEstimate)
-	goodsEstimates.DELETE("/estimates/:id", s.deleteGoodsEstimate)
-	goodsEstimates.PATCH("/estimates/:id/draft", s.saveGoodsEstimateDraft)
+	goodsEstimates.GET("", s.listGoodsEstimates)
+	goodsEstimates.POST("", s.createGoodsEstimate)
+	goodsEstimates.GET("/:id", s.getGoodsEstimate)
+	goodsEstimates.PATCH("/:id", s.updateGoodsEstimate)
+	goodsEstimates.DELETE("/:id", s.deleteGoodsEstimate)
+	goodsEstimates.PATCH("/:id/draft", s.saveGoodsEstimateDraft)
+
+	// Официальный курс НБРК на дату (?date=ГГГГ-ММ-ДД, ?currency=USD|EUR).
+	rates := router.Group("/api/rates")
+	rates.Use(s.requireUser)
+	rates.GET("/nbk", s.getNBKRate)
 
 	// База решений «товар из инвойса → код ТН ВЭД»: проверка, правка и импорт — администратор.
 	decisions := router.Group("/api/code-decisions")
@@ -180,6 +190,9 @@ func (s *Server) Router() *gin.Engine {
 	ceramics.POST("/analyze", s.analyzeCeramics)
 	ceramics.POST("/price", s.ceramicsPrice)
 
-	s.serveFrontend(router)
+	// Сервер отдаёт только API (сайт — на Vercel): любой неизвестный адрес — JSON 404.
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Не найдено", "code": "not_found"}})
+	})
 	return router
 }

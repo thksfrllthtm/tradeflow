@@ -7,7 +7,7 @@ import { ceramicsApi } from './ceramicsApi'
 import { AIStatus, CeramicsType } from './types'
 import { MatchTab } from './components/MatchTab'
 import { BaseTab } from './components/BaseTab'
-import '../directories/directory.css'
+import '@/shared/styles/list-page.css'
 import './ceramics.css'
 
 // Подбор наименования и цены керамической посуды: марка + китайское название + фото →

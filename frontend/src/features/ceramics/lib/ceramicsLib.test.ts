@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GlovesParseResult } from '@/features/estimates/shared/types'
+import { GoodsParseResult } from '@/shared/types/goods'
 import { normalizeMark } from './marks'
 import { buildGroups, findHeaderRow, guessMapping, PHOTO_FROM_IMAGES, resultCsv } from './matchGroups'
 import { baseName, formatSize, parsePriceCell } from './sizes'
@@ -32,7 +32,7 @@ describe('sizes and names', () => {
 })
 
 describe('match groups', () => {
-  const parsed: GlovesParseResult = {
+  const parsed: GoodsParseResult = {
     sheets: [], headers: ['Марка', '中文品名', 'Наименование'],
     rows: [
       { sourceRow: 2, included: true, warnings: [], values: { 'Марка': '705-7DJ', '中文品名': '成人陶瓷沙拉盘7寸', 'Наименование': 'Салатник 7"' } },
@@ -42,7 +42,7 @@ describe('match groups', () => {
       { sourceRow: 6, included: true, warnings: [], values: { 'Марка': '', '中文品名': '', 'Наименование': 'пусто' } },
     ],
     images: [{ sourceRow: 3, mimeType: 'image/png', data: 'AAAA' }],
-  } as GlovesParseResult
+  } as GoodsParseResult
 
   it('guesses columns', () => {
     expect(guessMapping(parsed.headers, true)).toEqual({ mark: 'Марка', chineseName: '中文品名', russianName: 'Наименование', photo: PHOTO_FROM_IMAGES })
@@ -72,7 +72,7 @@ describe('findHeaderRow', () => {
         { sourceRow: 2, included: true, values: { 'P70-3817606-3474件': '序号', 'Колонка 2': '型号', 'Колонка 3': '品名' } },
         { sourceRow: 3, included: true, values: { 'P70-3817606-3474件': '1', 'Колонка 2': '721-8', 'Колонка 3': '成年人陶瓷盘8高脚水果盘' } },
       ],
-    } as GlovesParseResult
+    } as GoodsParseResult
     expect(findHeaderRow(parsed)).toBe(2)
     expect(findHeaderRow({ ...parsed, rows: parsed.rows.slice(1) })).toBeNull()
   })

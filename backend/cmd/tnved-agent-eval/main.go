@@ -15,7 +15,9 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
-	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
 )
 
 func main() {
@@ -29,17 +31,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
-	model := service.NewAgentModelClient(service.AgentModelConfig{
+	model := tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
 		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision,
 		PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
 	})
-	agent := service.NewTNVEDAgentService(database, model, service.NewCodeDecisionService(database), service.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule})
+	agent := tnvedagent.NewTNVEDAgentService(database, model, decisions.NewCodeDecisionService(database), tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule})
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 	defer cancel()
 	fmt.Printf("Модель %s, записей до %d\n", cfg.TNVEDAIModel, *limit)
 	summary, err := agent.Evaluate(ctx, *limit, func(line string) { fmt.Println(line) })
 	if err != nil {
-		log.Fatal(service.AIErrorMessage(err))
+		log.Fatal(ai.AIErrorMessage(err))
 	}
 	if summary.Total == 0 {
 		fmt.Println("Проверенных записей нет: импортируйте старый инвойс или проверьте решения в базе.")

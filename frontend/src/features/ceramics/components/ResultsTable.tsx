@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { PhotoLightbox } from '@/features/estimates/goods/components/PhotoLightbox/PhotoLightbox'
+import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { CeramicsProduct, CeramicsType, PriceResult } from '../types'
 import { Draft, draftSize, MatchGroup } from '../lib/matchGroups'
 import { formatSize } from '../lib/sizes'

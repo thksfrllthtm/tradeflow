@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react'
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /login, /register        — вход и регистрация
-export type Route =
+type Route =
   | { page: 'home' }
   | { page: 'goods'; estimateId: number | null }
   | { page: 'products' }
@@ -37,13 +37,6 @@ export const paths = {
   register: '/register',
 }
 
-// Старые адреса вида /#gloves-copy продолжают открываться — их заменяем на новые.
-const legacyHashes: Record<string, string> = {
-  '#gloves-copy': paths.goods(),
-  '#directory': paths.tnved,
-  '#products': paths.products,
-}
-
 // null — неизвестный адрес (приложение перенаправит на главную).
 export function parseRoute(pathname: string): Route | null {
   const path = pathname.replace(/\/+$/, '') || '/'
@@ -65,17 +58,13 @@ export function parseRoute(pathname: string): Route | null {
 const navigateEvent = 'tradeflow-navigate'
 
 export function navigate(path: string, options: { replace?: boolean } = {}) {
-  if (path === window.location.pathname && !window.location.hash) return
+  if (path === window.location.pathname) return
   if (options.replace) window.history.replaceState(null, '', path)
   else window.history.pushState(null, '', path)
   window.dispatchEvent(new Event(navigateEvent))
 }
 
-function currentPath() {
-  const legacy = legacyHashes[window.location.hash]
-  if (legacy) window.history.replaceState(null, '', legacy)
-  return window.location.pathname
-}
+const currentPath = () => window.location.pathname
 
 // Текущий путь; меняется при navigate() и кнопках «назад/вперёд» браузера.
 export function usePathname() {
@@ -83,11 +72,9 @@ export function usePathname() {
   useEffect(() => {
     const sync = () => setPathname(currentPath())
     window.addEventListener('popstate', sync)
-    window.addEventListener('hashchange', sync)
     window.addEventListener(navigateEvent, sync)
     return () => {
       window.removeEventListener('popstate', sync)
-      window.removeEventListener('hashchange', sync)
       window.removeEventListener(navigateEvent, sync)
     }
   }, [])

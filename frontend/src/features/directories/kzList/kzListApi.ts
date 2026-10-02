@@ -1,5 +1,5 @@
 import { request } from '@/shared/api/client'
-import { DirectoryImportResult } from '../directoryTransfer'
+import { DirectoryImportResult } from '../common/directoryTransfer'
 import { KzListExtract } from './kzListPdf'
 
 // «Перечень РК» (администратор): Excel из прочитанного PDF и загрузка перечня из PDF или Excel.

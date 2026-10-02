@@ -10,6 +10,8 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/auth"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/employees"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +26,7 @@ func (s *Server) listEmployees(c *gin.Context) {
 
 func (s *Server) createEmployee(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 12<<10)
-	var input service.EmployeeInput
+	var input employees.EmployeeInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Заполните имя, email, пароль и роль", "")
 		return
@@ -43,7 +45,7 @@ func (s *Server) updateEmployee(c *gin.Context) {
 		return
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 12<<10)
-	var update service.EmployeeUpdate
+	var update employees.EmployeeUpdate
 	if err := c.ShouldBindJSON(&update); err != nil {
 		badRequest(c, "Некорректные данные сотрудника", "")
 		return
@@ -80,7 +82,7 @@ func handleEmployeeError(c *gin.Context, err error) bool {
 	switch {
 	case errors.As(err, &validation):
 		badRequest(c, validation.Message, validation.Field)
-	case errors.Is(err, service.ErrEmailAlreadyExists):
+	case errors.Is(err, auth.ErrEmailAlreadyExists):
 		c.JSON(http.StatusConflict, gin.H{"error": gin.H{"message": "Сотрудник с таким email уже есть", "field": "email"}})
 	case errors.Is(err, repository.ErrNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Сотрудник не найден"}})

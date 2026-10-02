@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { DirectoryImportResult, downloadDirectory, uploadDirectory } from '../directoryTransfer'
+import { DirectoryImportResult, downloadDirectory, uploadDirectory } from '../common/directoryTransfer'
 import './DirectoryTransfer.css'
 
 type Props = {

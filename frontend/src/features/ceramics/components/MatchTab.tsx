@@ -1,6 +1,6 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
-import { calculatorApi } from '@/features/estimates/shared/api/calculatorApi'
-import { GlovesParseResult } from '@/features/estimates/shared/types'
+import { goodsApi } from '@/shared/api/goodsApi'
+import { GoodsParseResult } from '@/shared/types/goods'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { ceramicsApi } from '../ceramicsApi'
 import { AIStatus, CeramicsType, Resolution, ResolutionStatus } from '../types'
@@ -27,7 +27,7 @@ type Props = { types: CeramicsType[]; ai: AIStatus | null; onBaseChanged: () => 
 
 export function MatchTab({ types, ai, onBaseChanged }: Props) {
   const [file, setFile] = useState<File | null>(null)
-  const [parsed, setParsed] = useState<GlovesParseResult | null>(null)
+  const [parsed, setParsed] = useState<GoodsParseResult | null>(null)
   const [sheet, setSheet] = useState('')
   const [headerRow, setHeaderRow] = useState(1)
   const [mapping, setMapping] = useState<MatchMapping>({ mark: '', chineseName: '', russianName: '', photo: '' })
@@ -45,7 +45,7 @@ export function MatchTab({ types, ai, onBaseChanged }: Props) {
   async function parse(nextFile: File, nextSheet: string, nextHeaderRow: number, findHeader = false) {
     setLoading(true); setError(''); setNotice('')
     try {
-      const read = (headerRow: number) => calculatorApi.parseXlsx(nextFile, { sheet: nextSheet || undefined, headerRow, dataStartRow: headerRow + 1, shareImages: true })
+      const read = (headerRow: number) => goodsApi.parseXlsx(nextFile, { sheet: nextSheet || undefined, headerRow, dataStartRow: headerRow + 1, shareImages: true })
       let result = await read(nextHeaderRow)
       const foundHeader = findHeader && !guessMapping(result.headers, false).mark ? findHeaderRow(result) : null
       if (foundHeader) {

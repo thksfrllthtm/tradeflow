@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,7 +35,7 @@ func (s *Server) exportProductDirectory(c *gin.Context) {
 	sendDirectoryXLSX(c, "Справочник товаров", data, err)
 }
 
-type directoryImporter func(ctx context.Context, userID int64, file io.Reader, size int64, update bool) (service.DirectoryImportResult, error)
+type directoryImporter func(ctx context.Context, userID int64, file io.Reader, size int64, update bool) (directory.DirectoryImportResult, error)
 
 // importDirectory answers 200 with the counts, or 400 with the rows to fix (nothing saved).
 func (s *Server) importDirectory(c *gin.Context, run directoryImporter) {

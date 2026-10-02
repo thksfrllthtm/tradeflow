@@ -1,0 +1,112 @@
+/* Страницы-списки (справочники, база решений, керамика, сотрудники): заголовок, строка фильтров, таблица.
+   Боковая панель — shared/styles/drawer.css.
+   Кнопки с двумя классами — чтобы перебить общий стиль button / button:hover. */
+
+.directory-shell { background: #f3f6f4; }
+.directory-page {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(1320px, 100%);
+  min-height: 0;
+  margin: 0 auto;
+  padding: 20px 24px 16px;
+}
+
+/* Заголовок: название с количеством, короткое пояснение, кнопка добавления */
+.dir-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.dir-head h1 { display: flex; align-items: center; gap: 10px; margin: 0; color: #1a2a20; font-size: 1.3rem; letter-spacing: -.015em; }
+.dir-count { padding: 0 8px; border-radius: 999px; background: #e3ece6; color: #3d5245; font-size: .74rem; font-weight: 700; line-height: 22px; }
+.dir-head p { margin: 2px 0 0; color: #7a877f; font-size: .82rem; }
+.dir-head .dir-add { flex: 0 0 auto; height: 38px; padding: 0 16px; border-radius: 8px; font-size: .84rem; font-weight: 650; }
+
+/* Фильтры */
+.dir-toolbar { display: flex; align-items: center; gap: 10px; }
+.dir-search { position: relative; flex: 1 1 auto; min-width: 0; margin: 0; color: #8a968f; }
+.dir-search svg { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); pointer-events: none; }
+.dir-search input { width: 100%; height: 38px; margin: 0; padding: 0 12px 0 36px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fff; font-size: .86rem; }
+.dir-search input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.dir-seg { display: flex; flex: 0 0 auto; gap: 3px; padding: 3px; border: 1px solid #dfe7e1; border-radius: 9px; background: #fff; }
+.dir-seg button { height: 30px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.dir-seg button:hover:not(:disabled) { background: #f1f6f2; color: #1f2d24; }
+.dir-seg button.active, .dir-seg button.active:hover:not(:disabled) { background: #e8f3ec; color: #1a4d33; }
+.dir-archive { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; margin: 0; color: #56665c; font-size: .8rem; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.dir-archive input { width: 16px; height: 16px; margin: 0; accent-color: #24704a; }
+
+/* Таблица: шапка закреплена, прокручивается только список */
+.dir-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; transition: opacity .15s; }
+.dir-table-wrap.dir-loading { opacity: .6; }
+.dir-table { width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+.dir-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 9px 12px;
+  border-bottom: 1px solid #e3eae5;
+  background: #f7faf8;
+  color: #6b7a71;
+  font-size: .7rem;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+.dir-table td { padding: 9px 12px; border-bottom: 1px solid #eef2ef; color: #34443b; vertical-align: middle; }
+.dir-table tbody tr { cursor: pointer; }
+.dir-table tbody tr:hover td { background: #f6faf7; }
+.dir-table tbody tr:last-child td { border-bottom: 0; }
+.dir-table tr.archived td { color: #9aa59e; }
+.dir-table tr.archived code, .dir-table tr.archived .dir-name { opacity: .6; }
+
+.dir-table .c-code { width: 124px; }
+.dir-table .c-rate { width: 96px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dir-table .c-num { width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
+.dir-table .c-unit { width: 60px; color: #6b7a71; }
+.dir-table .c-tnved { width: 250px; }
+.dir-table .c-status { width: 170px; }
+.dir-table .c-actions { width: 104px; }
+
+.dir-table code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; font-weight: 700; white-space: nowrap; }
+.dir-table .dir-name {
+  display: -webkit-box;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: #1f2d24;
+  font-size: .84rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.dir-table .dir-name:hover:not(:disabled) { background: none; color: #1c5538; text-decoration: underline; }
+.dir-table .c-name small, .dir-table .c-tnved small { display: block; margin-top: 2px; overflow: hidden; color: #8a968f; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.dir-table .c-name { max-width: 0; }
+.dir-none { color: #b5bfb8; }
+.dir-warn { color: #9a5d0c; font-size: .78rem; font-weight: 600; }
+
+/* Действия строки: иконки, заметнее при наведении на строку */
+.dir-actions { display: flex; justify-content: flex-end; gap: 2px; }
+.dir-table .dir-act { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #a3aea7; }
+.dir-table tr:hover .dir-act { color: #56665c; }
+.dir-table .dir-act:hover:not(:disabled) { background: #e8f3ec; color: #1c5538; }
+.dir-table .dir-act.danger:hover:not(:disabled) { background: #fbeaea; color: #a33232; }
+
+.dir-empty { padding: 48px 20px !important; color: #7a877f; text-align: center; cursor: default; }
+.dir-foot { margin: 0; color: #9aa59e; font-size: .72rem; }
+
+@media (max-width: 900px) {
+  .directory-page { padding: 16px 12px; }
+  .dir-toolbar { flex-wrap: wrap; }
+  .dir-search { flex-basis: 100%; }
+}
+@media (max-width: 560px) {
+  .dir-head { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .dir-head .dir-add { width: 100%; }
+  .dir-seg { flex: 1 1 100%; }
+  .dir-seg button { flex: 1 1 0; padding: 0 6px; }
+}

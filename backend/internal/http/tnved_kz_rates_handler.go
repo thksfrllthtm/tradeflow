@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/gin-gonic/gin"
 )
 
 // About 4 000 rows with names and footnote texts.
 const maxKZExtractBody = 8 << 20
 
-func bindKZExtract(c *gin.Context) (service.KZListExtract, bool) {
+func bindKZExtract(c *gin.Context) (directory.KZListExtract, bool) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxKZExtractBody)
-	var extract service.KZListExtract
+	var extract directory.KZListExtract
 	if err := c.ShouldBindJSON(&extract); err != nil {
 		badRequest(c, "Не удалось прочитать строки перечня", "file")
 		return extract, false
@@ -27,7 +28,7 @@ func bindKZExtract(c *gin.Context) (service.KZListExtract, bool) {
 	return extract, true
 }
 
-func kzRowsError(c *gin.Context, errors []service.DirectoryImportError) {
+func kzRowsError(c *gin.Context, errors []directory.DirectoryImportError) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "В перечне есть строки с ошибками — ничего не сохранено", "field": "file"}, "result": gin.H{"errors": errors}})
 }
 

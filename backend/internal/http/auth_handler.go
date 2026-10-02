@@ -10,6 +10,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/auth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -54,7 +55,7 @@ func (s *Server) login(c *gin.Context) {
 	}
 	user, token, expiresAt, err := s.auth.Login(c.Request.Context(), input.Email, input.Password)
 	if err != nil {
-		if err == service.ErrInvalidCredentials {
+		if err == auth.ErrInvalidCredentials {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Неверный email или пароль", "code": "invalid_credentials"}})
 			return
 		}
@@ -126,7 +127,7 @@ func (s *Server) register(c *gin.Context) {
 	}
 	user, token, expiresAt, err := s.auth.Register(c.Request.Context(), input.Name, input.Email, input.Password)
 	if err != nil {
-		if err == service.ErrEmailAlreadyExists {
+		if err == auth.ErrEmailAlreadyExists {
 			c.JSON(http.StatusConflict, gin.H{"error": gin.H{"message": "Аккаунт с таким email уже существует", "field": "email", "code": "email_exists"}})
 			return
 		}

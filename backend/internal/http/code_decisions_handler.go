@@ -9,6 +9,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -81,7 +82,7 @@ func (s *Server) getCodeDecision(c *gin.Context) {
 // createCodeDecision — «В базу решений» от сотрудника: запись «Не проверено».
 func (s *Server) createCodeDecision(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20)
-	var input service.CodeDecisionInput
+	var input decisions.CodeDecisionInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Некорректная запись базы решений", "")
 		return
@@ -94,8 +95,8 @@ func (s *Server) createCodeDecision(c *gin.Context) {
 	c.JSON(http.StatusCreated, view)
 }
 
-func (s *Server) bindDecisionEdit(c *gin.Context) (service.CodeDecisionEdit, bool) {
-	var edit service.CodeDecisionEdit
+func (s *Server) bindDecisionEdit(c *gin.Context) (decisions.CodeDecisionEdit, bool) {
+	var edit decisions.CodeDecisionEdit
 	if c.Request.ContentLength == 0 {
 		return edit, true
 	}
@@ -178,7 +179,7 @@ func (s *Server) deleteCodeDecision(c *gin.Context) {
 func (s *Server) importCodeDecisions(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 60<<20)
 	var input struct {
-		Rows []service.CodeDecisionInput `json:"rows"`
+		Rows []decisions.CodeDecisionInput `json:"rows"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Некорректные строки импорта", "rows")

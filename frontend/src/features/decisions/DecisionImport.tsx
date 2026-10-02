@@ -2,10 +2,10 @@ import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
-import { calculatorApi } from '@/features/estimates/shared/api/calculatorApi'
-import { GlovesParseResult } from '@/features/estimates/shared/types'
+import { goodsApi } from '@/shared/api/goodsApi'
+import { GoodsParseResult } from '@/shared/types/goods'
 import { DecisionInput, decisionsApi } from './decisionsApi'
-import '../directories/components/DirectoryPanel.css'
+import '@/shared/styles/drawer.css'
 
 type Field = 'invoiceName' | 'supplierName' | 'code' | 'finalName'
 const fields: { value: Field; label: string; required?: boolean }[] = [
@@ -39,7 +39,7 @@ const normalizeCode = (value: string) => String(value ?? '').replace(/[\s.]/g, '
 // Фото строк берутся из файла (тот же разбор Excel, что в сметах) и уменьшаются в браузере.
 export function DecisionImport({ onClose, onImported }: { onClose: () => void; onImported: (created: number, skipped: number) => void }) {
   const [file, setFile] = useState<File | null>(null)
-  const [parsed, setParsed] = useState<GlovesParseResult | null>(null)
+  const [parsed, setParsed] = useState<GoodsParseResult | null>(null)
   const [sheet, setSheet] = useState('')
   const [headerRow, setHeaderRow] = useState(1)
   // В файле нет строки заголовков: первая строка — уже товар (так бывает в выгрузках наименований).
@@ -59,7 +59,7 @@ export function DecisionImport({ onClose, onImported }: { onClose: () => void; o
   async function read(target: File, options: { sheet?: string; headerRow?: number } = {}) {
     setBusy(true); setError(''); setProgress('Читаем файл…')
     try {
-      const result = await calculatorApi.parseXlsx(target, { sheet: options.sheet, headerRow: options.headerRow, dataStartRow: (options.headerRow ?? 1) + 1, shareImages: true })
+      const result = await goodsApi.parseXlsx(target, { sheet: options.sheet, headerRow: options.headerRow, dataStartRow: (options.headerRow ?? 1) + 1, shareImages: true })
       setParsed(result)
       setSheet(options.sheet || result.sheets[0]?.name || '')
       // Заголовок, похожий на код (10 цифр), значит строки заголовков нет.

@@ -70,7 +70,7 @@ func ownedBy(query *gorm.DB, userID int64) *gorm.DB {
 // inside PostgreSQL, so estimate snapshots with photos never reach the server.
 func (r *Repository) UnitPriceHistory(ctx context.Context, userID, excludeEstimateID int64, codes []string) (map[string]float64, error) {
 	query := `SELECT DISTINCT ON (item->>'code') item->>'code' AS code, (item->>'pairPriceUsd')::numeric AS price
-		FROM gloves_copy_estimates e
+		FROM goods_estimates e
 		CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(e.result_snapshot->'items') = 'array' THEN e.result_snapshot->'items' ELSE '[]'::jsonb END) AS item
 		WHERE item->>'code' IN ? AND e.id <> ?
 		  AND COALESCE(item->>'excluded', 'false') <> 'true'

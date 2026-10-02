@@ -1,5 +1,5 @@
 /* Модуль «Керамика»: подбор по файлу и база марок. Шапка страницы и основа таблиц —
-   из directories/directory.css; здесь — спокойная минималистичная надстройка. */
+   из shared/styles/list-page.css; здесь — спокойная минималистичная надстройка. */
 
 /* Страница прокручивается целиком: раскрытые строки результата бывают высокими. */
 .cer-page { overflow: auto; }
@@ -75,7 +75,6 @@
 .cer-match .cer-filters button:hover:not(:disabled) { background: #eef3ef; }
 .cer-match .cer-filters button.active, .cer-match .cer-filters button.active:hover:not(:disabled) { border-color: #dbe3dd; background: #fff; color: #1f2d24; box-shadow: 0 1px 2px rgba(20,47,31,.06); }
 .cer-seg-count { color: #9aa59e; font-weight: 600; font-variant-numeric: tabular-nums; }
-.cer-toolbar { flex-wrap: wrap; }
 .cer-base .dir-search input { padding-left: 12px; }
 .cer-type-filter { width: auto; min-width: 200px; height: 38px; margin: 0; border-radius: 8px; }
 
@@ -118,7 +117,6 @@
 .cer-results .cer-chevron { width: 28px; height: 28px; padding: 0; border-radius: 50%; background: transparent; color: #9aa59e; font-size: 1.2rem; line-height: 1; transition: transform .15s, background .15s; }
 .cer-results .cer-chevron:hover:not(:disabled) { background: #eef3ef; color: #1f2d24; }
 .cer-results .cer-chevron[aria-expanded='true'] { transform: rotate(90deg); }
-.cer-row-actions { display: flex; justify-content: flex-end; gap: 6px; }
 .cer-table tr.cer-invalid td { background: #fff8f6; }
 
 /* ── Раскрытая строка: причины и правка ── */
@@ -139,9 +137,7 @@
 
 .cer-editor { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid #e3e9e5; border-radius: 12px; background: #fff; }
 .cer-editor h3 { margin: 0; }
-.cer-editor-mark { margin: 0; color: #7a877f; font-size: .8rem; }
 .cer-review-text { margin: 0; color: #7a5410; font-size: .8rem; font-weight: 600; }
-.cer-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cer-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cer-details .cer-chip, .cer-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1px solid #dbe3dd; border-radius: 999px; background: #fff; color: #34443b; font-size: .76rem; font-weight: 600; }
 .cer-chip small { color: #9aa59e; font-weight: 600; }
@@ -204,7 +200,6 @@
   .cer-setup-fields { grid-template-columns: 1fr; }
   .cer-form-grid { grid-template-columns: 1fr; }
   .cer-form-grid .wide { grid-column: auto; }
-  .cer-inline { grid-template-columns: 1fr; }
 }
 
 /* Панель проверки: разбор китайского названия одной строкой, поля плотнее */

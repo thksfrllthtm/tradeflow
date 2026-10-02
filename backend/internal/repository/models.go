@@ -148,8 +148,7 @@ type ProductDirectoryEntry struct {
 func (ProductDirectoryEntry) TableName() string { return "product_directory_entries" }
 
 // GoodsEstimate is a goods estimate: parameters and rows (input_snapshot, without photos)
-// and the last calculation result. Row photos live in goods_estimate_photos. The table name
-// is left from the first version of the calculator (gloves).
+// and the last calculation result. Row photos live in goods_estimate_photos.
 type GoodsEstimate struct {
 	ID             int64     `gorm:"primaryKey" json:"id"`
 	UserID         int64     `gorm:"column:user_id;not null;index" json:"userId"`
@@ -162,7 +161,7 @@ type GoodsEstimate struct {
 	UpdatedAt      time.Time `gorm:"column:updated_at;not null" json:"updatedAt"`
 }
 
-func (GoodsEstimate) TableName() string { return "gloves_copy_estimates" }
+func (GoodsEstimate) TableName() string { return "goods_estimates" }
 
 // GoodsEstimateSummary is a goods estimate without rows, result and photos: the estimates list.
 type GoodsEstimateSummary struct {

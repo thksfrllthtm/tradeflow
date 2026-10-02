@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { formatRuDate } from '@/features/estimates/shared/lib/dates'
-import { verificationStatusLabel } from '../directoryLabels'
+import { formatRuDate } from '@/shared/lib/dates'
+import { verificationStatusLabel } from '../common/directoryLabels'
 import { KzImport } from '../kzList/kzListApi'
-import { NomenclatureImport, nomenclatureApi } from '../nomenclature/nomenclatureApi'
-import { directoryDraft, nameParts } from '../nomenclature/nomenclatureDraft'
+import { nomenclatureApi } from '../nomenclature/nomenclatureApi'
+import { directoryDraft } from '../nomenclature/nomenclatureDraft'
 import { checkCodes, checkNomenclature, CodeCheckRow, parsePastedCodes, PastedCodes } from './pastedCodes'
 import { tnvedDirectoryApi } from './tnvedDirectoryApi'
 import { TNVEDDirectoryEntry, TNVEDDirectoryInput } from './types'
 import './TNVEDCodeCheck.css'
+import { NomenclatureImport } from '@/shared/tnved/nomenclature'
+import { nameParts } from '@/shared/tnved/codes'
 
 type Props = {
   // directory — сверка со справочником ТН ВЭД; nomenclature — с номенклатурой ТН ВЭД ЕАЭС.

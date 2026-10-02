@@ -23,7 +23,6 @@ services:
             - .cache/
             - .gocache-*/
             - bin/
-            - data/
             - go.mod
             - go.sum
             - Dockerfile
