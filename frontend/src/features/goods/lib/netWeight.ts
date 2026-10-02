@@ -1,5 +1,6 @@
 import { GoodsItemInput } from '@/shared/types/goods'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { weightText } from '@/shared/lib/rounding'
 import { autoQuantity } from './quantities'
 
 // Вес нетто строки: авто-расчёт (брутто − места × вес упаковки) и подсказка к полю «Нетто».
@@ -10,8 +11,9 @@ function parseDecimal(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+// Вес — по правилу гр.35 и 38: до трёх знаков, меньше грамма — до шести (без лишних нулей).
 export function formatWeight(value: number): string {
-  return formatDisplayNumber(value.toFixed(3).replace(/\.?0+$/, ''))
+  return formatDisplayNumber(weightText(value, true))
 }
 
 export function autoNetFor(item: GoodsItemInput): number | null {

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { decimalText, moneyText } from '@/shared/lib/rounding'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
 import './BudgetTool.css'
 
-const money = (value: number) => formatDisplayNumber(value.toFixed(2))
+const money = (value: number) => formatDisplayNumber(moneyText(value))
 
 const hint = (min: string, max: string, over: boolean) => `Цены подбираются так, чтобы «Растаможка к оплате» была на ${min}–${max} USD ${over ? 'больше бюджета (перерасход)' : 'меньше бюджета (недостача)'}. По умолчанию — недостача 20–30 USD. `
   + 'Строки с ценой (из Excel, по ИТП, вручную) не меняются; строки без цены с тем же кодом ТН ВЭД получают ту же цену. '
@@ -30,7 +31,7 @@ export function BudgetControls({ budget, disabled }: { budget: BudgetDistributio
   </div>
 }
 
-const usd = (value: number) => formatDisplayNumber(String(Math.round(value * 100) / 100))
+const usd = (value: number) => formatDisplayNumber(decimalText(value, 2))
 
 // Значок «недостача 20–30 ▾» и окошко настройки разницы с бюджетом.
 function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount: number | null }) {

@@ -1,4 +1,5 @@
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { moneyText, weightText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult } from '@/shared/types/goods'
 
 type Value = string | number | undefined | null
@@ -9,9 +10,15 @@ export function parseCalculatorNumber(value: Value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+// Вес в поле ввода — по правилу гр.38: до трёх знаков, меньше грамма — до шести.
+export function weightInputValue(value: Value) {
+  const parsed = parseCalculatorNumber(value)
+  return parsed === null ? '' : weightText(parsed, true)
+}
+
 export function calculatorInputValue(value: Value) {
   const parsed = parseCalculatorNumber(value)
-  return parsed === null ? '' : parsed.toFixed(2)
+  return parsed === null ? '' : moneyText(parsed)
 }
 
 export const display = (value: Value) =>

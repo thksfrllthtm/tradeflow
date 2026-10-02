@@ -1,4 +1,5 @@
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { decimalText } from '@/shared/lib/rounding'
 import { GoodsItemInput } from '@/shared/types/goods'
 
 // Количество = места × штук в месте. Если два значения заполнены, а третье пустое,
@@ -26,7 +27,7 @@ export function autoQuantity(item: GoodsItemInput, field: QuantityField): number
 export function autoQuantityHint(item: GoodsItemInput, field: QuantityField): { placeholder: string; title: string } | null {
   const value = autoQuantity(item, field)
   if (value === null) return null
-  const text = formatDisplayNumber(value.toFixed(3).replace(/\.?0+$/, ''))
+  const text = formatDisplayNumber(decimalText(value, 3))
   const formula = field === 'pairs' ? 'места × штук в месте' : field === 'places' ? 'количество ÷ штук в месте' : 'количество ÷ места'
   const whole = Math.abs(value - Math.round(value)) < 1e-9
   return {

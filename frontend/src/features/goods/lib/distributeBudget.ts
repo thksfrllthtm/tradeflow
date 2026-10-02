@@ -1,3 +1,4 @@
+import { moneyText, roundHalfUp } from '@/shared/lib/rounding'
 import { priceText as formatPrice } from './priceText'
 // Распределение бюджета по ценам единицы товаров: цены подбираются так, чтобы итог
 // «Растаможка к оплате» (пошлина + антидемпинг + НДС + сбор) не доходил до бюджета на
@@ -123,8 +124,8 @@ function productShares<T>(rows: T[], groups: BudgetGroup[], access: BudgetRowAcc
   return shares
 }
 
-const money = (value: number) => Math.round(value * 100) / 100
-const format = (value: number) => value.toFixed(2)
+const money = (value: number) => roundHalfUp(value, 2)
+const format = moneyText
 
 export async function distributeBudget<T>(rows: T[], budget: number, access: BudgetRowAccess<T>, options: BudgetOptions<T>): Promise<BudgetDistribution<T>> {
   const minGap = options.minGap ?? BUDGET_MIN_GAP

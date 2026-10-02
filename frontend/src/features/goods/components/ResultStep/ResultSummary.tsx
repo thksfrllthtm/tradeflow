@@ -1,4 +1,5 @@
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { moneyText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult } from '@/shared/types/goods'
 import { ItpCalculator } from './ItpCalculator'
 import { displayNumber, hasAntiDumping, parseCalculatorNumber } from './resultValues'
@@ -13,7 +14,7 @@ export function ResultSummary({ result, loading, saveDraft, exportExcel }: Summa
     const kzt = parseCalculatorNumber(result.totals.customsPaymentsKzt) ?? NaN
     const rate = parseCalculatorNumber(result.usdKzt) ?? NaN
     return Number.isFinite(kzt) && Number.isFinite(rate) && rate > 0
-      ? `${formatDisplayNumber((kzt / rate).toFixed(2))} USD`
+      ? `${formatDisplayNumber(moneyText(kzt / rate))} USD`
       : '—'
   })()
   // Слагаемые растаможки — как на бэкенде: пошлина + антидемпинг + НДС + сбор.

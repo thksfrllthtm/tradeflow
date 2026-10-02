@@ -69,7 +69,7 @@ export function ReviewStep({ params, items, result, selectedForDirectory, params
   const withoutCodeCount = items.filter((item) => !item.excluded && !item.code).length
   const errorCount = items.filter((item, index) => reviewStatus(item, result?.items[index]).tone === 'bad').length
   const totals = reviewTotals(items, params.packageWeightKg)
-  const total = (value: number) => formatWeight(Number(value.toFixed(3)))
+  const total = (value: number) => formatWeight(value)
   return <div className="goods-step-page rv-step">
     <details className="goods-params goods-params-top" open={paramsOpen} onToggle={(event) => setParamsOpen(event.currentTarget.open)}>
       <summary>Параметры расчёта <span className="goods-params-summary">курс {params.usdKzt || '—'} · доставка: {deliverySummary} · сбор: {feeSummary}</span></summary>

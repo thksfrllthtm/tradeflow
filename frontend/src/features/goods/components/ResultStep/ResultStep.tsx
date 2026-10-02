@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
+import { weightText } from '@/shared/lib/rounding'
 import { BudgetControls, BudgetNote, BudgetStatus } from '../BudgetTool/BudgetTool'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
 import { CalculationErrors } from './CalculationErrors'
@@ -177,7 +178,7 @@ export function ResultStep({
                 <td className="rs-num" />
                 <td className="rs-name">Итого</td>
                 <td>{displayNumber(checkTotals.quantity)}<small className="rs-sub">мест {displayNumber(checkTotals.places)}</small></td>
-                <td>{displayNumber(Number(checkTotals.netKg.toFixed(3)))}<small className="rs-sub">брутто {displayNumber(Number(checkTotals.grossKg.toFixed(3)))}</small></td>
+                <td>{displayNumber(weightText(checkTotals.netKg))}<small className="rs-sub">брутто {displayNumber(weightText(checkTotals.grossKg))}</small></td>
                 <td />
                 <td>{displayNumber(result.totals.totalCostUsd)}</td>
                 <td>{displayNumber(result.totals.customsValueKzt)}</td>

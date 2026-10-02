@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useId, useRef, useState } from 'reac
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
+import { decimalText } from '@/shared/lib/rounding'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
 import { GoodsItemInput } from '@/shared/types/goods'
@@ -326,7 +327,7 @@ function perUnit(total: string, quantity: string) {
   const value = Number(String(total).replace(',', '.'))
   const count = Number(String(quantity).replace(',', '.'))
   if (!(value > 0) || !(count > 0)) return ''
-  return String(Math.round((value / count) * 10000) / 10000).replace('.', ',')
+  return decimalText(value / count, 4).replace('.', ',')
 }
 
 function CodeLine({ code, name }: { code: string; name?: string }) {
