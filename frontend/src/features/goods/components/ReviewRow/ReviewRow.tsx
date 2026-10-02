@@ -114,6 +114,8 @@ function AgentButton({ status, code, onClick }: { status?: AgentRowStatus; code:
   let tone = ''
   let title = 'Подобрать код ТН ВЭД ИИ-агентом'
   if (status?.status === 'running') { label = 'ИИ…'; tone = 'running'; title = 'ИИ подбирает код — открыть чат' }
+  else if (status?.status === 'searching') { label = 'ИИ…'; tone = 'running'; title = 'Поиск в базе решений — открыть чат' }
+  else if (status?.status === 'ready') { title = 'Поиск в базе закончен — открыть чат и запустить подбор ИИ' }
   else if (status?.status === 'waiting') { label = 'ИИ ?'; tone = 'waiting'; title = 'ИИ ждёт ответа на вопрос — открыть чат' }
   else if (status?.status === 'error') { label = 'ИИ !'; tone = 'error'; title = 'Подбор прервался — открыть чат' }
   else if (status?.status === 'done' && status.bestCode) {

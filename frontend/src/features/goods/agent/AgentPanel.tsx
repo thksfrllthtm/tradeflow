@@ -11,7 +11,7 @@ import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
 import '@/shared/styles/drawer.css'
 import './agent.css'
-import { decisionStatusLabels } from '@/shared/tnved/decisions'
+import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
 
 type Props = {
@@ -46,8 +46,9 @@ export async function agentPhotosFrom(item: GoodsItemInput): Promise<string[]> {
   return Promise.all(photosOf(item).slice(0, 3).map((photo) => resizePhoto(photo)))
 }
 
-// Чат подбора кода ТН ВЭД для одной строки сметы: товар, шаги агента, вопросы, итог с кодами
-// и цитатами, кнопки «Применить». Подбор идёт на сервере — панель можно закрыть.
+// Чат подбора кода ТН ВЭД для одной строки сметы. При открытии программа только ищет товар в
+// базе решений (тот же товар и похожие по фото); агента сотрудник запускает кнопкой внизу.
+// Подбор идёт на сервере — панель можно закрыть.
 export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, onApplyName, onChanged }: Props) {
   const itemId = item.id ?? ''
   const [session, setSession] = useState<AgentSession | null>(null)
@@ -77,6 +78,7 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     })
   }, [])
 
+  // Новый подбор строки: сначала только поиск в базе решений.
   const start = useCallback(async () => {
     setBusy(true); setError('')
     try {
@@ -91,7 +93,7 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     }
   }, [estimateId, itemId, item, accept])
 
-  // Открытие: последний подбор строки; если его нет — сразу новый.
+  // Открытие: последний подбор строки; если его нет — поиск в базе.
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -107,27 +109,29 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimateId, itemId])
 
-  // Пока подбор идёт — забираем новые сообщения.
+  // Пока идёт поиск или подбор — забираем новые сообщения.
   const sessionId = session?.id
   const running = session?.status === 'running'
+  const searching = session?.status === 'searching'
+  const working = running || searching
   useEffect(() => {
-    if (!sessionId || !running) return
+    if (!sessionId || !working) return
     let active = true
     const timer = window.setInterval(() => {
       agentApi.get(sessionId, lastId.current).then((next) => {
         if (!active) return
         accept(next, false)
-        if (next.status !== 'running') changedRef.current()
+        if (next.status !== 'running' && next.status !== 'searching') changedRef.current()
       }).catch(() => undefined)
     }, pollInterval)
     return () => { active = false; window.clearInterval(timer) }
-  }, [sessionId, running, accept])
+  }, [sessionId, working, accept])
 
   // Новые сообщения — прокрутка вниз.
   const messageCount = session?.messages.length ?? 0
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messageCount, running])
+  }, [messageCount, session?.status])
 
   useEffect(() => {
     if (lightbox) return
@@ -213,42 +217,65 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     }
   }
 
-  const canWrite = Boolean(session) && !running && status?.configured !== false
   const photos = session?.photos ?? []
+  const messages = session?.messages ?? []
+  const input = messages.find((message) => message.kind === 'input')
+  const match = messages.find((message): message is Extract<AgentMessage, { kind: 'match' }> => message.kind === 'match')
+  const similar = messages.find((message): message is Extract<AgentMessage, { kind: 'similar' }> => message.kind === 'similar')
+  const blocks = chatBlocks(messages)
+  // Проверенный код найден в базе, агента не запускали: внизу — «Всё равно подобрать ИИ».
+  const skippedByBase = Boolean(match?.content.skipped) && session?.runs === 0 && session.status === 'done'
+  const configured = status?.configured !== false
+  const canWrite = Boolean(session) && !working && configured && session?.status !== 'ready' && !skippedByBase
+  const decisionActions: DecisionActions = { applied, busy, onApplyCode: (code) => applyCode(code, false), onOpenPhotos: (id) => void openDecisionPhotos(id) }
+
   return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
     <aside className="drawer ag-drawer" role="dialog" aria-modal="true" aria-labelledby="ag-title">
-      <header className="drawer-head">
+      <header className="drawer-head ag-head">
         <div>
-          <h2 id="ag-title">Подбор кода ИИ · строка {rowNumber}</h2>
-          <p>{running ? 'Агент работает — панель можно закрыть, подбор продолжится' : session ? statusText(session) : status && !status.configured ? 'ИИ не настроен на сервере' : 'Загрузка…'}</p>
+          <h2 id="ag-title">Подбор кода · строка {rowNumber}</h2>
+          <p>{session ? statusText(session) : status && !status.configured ? 'ИИ не настроен на сервере' : 'Загрузка…'}</p>
         </div>
         <button type="button" className="drawer-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
       </header>
+
       <div className="drawer-body ag-body" ref={bodyRef}>
         {loading && !session && <p className="ag-muted">Загрузка…</p>}
         {status && !status.configured && <p className="ag-error">ИИ для подбора кодов не настроен: на сервере нет ключа (TNVED_AI_API_KEY или DEEPSEEK_API_KEY).</p>}
-        {!loading && !session && status?.configured && <div className="ag-empty"><p>Подбора для этой строки ещё не было.</p><button type="button" onClick={() => void start()} disabled={busy}>Подобрать код</button></div>}
-        {session?.messages.map((message) => <MessageView key={message.id} message={message} photos={photos} applied={applied} busy={busy}
-          onApplyCode={applyCode} onApplyName={(name) => void applyName(name)} onRerun={() => void act(() => agentApi.rerun(session.id))}
-          onOpenPhoto={(index) => setLightbox({ photos, index })} onOpenDecisionPhotos={(id) => void openDecisionPhotos(id)} />)}
-        {running && <div className="ag-typing" aria-live="polite"><span /><span /><span /> агент думает…</div>}
+        {input?.kind === 'input' && <ItemCard item={input.content.item} photos={photos} onOpenPhoto={(index) => setLightbox({ photos, index })} />}
+        {session && <BaseCard match={match?.content.matches ?? []} similar={similar?.content} searching={searching} hasPhotos={photos.length > 0} actions={decisionActions} />}
+        {blocks.map((block) => block.type === 'steps'
+          ? <StepsGroup key={`steps-${block.messages[0].id}`} messages={block.messages} live={running && block === blocks[blocks.length - 1]} />
+          : <MessageView key={block.message.id} message={block.message} applied={applied} busy={busy}
+            onApplyCode={applyCode} onApplyName={(name) => void applyName(name)} />)}
+        {running && <div className="ag-typing" aria-live="polite"><span /><span /><span /> агент работает — панель можно закрыть</div>}
         {error && <p className="ag-error" role="alert">{error}</p>}
       </div>
+
       <footer className="drawer-foot ag-foot">
-        <form className="ag-form" onSubmit={(event) => void send(event)}>
-          <input value={text} onChange={(event) => setText(event.target.value)} maxLength={1000} disabled={!canWrite || busy}
+        {!session && !loading && configured && <button type="button" className="ag-primary" onClick={() => void start()} disabled={busy}>Найти в базе решений</button>}
+        {searching && <p className="ag-wait"><span className="ag-spinner" aria-hidden="true" />Ищу этот товар в базе решений…</p>}
+        {(session?.status === 'ready' || skippedByBase) && <div className="ag-launch">
+          <button type="button" className="ag-primary" disabled={busy || !configured}
+            onClick={() => session && void act(() => skippedByBase ? agentApi.rerun(session.id) : agentApi.begin(session.id))}>
+            {skippedByBase ? 'Всё равно подобрать ИИ' : 'Подобрать код ИИ'}
+          </button>
+          <span>{skippedByBase ? 'Проверенный код этого товара уже есть в базе.' : 'Агент изучит номенклатуру и пояснения к кодам — обычно 1–2 минуты.'}
+            {status && status.dailyLimit > 0 && <> Сегодня: {status.usedToday} из {status.dailyLimit}.</>}</span>
+        </div>}
+        {running && <div className="ag-launch"><button type="button" className="ag-ghost" onClick={() => session && void act(() => agentApi.cancel(session.id))} disabled={busy}>Остановить</button><span>Агент подбирает код…</span></div>}
+        {canWrite && <form className="ag-form" onSubmit={(event) => void send(event)}>
+          <input value={text} onChange={(event) => setText(event.target.value)} maxLength={1000} disabled={busy}
             placeholder={session?.status === 'waiting' ? 'Ответьте на вопрос агента…' : 'Уточнить: «это латекс», «посмотри 3926»…'} aria-label="Сообщение агенту" />
-          <button type="submit" disabled={!canWrite || busy || !text.trim()}>Отправить</button>
-        </form>
+          <button type="submit" disabled={busy || !text.trim()}>Отправить</button>
+        </form>}
         <div className="ag-foot-row">
-          {running
-            ? <button type="button" className="ag-link" onClick={() => session && void act(() => agentApi.cancel(session.id))} disabled={busy}>Остановить</button>
-            : <button type="button" className="ag-link" onClick={() => void start()} disabled={busy || status?.configured === false}>Начать заново</button>}
-          {session && session.runs > 0 && <span className="ag-cost" title={`Модель ${session.model}`}>шагов {session.steps} · ${session.costUsd}</span>}
-          {/^d{10}$/.test(item.code) && (savedRowCode === item.code
+          {session && !working && <button type="button" className="ag-link" onClick={() => void start()} disabled={busy || !configured}>Начать заново</button>}
+          {session && session.runs > 0 && <span className="ag-cost" title={`Модель ${session.model}, обращений к ИИ: ${session.steps}`}>стоимость ${session.costUsd}</span>}
+          {/^\d{10}$/.test(item.code) && (savedRowCode === item.code
             ? <span className="ag-done">✓ код строки в базе решений</span>
-            : <button type="button" className="ag-link" onClick={() => void saveRowCode()} disabled={busy} title="Записать код, который сейчас стоит в строке, в базу решений (ждёт проверки администратором)">Код строки → в базу решений</button>)}
-          <span className="ag-disclaimer">Подсказка ИИ — код выбирает декларант</span>
+            : <button type="button" className="ag-link" onClick={() => void saveRowCode()} disabled={busy} title="Записать код, который сейчас стоит в строке, в базу решений (ждёт проверки администратором)">Код строки → в базу</button>)}
+          <span className="ag-disclaimer">Код выбирает декларант</span>
         </div>
       </footer>
     </aside>
@@ -258,69 +285,100 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
 
 function statusText(session: AgentSession) {
   switch (session.status) {
+    case 'searching': return 'Поиск в базе решений…'
+    case 'ready': return 'Поиск в базе закончен'
+    case 'running': return 'Агент подбирает код'
     case 'waiting': return 'Агент ждёт ответа на вопрос'
-    case 'done': return session.result ? 'Подбор готов — проверьте и примените код' : 'Подбор закончен'
+    case 'done': return session.result ? 'Подбор готов — проверьте и примените код' : 'Найдено в базе решений'
     case 'error': return 'Подбор прервался с ошибкой'
     case 'cancelled': return 'Подбор остановлен'
-    default: return ''
   }
 }
 
 type Applied = { code?: string; name?: string; nameRu?: string }
 
+// Сообщения чата после поиска в базе: шаги агента (инструменты и его пояснения) — одной
+// сворачиваемой группой, остальное — по одному.
+type ChatBlock = { type: 'steps'; messages: AgentMessage[] } | { type: 'message'; message: AgentMessage }
+
+function chatBlocks(messages: AgentMessage[]): ChatBlock[] {
+  const blocks: ChatBlock[] = []
+  for (const message of messages) {
+    if (message.kind === 'input' || message.kind === 'match' || message.kind === 'similar' || message.kind === 'start') continue
+    if (message.kind === 'tool' || message.kind === 'text') {
+      const last = blocks[blocks.length - 1]
+      if (last?.type === 'steps') last.messages.push(message)
+      else blocks.push({ type: 'steps', messages: [message] })
+      continue
+    }
+    blocks.push({ type: 'message', message })
+  }
+  return blocks
+}
+
+// Ход подбора: свёрнут после итога, пока агент работает — открыт.
+function StepsGroup({ messages, live }: { messages: AgentMessage[]; live: boolean }) {
+  const [open, setOpen] = useState(false)
+  const steps = messages.filter((message) => message.kind === 'tool').length
+  const expanded = open || live
+  return <section className={expanded ? 'ag-steps open' : 'ag-steps'}>
+    <button type="button" className="ag-steps-toggle" onClick={() => setOpen((value) => !value)} aria-expanded={expanded} disabled={live}>
+      <span>Ход подбора</span><small>{steps} {steps === 1 ? 'шаг' : steps < 5 && steps > 0 ? 'шага' : 'шагов'}</small>
+      {!live && <i aria-hidden="true">{expanded ? '▴' : '▾'}</i>}
+    </button>
+    {expanded && <ol className="ag-steps-list">
+      {messages.map((message) => {
+        if (message.kind === 'text') return <li key={message.id} className="ag-thought">{message.content.text}</li>
+        if (message.kind !== 'tool') return null
+        const { tool, label, detail, url, failed } = message.content
+        return <li key={message.id} className={failed ? 'ag-step failed' : 'ag-step'}>
+          <span className="ag-step-icon" aria-hidden="true">{toolIcons[tool] ?? '•'}</span>
+          <span className="ag-step-label">{label}</span>
+          <span className="ag-step-detail">{detail}</span>
+          {url && <a href={url} target="_blank" rel="noreferrer" title="Открыть страницу кода">↗</a>}
+        </li>
+      })}
+    </ol>}
+  </section>
+}
+
 type MessageProps = {
   message: AgentMessage
-  photos: string[]
   applied: Applied
   busy: boolean
   onApplyCode: (code: string, record: boolean) => void
   onApplyName: (name: string) => void
-  onRerun: () => void
-  onOpenPhoto: (index: number) => void
-  onOpenDecisionPhotos: (id: number) => void
 }
 
-function MessageView({ message, photos, applied, busy, onApplyCode, onApplyName, onRerun, onOpenPhoto, onOpenDecisionPhotos }: MessageProps) {
+function MessageView({ message, applied, busy, onApplyCode, onApplyName }: MessageProps) {
   switch (message.kind) {
-    case 'input': return <InputCard item={message.content.item} photos={photos} onOpenPhoto={onOpenPhoto} />
-    case 'text': return <div className="ag-msg ag-bot">{message.content.text}</div>
     case 'question': return <div className="ag-msg ag-question"><b>Вопрос агента</b>{message.content.text}</div>
     case 'user': return <div className="ag-msg ag-user">{message.content.text}</div>
     case 'notice': return <p className="ag-notice">{message.content.text}</p>
     case 'error': return <p className="ag-error">{message.content.message}</p>
     case 'rerun': return <p className="ag-divider"><span>подбор заново</span></p>
-    case 'tool': {
-      const { tool, label, detail, url, failed } = message.content
-      return <div className={failed ? 'ag-step failed' : 'ag-step'}>
-        <span className="ag-step-icon" aria-hidden="true">{toolIcons[tool] ?? '•'}</span>
-        <span className="ag-step-label">{label}</span>
-        <span className="ag-step-detail">{detail}</span>
-        {url && <a href={url} target="_blank" rel="noreferrer" title="Открыть страницу кода">↗</a>}
-      </div>
-    }
-    case 'similar': return <SimilarCard matches={message.content.matches} description={message.content.description} applied={applied} busy={busy} onApplyCode={onApplyCode} onOpenPhotos={onOpenDecisionPhotos} />
-    case 'match': return <MatchCard matches={message.content.matches} skipped={message.content.skipped} applied={applied} busy={busy} onApplyCode={onApplyCode} onRerun={onRerun} />
     case 'result': return <ResultCard result={message.content} applied={applied} busy={busy} onApplyCode={onApplyCode} onApplyName={onApplyName} />
+    default: return null
   }
 }
 
-function InputCard({ item, photos, onOpenPhoto }: { item: AgentItem; photos: string[]; onOpenPhoto: (index: number) => void }) {
+function ItemCard({ item, photos, onOpenPhoto }: { item: AgentItem; photos: string[]; onOpenPhoto: (index: number) => void }) {
   const unitNet = perUnit(item.netKg || item.grossKg, item.quantity)
-  return <div className="ag-input">
-    {photos.length > 0 && <div className="ag-photos">{photos.map((photo, index) => <button key={index} type="button" className="ag-photo" onClick={() => onOpenPhoto(index)} title="Открыть фото крупно" aria-label={`Открыть фото товара ${index + 1} крупно`}><img src={photo} alt="" /></button>)}</div>}
-    <div className="ag-input-text">
-      <small>Товар</small>
+  const meta = [
+    item.code && `код из файла ${formatCode(item.code)}`,
+    item.quantity && `${item.quantity} ${item.unit}`,
+    unitNet && `1 ${item.unit}: ${unitNet} кг`,
+    item.pricePerUnit && `${item.pricePerUnit} $`,
+    photos.length === 0 && 'без фото',
+  ].filter(Boolean).join(' · ')
+  return <section className="ag-item">
+    {photos.length > 0 && <div className="ag-item-photos">{photos.map((photo, index) => <button key={index} type="button" className="ag-photo" onClick={() => onOpenPhoto(index)} title="Открыть фото крупно" aria-label={`Открыть фото товара ${index + 1} крупно`}><img src={photo} alt="" /></button>)}</div>}
+    <div className="ag-item-text">
       <strong>{item.name || item.supplierName || 'Без наименования'}</strong>
       {item.supplierName && item.supplierName !== item.name && <span>{item.supplierName}</span>}
-      <em>
-        {item.code && <>код из файла {formatCode(item.code)} · </>}
-        {item.quantity && <>{item.quantity} {item.unit}</>}
-        {unitNet && <> · 1 {item.unit}: {unitNet} кг</>}
-        {item.pricePerUnit && <> · {item.pricePerUnit} $</>}
-        {photos.length === 0 && <> · без фото</>}
-      </em>
+      {meta && <small>{meta}</small>}
     </div>
-  </div>
+  </section>
 }
 
 function perUnit(total: string, quantity: string) {
@@ -338,67 +396,53 @@ function CodeLine({ code, name }: { code: string; name?: string }) {
   </div>
 }
 
-function MatchCard({ matches, skipped, applied, busy, onApplyCode, onRerun }: { matches: SameProductMatch[]; skipped: boolean; applied: { code?: string }; busy: boolean; onApplyCode: (code: string, record: boolean) => void; onRerun: () => void }) {
-  return <div className="ag-result ag-match">
-    <h3>{skipped ? 'Этот товар уже есть в базе решений' : 'В базе решений есть похожие записи'}</h3>
-    {matches.map(({ decision, byPhoto, byName }) => <div key={decision.id} className={`ag-cand ${decision.status === 'verified' ? 'fits' : 'doubtful'}`}>
-      <div className="ag-cand-top">
-        <CodeLine code={decision.code} name={decision.nomenclature?.name} />
-        <i className={`ag-verdict ${decision.status === 'verified' ? 'fits' : 'doubtful'}`}>{decisionStatusLabels[decision.status]}</i>
-      </div>
-      {decision.finalName && <p className="ag-cand-name">{decision.finalName}</p>}
-      <p className="ag-cand-meta">Узнан {[byPhoto && 'по фото', byName && 'по наименованию'].filter(Boolean).join(' и ')} · в инвойсе: «{decision.invoiceName || decision.supplierName}»{decision.verifiedByName && <> · проверил {decision.verifiedByName}</>}</p>
-      {decision.quote && <blockquote>{decision.quote}</blockquote>}
-      {!decision.nomenclature && <p className="ag-warn">Кода нет в текущей номенклатуре — проверьте.</p>}
-      <div className="ag-cand-actions">
-        {applied.code === decision.code ? <span className="ag-done">✓ применён</span> : <button type="button" onClick={() => onApplyCode(decision.code, false)} disabled={busy || !decision.nomenclature}>Применить код</button>}
-        {decision.nomenclature?.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
-        <Link href={`${paths.decisions}?id=${decision.id}`}>В базе решений</Link>
-      </div>
-    </div>)}
-    {skipped && <button type="button" className="ag-secondary" onClick={onRerun} disabled={busy}>Всё равно подобрать ИИ</button>}
-  </div>
-}
+type DecisionActions = { applied: Applied; busy: boolean; onApplyCode: (code: string) => void; onOpenPhotos: (id: number) => void }
 
 const similarVerdicts: Record<SimilarMatch['verdict'], string> = { same: 'тот же товар', similar: 'похожий товар', '': '' }
 
-// Похожие по фото товары из базы решений: показываются сразу, пока ИИ подбирает код.
-function SimilarCard({ matches, description, applied, busy, onApplyCode, onOpenPhotos }: { matches: SimilarMatch[]; description: string; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void; onOpenPhotos: (id: number) => void }) {
-  return <div className="ag-result ag-similar">
-    <h3>Похожие по фото</h3>
-    {description && <p className="ag-cand-meta">На фото: {description}</p>}
-    {matches.length === 0 && <p className="ag-notice">Похожих по фото товаров в базе решений нет.</p>}
-    {matches.map((match) => {
-      const { decision } = match
-      return <div key={decision.id} className={`ag-cand ag-sim ${match.verdict === 'same' ? 'fits' : 'doubtful'}`}>
-        {decision.thumb
-          ? <button type="button" className="ag-photo ag-sim-thumb" onClick={() => onOpenPhotos(decision.id)} title="Открыть фото из базы крупно" aria-label="Открыть фото записи базы крупно"><img src={decision.thumb} alt="" /></button>
-          : <span className="ag-sim-thumb" aria-hidden="true" />}
-        <div className="ag-sim-body">
-          <div className="ag-cand-top">
-            <CodeLine code={decision.code} name={decision.nomenclature?.name} />
-            <span className="ag-sim-badges">
-              {match.verdict && <i className={`ag-verdict ${match.verdict === 'same' ? 'fits' : 'doubtful'}`}>{similarVerdicts[match.verdict]}</i>}
-              <i className="ag-score" title="Похожесть по фото">{match.score}%</i>
-            </span>
-          </div>
-          {decision.finalName && <p className="ag-cand-name">{decision.finalName}</p>}
-          <p className="ag-cand-meta">
-            {decisionStatusLabels[decision.status]}
-            {match.byPhoto && ' · снимок похож'}
-            {match.byDescription && match.description && <> · в базе: {match.description}</>}
-          </p>
-          {match.why && <p className="ag-reason">{match.why}</p>}
-          {!decision.nomenclature && <p className="ag-warn">Кода нет в текущей номенклатуре — проверьте.</p>}
-          <div className="ag-cand-actions">
-            {applied.code === decision.code ? <span className="ag-done">✓ применён</span> : <button type="button" onClick={() => onApplyCode(decision.code, false)} disabled={busy || !decision.nomenclature}>Применить код</button>}
-            {decision.nomenclature?.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
-            <Link href={`${paths.decisions}?id=${decision.id}`}>В базе решений</Link>
-          </div>
-        </div>
+// Что нашлось в базе решений: тот же товар (по фото или наименованию) и похожие по фото.
+function BaseCard({ match, similar, searching, hasPhotos, actions }: { match: SameProductMatch[]; similar?: { matches: SimilarMatch[]; description: string }; searching: boolean; hasPhotos: boolean; actions: DecisionActions }) {
+  const similarMatches = similar?.matches ?? []
+  const found = match.length + similarMatches.length
+  return <section className="ag-card ag-base">
+    <header className="ag-card-head">
+      <h3>В базе решений</h3>
+      <small>{searching ? 'ищу…' : found ? `найдено: ${found}` : 'ничего не найдено'}</small>
+    </header>
+    {match.map(({ decision, byPhoto, byName }) => <DecisionRow key={`same-${decision.id}`} decision={decision} actions={actions}
+      badge={<i className="ag-pill fits">тот же товар</i>}
+      meta={`узнан ${[byPhoto && 'по фото', byName && 'по наименованию'].filter(Boolean).join(' и ')} · в инвойсе: «${decision.invoiceName || decision.supplierName}»`} />)}
+    {similarMatches.map((item) => <DecisionRow key={`similar-${item.decision.id}`} decision={item.decision} actions={actions}
+      badge={<>{item.verdict && <i className={`ag-pill ${item.verdict === 'same' ? 'fits' : 'doubtful'}`}>{similarVerdicts[item.verdict]}</i>}<i className="ag-pill plain" title="Похожесть по фото">{item.score}%</i></>}
+      meta={[item.byPhoto && 'снимок похож', item.byDescription && item.description && `в базе: ${item.description}`].filter(Boolean).join(' · ')}
+      note={item.why} />)}
+    {!searching && found === 0 && <p className="ag-empty-line">{hasPhotos ? 'Такого товара и похожих по фото в базе нет.' : 'Такого товара в базе нет. Похожие ищутся по фото — у строки фото нет.'}</p>}
+    {similar?.description && <p className="ag-seen">ИИ видит на фото: {similar.description}</p>}
+  </section>
+}
+
+function DecisionRow({ decision, actions, badge, meta, note }: { decision: CodeDecision; actions: DecisionActions; badge: React.ReactNode; meta: string; note?: string }) {
+  const { applied, busy, onApplyCode, onOpenPhotos } = actions
+  return <article className="ag-row">
+    {decision.thumb
+      ? <button type="button" className="ag-photo ag-thumb" onClick={() => onOpenPhotos(decision.id)} title="Открыть фото из базы крупно" aria-label="Открыть фото записи базы крупно"><img src={decision.thumb} alt="" /></button>
+      : <span className="ag-thumb" aria-hidden="true" />}
+    <div className="ag-row-body">
+      <div className="ag-row-top">
+        <CodeLine code={decision.code} name={decision.nomenclature?.name} />
+        <span className="ag-pills">{badge}</span>
       </div>
-    })}
-  </div>
+      {decision.finalName && <p className="ag-row-name">{decision.finalName}</p>}
+      <p className="ag-row-meta">{decisionStatusLabels[decision.status]}{decision.verifiedByName && ` · проверил ${decision.verifiedByName}`}{meta && ` · ${meta}`}</p>
+      {note && <p className="ag-row-note">{note}</p>}
+      {!decision.nomenclature && <p className="ag-warn">Кода нет в текущей номенклатуре — проверьте.</p>}
+      <div className="ag-actions">
+        {applied.code === decision.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="ag-apply" onClick={() => onApplyCode(decision.code)} disabled={busy || !decision.nomenclature}>Применить код</button>}
+        {decision.nomenclature?.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
+        <Link href={`${paths.decisions}?id=${decision.id}`}>В базе решений</Link>
+      </div>
+    </div>
+  </article>
 }
 
 // Русская часть до « / » с китайским текстом (у старых подборов агент писал и перевод).
@@ -414,41 +458,52 @@ function NameEditor({ suggested, applied, busy, onApply }: { suggested: string; 
   const value = draft.trim()
   const done = Boolean(applied.name) && applied.nameRu === value
   return <div className="ag-name">
-    <label htmlFor={inputId}><small>Наименование</small></label>
+    <label htmlFor={inputId}>Наименование для декларации</label>
     <textarea id={inputId} value={draft} onChange={(event) => setDraft(event.target.value)} rows={2} maxLength={200} disabled={busy} />
     {done && <p className="ag-name-final">{applied.name}</p>}
-    <div className="ag-name-actions">
+    <div className="ag-actions">
       {done
         ? <span className="ag-done">✓ применено с переводом на китайский</span>
-        : <button type="button" className="ag-secondary" onClick={() => onApply(value)} disabled={busy || !value}>{busy ? 'Перевожу…' : 'Применить наименование'}</button>}
+        : <button type="button" className="ag-apply ghost" onClick={() => onApply(value)} disabled={busy || !value}>{busy ? 'Перевожу…' : 'Применить наименование'}</button>}
       {!done && <span className="ag-muted">перевод на китайский добавится при применении</span>}
     </div>
   </div>
 }
 
+function CandidateCard({ candidate, applied, busy, onApplyCode }: { candidate: AgentCandidate; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void }) {
+  return <article className={`ag-cand ${candidate.verdict}`}>
+    <div className="ag-row-top">
+      <CodeLine code={candidate.code} name={candidate.nomenclature?.name} />
+      <i className={`ag-pill ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i>
+    </div>
+    {candidate.nomenclature && <p className="ag-rates">Пошлина {candidate.nomenclature.tariffText || 'не указана'} · НДС {candidate.nomenclature.vatPercent || '16'}%</p>}
+    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'со страницы кода (TWS.BY)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
+    {candidate.reason && <p className="ag-reason">{candidate.reason}</p>}
+    {candidate.check && <p className="ag-check"><b>Уточнить:</b> {candidate.check}</p>}
+    <div className="ag-actions">
+      {candidate.verdict !== 'no' && (applied.code === candidate.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="ag-apply" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>Применить код</button>)}
+      {candidate.nomenclature?.detailsUrl && <a href={candidate.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
+    </div>
+  </article>
+}
+
+// Итог: подходящие коды — сразу, неподходящие — свёрнуты; наименование и замечания.
 function ResultCard({ result, applied, busy, onApplyCode, onApplyName }: { result: AgentResult; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void; onApplyName: (name: string) => void }) {
-  return <div className="ag-result">
-    <h3>Итог подбора</h3>
+  const main = result.candidates.filter((candidate) => candidate.verdict !== 'no')
+  const rejected = result.candidates.filter((candidate) => candidate.verdict === 'no')
+  return <section className="ag-card ag-result">
+    <header className="ag-card-head"><h3>Итог подбора</h3></header>
     {result.description && <p className="ag-desc">{result.description}</p>}
-    {result.candidates.map((candidate) => <div key={candidate.code} className={`ag-cand ${candidate.verdict}`}>
-      <div className="ag-cand-top">
-        <CodeLine code={candidate.code} name={candidate.nomenclature?.name} />
-        <i className={`ag-verdict ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i>
-      </div>
-      {candidate.nomenclature && <p className="ag-rates">Пошлина ЕТТ {candidate.nomenclature.tariffText || 'не указана'} · НДС {candidate.nomenclature.vatPercent || '16'}%</p>}
-      {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'со страницы кода (TWS.BY)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
-      {candidate.reason && <p className="ag-reason">{candidate.reason}</p>}
-      {candidate.check && <p className="ag-check"><b>Уточнить:</b> {candidate.check}</p>}
-      <div className="ag-cand-actions">
-        {candidate.verdict !== 'no' && (applied.code === candidate.code ? <span className="ag-done">✓ применён</span> : <button type="button" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>Применить код</button>)}
-        {candidate.nomenclature?.detailsUrl && <a href={candidate.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
-      </div>
-    </div>)}
+    {main.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} />)}
+    {rejected.length > 0 && <details className="ag-more">
+      <summary>Не подходят: {rejected.map((candidate) => formatCode(candidate.code)).join(', ')}</summary>
+      {rejected.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} />)}
+    </details>}
     {result.name && <NameEditor suggested={result.name} applied={applied} busy={busy} onApply={onApplyName} />}
-    {result.notes && <p className="ag-check">{result.notes}</p>}
+    {result.notes && <p className="ag-note">{result.notes}</p>}
     {(result.droppedCodes.length > 0 || result.quotesRemoved > 0) && <p className="ag-notice">
       {result.droppedCodes.length > 0 && <>Программа убрала коды, которых нет в номенклатуре: {result.droppedCodes.map(formatCode).join(', ')}. </>}
       {result.quotesRemoved > 0 && <>Цитат, не найденных в источниках, убрано: {result.quotesRemoved}.</>}
     </p>}
-  </div>
+  </section>
 }

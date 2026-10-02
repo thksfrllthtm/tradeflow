@@ -127,14 +127,21 @@ func (r *Repository) AgentMessagesAfter(ctx context.Context, sessionID, afterID 
 	return rows, err
 }
 
-// CountAgentRunsSince — запуски агента сотрудником (первый подбор, ответ, «подобрать заново»).
+// CountAgentRunsSince — запуски агента сотрудником: старт после поиска в базе (или сразу —
+// input с ai), ответ, «подобрать заново». Один поиск в базе без агента не считается.
 func (r *Repository) CountAgentRunsSince(ctx context.Context, userID int64, since time.Time) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Table("tnved_agent_messages AS m").
 		Joins("JOIN tnved_agent_sessions s ON s.id = m.session_id").
-		Where("s.user_id = ? AND m.created_at >= ? AND m.kind IN ('input', 'user', 'rerun')", userID, since).
+		Where("s.user_id = ? AND m.created_at >= ? AND (m.kind IN ('start', 'user', 'rerun') OR (m.kind = 'input' AND m.content->>'ai' = 'true'))", userID, since).
 		Count(&count).Error
 	return count, err
+}
+
+// ReadyInterruptedSearches — поиск в базе, прерванный перезапуском сервера: агента можно запустить.
+func (r *Repository) ReadyInterruptedSearches(ctx context.Context) error {
+	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("status = 'searching'").
+		Updates(map[string]any{"status": "ready", "updated_at": time.Now().UTC()}).Error
 }
 
 // FailRunningAgentSessions — после перезапуска сервера незаконченные подборы помечаются ошибкой.

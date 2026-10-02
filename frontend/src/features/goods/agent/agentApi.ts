@@ -6,7 +6,8 @@ import { CodeDecision } from '@/shared/tnved/decisions'
 // новые сообщения чата опросом.
 
 export type AgentStatus = { configured: boolean; model: string; vision: boolean; dailyLimit: number; usedToday: number }
-export type AgentSessionStatus = 'running' | 'waiting' | 'done' | 'error' | 'cancelled'
+// searching — поиск в базе решений, ready — поиск закончен, агента запускает сотрудник.
+export type AgentSessionStatus = 'searching' | 'ready' | 'running' | 'waiting' | 'done' | 'error' | 'cancelled'
 
 export type AgentItem = {
   name: string
@@ -53,7 +54,7 @@ export type AgentMessage =
   | { id: number; kind: 'match'; content: { matches: SameProductMatch[]; skipped: boolean }; createdAt: string }
   | { id: number; kind: 'similar'; content: { matches: SimilarMatch[]; description: string }; createdAt: string }
   | { id: number; kind: 'error'; content: { message: string }; createdAt: string }
-  | { id: number; kind: 'rerun'; content: Record<string, never>; createdAt: string }
+  | { id: number; kind: 'rerun' | 'start'; content: Record<string, never>; createdAt: string }
 
 export type AgentSession = {
   id: number
@@ -80,7 +81,9 @@ export const agentApi = {
   status: () => request<AgentStatus>('/api/tnved-agent/status'),
   usage: () => request<{ sessions: number; runs: number; promptTokens: number; cachedTokens: number; completionTokens: number; costUsd: string }>('/api/tnved-agent/usage'),
   rows: (estimateId: number) => request<{ items: AgentRowStatus[] }>(`/api/tnved-agent/sessions?estimateId=${estimateId}`),
-  start: (input: { estimateId: number; itemId: string; item: AgentItem; photos: string[] }) => request<AgentSession>('/api/tnved-agent/sessions', { method: 'POST', body: JSON.stringify(input) }),
+  // auto — сразу запустить агента после поиска в базе (подбор для всех строк).
+  start: (input: { estimateId: number; itemId: string; item: AgentItem; photos: string[]; auto?: boolean }) => request<AgentSession>('/api/tnved-agent/sessions', { method: 'POST', body: JSON.stringify(input) }),
+  begin: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/begin`, { method: 'POST' }),
   get: (id: number, after = 0) => request<AgentSession>(`/api/tnved-agent/sessions/${id}?after=${after}`),
   message: (id: number, text: string) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
   rerun: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/rerun`, { method: 'POST' }),

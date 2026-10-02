@@ -65,6 +65,9 @@ type AgentStartInput struct {
 	ItemID     string         `json:"itemId"`
 	Item       AgentItemInput `json:"item"`
 	Photos     []string       `json:"photos"`
+	// Auto — запустить агента сразу после поиска в базе («Подобрать коды ИИ» для всех строк).
+	// Без него подбор останавливается на «ready», и агента запускает сотрудник.
+	Auto bool `json:"auto"`
 }
 
 type AgentMessageView struct {
@@ -136,6 +139,9 @@ func NewTNVEDAgentService(r *repository.Repository, model *AgentModelClient, dec
 // RecoverInterrupted — подборы, прерванные перезапуском сервера, помечаются ошибкой.
 func (s *TNVEDAgentService) RecoverInterrupted(ctx context.Context) error {
 	const message = "Подбор прерван перезапуском сервера. Нажмите «Подобрать заново»."
+	if err := s.repository.ReadyInterruptedSearches(ctx); err != nil {
+		return err
+	}
 	ids, err := s.repository.FailRunningAgentSessions(ctx, message)
 	for _, id := range ids {
 		s.emit(ctx, id, "error", map[string]string{"message": message})
@@ -226,7 +232,7 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 		return AgentSessionView{}, err
 	}
 	_, verifiedMatch := decisions.AgreedVerifiedCode(matches)
-	if !verifiedMatch {
+	if !verifiedMatch && input.Auto {
 		if err := s.checkLimit(ctx, user.ID); err != nil {
 			return AgentSessionView{}, err
 		}
@@ -238,7 +244,7 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 	photosJSON, _ := json.Marshal(photos)
 	estimateID := input.EstimateID
 	now := time.Now().UTC()
-	status := "running"
+	status := "searching"
 	if verifiedMatch {
 		status = "done"
 	}
@@ -250,7 +256,7 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 	if err != nil {
 		return AgentSessionView{}, err
 	}
-	s.emit(ctx, session.ID, "input", map[string]any{"item": item, "photos": len(photos), "ai": !verifiedMatch})
+	s.emit(ctx, session.ID, "input", map[string]any{"item": item, "photos": len(photos), "ai": !verifiedMatch && input.Auto})
 	if len(matches) > 0 {
 		s.emit(ctx, session.ID, "match", map[string]any{"matches": matches, "skipped": verifiedMatch})
 	}
@@ -260,9 +266,72 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 		if err := s.repository.UpdateAgentSession(ctx, session.ID, map[string]any{"transcript": repository.JSON(data)}); err != nil {
 			return AgentSessionView{}, err
 		}
-		s.launch(session.ID)
+		s.launchSearch(session.ID, input.Auto)
 	}
 	return s.Get(ctx, user, session.ID, 0)
+}
+
+// launchSearch — поиск похожих по фото товаров в базе решений (в чат и подсказкой модели). Потом
+// подбор ждёт сотрудника (ready) или, если просили сразу, запускает агента.
+func (s *TNVEDAgentService) launchSearch(sessionID int64, auto bool) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*photoCallTimeout)
+		defer cancel()
+		store := context.Background()
+		session, err := s.repository.AgentSessionByID(store, sessionID)
+		if err != nil {
+			return
+		}
+		hint, step := s.similarByPhoto(ctx, store, session)
+		changes := map[string]any{}
+		if step.PromptTokens > 0 || step.CompletionTokens > 0 {
+			changes["prompt_tokens"] = session.PromptTokens + step.PromptTokens
+			changes["cached_tokens"] = session.CachedTokens + step.CachedTokens
+			changes["completion_tokens"] = session.CompletionTokens + step.CompletionTokens
+			changes["cost_usd"] = session.CostUSD.Add(decimal.NewFromFloat(s.model.Cost(step))).Round(6)
+		}
+		if hint != "" {
+			var transcript []map[string]any
+			_ = json.Unmarshal(session.Transcript, &transcript)
+			transcript = append(transcript, map[string]any{"role": "user", "content": hint})
+			data, _ := json.Marshal(transcript)
+			changes["transcript"] = repository.JSON(data)
+		}
+		if len(changes) > 0 {
+			_ = s.repository.UpdateAgentSession(store, sessionID, changes)
+		}
+		next := "ready"
+		if auto {
+			next = "running"
+		}
+		if ok, err := s.repository.SetAgentSessionStatusIf(store, sessionID, []string{"searching"}, next); err == nil && ok && auto {
+			s.launch(sessionID)
+		}
+	}()
+}
+
+// Begin — сотрудник посмотрел, что нашлось в базе, и запускает агента.
+func (s *TNVEDAgentService) Begin(ctx context.Context, user repository.User, id int64) (AgentSessionView, error) {
+	session, err := s.ownedSession(ctx, user, id)
+	if err != nil {
+		return AgentSessionView{}, err
+	}
+	if session.Status != "ready" {
+		return AgentSessionView{}, ErrAgentBusy
+	}
+	if err := s.checkLimit(ctx, user.ID); err != nil {
+		return AgentSessionView{}, err
+	}
+	ok, err := s.repository.SetAgentSessionStatusIf(ctx, id, []string{"ready"}, "running")
+	if err != nil {
+		return AgentSessionView{}, err
+	}
+	if !ok {
+		return AgentSessionView{}, ErrAgentBusy
+	}
+	s.emit(ctx, id, "start", map[string]any{})
+	s.launch(id)
+	return s.Get(ctx, user, id, 0)
 }
 
 // perUnitText — вес или цена одной единицы для подсказки модели.
@@ -315,6 +384,7 @@ func initialAgentMessage(item AgentItemInput, photoCount int, matches []decision
 	if photoCount == 0 {
 		text += "\n\nФото нет — опирайся на наименования и цифры."
 	}
+	text += "\n\nВсе пояснения между шагами и итог пиши только по-русски, коротко."
 	content := []map[string]any{{"type": "text", "text": text}}
 	for index := 0; index < photoCount; index++ {
 		content = append(content, map[string]any{"type": "image_ref", "index": index})
@@ -367,21 +437,6 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	usage := agentUsage{PromptTokens: session.PromptTokens, CachedTokens: session.CachedTokens, CompletionTokens: session.CompletionTokens}
 	cost, _ := session.CostUSD.Float64()
 	steps := session.Steps
-	// Первый запуск: сначала похожие по фото товары из базы решений — в чат сразу и модели подсказкой.
-	if session.Runs == 0 {
-		hint, step := s.similarByPhoto(ctx, store, session)
-		usage.PromptTokens += step.PromptTokens
-		usage.CachedTokens += step.CachedTokens
-		usage.CompletionTokens += step.CompletionTokens
-		cost += s.model.Cost(step)
-		if hint != "" {
-			transcript = append(transcript, map[string]any{"role": "user", "content": hint})
-		}
-		_ = s.repository.UpdateAgentSession(store, sessionID, map[string]any{
-			"prompt_tokens": usage.PromptTokens, "cached_tokens": usage.CachedTokens, "completion_tokens": usage.CompletionTokens,
-			"cost_usd": decimal.NewFromFloat(cost).Round(6),
-		})
-	}
 	runner := &agentRunner{
 		model:      s.model,
 		toolbox:    newAgentToolbox(s.data),
@@ -574,7 +629,7 @@ func (s *TNVEDAgentService) resume(ctx context.Context, user repository.User, id
 	if err != nil {
 		return AgentSessionView{}, err
 	}
-	if session.Status == "running" {
+	if session.Status == "running" || session.Status == "searching" {
 		return AgentSessionView{}, ErrAgentBusy
 	}
 	if err := s.checkLimit(ctx, user.ID); err != nil {
@@ -602,7 +657,7 @@ func (s *TNVEDAgentService) resume(ctx context.Context, user repository.User, id
 	} else {
 		transcript = append(transcript, map[string]any{"role": "user", "content": prompt})
 	}
-	ok, err := s.repository.SetAgentSessionStatusIf(ctx, id, []string{"waiting", "done", "error", "cancelled"}, "running")
+	ok, err := s.repository.SetAgentSessionStatusIf(ctx, id, []string{"ready", "waiting", "done", "error", "cancelled"}, "running")
 	if err != nil {
 		return AgentSessionView{}, err
 	}

@@ -64,7 +64,7 @@ export function ReviewStep({ params, items, result, selectedForDirectory, params
   const onUpload = useStableCallback(addManualPhoto)
   const onResetNet = useStableCallback(resetAutomaticNet)
   const onAgent = useStableCallback(openAgent)
-  const agentPending = items.filter((item) => item.id && !item.excluded && !item.code && !agentStatuses[item.id]).length
+  const agentPending = items.filter((item) => item.id && !item.excluded && !item.code && (!agentStatuses[item.id] || agentStatuses[item.id].status === 'ready')).length
   const ownPackageCount = items.filter((item) => item.packageWeightKg !== params.packageWeightKg).length
   const withoutCodeCount = items.filter((item) => !item.excluded && !item.code).length
   const errorCount = items.filter((item, index) => reviewStatus(item, result?.items[index]).tone === 'bad').length

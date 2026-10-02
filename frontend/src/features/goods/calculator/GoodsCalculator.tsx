@@ -332,14 +332,17 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   // Подбор ИИ для всех включённых строк без кода, где подбора ещё не было: запуски идут на
   // сервере в фоне, значки в таблице обновляются сами.
   async function startAgentBatch() {
-    const rows = items.filter((item) => item.id && !item.excluded && !item.code && !agentRows.statuses[item.id])
+    // Строки, где уже был поиск в базе, но агента не запускали, тоже входят: агент запускается сразу.
+    const rows = items.filter((item) => item.id && !item.excluded && !item.code && (!agentRows.statuses[item.id] || agentRows.statuses[item.id].status === 'ready'))
     if (rows.length === 0) return
     if (!window.confirm(`Подобрать коды ИИ для ${rows.length} строк без кода? Подбор идёт на сервере, результат — в чате каждой строки (кнопка «ИИ»).`)) return
     setAgentBatch({ done: 0, total: rows.length })
     setError('')
     try {
       for (const [index, item] of rows.entries()) {
-        await agentApi.start({ estimateId, itemId: item.id ?? '', item: agentItemFrom(item), photos: await agentPhotosFrom(item) })
+        const ready = agentRows.statuses[item.id ?? '']
+        if (ready?.status === 'ready') await agentApi.begin(ready.sessionId)
+        else await agentApi.start({ estimateId, itemId: item.id ?? '', item: agentItemFrom(item), photos: await agentPhotosFrom(item), auto: true })
         setAgentBatch({ done: index + 1, total: rows.length })
         agentRows.refresh()
       }

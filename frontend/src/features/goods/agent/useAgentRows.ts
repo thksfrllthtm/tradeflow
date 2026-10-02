@@ -31,7 +31,7 @@ export function useAgentRows(estimateId: number, enabled: boolean) {
     return () => { active = false }
   }, [estimateId, enabled, tick])
 
-  const anyRunning = Object.values(statuses).some((row) => row.status === 'running')
+  const anyRunning = Object.values(statuses).some((row) => row.status === 'running' || row.status === 'searching')
   useEffect(() => {
     if (!enabled || !anyRunning) return
     const timer = window.setInterval(refresh, pollInterval)

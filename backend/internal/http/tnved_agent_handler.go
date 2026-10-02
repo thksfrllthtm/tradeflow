@@ -190,3 +190,17 @@ func (s *Server) applyAgentName(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"name": name})
 }
+
+// beginAgentSession — запуск агента после поиска в базе решений.
+func (s *Server) beginAgentSession(c *gin.Context) {
+	id, ok := sessionID(c)
+	if !ok {
+		return
+	}
+	view, err := s.agent.Begin(c.Request.Context(), currentUser(c), id)
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, view)
+}
