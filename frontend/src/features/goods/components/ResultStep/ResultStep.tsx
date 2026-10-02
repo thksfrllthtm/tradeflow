@@ -4,6 +4,7 @@ import { weightText } from '@/shared/lib/rounding'
 import { BudgetControls, BudgetNote, BudgetStatus } from '../BudgetTool/BudgetTool'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
 import { CalculationErrors } from './CalculationErrors'
+import { AntiDumpingChooser, AntiDumpingInfo } from './AntiDumpingChooser'
 import { ResultSummary } from './ResultSummary'
 import { display, displayNumber, hasAntiDumping, itemDisplayName, parseCalculatorNumber, rowTotals } from './resultValues'
 import '../../goods.css'
@@ -18,6 +19,8 @@ type Props = {
   onBackToReview: () => void
   onPriceChange: (index: number, value: string) => void
   onPriceBlur: (index: number, value: string) => void
+  // Вариант антидемпинга строки ('' — как по стране, 'none' — не начислять); строка пересчитывается.
+  onAntiDumpingChoice: (index: number, key: string) => void
   onBulkPriceDecrease: (value: string, indexes?: number[]) => void
   onRestoreInitial: () => void
   onUndoBulkPriceDecrease: () => void
@@ -38,6 +41,7 @@ export function ResultStep({
   onBackToReview,
   onPriceChange,
   onPriceBlur,
+  onAntiDumpingChoice,
   onBulkPriceDecrease,
   onRestoreInitial,
   onUndoBulkPriceDecrease,
@@ -126,8 +130,7 @@ export function ResultStep({
                 const ready = item.status === 'calculated'
                 const currency = item.goodsCostCurrency || item.costCurrency || 'USD'
                 // Антидемпинг из реестра ЕЭК (сервер кладёт его в снимок строки при расчёте).
-                const antiDumpingInfo = item.directorySnapshot?.antiDumping as { status?: string; number?: string; percent?: string; text?: string } | undefined
-                const antiDumpingNote = antiDumpingInfo && (antiDumpingInfo.status === 'possible' || antiDumpingInfo.status === 'origin') ? antiDumpingInfo : undefined
+                const antiDumpingInfo = item.directorySnapshot?.antiDumping as AntiDumpingInfo | undefined
 
                 return (
                   <tr key={`${item.productId}-${index}`} className={[selectedRows.includes(index) ? 'rv-selected' : '', item.excluded ? 'rv-excluded' : ''].filter(Boolean).join(' ') || undefined}>
@@ -163,8 +166,8 @@ export function ResultStep({
                     </td>
                     <td>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</td>
                     <td>{displayNumber(item.customsValueKzt)}</td>
-                    <td>{displayNumber(item.dutyKzt)}{antiDumpingNote && <small className="rs-sub rs-ad-note" title={antiDumpingNote.text}>{antiDumpingNote.status === 'origin' ? 'антидемпинг: укажите страну' : 'антидемпинг: проверить'}</small>}</td>
-                    {antiDumping && <td title={antiDumpingInfo?.text}>{displayNumber(item.antiDumpingKzt)}{antiDumpingInfo?.status === 'applied' && <small className="rs-sub">{antiDumpingInfo.number} · {String(antiDumpingInfo.percent ?? '').replace('.', ',')}%</small>}</td>}
+                    <td>{displayNumber(item.dutyKzt)}{antiDumpingInfo && <AntiDumpingChooser info={antiDumpingInfo} choice={source?.antiDumpingChoice} disabled={loading || item.excluded} onChoose={(key) => onAntiDumpingChoice(index, key)} />}</td>
+                    {antiDumping && <td title={antiDumpingInfo?.text}>{displayNumber(item.antiDumpingKzt)}{(antiDumpingInfo?.status === 'applied' || antiDumpingInfo?.status === 'chosen') && <small className="rs-sub">{antiDumpingInfo.number} · {String(antiDumpingInfo.percent ?? '').replace('.', ',')}%</small>}</td>}
                     <td>{displayNumber(item.vatKzt)}</td>
                     <td>{displayNumber(item.feeKzt)}</td>
                     {delivery && <td>{displayNumber(item.deliveryUsd)}</td>}

@@ -32,7 +32,7 @@ func TestApplyNomenclatureRatesTakesDutyAndVATOnlyFromNomenclature(t *testing.T)
 		"code": "4015190000", "name": "Перчатки нитриловые", "companyCoefficient": "0.65", "antiDumpingPercent": "5", "verificationStatus": "operator_verified",
 		"duty": map[string]any{"type": "percentage", "percent": "8"}, "vat": map[string]any{"type": "percentage", "percent": "12"},
 	}
-	result := ApplyNomenclatureRates(directory, "", testNomenclature())
+	result := ApplyNomenclatureRates(directory, "", testNomenclature(), "")
 	duty, _ := result["duty"].(map[string]any)
 	vat, _ := result["vat"].(map[string]any)
 	if duty["percent"] != "10" || duty["sourceKind"] != "nomenclature" || vat["percent"] != "16" {
@@ -49,21 +49,21 @@ func TestApplyNomenclatureRatesTakesDutyAndVATOnlyFromNomenclature(t *testing.T)
 	}
 
 	// Only a code from Excel: the row gets the nomenclature name and rates.
-	fromExcel := ApplyNomenclatureRates(nil, "4015190000", testNomenclature())
+	fromExcel := ApplyNomenclatureRates(nil, "4015190000", testNomenclature(), "")
 	if fromExcel["name"] != "перчатки, рукавицы и митенки: прочие" || fromExcel["code"] != "4015190000" {
 		t.Fatalf("an Excel code must be taken from the nomenclature: %v", fromExcel)
 	}
-	if ApplyNomenclatureRates(nil, "", testNomenclature()) != nil {
+	if ApplyNomenclatureRates(nil, "", testNomenclature(), "") != nil {
 		t.Fatal("a row without a code keeps no snapshot")
 	}
 }
 
 func TestApplyNomenclatureRatesExplainsMissingCode(t *testing.T) {
-	missing := ApplyNomenclatureRates(nil, "1111111111", testNomenclature())
+	missing := ApplyNomenclatureRates(nil, "1111111111", testNomenclature(), "")
 	if message, _ := missing["rateError"].(string); !strings.Contains(message, "кода 1111111111 нет в номенклатуре") {
 		t.Fatalf("expected a missing-code message, got %q", message)
 	}
-	notLoaded := ApplyNomenclatureRates(nil, "4015190000", NomenclatureRates{})
+	notLoaded := ApplyNomenclatureRates(nil, "4015190000", NomenclatureRates{}, "")
 	if message, _ := notLoaded["rateError"].(string); !strings.Contains(message, "не загружена") {
 		t.Fatalf("expected a not-loaded message, got %q", message)
 	}

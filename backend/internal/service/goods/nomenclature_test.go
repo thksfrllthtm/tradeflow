@@ -12,7 +12,7 @@ import (
 
 func TestCalculationUsesNomenclatureRates(t *testing.T) {
 	row := func(code string) GoodsItemInput {
-		snapshot := calculation.ApplyNomenclatureRates(nil, code, testNomenclature())
+		snapshot := calculation.ApplyNomenclatureRates(nil, code, testNomenclature(), "")
 		return GoodsItemInput{Name: "Перчатки", SupplierName: "Перчатки", Code: code, StandardName: directoryDisplayName(snapshot), DirectorySnapshot: snapshot, Pairs: "100", Places: "1", GrossKg: "10", PricePerPair: "1"}
 	}
 	result, err := NewGoodsService().Calculate(context.Background(), GoodsCalculationInput{

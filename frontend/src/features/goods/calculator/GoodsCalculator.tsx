@@ -420,6 +420,14 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     setStep(2)
   }
 
+  // Вариант антидемпинга строки: сохраняется в строке сметы, расчёт повторяется с ценами текущего результата.
+  function chooseAntiDumping(index: number, key: string) {
+    const choice = key || undefined
+    setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, antiDumpingChoice: choice } : item))
+    const nextItems = items.map((item, itemIndex) => ({ ...item, antiDumpingChoice: itemIndex === index ? choice : item.antiDumpingChoice, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
+    void calculate(nextItems, false)
+  }
+
   function changeResultPrice(index: number, value: string) {
     // Keep the edited value in the source rows as well as in the result. The
     // next row recalculation is built from `items`; without this mirror the
@@ -551,7 +559,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
         startAgentBatch={() => void startAgentBatch()}
       />}
 
-      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoBulkPriceDecrease={() => { budget.reset(); undoLastBulkPriceDecrease() }} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} budget={budget} />}
+      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoBulkPriceDecrease={() => { budget.reset(); undoLastBulkPriceDecrease() }} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <DirectoryPickerModal
         title={pickerTitle}

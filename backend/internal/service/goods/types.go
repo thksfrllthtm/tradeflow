@@ -46,22 +46,24 @@ type GoodsItemInput struct {
 	Name               string `json:"name"`
 	SupplierName       string `json:"supplierName"`
 	// OtherNames — другие колонки наименования из файла («Наименование 2/3»): для подбора кода.
-	OtherNames      []string `json:"otherNames,omitempty"`
-	StandardName    string   `json:"standardName"`
-	Code            string   `json:"code"`
-	PhotoURL        string   `json:"photoUrl"`
-	PhotoURLs       []string `json:"photoUrls,omitempty"`
-	Pairs           string   `json:"pairs"`
-	Places          string   `json:"places"`
-	PairsPerPlace   string   `json:"pairsPerPlace"`
-	GrossKg         string   `json:"grossKg"`
-	GrossWeightUnit string   `json:"grossWeightUnit,omitempty"`
-	NetKg           string   `json:"netKg"`
-	NetWeightUnit   string   `json:"netWeightUnit,omitempty"`
-	NetSource       string   `json:"netSource"`
-	PackageWeightKg string   `json:"packageWeightKg"`
-	Coefficient     string   `json:"coefficient"`
-	PricePerPair    string   `json:"pricePerPair"`
+	OtherNames []string `json:"otherNames,omitempty"`
+	// AntiDumpingChoice — вариант антидемпинга, выбранный сотрудником ("none" — не начислять).
+	AntiDumpingChoice string   `json:"antiDumpingChoice,omitempty"`
+	StandardName      string   `json:"standardName"`
+	Code              string   `json:"code"`
+	PhotoURL          string   `json:"photoUrl"`
+	PhotoURLs         []string `json:"photoUrls,omitempty"`
+	Pairs             string   `json:"pairs"`
+	Places            string   `json:"places"`
+	PairsPerPlace     string   `json:"pairsPerPlace"`
+	GrossKg           string   `json:"grossKg"`
+	GrossWeightUnit   string   `json:"grossWeightUnit,omitempty"`
+	NetKg             string   `json:"netKg"`
+	NetWeightUnit     string   `json:"netWeightUnit,omitempty"`
+	NetSource         string   `json:"netSource"`
+	PackageWeightKg   string   `json:"packageWeightKg"`
+	Coefficient       string   `json:"coefficient"`
+	PricePerPair      string   `json:"pricePerPair"`
 	// SourcePricePerPair is the price from the imported Excel file. It is only
 	// kept in drafts so the browser can restore PricePerPair from it; the
 	// calculation itself uses PricePerPair.

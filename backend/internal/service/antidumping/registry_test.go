@@ -59,27 +59,27 @@ func TestResolveByCodeAndOrigin(t *testing.T) {
 	for _, measure := range seedMeasures(t) {
 		all = append(all, measure)
 	}
-	applied := Resolve(all, "8511100001", "Китай")
+	applied := Resolve(all, "8511100001", "Китай", "")
 	if applied.Percent != "17.23" || applied.Warning != "" || applied.Info["status"] != "applied" {
 		t.Fatalf("свечи из Китая: %+v", applied)
 	}
-	if noOrigin := Resolve(all, "8511100001", ""); noOrigin.Percent != "" || !strings.Contains(noOrigin.Warning, "укажите страну") {
+	if noOrigin := Resolve(all, "8511100001", "", ""); noOrigin.Percent != "" || !strings.Contains(noOrigin.Warning, "укажите страну") {
 		t.Fatalf("без страны — не начислять и попросить страну: %+v", noOrigin)
 	}
-	if other := Resolve(all, "8511100001", "Германия"); other.Percent != "" || other.Warning != "" || other.Info["status"] != "other-country" {
+	if other := Resolve(all, "8511100001", "Германия", ""); other.Percent != "" || other.Warning != "" || other.Info["status"] != "other-country" {
 		t.Fatalf("свечи не из Китая: %+v", other)
 	}
-	if wheels := Resolve(all, "8708701009", "Таиланд"); wheels.Percent != "" && wheels.Percent != "42.82" {
+	if wheels := Resolve(all, "8708701009", "Таиланд", ""); wheels.Percent != "" && wheels.Percent != "42.82" {
 		t.Fatalf("диски из Таиланда: %+v", wheels)
 	}
-	if titanium := Resolve(all, "3206111000", "КНР"); titanium.Percent != "" {
+	if titanium := Resolve(all, "3206111000", "КНР", ""); titanium.Percent != "" {
 		t.Fatalf("диоксид титана временно не облагается: %+v", titanium)
 	}
-	if gloves := Resolve(all, "6116108000", "Китай"); gloves.Percent != "" || gloves.Info != nil {
+	if gloves := Resolve(all, "6116108000", "Китай", ""); gloves.Percent != "" || gloves.Info != nil {
 		t.Fatalf("на перчатки мер нет: %+v", gloves)
 	}
 	// Металлопрокат с полимерным покрытием указан позициями 7210, 7212, 7225 — только подсказка.
-	if coated := Resolve(all, "7210708000", "Китай"); coated.Percent != "" || coated.Info["status"] != "possible" {
+	if coated := Resolve(all, "7210708000", "Китай", ""); coated.Percent != "" || coated.Info["status"] != "possible" {
 		t.Fatalf("позиция без точного кода — только проверить: %+v", coated)
 	}
 }

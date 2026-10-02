@@ -15,7 +15,7 @@ func TestAntiDumpingFromRegistryIsChargedAndInVATBase(t *testing.T) {
 	item := func(origin string) CalculationItem {
 		rates.Origin = origin
 		input := CalculationItemInput{Code: "4015190000", StandardName: "Перчатки", Pairs: "10", PricePerPair: "2", CostCurrency: "USD", GrossKG: "5", GrossWeightUnit: "kg", PackageWeightKG: "0"}
-		input.DirectorySnapshot = ApplyNomenclatureRates(nil, input.Code, rates)
+		input.DirectorySnapshot = ApplyNomenclatureRates(nil, input.Code, rates, "")
 		out := CalculateItem(input, decimal.RequireFromString("500"), decimal.Zero, decimal.Zero)
 		CalculateTariff(&out, nil, ParseItemStringDecimal(out.Pairs), nil, decimal.RequireFromString("500"), decimal.Zero, &out.Warnings)
 		return out

@@ -7,6 +7,7 @@ package antidumping
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -93,12 +94,52 @@ type Resolution struct {
 	Warning string
 }
 
-// Resolve — антидемпинг для кода строки и страны происхождения сметы.
-func Resolve(measures []Measure, code, origin string) Resolution {
+// Resolve — антидемпинг для кода строки, страны происхождения сметы и выбора сотрудника (choice —
+// ключ варианта ставки, ChoiceNone — не начислять, "" — программа решает по стране). Варианты
+// всех подходящих мер кладутся в Info["options"], чтобы сотрудник мог выбрать сам.
+func Resolve(measures []Measure, code, origin, choice string) Resolution {
 	matches := MatchCode(measures, code)
 	if len(matches) == 0 {
 		return Resolution{}
 	}
+	options := []Option{}
+	for _, match := range matches {
+		options = append(options, Options(match.Measure)...)
+	}
+	resolution := resolveAuto(matches, origin)
+	if resolution.Info == nil {
+		resolution.Info = map[string]any{}
+	}
+	resolution.Info["options"] = options
+	switch choice {
+	case "":
+		return resolution
+	case ChoiceNone:
+		resolution.Info["status"], resolution.Info["selected"] = "declined", ChoiceNone
+		resolution.Info["text"] = "Антидемпинг не начисляется: так выбрал сотрудник (товар не подпадает под меру)."
+		return Resolution{Info: resolution.Info}
+	}
+	for _, option := range options {
+		if option.Key != choice {
+			continue
+		}
+		resolution.Info["status"], resolution.Info["selected"], resolution.Info["percent"] = "chosen", option.Key, option.Percent
+		resolution.Info["number"], resolution.Info["shortName"], resolution.Info["country"] = option.Measure, option.ShortName, option.Country
+		resolution.Info["text"] = fmt.Sprintf("Антидемпинг %s «%s»: %s — %s, %s (выбрано вручную).", option.Measure, option.ShortName, option.CountryName, option.Label, percentLabel(option.Percent))
+		return Resolution{Percent: option.Percent, Info: resolution.Info}
+	}
+	// Выбор относится к мере, под которую код больше не попадает (код строки сменили), — не учитывается.
+	chosenMeasure, _, _ := strings.Cut(choice, "|")
+	if !slices.ContainsFunc(matches, func(match Match) bool { return match.Measure.Number == chosenMeasure }) {
+		return resolution
+	}
+	// Вариант пропал после обновления реестра — ставку надо выбрать заново.
+	resolution.Info["status"] = "stale"
+	return Resolution{Info: resolution.Info, Warning: "Антидемпинг: выбранный вариант ставки больше не действует (реестр ЕЭК обновлён) — выберите вариант заново"}
+}
+
+// resolveAuto — без выбора сотрудника: точный код меры и страна происхождения из её списка.
+func resolveAuto(matches []Match, origin string) Resolution {
 	country := OriginCountry(origin)
 	var exact *Match
 	possible := []string{}
@@ -113,7 +154,7 @@ func Resolve(measures []Measure, code, origin string) Resolution {
 	if exact == nil {
 		return Resolution{Info: map[string]any{
 			"status": "possible", "possible": possible,
-			"text": "Код входит в товарную позицию, на часть товаров которой есть антидемпинговая мера: " + strings.Join(possible, "; ") + ". Сверьте описание товара с решением ЕЭК.",
+			"text": "Код входит в товарную позицию, на часть товаров которой есть антидемпинговая мера: " + strings.Join(possible, "; ") + ". Сверьте описание товара с решением ЕЭК и выберите вариант, если мера применяется.",
 		}}
 	}
 	measure := exact.Measure
@@ -136,15 +177,16 @@ func Resolve(measures []Measure, code, origin string) Resolution {
 		info["status"], info["text"] = "suspended", "Антидемпинговая мера "+label+" временно не применяется."
 		return Resolution{Info: info}
 	case country == "":
-		info["status"], info["text"] = "origin", "На код действует антидемпинговая мера "+label+"."
-		return Resolution{Info: info, Warning: "Антидемпинг: на код действует мера " + label + " — укажите страну происхождения в параметрах расчёта"}
+		info["status"], info["text"] = "origin", "На код действует антидемпинговая мера "+label+". Выберите вариант ставки или укажите страну происхождения."
+		return Resolution{Info: info, Warning: "Антидемпинг: на код действует мера " + label + " — выберите вариант ставки или укажите страну происхождения в параметрах расчёта"}
 	case measure.Rates[country] == "":
 		info["status"], info["text"] = "other-country", fmt.Sprintf("Мера %s действует только для: %s; для товара из страны «%s» не применяется.", label, countryList(measure.Countries), firstNonEmpty(CountryNames[country], strings.TrimSpace(origin)))
 		return Resolution{Info: info}
 	}
 	percent := measure.Rates[country]
 	info["status"], info["percent"], info["country"] = "applied", percent, country
-	info["text"] = fmt.Sprintf("Антидемпинг %s «%s»: %s для прочих производителей (%s). Если производитель назван в решении ЕЭК, ставка может быть ниже.",
+	info["selected"] = autoOptionKey(Options(measure), country, percent)
+	info["text"] = fmt.Sprintf("Антидемпинг %s «%s»: %s для прочих производителей (%s). Если производитель назван в решении ЕЭК, выберите его ставку.",
 		measure.Number, measure.ShortName, percentLabel(percent), firstNonEmpty(CountryNames[country], country))
 	resolution := Resolution{Percent: percent, Info: info}
 	if measure.NeedsCheck != "" {

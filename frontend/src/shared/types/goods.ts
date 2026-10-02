@@ -20,6 +20,8 @@ export type GoodsItemInput = {
   name: string; supplierName: string; standardName: string; photoUrl: string; photoUrls?: string[]; code: string
   // Другие колонки наименования из файла («Наименование 2/3»).
   otherNames?: string[]
+  // Вариант антидемпинга, выбранный сотрудником на этапе результата ('none' — не начислять).
+  antiDumpingChoice?: string
   pairs: string; places: string; pairsPerPlace: string; grossKg: string; grossWeightUnit?: string; netKg: string; netWeightUnit?: string; netSource: string; packageWeightKg: string; coefficient: string
   pricePerPair: string; sourcePricePerPair?: string; costInput: string; costCurrency: string; extraExpenses: string; customsValueDirectKzt: string
   deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean; exclusionReason: string

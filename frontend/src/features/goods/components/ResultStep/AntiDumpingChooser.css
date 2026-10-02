@@ -1,0 +1,24 @@
+/* Выбор антидемпинга строки: кнопка под пошлиной и список вариантов по мерам реестра ЕЭК. */
+.goods-page .rs-table button.ad-choose { display: block; height: auto; margin: 2px 0 0 auto; padding: 1px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; font-size: .68rem; font-weight: 650; line-height: 1.3; white-space: nowrap; cursor: pointer; }
+.goods-page .rs-table button.ad-choose.ask { border-color: #ecd59a; background: #fff8e3; color: #7a5810; }
+.goods-page .rs-table button.ad-choose.on { border-color: #efc7c1; background: #fdecec; color: #8a2626; }
+.goods-page .rs-table button.ad-choose.off { color: #8a968f; }
+.goods-page .rs-table button.ad-choose:hover:not(:disabled) { border-color: currentColor; }
+
+.ad-menu { position: fixed; z-index: 70; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; box-sizing: border-box; max-height: min(460px, 70vh); white-space: normal; padding: 10px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(20, 45, 30, .18); text-align: left; }
+.ad-menu-text { margin: 0; color: #56665c; font-size: .74rem; line-height: 1.4; }
+.ad-menu-search { box-sizing: border-box; width: 100%; height: 30px; margin: 0; padding: 0 10px; border: 1px solid #d3ddd6; border-radius: 7px; font-size: .78rem; }
+.ad-menu-search:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.ad-menu-list { min-width: 0; min-height: 0; overflow-y: auto; }
+.ad-menu-list section + section { margin-top: 8px; }
+.ad-menu-list h4 { margin: 0 0 3px; padding: 0 6px; color: #8a968f; font-size: .68rem; font-weight: 750; letter-spacing: .03em; text-transform: uppercase; }
+.ad-menu button { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; height: auto; margin: 0; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: #1f2d24; font-size: .78rem; font-weight: 500; text-align: left; cursor: pointer; }
+.ad-menu button:hover { background: #f1f6f2; }
+.ad-menu button.active { background: #e3f1e8; color: #1a4d33; font-weight: 650; }
+.ad-menu button span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-menu button em { margin-right: 6px; color: #56665c; font-style: normal; font-weight: 650; }
+.ad-menu button b { flex: 0 0 auto; color: #8a2626; font-variant-numeric: tabular-nums; }
+.ad-menu-empty { margin: 4px 6px; color: #8a968f; font-size: .76rem; }
+.ad-menu footer { display: flex; gap: 6px; padding-top: 8px; border-top: 1px solid #edf1ee; }
+.ad-menu footer button { justify-content: center; width: auto; padding: 5px 10px; border: 1px solid #dfe7e1; color: #34443b; font-weight: 600; }
+.ad-menu footer button.active { border-color: #24704a; }

@@ -135,7 +135,7 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		}
 		rates.Origin = input.Origin
 		for index, inItem := range input.Items {
-			snapshots[index] = calculation.ApplyNomenclatureRates(snapshots[index], inItem.Code, rates)
+			snapshots[index] = calculation.ApplyNomenclatureRates(snapshots[index], inItem.Code, rates, inItem.AntiDumpingChoice)
 		}
 	}
 

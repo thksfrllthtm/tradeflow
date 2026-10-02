@@ -70,7 +70,8 @@ func nomenclatureName(name string) string {
 // отбрасываются. Кода нет в
 // номенклатуре (или она не загружена) — ставки неизвестны, а rateError объясняет почему.
 // Строка без кода и без карточки остаётся без снимка.
-func ApplyNomenclatureRates(snapshot map[string]any, cell string, rates NomenclatureRates) map[string]any {
+// choice — вариант антидемпинга, выбранный сотрудником для строки (antidumping.Resolve).
+func ApplyNomenclatureRates(snapshot map[string]any, cell string, rates NomenclatureRates, choice string) map[string]any {
 	code := RowTNVEDCode(snapshot, cell)
 	if code == "" {
 		return snapshot
@@ -108,7 +109,7 @@ func ApplyNomenclatureRates(snapshot map[string]any, cell string, rates Nomencla
 	}
 	result["vat"] = map[string]any{"type": "percentage", "percent": row.VATPercent.String(), "source": source, "sourceKind": "nomenclature"}
 	// Антидемпинг — по реестру ЕЭК: точный код меры и страна происхождения из её списка.
-	resolution := antidumping.Resolve(rates.AntiDumping, code, rates.Origin)
+	resolution := antidumping.Resolve(rates.AntiDumping, code, rates.Origin, choice)
 	if resolution.Percent != "" {
 		result["antiDumpingPercent"] = resolution.Percent
 	}

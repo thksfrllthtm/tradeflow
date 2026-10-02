@@ -10,7 +10,7 @@ import (
 // стоимость — гр.45 (от уже округлённой цены), пошлина и НДС — гр.47.
 func TestCalculateItemRoundsByDeclarationColumns(t *testing.T) {
 	item := CalculationItemInput{
-		Code: "4015190000", StandardName: "Перчатки", DirectorySnapshot: ApplyNomenclatureRates(nil, "4015190000", testNomenclature()),
+		Code: "4015190000", StandardName: "Перчатки", DirectorySnapshot: ApplyNomenclatureRates(nil, "4015190000", testNomenclature(), ""),
 		Pairs: "3", PricePerPair: "0.335", CostCurrency: "USD",
 		GrossKG: "12.34567", GrossWeightUnit: "kg", NetKG: "0.4567", NetWeightUnit: "g", PackageWeightKG: "0",
 	}
