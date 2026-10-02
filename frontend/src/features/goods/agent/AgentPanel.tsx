@@ -6,7 +6,7 @@ import { paths } from '@/shared/router/router'
 import { GoodsItemInput } from '@/shared/types/goods'
 import { photosOf } from '@/shared/lib/itemPhotos'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
-import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, agentApi } from './agentApi'
+import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
 import '@/shared/styles/drawer.css'
 import './agent.css'
 import { decisionStatusLabels } from '@/shared/tnved/decisions'
@@ -267,6 +267,7 @@ function MessageView({ message, photos, applied, busy, onApplyCode, onApplyName,
         {url && <a href={url} target="_blank" rel="noreferrer" title="Открыть страницу кода">↗</a>}
       </div>
     }
+    case 'similar': return <SimilarCard matches={message.content.matches} description={message.content.description} applied={applied} busy={busy} onApplyCode={onApplyCode} />
     case 'match': return <MatchCard matches={message.content.matches} skipped={message.content.skipped} applied={applied} busy={busy} onApplyCode={onApplyCode} onRerun={onRerun} />
     case 'result': return <ResultCard result={message.content} applied={applied} busy={busy} onApplyCode={onApplyCode} onApplyName={onApplyName} />
   }
@@ -325,6 +326,45 @@ function MatchCard({ matches, skipped, applied, busy, onApplyCode, onRerun }: { 
       </div>
     </div>)}
     {skipped && <button type="button" className="ag-secondary" onClick={onRerun} disabled={busy}>Всё равно подобрать ИИ</button>}
+  </div>
+}
+
+const similarVerdicts: Record<SimilarMatch['verdict'], string> = { same: 'тот же товар', similar: 'похожий товар', '': '' }
+
+// Похожие по фото товары из базы решений: показываются сразу, пока ИИ подбирает код.
+function SimilarCard({ matches, description, applied, busy, onApplyCode }: { matches: SimilarMatch[]; description: string; applied: { code?: string }; busy: boolean; onApplyCode: (code: string, record: boolean) => void }) {
+  return <div className="ag-result ag-similar">
+    <h3>Похожие по фото</h3>
+    {description && <p className="ag-cand-meta">На фото: {description}</p>}
+    {matches.length === 0 && <p className="ag-notice">Похожих по фото товаров в базе решений нет.</p>}
+    {matches.map((match) => {
+      const { decision } = match
+      return <div key={decision.id} className={`ag-cand ag-sim ${match.verdict === 'same' ? 'fits' : 'doubtful'}`}>
+        {decision.thumb ? <img className="ag-sim-thumb" src={decision.thumb} alt="" /> : <span className="ag-sim-thumb" aria-hidden="true" />}
+        <div className="ag-sim-body">
+          <div className="ag-cand-top">
+            <CodeLine code={decision.code} name={decision.nomenclature?.name} />
+            <span className="ag-sim-badges">
+              {match.verdict && <i className={`ag-verdict ${match.verdict === 'same' ? 'fits' : 'doubtful'}`}>{similarVerdicts[match.verdict]}</i>}
+              <i className="ag-score" title="Похожесть по фото">{match.score}%</i>
+            </span>
+          </div>
+          {decision.finalName && <p className="ag-cand-name">{decision.finalName}</p>}
+          <p className="ag-cand-meta">
+            {decisionStatusLabels[decision.status]}
+            {match.byPhoto && ' · снимок похож'}
+            {match.byDescription && match.description && <> · в базе: {match.description}</>}
+          </p>
+          {match.why && <p className="ag-reason">{match.why}</p>}
+          {!decision.nomenclature && <p className="ag-warn">Кода нет в текущей номенклатуре — проверьте.</p>}
+          <div className="ag-cand-actions">
+            {applied.code === decision.code ? <span className="ag-done">✓ применён</span> : <button type="button" onClick={() => onApplyCode(decision.code, false)} disabled={busy || !decision.nomenclature}>Применить код</button>}
+            {decision.nomenclature?.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
+            <Link href={`${paths.decisions}?id=${decision.id}`}>В базе решений</Link>
+          </div>
+        </div>
+      </div>
+    })}
   </div>
 }
 

@@ -13,34 +13,37 @@ import (
 )
 
 type CodeDecision struct {
-	ID                 int64            `gorm:"primaryKey"`
-	Status             string           `gorm:"size:16;not null"`
-	Source             string           `gorm:"size:16;not null"`
-	InvoiceName        string           `gorm:"not null"`
-	SupplierName       string           `gorm:"not null"`
-	FinalName          string           `gorm:"not null"`
-	Code               string           `gorm:"size:10;not null"`
-	Reason             string           `gorm:"not null"`
-	Quote              string           `gorm:"not null"`
-	SourceURL          string           `gorm:"column:source_url;size:500;not null"`
-	RejectedCodes      JSON             `gorm:"type:jsonb;not null"`
-	UnitNetKg          *decimal.Decimal `gorm:"type:numeric(14,6)"`
-	UnitPriceUSD       *decimal.Decimal `gorm:"column:unit_price_usd;type:numeric(14,4)"`
-	Photos             JSON             `gorm:"type:jsonb;not null"`
-	Thumb              string           `gorm:"not null"`
-	PhotoHashes        JSON             `gorm:"type:jsonb;not null"`
-	AgentCode          string           `gorm:"size:10;not null"`
-	AgentCorrect       *bool            `gorm:"column:agent_correct"`
-	EstimateID         *int64           `gorm:"column:estimate_id"`
-	ItemID             string           `gorm:"size:64;not null"`
-	SessionID          *int64           `gorm:"column:session_id"`
-	ProductDirectoryID *int64           `gorm:"column:product_directory_id"`
-	Note               string           `gorm:"not null"`
-	CreatedBy          *int64           `gorm:"column:created_by"`
-	VerifiedBy         *int64           `gorm:"column:verified_by"`
-	VerifiedAt         *time.Time       `gorm:"column:verified_at"`
-	CreatedAt          time.Time        `gorm:"not null"`
-	UpdatedAt          time.Time        `gorm:"not null"`
+	ID            int64            `gorm:"primaryKey"`
+	Status        string           `gorm:"size:16;not null"`
+	Source        string           `gorm:"size:16;not null"`
+	InvoiceName   string           `gorm:"not null"`
+	SupplierName  string           `gorm:"not null"`
+	FinalName     string           `gorm:"not null"`
+	Code          string           `gorm:"size:10;not null"`
+	Reason        string           `gorm:"not null"`
+	Quote         string           `gorm:"not null"`
+	SourceURL     string           `gorm:"column:source_url;size:500;not null"`
+	RejectedCodes JSON             `gorm:"type:jsonb;not null"`
+	UnitNetKg     *decimal.Decimal `gorm:"type:numeric(14,6)"`
+	UnitPriceUSD  *decimal.Decimal `gorm:"column:unit_price_usd;type:numeric(14,4)"`
+	Photos        JSON             `gorm:"type:jsonb;not null"`
+	Thumb         string           `gorm:"not null"`
+	PhotoHashes   JSON             `gorm:"type:jsonb;not null"`
+	// Описание фото от ИИ (decisions.PhotoFeatures) и когда оно составлено.
+	PhotoFeatures      JSON       `gorm:"type:jsonb;not null"`
+	PhotoFeaturesAt    *time.Time `gorm:"column:photo_features_at"`
+	AgentCode          string     `gorm:"size:10;not null"`
+	AgentCorrect       *bool      `gorm:"column:agent_correct"`
+	EstimateID         *int64     `gorm:"column:estimate_id"`
+	ItemID             string     `gorm:"size:64;not null"`
+	SessionID          *int64     `gorm:"column:session_id"`
+	ProductDirectoryID *int64     `gorm:"column:product_directory_id"`
+	Note               string     `gorm:"not null"`
+	CreatedBy          *int64     `gorm:"column:created_by"`
+	VerifiedBy         *int64     `gorm:"column:verified_by"`
+	VerifiedAt         *time.Time `gorm:"column:verified_at"`
+	CreatedAt          time.Time  `gorm:"not null"`
+	UpdatedAt          time.Time  `gorm:"not null"`
 	// Filled by list and card queries.
 	CreatedByName  string `gorm:"->;-:migration"`
 	VerifiedByName string `gorm:"->;-:migration"`
@@ -59,7 +62,7 @@ type CodeDecisionFilter struct {
 
 // Колонки списка: всё, кроме полных фото.
 const codeDecisionListColumns = "d.id, d.status, d.source, d.invoice_name, d.supplier_name, d.final_name, d.code, d.reason, d.quote, " +
-	"d.source_url, d.rejected_codes, d.unit_net_kg, d.unit_price_usd, '[]'::jsonb AS photos, d.thumb, '[]'::jsonb AS photo_hashes, " +
+	"d.source_url, d.rejected_codes, d.unit_net_kg, d.unit_price_usd, '[]'::jsonb AS photos, d.thumb, '[]'::jsonb AS photo_hashes, d.photo_features, d.photo_features_at, " +
 	"d.agent_code, d.agent_correct, d.estimate_id, d.item_id, d.session_id, d.product_directory_id, d.note, d.created_by, " +
 	"d.verified_by, d.verified_at, d.created_at, d.updated_at, COALESCE(NULLIF(cu.name, ''), cu.email, '') AS created_by_name, " +
 	"COALESCE(NULLIF(vu.name, ''), vu.email, '') AS verified_by_name"
@@ -189,18 +192,19 @@ func (r *Repository) CodeDecisionsByIDs(ctx context.Context, ids []int64) ([]Cod
 
 // CodeDecisionKey — то, по чему ищется тот же товар: хеши фото и наименования.
 type CodeDecisionKey struct {
-	ID           int64
-	Status       string
-	Code         string
-	InvoiceName  string
-	SupplierName string
-	FinalName    string
-	PhotoHashes  JSON
+	ID            int64
+	Status        string
+	Code          string
+	InvoiceName   string
+	SupplierName  string
+	FinalName     string
+	PhotoHashes   JSON
+	PhotoFeatures JSON
 }
 
 func (r *Repository) CodeDecisionKeys(ctx context.Context) ([]CodeDecisionKey, error) {
 	var rows []CodeDecisionKey
-	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, status, code, invoice_name, supplier_name, final_name, photo_hashes").
+	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, status, code, invoice_name, supplier_name, final_name, photo_hashes, photo_features").
 		Where("status <> 'rejected'").Scan(&rows).Error
 	return rows, err
 }
@@ -260,4 +264,35 @@ func (r *Repository) SearchDirectoriesForAgent(ctx context.Context, text string,
 // DeletePendingDecisionsForSession — непроверенная запись подбора заменяется новой при повторном «Применить».
 func (r *Repository) DeletePendingDecisionsForSession(ctx context.Context, sessionID int64) error {
 	return r.db.WithContext(ctx).Where("session_id = ? AND status = 'pending'", sessionID).Delete(&CodeDecision{}).Error
+}
+
+// DecisionPhoto — первое фото записи базы решений.
+type DecisionPhoto struct {
+	ID     int64
+	Photos JSON
+}
+
+// DecisionsNeedingPhotoFeatures — записи с фото, для которых ИИ ещё не составил описание.
+func (r *Repository) DecisionsNeedingPhotoFeatures(ctx context.Context, limit int) ([]DecisionPhoto, error) {
+	var rows []DecisionPhoto
+	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, photos").
+		Where("photo_features_at IS NULL AND photos <> '[]'::jsonb AND status <> 'rejected'").
+		Order("id DESC").Limit(limit).Scan(&rows).Error
+	return rows, err
+}
+
+// DecisionPhotos — фото записей (для визуальной сверки похожих товаров).
+func (r *Repository) DecisionPhotos(ctx context.Context, ids []int64) ([]DecisionPhoto, error) {
+	var rows []DecisionPhoto
+	if len(ids) == 0 {
+		return rows, nil
+	}
+	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, photos").Where("id IN ?", ids).Scan(&rows).Error
+	return rows, err
+}
+
+// SaveDecisionPhotoFeatures сохраняет описание фото (null — описать не удалось, больше не пробуем).
+func (r *Repository) SaveDecisionPhotoFeatures(ctx context.Context, id int64, features JSON) error {
+	return r.db.WithContext(ctx).Model(&CodeDecision{}).Where("id = ?", id).
+		Updates(map[string]any{"photo_features": features, "photo_features_at": time.Now().UTC()}).Error
 }

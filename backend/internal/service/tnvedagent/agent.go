@@ -367,6 +367,21 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	usage := agentUsage{PromptTokens: session.PromptTokens, CachedTokens: session.CachedTokens, CompletionTokens: session.CompletionTokens}
 	cost, _ := session.CostUSD.Float64()
 	steps := session.Steps
+	// Первый запуск: сначала похожие по фото товары из базы решений — в чат сразу и модели подсказкой.
+	if session.Runs == 0 {
+		hint, step := s.similarByPhoto(ctx, store, session)
+		usage.PromptTokens += step.PromptTokens
+		usage.CachedTokens += step.CachedTokens
+		usage.CompletionTokens += step.CompletionTokens
+		cost += s.model.Cost(step)
+		if hint != "" {
+			transcript = append(transcript, map[string]any{"role": "user", "content": hint})
+		}
+		_ = s.repository.UpdateAgentSession(store, sessionID, map[string]any{
+			"prompt_tokens": usage.PromptTokens, "cached_tokens": usage.CachedTokens, "completion_tokens": usage.CompletionTokens,
+			"cost_usd": decimal.NewFromFloat(cost).Round(6),
+		})
+	}
 	runner := &agentRunner{
 		model:      s.model,
 		toolbox:    newAgentToolbox(s.data),

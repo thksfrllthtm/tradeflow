@@ -41,6 +41,9 @@ export type AgentResult = {
 }
 
 export type SameProductMatch = { decision: CodeDecision; byPhoto: boolean; byName: boolean }
+// Похожий по фото товар из базы решений: похожесть 0–100, по снимку или по описанию фото, визуальная
+// сверка ИИ (same — тот же товар, similar — похожий, '' — не сверялся).
+export type SimilarMatch = { decision: CodeDecision; score: number; byPhoto: boolean; byDescription: boolean; description: string; verdict: '' | 'same' | 'similar'; why: string }
 
 export type AgentMessage =
   | { id: number; kind: 'input'; content: { item: AgentItem; photos: number; ai: boolean }; createdAt: string }
@@ -48,6 +51,7 @@ export type AgentMessage =
   | { id: number; kind: 'tool'; content: { tool: string; label: string; detail: string; url?: string; failed?: boolean }; createdAt: string }
   | { id: number; kind: 'result'; content: AgentResult; createdAt: string }
   | { id: number; kind: 'match'; content: { matches: SameProductMatch[]; skipped: boolean }; createdAt: string }
+  | { id: number; kind: 'similar'; content: { matches: SimilarMatch[]; description: string }; createdAt: string }
   | { id: number; kind: 'error'; content: { message: string }; createdAt: string }
   | { id: number; kind: 'rerun'; content: Record<string, never>; createdAt: string }
 

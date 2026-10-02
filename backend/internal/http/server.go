@@ -62,6 +62,11 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 	}
 }
 
+// StartBackground запускает фоновые задачи: описания фото записей базы решений для поиска похожих.
+func (s *Server) StartBackground(ctx context.Context) {
+	s.agent.StartPhotoWorker(ctx)
+}
+
 // RecoverInterrupted помечает ошибкой подборы ИИ, прерванные перезапуском сервера.
 func (s *Server) RecoverInterrupted(ctx context.Context) error {
 	return s.agent.RecoverInterrupted(ctx)

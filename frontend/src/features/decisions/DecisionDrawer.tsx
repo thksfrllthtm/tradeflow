@@ -76,7 +76,8 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
         {error && <p className="dc-error" role="alert">{error}</p>}
         {!decision && !error && <p className="dc-muted">Загрузка…</p>}
         {decision && <>
-          {decision.photos.length > 0 && <section className="drawer-section"><div className="dc-photos">{decision.photos.map((photo, index) => <a key={index} href={photo} target="_blank" rel="noreferrer"><img src={photo} alt={`Фото ${index + 1}`} /></a>)}</div></section>}
+          {decision.photos.length > 0 && <section className="drawer-section"><div className="dc-photos">{decision.photos.map((photo, index) => <a key={index} href={photo} target="_blank" rel="noreferrer"><img src={photo} alt={`Фото ${index + 1}`} /></a>)}</div>
+            <p className="dc-sub">{decision.photoDescription ? <>На фото (ИИ): {decision.photoDescription}</> : 'Описание фото для поиска похожих ИИ составит в течение нескольких минут.'}</p></section>}
           <section className="drawer-section">
             <h3>Как было в инвойсе</h3>
             <p className="dc-text">{decision.invoiceName || '—'}</p>

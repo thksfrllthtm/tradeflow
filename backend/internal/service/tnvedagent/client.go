@@ -125,6 +125,24 @@ func (c *AgentModelClient) Complete(ctx context.Context, messages []agentMessage
 	if forceTool != "" {
 		request["tool_choice"] = map[string]any{"type": "function", "function": map[string]string{"name": forceTool}}
 	}
+	return c.send(ctx, request)
+}
+
+// CompleteJSON — один ответ модели в JSON без инструментов (описание и сверка фото).
+func (c *AgentModelClient) CompleteJSON(ctx context.Context, messages []agentMessage) (agentReply, error) {
+	if !c.Configured() {
+		return agentReply{}, ai.ErrAINotConfigured
+	}
+	return c.send(ctx, map[string]any{
+		"model":           c.config.Model,
+		"messages":        messages,
+		"response_format": map[string]string{"type": "json_object"},
+		"max_tokens":      1024,
+		"temperature":     0.1,
+	})
+}
+
+func (c *AgentModelClient) send(ctx context.Context, request map[string]any) (agentReply, error) {
 	if strings.Contains(c.config.BaseURL, "deepseek.com") {
 		// Отдельный режим рассуждений DeepSeek в разы медленнее; шаги рассуждения — в системной подсказке.
 		request["thinking"] = map[string]string{"type": "disabled"}

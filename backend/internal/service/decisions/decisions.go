@@ -71,6 +71,8 @@ type CodeDecisionView struct {
 	CreatedAt          time.Time                   `json:"createdAt"`
 	UpdatedAt          time.Time                   `json:"updatedAt"`
 	Nomenclature       *directory.NomenclatureCode `json:"nomenclature"`
+	// Описание фото от ИИ одной строкой; пусто — ещё не составлено.
+	PhotoDescription string `json:"photoDescription"`
 }
 
 type CodeDecisionInput struct {
@@ -176,6 +178,9 @@ func (s *CodeDecisionService) views(ctx context.Context, rows []repository.CodeD
 			CreatedByName: row.CreatedByName, VerifiedByName: row.VerifiedByName, VerifiedAt: row.VerifiedAt,
 			CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Nomenclature: byCode[row.Code],
 			RejectedCodes: []RejectedCode{}, Photos: []string{},
+		}
+		if features, ok := ParsePhotoFeatures(row.PhotoFeatures); ok {
+			view.PhotoDescription = features.Summary()
 		}
 		_ = json.Unmarshal(row.RejectedCodes, &view.RejectedCodes)
 		_ = json.Unmarshal(row.Photos, &view.Photos)

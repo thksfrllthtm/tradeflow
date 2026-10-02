@@ -89,3 +89,10 @@
   .ag-input { flex-direction: column; }
   .ag-disclaimer { display: none; }
 }
+
+/* Похожие по фото: миниатюра записи базы слева, похожесть и сверка ИИ справа. */
+.ag-cand.ag-sim { grid-template-columns: 56px minmax(0, 1fr); align-items: start; column-gap: 10px; }
+.ag-sim-thumb { display: block; width: 56px; height: 56px; border: 1px solid #e6ece8; border-radius: 8px; object-fit: cover; background: #f5f8f6; }
+.ag-sim-body { display: grid; gap: 6px; min-width: 0; }
+.ag-sim-badges { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; }
+.ag-score { padding: 2px 8px; border-radius: 999px; background: #eef3f0; color: #34443b; font-size: .72rem; font-style: normal; font-weight: 750; font-variant-numeric: tabular-nums; }
