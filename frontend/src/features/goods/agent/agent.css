@@ -140,3 +140,7 @@
   .ag-item { align-items: flex-start; }
   .ag-disclaimer { display: none; }
 }
+
+/* Второстепенное действие текстом («только код»). */
+.ag-actions button.ag-text { height: auto; padding: 0; border: 0; background: transparent; color: #56665c; font-size: .78rem; font-weight: 600; }
+.ag-actions button.ag-text:hover:not(:disabled) { background: transparent; color: #1b6b43; text-decoration: underline; }

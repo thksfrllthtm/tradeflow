@@ -208,6 +208,15 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     }
   }
 
+  // Запись базы решений: код и (если передано) её наименование — оно уже «русское / 中文», без перевода.
+  async function applyDecision(code: string, name: string) {
+    if (code) await applyCode(code, false)
+    if (name) {
+      onApplyName(name)
+      setApplied((current) => ({ ...current, name, nameRu: russianPart(name) }))
+    }
+  }
+
   async function openDecisionPhotos(id: number) {
     try {
       const decision = await decisionsApi.get(id)
@@ -227,7 +236,10 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
   const skippedByBase = Boolean(match?.content.skipped) && session?.runs === 0 && session.status === 'done'
   const configured = status?.configured !== false
   const canWrite = Boolean(session) && !working && configured && session?.status !== 'ready' && !skippedByBase
-  const decisionActions: DecisionActions = { applied, busy, onApplyCode: (code) => applyCode(code, false), onOpenPhotos: (id) => void openDecisionPhotos(id) }
+  const decisionActions: DecisionActions = {
+    applied, busy, rowName: (item.name ?? '').trim(), onOpenPhotos: (id) => void openDecisionPhotos(id),
+    onApply: (code, name) => void applyDecision(code, name),
+  }
 
   return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
     <aside className="drawer ag-drawer" role="dialog" aria-modal="true" aria-labelledby="ag-title">
@@ -396,7 +408,8 @@ function CodeLine({ code, name }: { code: string; name?: string }) {
   </div>
 }
 
-type DecisionActions = { applied: Applied; busy: boolean; onApplyCode: (code: string) => void; onOpenPhotos: (id: number) => void }
+// onApply(code, name): пустая строка — это не применять (только код или только наименование).
+type DecisionActions = { applied: Applied; busy: boolean; rowName: string; onApply: (code: string, name: string) => void; onOpenPhotos: (id: number) => void }
 
 const similarVerdicts: Record<SimilarMatch['verdict'], string> = { same: 'тот же товар', similar: 'похожий товар', '': '' }
 
@@ -422,7 +435,11 @@ function BaseCard({ match, similar, searching, hasPhotos, actions }: { match: Sa
 }
 
 function DecisionRow({ decision, actions, badge, meta, note }: { decision: CodeDecision; actions: DecisionActions; badge: React.ReactNode; meta: string; note?: string }) {
-  const { applied, busy, onApplyCode, onOpenPhotos } = actions
+  const { applied, busy, rowName, onApply, onOpenPhotos } = actions
+  const name = decision.finalName.trim()
+  const codeDone = applied.code === decision.code
+  const nameDone = !name || applied.name === name || rowName === name
+  const noCode = !decision.nomenclature
   return <article className="ag-row">
     {decision.thumb
       ? <button type="button" className="ag-photo ag-thumb" onClick={() => onOpenPhotos(decision.id)} title="Открыть фото из базы крупно" aria-label="Открыть фото записи базы крупно"><img src={decision.thumb} alt="" /></button>
@@ -437,7 +454,10 @@ function DecisionRow({ decision, actions, badge, meta, note }: { decision: CodeD
       {note && <p className="ag-row-note">{note}</p>}
       {!decision.nomenclature && <p className="ag-warn">Кода нет в текущей номенклатуре — проверьте.</p>}
       <div className="ag-actions">
-        {applied.code === decision.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="ag-apply" onClick={() => onApplyCode(decision.code)} disabled={busy || !decision.nomenclature}>Применить код</button>}
+        {codeDone && nameDone && <span className="ag-done">{name ? '✓ код и наименование применены' : '✓ код применён'}</span>}
+        {!codeDone && <button type="button" className="ag-apply" onClick={() => onApply(decision.code, nameDone ? '' : name)} disabled={busy || noCode}>{nameDone ? 'Применить код' : 'Применить код и наименование'}</button>}
+        {!codeDone && !nameDone && <button type="button" className="ag-text" onClick={() => onApply(decision.code, '')} disabled={busy || noCode}>только код</button>}
+        {codeDone && !nameDone && <button type="button" className="ag-apply ghost" onClick={() => onApply('', name)} disabled={busy}>Применить наименование</button>}
         {decision.nomenclature?.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
         <Link href={`${paths.decisions}?id=${decision.id}`}>В базе решений</Link>
       </div>
