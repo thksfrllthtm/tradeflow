@@ -1,4 +1,4 @@
-import { ChangeEvent, ReactNode, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { mappedFieldForHeader, normalizeStoredMapping } from '../lib/excelColumns'
 import { mergeStoredPhotos, photosOf } from '@/shared/lib/itemPhotos'
 import { storageKey } from '../lib/localDraft'
@@ -20,6 +20,8 @@ import { ReviewStep } from '../components/ReviewStep/ReviewStep'
 import { ResultStep } from '../components/ResultStep/ResultStep'
 import { DirectoryPickerEntry, DirectoryPickerModal } from '../components/DirectoryPickerModal/DirectoryPickerModal'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
+import { RowPhotos } from '../components/RowPhotos/RowPhotos'
+import { makeMainRowPhoto, moveRowPhoto, removeRowPhoto } from '../lib/rowPhotos'
 import { columnMappingActions } from '../lib/columnMappingActions'
 import { resultPriceActions } from '../lib/resultPriceActions'
 import { exportItems } from '../lib/exportItems'
@@ -61,6 +63,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   const [selectedForDirectory, setSelectedForDirectory] = useState<string[]>([])
   const [directoryOpen, setDirectoryOpen] = useState(false)
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
+  // Фото строки на этапе проверки: просмотр с удалением и переносом в другую строку.
+  const [rowPhotos, setRowPhotos] = useState<{ itemId: string; index: number } | null>(null)
   const [paramsOpen, setParamsOpen] = useState<boolean>(() => !storedParams(estimateId).usdKzt)
   // Строка, для которой открыт чат подбора кода ИИ, и пакетный подбор для строк без кода.
   const [agentRowId, setAgentRowId] = useState<string | null>(null)
@@ -81,6 +85,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
   }
   const { tableWrapRef, topScrollRef, syncHorizontalScroll } = useSyncedHorizontalScroll(step === 2)
   const calculationRequestRef = useRef(0)
+
+  const closeRowPhotos = useCallback(() => setRowPhotos(null), [])
+  function moveRowPhotoTo(fromId: string, index: number, toId: string) {
+    const moved = moveRowPhoto(items, fromId, index, toId)
+    if (moved) setItems(moved)
+    else setError('Фото не перенесено: у строки уже 20 фото')
+  }
 
   function openPhotoGallery(photos: string[], index = 0) {
     if (photos.length === 0) return
@@ -335,7 +346,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
     // Строки, где уже был поиск в базе, но агента не запускали, тоже входят: агент запускается сразу.
     const rows = items.filter((item) => item.id && !item.excluded && !item.code && (!agentRows.statuses[item.id] || agentRows.statuses[item.id].status === 'ready'))
     if (rows.length === 0) return
-    if (!window.confirm(`Подобрать коды ИИ для ${rows.length} строк без кода? Подбор идёт на сервере, результат — в чате каждой строки (кнопка «ИИ»).`)) return
+    if (!window.confirm(`Подобрать коды для ${rows.length} строк без кода? Подбор идёт на сервере, результат — в чате каждой строки (кнопка «Подбор»).`)) return
     setAgentBatch({ done: 0, total: rows.length })
     setError('')
     try {
@@ -527,7 +538,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
         clearRowDirectory={clearRowDirectory}
         setItem={setItem}
         removeRow={removeRow}
-        setLightbox={openPhotoGallery}
+        openRowPhotos={(itemId, index) => setRowPhotos({ itemId, index })}
         addManualPhoto={addManualPhoto}
         resetAutomaticNet={resetAutomaticNet}
         addEmptyRow={addEmptyRow}
@@ -568,6 +579,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot }: Pro
       return <AgentPanel estimateId={estimateId} item={items[index]} rowNumber={index + 1} onClose={() => setAgentRowId(null)}
         onApplyCode={(code) => applyAgentCode(agentRowId, code)} onApplyName={(name) => applyAgentName(agentRowId, name)} onChanged={agentRows.refresh} />
     })()}
+    {rowPhotos && <RowPhotos items={items} itemId={rowPhotos.itemId} startIndex={rowPhotos.index} onClose={closeRowPhotos}
+      onRemove={(itemId, index) => setItems((current) => removeRowPhoto(current, itemId, index))}
+      onMakeMain={(itemId, index) => setItems((current) => makeMainRowPhoto(current, itemId, index))}
+      onMove={moveRowPhotoTo} />}
     {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.index} onClose={() => setLightbox(null)} />}
   </div>
 }

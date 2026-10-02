@@ -21,7 +21,8 @@ type ReviewRowProps = {
   onClearDirectory: (id: string) => void
   onChange: (id: string, field: keyof GoodsItemInput, value: string | boolean | undefined) => void
   onRemove: (id: string) => void
-  onPreview: (values: string[], index?: number) => void
+  // Фото строки: просмотр, удаление, главное фото, перенос в другую строку.
+  onPhotos: (id: string, index: number) => void
   onUpload: (id: string, event: ChangeEvent<HTMLInputElement>) => void
   onResetNet: (id: string) => void
   // Общая упаковка из параметров расчёта: строка с другим значением считается «со своей упаковкой».
@@ -45,7 +46,7 @@ function moveFocus(event: KeyboardEvent<HTMLInputElement>) {
   input.select()
 }
 
-export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, selected, onSelect, onOpenPicker, onClearDirectory, onChange, onRemove, onPreview, onUpload, onResetNet, defaultPackageWeight, agentStatus, onAgent }: ReviewRowProps) {
+export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, selected, onSelect, onOpenPicker, onClearDirectory, onChange, onRemove, onPhotos, onUpload, onResetNet, defaultPackageWeight, agentStatus, onAgent }: ReviewRowProps) {
   const id = item.id ?? ''
   const value = (field: keyof GoodsItemInput) => String(item[field] ?? '')
   const photos = photosOf(item)
@@ -74,7 +75,7 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
       <td className="rv-product">
         <div className="rv-product-grid">
           <div className="rv-photo">
-            {photos.length > 0 && <button type="button" className="rv-thumb" onClick={() => onPreview(photos, 0)} title={photos.length > 1 ? `Открыть фотографии (${photos.length})` : 'Открыть фото'}><img src={photos[0]} alt="Фото товара" />{photos.length > 1 && <b>{photos.length}</b>}</button>}
+            {photos.length > 0 && <button type="button" className="rv-thumb" onClick={() => onPhotos(id, 0)} title={photos.length > 1 ? `Фото строки (${photos.length}): посмотреть, удалить, перенести` : 'Фото строки: посмотреть, удалить, перенести'}><img src={photos[0]} alt="Фото товара" />{photos.length > 1 && <b>{photos.length}</b>}</button>}
             <label className={photos.length ? 'rv-photo-add' : 'rv-photo-add rv-photo-empty'} title="Добавить фото">+<input type="file" accept="image/jpeg,image/png" onChange={(event) => onUpload(id, event)} aria-label={`Добавить фото, строка ${rowNumber}`} /></label>
           </div>
           <input className="rv-input rv-name" value={value('name')} onChange={(event) => onChange(id, 'name', event.target.value)} onKeyDown={moveFocus} placeholder="Название товара" aria-label={`Название товара, строка ${rowNumber}`} />
@@ -114,17 +115,17 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
 
 // Кнопка чата подбора ИИ: подпись показывает, что сейчас с подбором строки.
 function AgentButton({ status, code, onClick }: { status?: AgentRowStatus; code: string; onClick: () => void }) {
-  let label = 'ИИ'
+  let label = 'Подбор'
   let tone = ''
-  let title = 'Подобрать код ТН ВЭД ИИ-агентом'
-  if (status?.status === 'running') { label = 'ИИ…'; tone = 'running'; title = 'ИИ подбирает код — открыть чат' }
-  else if (status?.status === 'searching') { label = 'ИИ…'; tone = 'running'; title = 'Поиск в базе решений — открыть чат' }
-  else if (status?.status === 'ready') { title = 'Поиск в базе закончен — открыть чат и запустить подбор ИИ' }
-  else if (status?.status === 'waiting') { label = 'ИИ ?'; tone = 'waiting'; title = 'ИИ ждёт ответа на вопрос — открыть чат' }
-  else if (status?.status === 'error') { label = 'ИИ !'; tone = 'error'; title = 'Подбор прервался — открыть чат' }
+  let title = 'Подобрать код ТН ВЭД'
+  if (status?.status === 'running') { label = 'Подбор…'; tone = 'running'; title = 'Идёт подбор кода — открыть чат' }
+  else if (status?.status === 'searching') { label = 'Подбор…'; tone = 'running'; title = 'Поиск в базе решений — открыть чат' }
+  else if (status?.status === 'ready') { title = 'Поиск в базе закончен — открыть чат и начать подбор' }
+  else if (status?.status === 'waiting') { label = 'Подбор ?'; tone = 'waiting'; title = 'Подбор ждёт ответа на вопрос — открыть чат' }
+  else if (status?.status === 'error') { label = 'Подбор !'; tone = 'error'; title = 'Подбор прервался — открыть чат' }
   else if (status?.status === 'done' && status.bestCode) {
-    if (status.bestCode === code) { label = 'ИИ ✓'; tone = 'same'; title = 'Код совпадает с подбором ИИ — открыть чат' }
-    else { label = `ИИ: ${formatCode(status.bestCode)}`; tone = 'suggest'; title = 'ИИ предлагает другой код — открыть чат' }
-  } else if (status) { title = 'Открыть чат подбора ИИ' }
+    if (status.bestCode === code) { label = 'Подбор ✓'; tone = 'same'; title = 'Код совпадает с подбором — открыть чат' }
+    else { label = `Подбор: ${formatCode(status.bestCode)}`; tone = 'suggest'; title = 'Подбор предлагает другой код — открыть чат' }
+  } else if (status) { title = 'Открыть чат подбора' }
   return <button type="button" className={`rv-agent ${tone}`.trim()} onClick={onClick} title={title}>{label}</button>
 }

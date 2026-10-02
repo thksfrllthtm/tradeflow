@@ -246,14 +246,14 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
       <header className="drawer-head ag-head">
         <div>
           <h2 id="ag-title">Подбор кода · строка {rowNumber}</h2>
-          <p>{session ? statusText(session) : status && !status.configured ? 'ИИ не настроен на сервере' : 'Загрузка…'}</p>
+          <p>{session ? statusText(session) : status && !status.configured ? 'Подбор кода не настроен на сервере' : 'Загрузка…'}</p>
         </div>
         <button type="button" className="drawer-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
       </header>
 
       <div className="drawer-body ag-body" ref={bodyRef}>
         {loading && !session && <p className="ag-muted">Загрузка…</p>}
-        {status && !status.configured && <p className="ag-error">ИИ для подбора кодов не настроен: на сервере нет ключа (TNVED_AI_API_KEY или DEEPSEEK_API_KEY).</p>}
+        {status && !status.configured && <p className="ag-error">Подбор кода не настроен: на сервере нет ключа (TNVED_AI_API_KEY или DEEPSEEK_API_KEY).</p>}
         {input?.kind === 'input' && <ItemCard item={input.content.item} photos={photos} onOpenPhoto={(index) => setLightbox({ photos, index })} />}
         {session && <BaseCard match={match?.content.matches ?? []} similar={similar?.content} searching={searching} hasPhotos={photos.length > 0} actions={decisionActions} />}
         {blocks.map((block) => block.type === 'steps'
@@ -270,7 +270,7 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
         {(session?.status === 'ready' || skippedByBase) && <div className="ag-launch">
           <button type="button" className="ag-primary" disabled={busy || !configured}
             onClick={() => session && void act(() => skippedByBase ? agentApi.rerun(session.id) : agentApi.begin(session.id))}>
-            {skippedByBase ? 'Всё равно подобрать ИИ' : 'Подобрать код ИИ'}
+            {skippedByBase ? 'Всё равно подобрать заново' : 'Начать подбор кода'}
           </button>
           <span>{skippedByBase ? 'Проверенный код этого товара уже есть в базе.' : 'Агент изучит номенклатуру и пояснения к кодам — обычно 1–2 минуты.'}
             {status && status.dailyLimit > 0 && <> Сегодня: {status.usedToday} из {status.dailyLimit}.</>}</span>
@@ -283,7 +283,7 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
         </form>}
         <div className="ag-foot-row">
           {session && !working && <button type="button" className="ag-link" onClick={() => void start()} disabled={busy || !configured}>Начать заново</button>}
-          {session && session.runs > 0 && <span className="ag-cost" title={`Модель ${session.model}, обращений к ИИ: ${session.steps}`}>стоимость ${session.costUsd}</span>}
+          {session && session.runs > 0 && <span className="ag-cost" title={`Модель ${session.model}, шагов: ${session.steps}`}>стоимость ${session.costUsd}</span>}
           {/^\d{10}$/.test(item.code) && (savedRowCode === item.code
             ? <span className="ag-done">✓ код строки в базе решений</span>
             : <button type="button" className="ag-link" onClick={() => void saveRowCode()} disabled={busy} title="Записать код, который сейчас стоит в строке, в базу решений (ждёт проверки администратором)">Код строки → в базу</button>)}
@@ -432,7 +432,7 @@ function BaseCard({ match, similar, searching, hasPhotos, actions }: { match: Sa
       meta={[item.byPhoto && 'снимок похож', item.byDescription && item.description && `в базе: ${item.description}`].filter(Boolean).join(' · ')}
       note={item.why} />)}
     {!searching && found === 0 && <p className="ag-empty-line">{hasPhotos ? 'Такого товара и похожих по фото в базе нет.' : 'Такого товара в базе нет. Похожие ищутся по фото — у строки фото нет.'}</p>}
-    {similar?.description && <p className="ag-seen">ИИ видит на фото: {similar.description}</p>}
+    {similar?.description && <p className="ag-seen">На фото: {similar.description}</p>}
   </section>
 }
 

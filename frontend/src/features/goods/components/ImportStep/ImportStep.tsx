@@ -88,7 +88,7 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
           <button type="button" role="radio" aria-checked={view === 'table'} className={view === 'table' ? 'active' : undefined} onClick={() => setView('table')}>Таблица</button>
           <button type="button" role="radio" aria-checked={view === 'excel'} className={view === 'excel' ? 'active' : undefined} onClick={() => setView('excel')} title="Пробный режим: выделение ячеек мышью и копирование в Excel">Как в Excel</button>
         </div>
-        {mappingFieldOptions.map((option) => <span key={option.value} className={mapping[option.value] ? 'im-chip set' : 'im-chip'} title={option.value === 'code' ? 'Если указать колонку с кодом, коды сверятся с номенклатурой ТН ВЭД ЕАЭС и строки получат её ставки' : option.value === 'name2' || option.value === 'name3' ? 'Ещё одна колонка с наименованием (например, китайское и русское): ИИ и поиск в базе решений используют все наименования' : option.label}>
+        {mappingFieldOptions.map((option) => <span key={option.value} className={mapping[option.value] ? 'im-chip set' : 'im-chip'} title={option.value === 'code' ? 'Если указать колонку с кодом, коды сверятся с номенклатурой ТН ВЭД ЕАЭС и строки получат её ставки' : option.value === 'name2' || option.value === 'name3' ? 'Ещё одна колонка с наименованием (например, китайское и русское): подбор кода и поиск в базе решений используют все наименования' : option.label}>
           {shortLabel[option.value]}{mapping[option.value] ? <b>{mapping[option.value]}</b> : <i>не выбрана</i>}
         </span>)}
       </div>
