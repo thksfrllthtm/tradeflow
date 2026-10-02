@@ -87,3 +87,15 @@ func TestDecisionImportKeyIgnoresSpacesAndCase(t *testing.T) {
 		t.Fatal("import key")
 	}
 }
+
+// Фото главнее наименования: запись с тем же наименованием, но другим фото, не даёт обойтись без ИИ.
+func TestAgreedVerifiedCodeIgnoresNameMatchWithOtherPhoto(t *testing.T) {
+	verified := SameProductMatch{Decision: CodeDecisionView{Status: "verified", Code: "8205200000"}, ByName: true, PhotoDiffers: true}
+	if _, ok := AgreedVerifiedCode([]SameProductMatch{verified}); ok {
+		t.Fatal("a name match with a different photo must not skip the agent")
+	}
+	verified.PhotoDiffers = false
+	if code, ok := AgreedVerifiedCode([]SameProductMatch{verified}); !ok || code != "8205200000" {
+		t.Fatalf("a name match without a photo conflict skips the agent: %q %v", code, ok)
+	}
+}

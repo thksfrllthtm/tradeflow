@@ -467,6 +467,9 @@ type SameProductMatch struct {
 	Decision CodeDecisionView `json:"decision"`
 	ByPhoto  bool             `json:"byPhoto"`
 	ByName   bool             `json:"byName"`
+	// PhotoDiffers — совпало наименование, но фото у обоих есть и не похожи: фото главнее,
+	// поэтому такая запись не пропускает ИИ и показывается с предупреждением.
+	PhotoDiffers bool `json:"photoDiffers"`
 }
 
 // FindSame ищет в базе тот же товар: то же фото или то же наименование (из инвойса или поставщика).
@@ -482,7 +485,7 @@ func (s *CodeDecisionService) FindSame(ctx context.Context, names []string, phot
 			wanted[variant] = true
 		}
 	}
-	type hit struct{ byPhoto, byName bool }
+	type hit struct{ byPhoto, byName, photoDiffers bool }
 	hits := map[int64]hit{}
 	ids := []int64{}
 	for _, key := range keys {
@@ -496,7 +499,9 @@ func (s *CodeDecisionService) FindSame(ctx context.Context, names []string, phot
 			}
 		}
 		if byPhoto || byName {
-			hits[key.ID] = hit{byPhoto, byName}
+			_, similar := photoSimilarity(photoHashes, hashes)
+			differs := !byPhoto && len(photoHashes) > 0 && len(hashes) > 0 && !similar
+			hits[key.ID] = hit{byPhoto, byName, differs}
 			ids = append(ids, key.ID)
 		}
 	}
@@ -510,7 +515,7 @@ func (s *CodeDecisionService) FindSame(ctx context.Context, names []string, phot
 	}
 	matches := make([]SameProductMatch, 0, len(views))
 	for _, view := range views {
-		matches = append(matches, SameProductMatch{Decision: view, ByPhoto: hits[view.ID].byPhoto, ByName: hits[view.ID].byName})
+		matches = append(matches, SameProductMatch{Decision: view, ByPhoto: hits[view.ID].byPhoto, ByName: hits[view.ID].byName, PhotoDiffers: hits[view.ID].photoDiffers})
 	}
 	// Проверенные — первыми, затем по фото, затем новые.
 	sortMatches(matches)
@@ -546,7 +551,7 @@ func decisionNameVariants(name string) []string {
 func AgreedVerifiedCode(matches []SameProductMatch) (string, bool) {
 	code := ""
 	for _, match := range matches {
-		if match.Decision.Status != "verified" {
+		if match.Decision.Status != "verified" || match.PhotoDiffers {
 			continue
 		}
 		if code != "" && code != match.Decision.Code {

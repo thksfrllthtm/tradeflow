@@ -51,13 +51,15 @@ type AgentSettings struct {
 type AgentItemInput struct {
 	Name         string `json:"name"`
 	SupplierName string `json:"supplierName"`
-	Code         string `json:"code"`
-	Quantity     string `json:"quantity"`
-	Places       string `json:"places"`
-	GrossKg      string `json:"grossKg"`
-	NetKg        string `json:"netKg"`
-	PricePerUnit string `json:"pricePerUnit"`
-	Unit         string `json:"unit"`
+	// OtherNames — другие колонки наименования из файла (например, китайское и русское).
+	OtherNames   []string `json:"otherNames,omitempty"`
+	Code         string   `json:"code"`
+	Quantity     string   `json:"quantity"`
+	Places       string   `json:"places"`
+	GrossKg      string   `json:"grossKg"`
+	NetKg        string   `json:"netKg"`
+	PricePerUnit string   `json:"pricePerUnit"`
+	Unit         string   `json:"unit"`
 }
 
 type AgentStartInput struct {
@@ -191,10 +193,22 @@ func (s *TNVEDAgentService) emit(ctx context.Context, sessionID int64, kind stri
 	_, _ = s.repository.AddAgentMessage(ctx, sessionID, kind, repository.JSON(data))
 }
 
+// names — все наименования строки: из инвойса, поставщика и других колонок файла.
+func (item AgentItemInput) names() []string {
+	return append([]string{item.Name, item.SupplierName}, item.OtherNames...)
+}
+
 func cleanItem(item AgentItemInput) AgentItemInput {
 	clean := func(value string, limit int) string { return service.TruncateRunes(strings.TrimSpace(value), limit) }
+	name, supplier := clean(item.Name, 500), clean(item.SupplierName, 500)
+	others := []string{}
+	for _, other := range item.OtherNames {
+		if other = clean(other, 500); other != "" && other != name && other != supplier && len(others) < 2 {
+			others = append(others, other)
+		}
+	}
 	return AgentItemInput{
-		Name: clean(item.Name, 500), SupplierName: clean(item.SupplierName, 500), Code: decisions.NormalizeCode(clean(item.Code, 20)),
+		Name: name, SupplierName: supplier, OtherNames: others, Code: decisions.NormalizeCode(clean(item.Code, 20)),
 		Quantity: clean(item.Quantity, 30), Places: clean(item.Places, 30), GrossKg: clean(item.GrossKg, 30), NetKg: clean(item.NetKg, 30),
 		PricePerUnit: clean(item.PricePerUnit, 30), Unit: clean(item.Unit, 20),
 	}
@@ -227,7 +241,7 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 			hashes = append(hashes, hash)
 		}
 	}
-	matches, err := s.decisions.FindSame(ctx, []string{item.Name, item.SupplierName}, hashes)
+	matches, err := s.decisions.FindSame(ctx, item.names(), hashes)
 	if err != nil {
 		return AgentSessionView{}, err
 	}
@@ -348,6 +362,9 @@ func perUnitText(total, quantity string) string {
 // о похожем товаре (не проверенные — как подсказка).
 func initialAgentMessage(item AgentItemInput, photoCount int, matches []decisions.SameProductMatch) map[string]any {
 	data := map[string]any{"invoiceName": item.Name, "supplierName": item.SupplierName}
+	if len(item.OtherNames) > 0 {
+		data["otherNames"] = item.OtherNames
+	}
 	if item.Code != "" {
 		data["codeFromFile"] = item.Code
 	}
@@ -372,6 +389,8 @@ func initialAgentMessage(item AgentItemInput, photoCount int, matches []decision
 			by := "по наименованию"
 			if match.ByPhoto {
 				by = "по фото"
+			} else if match.PhotoDiffers {
+				by = "по наименованию, но фото другое — это может быть другой товар, сверь с фото"
 			}
 			status := "не проверено"
 			if match.Decision.Status == "verified" {
@@ -649,7 +668,7 @@ func (s *TNVEDAgentService) resume(ctx context.Context, user repository.User, id
 				hashes = append(hashes, hash)
 			}
 		}
-		matches, err := s.decisions.FindSame(ctx, []string{item.Name, item.SupplierName}, hashes)
+		matches, err := s.decisions.FindSame(ctx, item.names(), hashes)
 		if err != nil {
 			return AgentSessionView{}, err
 		}
@@ -715,7 +734,7 @@ func (s *TNVEDAgentService) Apply(ctx context.Context, user repository.User, id 
 	_ = json.Unmarshal(session.Photos, &photos)
 	hasResult := len(session.Result) > 0 && string(session.Result) != "null" && json.Unmarshal(session.Result, &result) == nil
 	decision := decisions.CodeDecisionInput{
-		InvoiceName: item.Name, SupplierName: item.SupplierName, FinalName: firstNonEmpty(input.Name, result.Name), Code: code,
+		InvoiceName: item.Name, SupplierName: firstNonEmpty(item.SupplierName, strings.Join(item.OtherNames, " / ")), FinalName: firstNonEmpty(input.Name, result.Name), Code: code,
 		Photos: photos, EstimateID: session.EstimateID, ItemID: session.ItemID, SessionID: &session.ID,
 		UnitNetKg: perUnitText(item.NetKg, item.Quantity), UnitPriceUSD: item.PricePerUnit,
 	}

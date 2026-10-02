@@ -163,7 +163,7 @@ func (s *TNVEDAgentService) similarByPhoto(ctx, store context.Context, session r
 	}
 	// Точные совпадения уже показаны отдельно — не повторяем их.
 	skip := map[int64]bool{}
-	if exact, err := s.decisions.FindSame(store, []string{item.Name, item.SupplierName}, hashes); err == nil {
+	if exact, err := s.decisions.FindSame(store, item.names(), hashes); err == nil {
 		for _, match := range exact {
 			skip[match.Decision.ID] = true
 		}

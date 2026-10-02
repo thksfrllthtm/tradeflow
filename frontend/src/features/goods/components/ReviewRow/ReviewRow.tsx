@@ -83,6 +83,7 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
             {item.code && !verified && <span className="rv-code-note">нет в номенклатуре</span>}
             {item.code && <button type="button" className="rv-code-clear" onClick={() => onClearDirectory(id)} title="Снять товар и код">снять</button>}
             <AgentButton status={agentStatus} code={item.code} onClick={() => onAgent(id)} />
+            {item.otherNames?.length ? <span className="rv-other-names" title={`Другие наименования из файла: ${item.otherNames.join(' · ')}`}>{item.otherNames.join(' · ')}</span> : null}
           </div>
         </div>
       </td>

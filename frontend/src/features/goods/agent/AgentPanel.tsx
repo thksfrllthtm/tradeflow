@@ -36,7 +36,7 @@ const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'под
 
 export function agentItemFrom(item: GoodsItemInput): AgentItem {
   return {
-    name: item.name ?? '', supplierName: item.supplierName && item.supplierName !== item.name ? item.supplierName : '', code: item.code ?? '',
+    name: item.name ?? '', supplierName: item.supplierName && item.supplierName !== item.name ? item.supplierName : '', otherNames: item.otherNames ?? [], code: item.code ?? '',
     quantity: item.pairs ?? '', places: item.places ?? '', grossKg: item.grossKg ?? '', netKg: item.netKg ?? '', pricePerUnit: item.pricePerPair ?? '', unit: 'шт',
   }
 }
@@ -183,7 +183,7 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     try {
       const photos = await agentPhotosFrom(item)
       const thumb = photosOf(item)[0] ? await resizePhoto(photosOf(item)[0], 160, 0.7) : ''
-      await decisionsApi.create({ invoiceName: item.name ?? '', supplierName: item.supplierName !== item.name ? item.supplierName : '', finalName: item.standardName || '', code: item.code, photos, thumb, estimateId, itemId })
+      await decisionsApi.create({ invoiceName: item.name ?? '', supplierName: item.supplierName !== item.name ? item.supplierName : (item.otherNames ?? []).join(' / '), finalName: item.standardName || '', code: item.code, photos, thumb, estimateId, itemId })
       setSavedRowCode(item.code)
     } catch (reason) {
       setError(errorMessage(reason))
@@ -388,6 +388,7 @@ function ItemCard({ item, photos, onOpenPhoto }: { item: AgentItem; photos: stri
     <div className="ag-item-text">
       <strong>{item.name || item.supplierName || 'Без наименования'}</strong>
       {item.supplierName && item.supplierName !== item.name && <span>{item.supplierName}</span>}
+      {item.otherNames?.map((other) => <span key={other}>{other}</span>)}
       {meta && <small>{meta}</small>}
     </div>
   </section>
@@ -422,8 +423,9 @@ function BaseCard({ match, similar, searching, hasPhotos, actions }: { match: Sa
       <h3>В базе решений</h3>
       <small>{searching ? 'ищу…' : found ? `найдено: ${found}` : 'ничего не найдено'}</small>
     </header>
-    {match.map(({ decision, byPhoto, byName }) => <DecisionRow key={`same-${decision.id}`} decision={decision} actions={actions}
-      badge={<i className="ag-pill fits">тот же товар</i>}
+    {match.map(({ decision, byPhoto, byName, photoDiffers }) => <DecisionRow key={`same-${decision.id}`} decision={decision} actions={actions}
+      badge={photoDiffers ? <i className="ag-pill doubtful" title="Наименование то же, но фото другое — фото главнее">то же наименование</i> : <i className="ag-pill fits">тот же товар</i>}
+      note={photoDiffers ? 'Наименование совпало, но на фото, похоже, другой товар — сверьте фото, прежде чем применять код.' : undefined}
       meta={`узнан ${[byPhoto && 'по фото', byName && 'по наименованию'].filter(Boolean).join(' и ')} · в инвойсе: «${decision.invoiceName || decision.supplierName}»`} />)}
     {similarMatches.map((item) => <DecisionRow key={`similar-${item.decision.id}`} decision={item.decision} actions={actions}
       badge={<>{item.verdict && <i className={`ag-pill ${item.verdict === 'same' ? 'fits' : 'doubtful'}`}>{similarVerdicts[item.verdict]}</i>}<i className="ag-pill plain" title="Похожесть по фото">{item.score}%</i></>}

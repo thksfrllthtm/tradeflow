@@ -18,6 +18,8 @@ export type GoodsSourceSnapshot = { filename: string; signature: string; sheet: 
 export type GoodsItemInput = {
   id?: string; productId?: number; sourceRow?: number; directoryEntryId?: number; productDirectoryId?: number; directorySnapshot?: Record<string, unknown>
   name: string; supplierName: string; standardName: string; photoUrl: string; photoUrls?: string[]; code: string
+  // Другие колонки наименования из файла («Наименование 2/3»).
+  otherNames?: string[]
   pairs: string; places: string; pairsPerPlace: string; grossKg: string; grossWeightUnit?: string; netKg: string; netWeightUnit?: string; netSource: string; packageWeightKg: string; coefficient: string
   pricePerPair: string; sourcePricePerPair?: string; costInput: string; costCurrency: string; extraExpenses: string; customsValueDirectKzt: string
   deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean; exclusionReason: string

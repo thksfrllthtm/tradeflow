@@ -12,6 +12,7 @@ export type AgentSessionStatus = 'searching' | 'ready' | 'running' | 'waiting' |
 export type AgentItem = {
   name: string
   supplierName: string
+  otherNames?: string[]
   code: string
   quantity: string
   places: string
@@ -41,7 +42,8 @@ export type AgentResult = {
   quotesRemoved: number
 }
 
-export type SameProductMatch = { decision: CodeDecision; byPhoto: boolean; byName: boolean }
+// photoDiffers — совпало наименование, но фото другое: фото главнее, это может быть другой товар.
+export type SameProductMatch = { decision: CodeDecision; byPhoto: boolean; byName: boolean; photoDiffers?: boolean }
 // Похожий по фото товар из базы решений: похожесть 0–100, по снимку или по описанию фото, визуальная
 // сверка ИИ (same — тот же товар, similar — похожий, '' — не сверялся).
 export type SimilarMatch = { decision: CodeDecision; score: number; byPhoto: boolean; byDescription: boolean; description: string; verdict: '' | 'same' | 'similar'; why: string }

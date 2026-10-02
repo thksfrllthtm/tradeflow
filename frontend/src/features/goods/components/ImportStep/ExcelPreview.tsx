@@ -1,22 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import type jspreadsheet from 'jspreadsheet-ce'
 import { GoodsParseRow } from '@/shared/types/goods'
+import { ColumnField, ColumnFieldMenu, ColumnMenuAnchor } from './ColumnFieldMenu'
 import './ExcelPreview.css'
-
-type Field = { value: string; label: string }
 
 type Props = {
   headers: string[]
   rows: GoodsParseRow[]
   // Поля сметы, которые можно назначить колонке, и текущее назначение колонки ('' — не используется).
-  fields: Field[]
+  fields: ColumnField[]
   fieldForHeader: (header: string) => string
   onFieldChange: (header: string, field: string) => void
   onIncludedChange: (sourceRow: number, included: boolean) => void
 }
-
-// Открытый список назначения колонки: заголовок и где его показать (координаты окна).
-type Menu = { header: string; left: number; top: number; width: number }
 
 // Колонки перед колонками файла: флажок импорта и номер строки Excel.
 const leadColumns = 2
@@ -27,12 +23,11 @@ const leadColumns = 2
 // полей сметы. Формулы из файла не вычисляются. Библиотека загружается только здесь.
 export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldChange, onIncludedChange }: Props) {
   const host = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
   const sheet = useRef<jspreadsheet.WorksheetInstance | null>(null)
   const rowsRef = useRef(rows)
   const changeRef = useRef(onIncludedChange)
   const [error, setError] = useState('')
-  const [menu, setMenu] = useState<Menu | null>(null)
+  const [menu, setMenu] = useState<ColumnMenuAnchor | null>(null)
   // Растёт при каждом создании таблицы — по нему заголовки подписываются заново.
   const [built, setBuilt] = useState(0)
   rowsRef.current = rows
@@ -155,50 +150,14 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
     markExcluded(element, rows)
   }, [rows])
 
-  // Список закрывается кликом мимо, Esc и прокруткой (он привязан к месту заголовка).
-  useEffect(() => {
-    if (!menu) return
-    const close = (event: Event) => {
-      const target = event.target as HTMLElement
-      if (menuRef.current?.contains(target)) return
-      // Клик по заголовку обрабатывает openMenu: тот же — закрыть, другой — открыть там.
-      if (event.type === 'mousedown' && target.closest?.('.xp-host thead td.xp-pick')) return
-      setMenu(null)
-    }
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenu(null) }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('scroll', close, true)
-    window.addEventListener('resize', close)
-    document.addEventListener('keydown', escape)
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('scroll', close, true)
-      window.removeEventListener('resize', close)
-      document.removeEventListener('keydown', escape)
-    }
-  }, [menu])
-
-  function choose(field: string) {
-    if (menu) onFieldChange(menu.header, field)
-    setMenu(null)
-  }
-
   const chosen = menu ? fieldForHeader(menu.header) : ''
   // Колонка, у которой поле уже назначено: выбор здесь переносит его сюда.
   const holder = (field: string) => headers.find((header) => header !== menu?.header && fieldForHeader(header) === field)
   return <div className="xp-wrap">
     {error && <p className="xp-error">Не удалось открыть режим «Как в Excel»: {error}. Переключитесь на обычную таблицу.</p>}
     <div ref={host} className="xp-host" />
-    {menu && <div ref={menuRef} className="xp-menu" role="listbox" aria-label={`Что в колонке «${menu.header}»`} style={{ left: Math.max(8, Math.min(menu.left, window.innerWidth - 268)), top: menu.top + 2, minWidth: Math.max(menu.width, 220) }}>
-      <div className="xp-menu-head">{menu.header}</div>
-      <button type="button" role="option" aria-selected={!chosen} className={!chosen ? 'active' : undefined} onClick={() => choose('')}>Не использовать</button>
-      {fields.map((field) => {
-        const other = holder(field.value)
-        return <button key={field.value} type="button" role="option" aria-selected={chosen === field.value} className={chosen === field.value ? 'active' : undefined} onClick={() => choose(field.value)}>
-          <span>{field.label}</span>{other && <small>сейчас: {other}</small>}
-        </button>
-      })}
-    </div>}
+    {menu && <ColumnFieldMenu anchor={menu} fields={fields} chosen={chosen} holder={holder} ignoreSelector=".xp-host thead td.xp-pick"
+      onChoose={(field) => { onFieldChange(menu.header, field); setMenu(null) }} onClose={() => setMenu(null)} />}
   </div>
 }
 

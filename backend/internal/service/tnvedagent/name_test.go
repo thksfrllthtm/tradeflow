@@ -28,3 +28,18 @@ func TestNamingRuleWithoutChineseAndTranslatePromptWithSamples(t *testing.T) {
 		t.Fatal("translate prompt must have the company samples with translation")
 	}
 }
+
+func TestCleanItemKeepsOtherNameColumns(t *testing.T) {
+	item := cleanItem(AgentItemInput{Name: "桶红本色头，0.7公斤", OtherNames: []string{" 0,7 Лопата оран штыковой B-1 ", "桶红本色头，0.7公斤", "", "третье", "четвёртое"}})
+	if len(item.OtherNames) != 2 || item.OtherNames[0] != "0,7 Лопата оран штыковой B-1" || item.OtherNames[1] != "третье" {
+		t.Fatalf("other names: %q", item.OtherNames)
+	}
+	if names := item.names(); len(names) != 4 || names[2] != "0,7 Лопата оран штыковой B-1" {
+		t.Fatalf("all names for the base search: %q", names)
+	}
+	message := initialAgentMessage(item, 1, nil)
+	text := message["content"].([]map[string]any)[0]["text"].(string)
+	if !strings.Contains(text, "Лопата оран штыковой") {
+		t.Fatal("the agent must get the other name columns")
+	}
+}

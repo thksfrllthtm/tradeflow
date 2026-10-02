@@ -39,27 +39,29 @@ type GoodsSourceSnapshot struct {
 }
 
 type GoodsItemInput struct {
-	ID                 string   `json:"id,omitempty"`
-	SourceRow          int      `json:"sourceRow,omitempty"`
-	DirectoryEntryID   *int64   `json:"directoryEntryId,omitempty"`
-	ProductDirectoryID *int64   `json:"productDirectoryId,omitempty"`
-	Name               string   `json:"name"`
-	SupplierName       string   `json:"supplierName"`
-	StandardName       string   `json:"standardName"`
-	Code               string   `json:"code"`
-	PhotoURL           string   `json:"photoUrl"`
-	PhotoURLs          []string `json:"photoUrls,omitempty"`
-	Pairs              string   `json:"pairs"`
-	Places             string   `json:"places"`
-	PairsPerPlace      string   `json:"pairsPerPlace"`
-	GrossKg            string   `json:"grossKg"`
-	GrossWeightUnit    string   `json:"grossWeightUnit,omitempty"`
-	NetKg              string   `json:"netKg"`
-	NetWeightUnit      string   `json:"netWeightUnit,omitempty"`
-	NetSource          string   `json:"netSource"`
-	PackageWeightKg    string   `json:"packageWeightKg"`
-	Coefficient        string   `json:"coefficient"`
-	PricePerPair       string   `json:"pricePerPair"`
+	ID                 string `json:"id,omitempty"`
+	SourceRow          int    `json:"sourceRow,omitempty"`
+	DirectoryEntryID   *int64 `json:"directoryEntryId,omitempty"`
+	ProductDirectoryID *int64 `json:"productDirectoryId,omitempty"`
+	Name               string `json:"name"`
+	SupplierName       string `json:"supplierName"`
+	// OtherNames — другие колонки наименования из файла («Наименование 2/3»): для подбора кода.
+	OtherNames      []string `json:"otherNames,omitempty"`
+	StandardName    string   `json:"standardName"`
+	Code            string   `json:"code"`
+	PhotoURL        string   `json:"photoUrl"`
+	PhotoURLs       []string `json:"photoUrls,omitempty"`
+	Pairs           string   `json:"pairs"`
+	Places          string   `json:"places"`
+	PairsPerPlace   string   `json:"pairsPerPlace"`
+	GrossKg         string   `json:"grossKg"`
+	GrossWeightUnit string   `json:"grossWeightUnit,omitempty"`
+	NetKg           string   `json:"netKg"`
+	NetWeightUnit   string   `json:"netWeightUnit,omitempty"`
+	NetSource       string   `json:"netSource"`
+	PackageWeightKg string   `json:"packageWeightKg"`
+	Coefficient     string   `json:"coefficient"`
+	PricePerPair    string   `json:"pricePerPair"`
 	// SourcePricePerPair is the price from the imported Excel file. It is only
 	// kept in drafts so the browser can restore PricePerPair from it; the
 	// calculation itself uses PricePerPair.

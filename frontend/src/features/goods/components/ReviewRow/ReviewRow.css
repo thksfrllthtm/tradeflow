@@ -72,3 +72,6 @@
 .rv-code-line button.rv-agent.same { border-color: #9cc7ab; background: #e3f1e8; color: #1c5c38; }
 .rv-code-line button.rv-agent.suggest { border-color: #e7c86b; background: #fff8e3; color: #6b4d0c; font-family: ui-monospace, Consolas, monospace; }
 @keyframes rv-agent-pulse { 50% { opacity: .55; } }
+
+/* Другие колонки наименования из файла — мелко рядом с кодом. */
+.rv-other-names { min-width: 0; overflow: hidden; color: #8a968f; font-size: .72rem; text-overflow: ellipsis; }
