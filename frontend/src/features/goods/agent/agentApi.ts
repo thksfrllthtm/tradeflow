@@ -85,6 +85,8 @@ export const agentApi = {
   message: (id: number, text: string) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
   rerun: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/rerun`, { method: 'POST' }),
   cancel: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/cancel`, { method: 'POST' }),
+  // Наименование: перевод русской части на китайский — только по «Применить наименование».
+  name: (id: number, name: string) => request<{ name: string }>(`/api/tnved-agent/sessions/${id}/name`, { method: 'POST', body: JSON.stringify({ name }) }),
   apply: (id: number, code: string, name: string) => request<CodeDecision>(`/api/tnved-agent/sessions/${id}/apply`, { method: 'POST', body: JSON.stringify({ code, name }) }),
 }
 

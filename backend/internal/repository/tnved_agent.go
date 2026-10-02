@@ -96,6 +96,14 @@ func (r *Repository) UpdateAgentSession(ctx context.Context, id int64, changes m
 	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("id = ?", id).Updates(changes).Error
 }
 
+// AddAgentSessionUsage прибавляет к подбору токены и стоимость отдельного запроса (перевод наименования).
+func (r *Repository) AddAgentSessionUsage(ctx context.Context, id, promptTokens, cachedTokens, completionTokens int64, cost decimal.Decimal) error {
+	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("id = ?", id).Updates(map[string]any{
+		"prompt_tokens": gorm.Expr("prompt_tokens + ?", promptTokens), "cached_tokens": gorm.Expr("cached_tokens + ?", cachedTokens),
+		"completion_tokens": gorm.Expr("completion_tokens + ?", completionTokens), "cost_usd": gorm.Expr("cost_usd + ?", cost),
+	}).Error
+}
+
 // SetAgentSessionStatusIf меняет статус, только если он сейчас from: два запуска одной сессии
 // не идут параллельно. false — статус уже другой.
 func (r *Repository) SetAgentSessionStatusIf(ctx context.Context, id int64, from []string, to string) (bool, error) {

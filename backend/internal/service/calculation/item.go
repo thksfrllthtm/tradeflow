@@ -94,6 +94,13 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 		net = nil
 		netUnitInvalid = false
 	}
+	// Вес брутто и нетто — как в гр.35 и 38 декларации: до трёх знаков, меньше грамма — до шести.
+	if gross != nil {
+		gross = service.DecPtr(service.RoundWeightKG(*gross))
+	}
+	if net != nil {
+		net = service.DecPtr(service.RoundWeightKG(*net))
+	}
 	if gross != nil && gross.IsNegative() {
 		warnings = append(warnings, "Общий вес не может быть отрицательным")
 	}
@@ -108,7 +115,7 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 		if computed.IsNegative() {
 			warnings = append(warnings, "Расчётный вес нетто отрицательный")
 		} else {
-			net = &computed
+			net = service.DecPtr(service.RoundWeightKG(computed))
 			out.NetSource = "calculated"
 		}
 	}
@@ -342,9 +349,10 @@ func customsValueForItem(out *CalculationItem, usd, euro decimal.Decimal, warnin
 	if currency == "" {
 		currency = "USD"
 	}
-	base := *cost
+	// Основа — цена товара, как в гр.42 декларации (до двух знаков), плюс дополнительные расходы.
+	base := service.RoundMoney(*cost)
 	if out.extraDecimal != nil {
-		base = base.Add(*out.extraDecimal)
+		base = base.Add(service.RoundMoney(*out.extraDecimal))
 	}
 	rate := decimal.NewFromInt(1)
 	switch strings.ToUpper(currency) {

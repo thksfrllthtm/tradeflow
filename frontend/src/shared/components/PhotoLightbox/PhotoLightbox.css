@@ -68,6 +68,9 @@
   display: block;
   max-width: min(88vw, 860px);
   max-height: 82vh;
+  /* Маленькие фото из Excel поставщика увеличиваются, чтобы товар было видно; пропорции сохраняются. */
+  min-width: min(520px, 88vw);
+  min-height: min(520px, 70vh);
   width: auto;
   height: auto;
   object-fit: contain;

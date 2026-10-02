@@ -474,7 +474,61 @@ func (s *TNVEDAgentService) Get(ctx context.Context, user repository.User, id, a
 	for _, message := range messages {
 		view.Messages = append(view.Messages, AgentMessageView{ID: message.ID, Kind: message.Kind, Content: json.RawMessage(message.Content), CreatedAt: message.CreatedAt})
 	}
+	s.freshDecisionThumbs(ctx, view.Messages)
 	return view, nil
+}
+
+// freshDecisionThumbs подставляет в карточки найденных записей базы («match», «similar») текущую
+// миниатюру: в сообщении запись сохранена на момент подбора, миниатюра могла появиться позже.
+func (s *TNVEDAgentService) freshDecisionThumbs(ctx context.Context, messages []AgentMessageView) {
+	type card struct {
+		message int
+		content map[string]json.RawMessage
+		matches []map[string]json.RawMessage
+	}
+	cards := []card{}
+	ids := []int64{}
+	for index, message := range messages {
+		if message.Kind != "match" && message.Kind != "similar" {
+			continue
+		}
+		var content map[string]json.RawMessage
+		var matches []map[string]json.RawMessage
+		if json.Unmarshal(message.Content, &content) != nil || json.Unmarshal(content["matches"], &matches) != nil || len(matches) == 0 {
+			continue
+		}
+		for _, match := range matches {
+			var decision struct {
+				ID int64 `json:"id"`
+			}
+			if json.Unmarshal(match["decision"], &decision) == nil && decision.ID > 0 {
+				ids = append(ids, decision.ID)
+			}
+		}
+		cards = append(cards, card{index, content, matches})
+	}
+	if len(ids) == 0 {
+		return
+	}
+	thumbs, err := s.repository.DecisionThumbs(ctx, ids)
+	if err != nil {
+		return
+	}
+	for _, card := range cards {
+		for _, match := range card.matches {
+			var decision map[string]json.RawMessage
+			var id int64
+			if json.Unmarshal(match["decision"], &decision) != nil || json.Unmarshal(decision["id"], &id) != nil || thumbs[id] == "" {
+				continue
+			}
+			decision["thumb"], _ = json.Marshal(thumbs[id])
+			match["decision"], _ = json.Marshal(decision)
+		}
+		card.content["matches"], _ = json.Marshal(card.matches)
+		if content, err := json.Marshal(card.content); err == nil {
+			messages[card.message].Content = content
+		}
+	}
 }
 
 // RowStatuses — последний подбор каждой строки сметы.

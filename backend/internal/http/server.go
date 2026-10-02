@@ -62,8 +62,10 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 	}
 }
 
-// StartBackground запускает фоновые задачи: описания фото записей базы решений для поиска похожих.
+// StartBackground запускает фоновые задачи: миниатюры записей базы решений без неё и описания фото
+// для поиска похожих.
 func (s *Server) StartBackground(ctx context.Context) {
+	go s.decisions.FillMissingThumbs(ctx)
 	s.agent.StartPhotoWorker(ctx)
 }
 
@@ -180,6 +182,7 @@ func (s *Server) Router() *gin.Engine {
 	agent.POST("/sessions/:id/rerun", s.rerunAgentSession)
 	agent.POST("/sessions/:id/cancel", s.cancelAgentSession)
 	agent.POST("/sessions/:id/apply", s.applyAgentSession)
+	agent.POST("/sessions/:id/name", s.applyAgentName)
 
 	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
 	ceramics := router.Group("/api/ceramics")

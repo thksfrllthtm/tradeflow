@@ -153,7 +153,7 @@ frontend/src/
 | `GET /api/tnved-nomenclature`, `POST lookup`, `POST import` | номенклатура ТН ВЭД ЕАЭС (загрузка — админ) |
 | `POST /api/tnved-kz-rates/excel`, `import-pdf`, `import` | перечень РК (админ) |
 | `/api/code-decisions` (+ `stats`, `import`, `:id/verify`, `:id/reject`) | база решений (проверка, правка, импорт — админ) |
-| `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `messages`, `rerun`, `cancel`, `apply`) | ИИ-агент подбора кода |
+| `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `messages`, `rerun`, `cancel`, `apply`, `name`) | ИИ-агент подбора кода |
 | `/api/ceramics/*` | керамика: база марок, разбор, подбор, цена |
 
 Неизвестный адрес под `/api` отвечает JSON `404`.

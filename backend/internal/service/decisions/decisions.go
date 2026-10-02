@@ -258,6 +258,9 @@ func decisionRow(input CodeDecisionInput, source string) (repository.CodeDecisio
 	if thumb != "" && !ValidPhoto(thumb, maxDecisionThumbBytes) {
 		thumb = ""
 	}
+	if thumb == "" && len(photos) > 0 {
+		thumb = MakeThumb(photos[0])
+	}
 	rejected := make([]RejectedCode, 0, len(input.RejectedCodes))
 	for _, item := range input.RejectedCodes {
 		if other := NormalizeCode(item.Code); tnvedCodePattern.MatchString(other) && other != code && len(rejected) < 5 {

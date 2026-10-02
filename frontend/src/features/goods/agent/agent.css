@@ -96,3 +96,17 @@
 .ag-sim-body { display: grid; gap: 6px; min-width: 0; }
 .ag-sim-badges { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; }
 .ag-score { padding: 2px 8px; border-radius: 999px; background: #eef3f0; color: #34443b; font-size: .72rem; font-style: normal; font-weight: 750; font-variant-numeric: tabular-nums; }
+
+/* Наименование: русская часть правится, перевод — при применении. */
+.ag-name textarea { box-sizing: border-box; width: 100%; min-height: 54px; padding: 8px 10px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fff; color: #1f2d24; font: inherit; font-size: .86rem; font-weight: 600; line-height: 1.4; resize: vertical; }
+.ag-name textarea:focus { border-color: #24704a; outline: 2px solid rgba(36, 112, 74, .15); }
+.ag-name p.ag-name-final { color: #1c6b43; }
+.ag-name-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.ag-name-actions .ag-muted { color: #8a968f; font-size: .74rem; }
+
+/* Фото открываются крупно по нажатию. */
+.ag-photo { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.ag-photo img { display: block; }
+.ag-photo:focus-visible { outline: 2px solid #24704a; outline-offset: 2px; border-radius: 8px; }
+.ag-photo.ag-sim-thumb { overflow: hidden; border: 1px solid #e6ece8; }
+.ag-photo.ag-sim-thumb img { width: 100%; height: 100%; object-fit: cover; }

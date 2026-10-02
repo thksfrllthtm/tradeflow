@@ -26,6 +26,8 @@ const (
 	exportFirstNumber    = 8 // «Антидемпинг, %» … «Доставка, KZT» are numeric
 	exportLastNumber     = 28
 	exportPriceColumn    = 15
+	exportGrossColumn    = 12
+	exportNetColumn      = 13
 	exportCurrencyColumn = 17
 	exportErrorsColumn   = 30
 	exportWarningsColumn = 31
@@ -114,7 +116,7 @@ func writeExportRows(book *excelize.File, styles exportStyles, input GoodsCalcul
 	totals := result.Totals
 	_ = book.SetCellValue(sheet, exportCell(exportNameColumn, totalRow), "Итого")
 	for col, value := range map[int]string{
-		9: places.String(), 11: quantity.String(), 12: gross.String(), 13: net.String(), 16: totals.TotalCostUSD,
+		9: places.String(), 11: quantity.String(), exportGrossColumn: gross.weight(), exportNetColumn: net.weight(), 16: totals.TotalCostUSD,
 		20: totals.CustomsValueKZT, 21: totals.DutyKZT, 22: totals.AntiDumpingKZT, 24: totals.VATKZT, 25: totals.FeeKZT, 26: totals.CustomsPaymentsKZT,
 		27: totals.TotalDeliveryUSD, 28: totals.DeliveryKZT,
 	} {
@@ -125,6 +127,7 @@ func writeExportRows(book *excelize.File, styles exportStyles, input GoodsCalcul
 	}
 	_ = book.SetCellStyle(sheet, exportCell(1, totalRow), exportCell(len(headers), totalRow), styles.total)
 	_ = book.SetCellStyle(sheet, exportCell(exportFirstNumber, totalRow), exportCell(exportLastNumber, totalRow), styles.totalNumber)
+	_ = book.SetCellStyle(sheet, exportCell(exportGrossColumn, totalRow), exportCell(exportNetColumn, totalRow), styles.totalWeight)
 	_ = book.AutoFilter(sheet, "A1:"+exportCell(len(headers), len(result.Items)+1), nil)
 	return nil
 }
@@ -249,7 +252,7 @@ func writeExportSummary(book *excelize.File, styles exportStyles, input GoodsCal
 	return nil
 }
 
-type exportStyles struct{ header, text, count, number, price, code, total, totalNumber int }
+type exportStyles struct{ header, text, count, number, price, code, total, totalNumber, weight, totalWeight int }
 
 func (s exportStyles) forColumn(col int) int {
 	switch {
@@ -257,6 +260,8 @@ func (s exportStyles) forColumn(col int) int {
 		return s.code
 	case col == exportPriceColumn:
 		return s.price
+	case col == exportGrossColumn || col == exportNetColumn:
+		return s.weight
 	case col >= exportFirstNumber && col < exportPriceColumn:
 		return s.count // проценты, места, количества, веса, ИТС — без лишних нулей
 	case col >= exportFirstNumber && col <= exportLastNumber && col != exportCurrencyColumn:
@@ -268,6 +273,8 @@ func (s exportStyles) forColumn(col int) int {
 
 func newExportStyles(book *excelize.File) (exportStyles, error) {
 	numberFormat, countFormat, priceFormat, codeFormat := "#,##0.00", "#,##0.###", "#,##0.0000", "0"
+	// Вес — как в гр.35 и 38 декларации: три знака, меньше одного грамма — шесть.
+	weightFormat := "[=0]0.000;[<0.001]0.000000;#,##0.000"
 	border := []excelize.Border{{Type: "left", Color: "D9E2DC", Style: 1}, {Type: "right", Color: "D9E2DC", Style: 1}, {Type: "top", Color: "D9E2DC", Style: 1}, {Type: "bottom", Color: "D9E2DC", Style: 1}}
 	top := &excelize.Alignment{Vertical: "top", WrapText: true}
 	totalFill := excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"E8F3EC"}}
@@ -280,6 +287,8 @@ func newExportStyles(book *excelize.File) (exportStyles, error) {
 		{CustomNumFmt: &codeFormat, Alignment: &excelize.Alignment{Vertical: "top"}, Border: border},
 		{Font: &excelize.Font{Bold: true}, Fill: totalFill, Border: border},
 		{Font: &excelize.Font{Bold: true}, Fill: totalFill, CustomNumFmt: &numberFormat, Border: border},
+		{CustomNumFmt: &weightFormat, Alignment: &excelize.Alignment{Vertical: "top"}, Border: border},
+		{Font: &excelize.Font{Bold: true}, Fill: totalFill, CustomNumFmt: &weightFormat, Border: border},
 	}
 	ids := make([]int, len(definitions))
 	for index, definition := range definitions {
@@ -289,7 +298,7 @@ func newExportStyles(book *excelize.File) (exportStyles, error) {
 		}
 		ids[index] = id
 	}
-	return exportStyles{header: ids[0], text: ids[1], count: ids[2], number: ids[3], price: ids[4], code: ids[5], total: ids[6], totalNumber: ids[7]}, nil
+	return exportStyles{header: ids[0], text: ids[1], count: ids[2], number: ids[3], price: ids[4], code: ids[5], total: ids[6], totalNumber: ids[7], weight: ids[8], totalWeight: ids[9]}, nil
 }
 
 func exportColumn(col int) string {
@@ -400,6 +409,14 @@ func (s *decimalSum) add(value string) {
 		s.value = s.value.Add(*parsed)
 		s.any = true
 	}
+}
+
+// weight — итог веса по правилу гр.35 и 38: до трёх знаков, меньше грамма — до шести.
+func (s decimalSum) weight() string {
+	if !s.any {
+		return ""
+	}
+	return service.WeightKGText(s.value)
 }
 
 func (s decimalSum) String() string {

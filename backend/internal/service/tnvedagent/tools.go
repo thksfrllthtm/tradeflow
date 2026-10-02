@@ -101,7 +101,7 @@ func agentTools() []agentTool {
 				"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
 				"check":   stringProperty("Что уточнить; пусто, если нечего"),
 			}, "code", "verdict", "reason")},
-			"name":  stringProperty("Наименование для декларации по правилу: «русское / твой перевод на китайский»"),
+			"name":  stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
 			"notes": stringProperty("Замечания сотруднику; пусто, если нет"),
 		}, "description", "candidates", "name")),
 	}
@@ -373,7 +373,7 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 		byCode[item.Code] = item
 	}
 	result := &AgentResult{
-		Description: service.TruncateRunes(strings.TrimSpace(args.Description), 1000), Name: service.TruncateRunes(strings.TrimSpace(args.Name), 300),
+		Description: service.TruncateRunes(strings.TrimSpace(args.Description), 1000), Name: service.TruncateRunes(russianNamePart(args.Name), maxRussianNameRunes),
 		Notes: service.TruncateRunes(strings.TrimSpace(args.Notes), 1000), Candidates: []AgentCandidate{}, DroppedCodes: []string{},
 	}
 	used := map[string]bool{}

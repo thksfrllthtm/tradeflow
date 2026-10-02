@@ -266,6 +266,12 @@ func (r *Repository) DeletePendingDecisionsForSession(ctx context.Context, sessi
 	return r.db.WithContext(ctx).Where("session_id = ? AND status = 'pending'", sessionID).Delete(&CodeDecision{}).Error
 }
 
+// SetPendingDecisionNameForSession — наименование непроверенной записи подбора (после «Применить наименование»).
+func (r *Repository) SetPendingDecisionNameForSession(ctx context.Context, sessionID int64, name string) error {
+	return r.db.WithContext(ctx).Model(&CodeDecision{}).Where("session_id = ? AND status = 'pending'", sessionID).
+		Updates(map[string]any{"final_name": name, "updated_at": time.Now().UTC()}).Error
+}
+
 // DecisionPhoto — первое фото записи базы решений.
 type DecisionPhoto struct {
 	ID     int64
@@ -289,6 +295,34 @@ func (r *Repository) DecisionPhotos(ctx context.Context, ids []int64) ([]Decisio
 	}
 	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, photos").Where("id IN ?", ids).Scan(&rows).Error
 	return rows, err
+}
+
+// DecisionsMissingThumb — записи с фото без миниатюры, по возрастанию id после after.
+func (r *Repository) DecisionsMissingThumb(ctx context.Context, after int64, limit int) ([]DecisionPhoto, error) {
+	var rows []DecisionPhoto
+	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, photos").
+		Where("id > ? AND thumb = '' AND photos <> '[]'::jsonb", after).
+		Order("id").Limit(limit).Scan(&rows).Error
+	return rows, err
+}
+
+// DecisionThumbs — миниатюры записей по id (без миниатюры — нет в карте).
+func (r *Repository) DecisionThumbs(ctx context.Context, ids []int64) (map[int64]string, error) {
+	var rows []struct {
+		ID    int64
+		Thumb string
+	}
+	err := r.db.WithContext(ctx).Table("code_decisions").Select("id, thumb").Where("id IN ? AND thumb <> ''", ids).Scan(&rows).Error
+	thumbs := make(map[int64]string, len(rows))
+	for _, row := range rows {
+		thumbs[row.ID] = row.Thumb
+	}
+	return thumbs, err
+}
+
+// SaveDecisionThumb сохраняет миниатюру записи.
+func (r *Repository) SaveDecisionThumb(ctx context.Context, id int64, thumb string) error {
+	return r.db.WithContext(ctx).Model(&CodeDecision{}).Where("id = ?", id).Update("thumb", thumb).Error
 }
 
 // SaveDecisionPhotoFeatures сохраняет описание фото (null — описать не удалось, больше не пробуем).
