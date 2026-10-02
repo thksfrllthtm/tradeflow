@@ -16,6 +16,12 @@ export function formatWeight(value: number): string {
   return formatDisplayNumber(weightText(value, true))
 }
 
+// Упаковка строки: своя, иначе общая, иначе 0,3 кг — как считает сервер.
+export const DEFAULT_PACKAGE_WEIGHT = '0.3'
+export function effectivePackageWeight(item: GoodsItemInput, defaultPackageWeight: string) {
+  return item.packageWeightKg.trim() || defaultPackageWeight.trim() || DEFAULT_PACKAGE_WEIGHT
+}
+
 export function autoNetFor(item: GoodsItemInput): number | null {
   const gross = parseDecimal(item.grossKg)
   // Пустые места сервер вычисляет из количества и штук в месте — нетто считаем так же.

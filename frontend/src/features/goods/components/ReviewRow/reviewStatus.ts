@@ -1,7 +1,8 @@
 import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
 
 type ResultItem = GoodsCalculationResult['items'][number]
-type ReviewTone = 'ok' | 'warn' | 'bad' | 'off'
+// todo — кода ещё нет: это видно по кнопке «Выбрать код ТН ВЭД», значок не кричит.
+type ReviewTone = 'ok' | 'warn' | 'bad' | 'off' | 'todo'
 
 // Цена и стоимость вводятся на этапе 3 — их ошибки здесь не показываем,
 // иначе строка выглядит сломанной, хотя на этом этапе исправить нечего.
@@ -19,5 +20,5 @@ export function reviewStatus(item: GoodsItemInput, resultItem?: ResultItem): { t
   if (item.excluded) return { tone: 'off', label: 'Исключена', title: 'Строка не учитывается в расчёте' }
   if (errors.length) return { tone: 'bad', label: 'Ошибка', title: [...errors, ...warnings].join('\n') }
   const label = !item.code ? 'Нужен код ТН ВЭД' : verified || resultItem?.status === 'calculated' ? 'Готово' : 'Проверьте код'
-  return { tone: label === 'Готово' ? 'ok' : 'warn', label, title: [label, ...warnings].join('\n') }
+  return { tone: label === 'Готово' ? 'ok' : !item.code && warnings.length === 0 ? 'todo' : 'warn', label, title: [label, ...warnings].join('\n') }
 }

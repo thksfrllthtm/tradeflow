@@ -1,6 +1,6 @@
 import { ChangeEvent, InputHTMLAttributes, KeyboardEvent, memo } from 'react'
 import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
-import { autoNetFor, formatWeight, netHint } from '../../lib/netWeight'
+import { autoNetFor, DEFAULT_PACKAGE_WEIGHT as DEFAULT_PACKAGE, effectivePackageWeight, formatWeight, netHint } from '../../lib/netWeight'
 import { photosOf } from '@/shared/lib/itemPhotos'
 import { autoQuantityHint, QuantityField } from '../../lib/quantities'
 import { hasNomenclatureRates, reviewStatus } from './reviewStatus'
@@ -50,9 +50,9 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
   const value = (field: keyof GoodsItemInput) => String(item[field] ?? '')
   const photos = photosOf(item)
   const verified = hasNomenclatureRates(item)
-  const ownPackage = item.packageWeightKg !== defaultPackageWeight
-  // Пустая своя упаковка на сервере заменяется общей — считаем подсказку так же.
-  const netItem = item.packageWeightKg.trim() ? item : { ...item, packageWeightKg: defaultPackageWeight }
+  const ownPackage = item.packageWeightKg.trim() !== '' && item.packageWeightKg !== defaultPackageWeight
+  // Пустая своя упаковка на сервере заменяется общей (или 0,3 кг) — считаем подсказку так же.
+  const netItem = { ...item, packageWeightKg: effectivePackageWeight(item, defaultPackageWeight) }
   const netHintValue = netHint(netItem)
   const autoNet = autoNetFor(netItem)
   // Упаковка влияет только на авто-нетто; для нетто из Excel или введённого вручную её не показываем.
@@ -92,18 +92,21 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
       <td>{quantityInput('pairs', 'Количество')}</td>
       <td>{numberInput('grossKg', 'Брутто')}</td>
       <td className="rv-net">
+        {/* Одна строка: упаковка места (видна при наведении или если своя) и нетто. Подсказка — только при ошибке. */}
         <div className="rv-net-box">
-          {numberInput('netKg', 'Нетто', { placeholder: autoNet !== null ? `авто ${formatWeight(autoNet)}` : 'авто', title: netHintValue.text })}
-          {item.netKg && item.netSource !== 'excel' && <button type="button" className="rv-net-reset" onClick={() => onResetNet(id)} title="Вернуть автоматический расчёт нетто" aria-label="Вернуть авто-нетто">↺</button>}
+          {autoNetMode && <label className={ownPackage ? 'rv-pkg own' : 'rv-pkg'} title={ownPackage ? `Своя упаковка места для этой строки, кг (общая — ${defaultPackageWeight || DEFAULT_PACKAGE} кг)` : 'Вес упаковки одного места, кг. Измените, чтобы задать свою упаковку для этой строки'}>
+            уп<input inputMode="decimal" value={item.packageWeightKg} placeholder={defaultPackageWeight || DEFAULT_PACKAGE} onChange={(event) => onChange(id, 'packageWeightKg', event.target.value.replace(',', '.'))} aria-label={`Вес упаковки, кг, строка ${rowNumber}`} />
+            {ownPackage && <button type="button" onClick={() => onChange(id, 'packageWeightKg', defaultPackageWeight)} title="Вернуть общую упаковку" aria-label="Вернуть общую упаковку">↺</button>}
+          </label>}
+          <div className="rv-net-input">
+            {numberInput('netKg', 'Нетто', { placeholder: autoNet !== null ? formatWeight(autoNet) : '—', title: netHintValue.text, className: autoNet !== null && !item.netKg ? 'rv-input rv-auto' : 'rv-input' })}
+            {item.netKg && item.netSource !== 'excel' && <button type="button" className="rv-net-reset" onClick={() => onResetNet(id)} title="Вернуть автоматический расчёт нетто" aria-label="Вернуть авто-нетто">↺</button>}
+          </div>
         </div>
-        {autoNetMode && <label className={ownPackage ? 'rv-pkg own' : 'rv-pkg'} title={ownPackage ? `Своя упаковка для этой строки (общая — ${defaultPackageWeight || '0.3'} кг)` : 'Вес упаковки одного места. Измените, чтобы задать свою упаковку для этой строки'}>
-          уп.<input inputMode="decimal" value={item.packageWeightKg} placeholder={defaultPackageWeight} onChange={(event) => onChange(id, 'packageWeightKg', event.target.value.replace(',', '.'))} aria-label={`Вес упаковки, кг, строка ${rowNumber}`} />кг
-          {ownPackage && <button type="button" onClick={() => onChange(id, 'packageWeightKg', defaultPackageWeight)} title="Вернуть общую упаковку" aria-label="Вернуть общую упаковку">↺</button>}
-        </label>}
-        {netHintValue.className !== 'net-ok' && <small className={`rv-hint ${netHintValue.className}`} title={netHintValue.text}>{netHintValue.text}</small>}
+        {netHintValue.className === 'net-bad' && <small className="rv-hint net-bad" title={netHintValue.text}>{netHintValue.text}</small>}
       </td>
       <td className="rv-include"><label className="rv-switch" title={item.excluded ? 'Строка не учитывается в расчёте' : 'Строка учитывается в расчёте'}><input type="checkbox" checked={!item.excluded} onChange={(event) => onChange(id, 'excluded', !event.target.checked)} aria-label={`Учитывать строку ${rowNumber} в расчёте`} /><span /></label></td>
-      <td className="rv-status"><span className={`rs-dot ${status.tone}`} title={status.title} aria-label={status.label}>{status.tone === 'ok' ? '✓' : status.tone === 'off' ? '–' : '!'}</span></td>
+      <td className="rv-status"><span className={`rs-dot ${status.tone}`} title={status.title} aria-label={status.label}>{status.tone === 'ok' ? '✓' : status.tone === 'off' ? '–' : status.tone === 'todo' ? '' : '!'}</span></td>
       <td className="rv-remove-col"><button type="button" className="rv-remove" onClick={() => onRemove(id)} title="Удалить строку" aria-label={`Удалить строку ${rowNumber}`}>×</button></td>
     </tr>
   )

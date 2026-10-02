@@ -34,21 +34,23 @@
 .goods-page .rv-grid tr:hover .rv-code-clear, .goods-page .rv-grid .rv-code-clear:focus-visible { opacity: 1; }
 .goods-page .rv-grid .rv-code-clear:hover { color: #a33232; text-decoration: underline; }
 
-/* Нетто: авто-значение в подсказке, предупреждение — только при проблеме */
-.rv-net-box { position: relative; }
-.goods-page .rv-grid .rv-net .rv-input { padding-left: 24px; }
-.goods-page .rv-grid .rv-net-reset { position: absolute; top: 50%; left: 4px; width: 18px; height: 18px; padding: 0; transform: translateY(-50%); border: 0; border-radius: 4px; background: #eef3ef; color: #56665c; font-size: .78rem; line-height: 1; cursor: pointer; }
+/* Нетто — одна строка: слева упаковка места (едва видна, ярче при наведении; своя — подсвечена),
+   справа поле нетто. Авто-нетто — серым в самом поле. Подсказка под полем — только при ошибке. */
+.rv-net-box { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.rv-net-input { position: relative; flex: 1 1 auto; min-width: 0; }
+.goods-page .rv-grid .rv-net .rv-input { padding-left: 22px; }
+.goods-page .rv-grid .rv-net .rv-input.rv-auto::placeholder { color: #7f8c84; }
+.goods-page .rv-grid .rv-net-reset { position: absolute; top: 50%; left: 4px; width: 16px; height: 16px; padding: 0; transform: translateY(-50%); border: 0; border-radius: 4px; background: #eef3ef; color: #56665c; font-size: .72rem; line-height: 1; cursor: pointer; }
 .goods-page .rv-grid .rv-net-reset:hover { background: #24704a; color: #fff; }
-/* Упаковка строки: по умолчанию едва заметна, своя — подсвечена */
-.goods-page .rv-grid .rv-pkg { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin: 1px 0 0; padding-right: 4px; color: #aab4ad; font-size: .68rem; font-weight: 500; white-space: nowrap; cursor: text; }
-.goods-page .rv-grid .rv-pkg input { width: 36px; height: 16px; margin: 0; padding: 0 4px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #7a877f; font-size: .68rem; font-variant-numeric: tabular-nums; text-align: right; }
-.goods-page .rv-grid tr:hover .rv-pkg input { border-color: #e3e9e5; background: #fff; }
-.goods-page .rv-grid .rv-pkg input:focus { outline: none; border-color: #24704a; background: #fff; box-shadow: 0 0 0 2px #24704a1f; }
+.goods-page .rv-grid .rv-pkg { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; margin: 0; color: #aab4ad; font-size: .66rem; font-weight: 600; white-space: nowrap; cursor: text; opacity: 0; transition: opacity .12s; }
+.goods-page .rv-grid tr:hover .rv-pkg, .goods-page .rv-grid .rv-pkg:focus-within, .goods-page .rv-grid .rv-pkg.own { opacity: 1; }
+.goods-page .rv-grid .rv-pkg input { width: 34px; height: 20px; margin: 0; padding: 0 3px; border: 1px solid #e3e9e5; border-radius: 4px; background: #fff; color: #7a877f; font-size: .68rem; font-variant-numeric: tabular-nums; text-align: right; }
+.goods-page .rv-grid .rv-pkg input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 2px #24704a1f; }
 .goods-page .rv-grid .rv-pkg.own { color: #8a5a00; }
 .goods-page .rv-grid .rv-pkg.own input { border-color: #f0c36d; background: #fff8e6; color: #7a4f00; font-weight: 700; }
 .goods-page .rv-grid .rv-pkg button { width: 16px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: #fcefd2; color: #8a5a00; font-size: .72rem; line-height: 1; cursor: pointer; }
 .goods-page .rv-grid .rv-pkg button:hover:not(:disabled) { background: #8a5a00; color: #fff; }
-.rv-hint { display: block; margin-top: 1px; padding-right: 4px; overflow: hidden; font-size: .68rem; font-weight: 600; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.rv-hint { display: block; margin-top: 2px; padding-right: 8px; overflow: hidden; font-size: .66rem; font-weight: 600; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 
 .rv-switch { position: relative; display: inline-flex; margin: 0; vertical-align: middle; cursor: pointer; }
 .goods-page .rv-grid .rv-switch input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }

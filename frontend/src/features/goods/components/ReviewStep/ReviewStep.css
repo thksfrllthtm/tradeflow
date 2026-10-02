@@ -47,7 +47,7 @@
 .rv-grid .rv-check { width: 36px; text-align: center !important; }
 .rv-grid .rv-num { width: 32px; color: #8a968f; text-align: center !important; }
 .rv-grid .rv-qty { width: 88px; }
-.rv-grid .rv-net { width: 118px; }
+.rv-grid .rv-net { width: 150px; }
 .rv-grid .rv-include { width: 72px; text-align: center !important; }
 .rv-grid .rv-status { width: 30px; text-align: center !important; }
 .rv-grid .rv-remove-col { width: 34px; text-align: center !important; }
