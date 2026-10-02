@@ -261,7 +261,11 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 				rows = append(rows, map[string]any{"code": code, "found": false})
 				continue
 			}
-			rows = append(rows, map[string]any{"code": code, "found": true, "name": treeName(item.Name), "duty": dutyText(item), "vat": item.VATPercent + "%", "hasDetails": item.DetailsURL != ""})
+			row := map[string]any{"code": code, "found": true, "name": treeName(item.Name), "duty": dutyText(item), "vat": item.VATPercent + "%", "hasDetails": item.DetailsURL != ""}
+			if notes := antiDumpingNotes(item); len(notes) > 0 {
+				row["antiDumping"] = notes
+			}
+			rows = append(rows, row)
 		}
 		formatted := make([]string, 0, len(codes))
 		for _, code := range codes {
@@ -444,4 +448,24 @@ func (t *agentToolbox) quoteSource(code, name, quote string) string {
 		return "name"
 	}
 	return ""
+}
+
+// antiDumpingNotes — антидемпинговые меры ЕАЭС для кода коротко: агент упоминает их в замечаниях.
+func antiDumpingNotes(item directory.NomenclatureCode) []string {
+	notes := []string{}
+	for _, ref := range item.AntiDumping {
+		rates := []string{}
+		for _, country := range ref.Countries {
+			rates = append(rates, country+" "+ref.Rates[country]+"%")
+		}
+		note := fmt.Sprintf("%s «%s»: %s", ref.Number, ref.ShortName, strings.Join(rates, ", "))
+		if !ref.Exact {
+			note += " (мера на часть товаров позиции — сверь описание)"
+		}
+		if ref.Suspended {
+			note += " (временно не применяется)"
+		}
+		notes = append(notes, note)
+	}
+	return notes
 }

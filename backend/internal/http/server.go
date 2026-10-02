@@ -2,12 +2,14 @@ package httpapi
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"sync"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/auth"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ceramics"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
@@ -26,6 +28,7 @@ type Server struct {
 	tnvedDirectory    *directory.TNVEDDirectoryService
 	tnvedNomenclature *directory.TNVEDNomenclatureService
 	kzRates           *directory.TNVEDKZRateService
+	antiDumping       *antidumping.Service
 	productDirectory  *directory.ProductDirectoryService
 	goods             *goods.GoodsService
 	goodsEstimates    *goods.GoodsEstimateService
@@ -46,6 +49,7 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		tnvedDirectory:    directory.NewTNVEDDirectoryService(database),
 		tnvedNomenclature: directory.NewTNVEDNomenclatureService(database),
 		kzRates:           directory.NewTNVEDKZRateService(database),
+		antiDumping:       antidumping.NewService(database),
 		productDirectory:  directory.NewProductDirectoryService(database),
 		goods:             goods.NewGoodsService(database),
 		goodsEstimates:    goods.NewGoodsEstimateService(database),
@@ -62,9 +66,12 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 	}
 }
 
-// StartBackground запускает фоновые задачи: миниатюры записей базы решений без неё и описания фото
-// для поиска похожих.
+// StartBackground запускает фоновые задачи: антидемпинговые меры из файла программы (если их ещё
+// не загружали), миниатюры записей базы решений без неё и описания фото для поиска похожих.
 func (s *Server) StartBackground(ctx context.Context) {
+	if err := s.antiDumping.SeedIfEmpty(ctx); err != nil {
+		log.Printf("anti-dumping measures: initial load failed: %v", err)
+	}
 	go s.decisions.FillMissingThumbs(ctx)
 	s.agent.StartPhotoWorker(ctx)
 }
@@ -117,6 +124,12 @@ func (s *Server) Router() *gin.Engine {
 	tnvedNomenclature.GET("", s.listTNVEDNomenclature)
 	tnvedNomenclature.POST("/lookup", s.lookupTNVEDNomenclature)
 	tnvedNomenclature.POST("/import", s.requireAdmin, s.importTNVEDNomenclature)
+
+	// Антидемпинговые меры ЕАЭС (реестр ЕЭК): список — всем, обновление с сайта ЕЭК — администратор.
+	antiDumping := router.Group("/api/tnved-antidumping")
+	antiDumping.Use(s.requireUser)
+	antiDumping.GET("", s.listAntiDumping)
+	antiDumping.POST("/refresh", s.requireAdmin, s.refreshAntiDumping)
 
 	kzRates := router.Group("/api/tnved-kz-rates")
 	kzRates.Use(s.requireUser, s.requireAdmin)

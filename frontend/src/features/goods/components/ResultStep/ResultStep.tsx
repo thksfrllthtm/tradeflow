@@ -125,6 +125,9 @@ export function ResultStep({
                 const name = itemDisplayName(item, source)
                 const ready = item.status === 'calculated'
                 const currency = item.goodsCostCurrency || item.costCurrency || 'USD'
+                // Антидемпинг из реестра ЕЭК (сервер кладёт его в снимок строки при расчёте).
+                const antiDumpingInfo = item.directorySnapshot?.antiDumping as { status?: string; number?: string; percent?: string; text?: string } | undefined
+                const antiDumpingNote = antiDumpingInfo && (antiDumpingInfo.status === 'possible' || antiDumpingInfo.status === 'origin') ? antiDumpingInfo : undefined
 
                 return (
                   <tr key={`${item.productId}-${index}`} className={[selectedRows.includes(index) ? 'rv-selected' : '', item.excluded ? 'rv-excluded' : ''].filter(Boolean).join(' ') || undefined}>
@@ -160,8 +163,8 @@ export function ResultStep({
                     </td>
                     <td>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</td>
                     <td>{displayNumber(item.customsValueKzt)}</td>
-                    <td>{displayNumber(item.dutyKzt)}</td>
-                    {antiDumping && <td>{displayNumber(item.antiDumpingKzt)}</td>}
+                    <td>{displayNumber(item.dutyKzt)}{antiDumpingNote && <small className="rs-sub rs-ad-note" title={antiDumpingNote.text}>{antiDumpingNote.status === 'origin' ? 'антидемпинг: укажите страну' : 'антидемпинг: проверить'}</small>}</td>
+                    {antiDumping && <td title={antiDumpingInfo?.text}>{displayNumber(item.antiDumpingKzt)}{antiDumpingInfo?.status === 'applied' && <small className="rs-sub">{antiDumpingInfo.number} · {String(antiDumpingInfo.percent ?? '').replace('.', ',')}%</small>}</td>}
                     <td>{displayNumber(item.vatKzt)}</td>
                     <td>{displayNumber(item.feeKzt)}</td>
                     {delivery && <td>{displayNumber(item.deliveryUsd)}</td>}

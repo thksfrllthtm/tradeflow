@@ -18,6 +18,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
 	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
 )
@@ -60,6 +61,22 @@ type NomenclatureCode struct {
 	InDirectory bool   `json:"inDirectory"`
 	// Ставка по перечню РК (ниже ЕТТ); nil — кода в перечне нет.
 	KZ *KZRate `json:"kz"`
+	// Антидемпинговые меры ЕАЭС, под которые попадает код (exact — по точному коду, иначе по
+	// товарной позиции: решает описание товара).
+	AntiDumping []AntiDumpingRef `json:"antiDumping"`
+}
+
+// AntiDumpingRef — мера реестра ЕЭК для кода номенклатуры.
+type AntiDumpingRef struct {
+	Number       string            `json:"number"`
+	ShortName    string            `json:"shortName"`
+	Countries    []string          `json:"countries"`
+	CountryNames string            `json:"countryNames"`
+	Rates        map[string]string `json:"rates"`
+	Exact        bool              `json:"exact"`
+	Suspended    bool              `json:"suspended"`
+	EndDate      string            `json:"endDate"`
+	DocumentURL  string            `json:"documentUrl"`
 }
 
 type NomenclatureImportInfo struct {
@@ -347,11 +364,15 @@ func (s *TNVEDNomenclatureService) withKZRates(ctx context.Context, rows []repos
 	if err != nil {
 		return nil, err
 	}
+	measures, err := antidumping.NewService(s.repository).Measures(ctx)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]NomenclatureCode, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, NomenclatureCode{
 			Code: row.Code, Name: row.Name, TariffText: row.TariffText, InDirectory: row.InDirectory,
-			VATPercent: row.VATPercent.String(), DetailsURL: row.DetailsURL, KZ: kzRates[row.Code],
+			VATPercent: row.VATPercent.String(), DetailsURL: row.DetailsURL, KZ: kzRates[row.Code], AntiDumping: antiDumpingRefs(measures, row.Code),
 			Duty: NomenclatureDuty{Type: row.DutyType, Percent: service.DecimalText(row.DutyPercent), Amount: service.DecimalText(row.DutyAmount), Currency: row.DutyCurrency, Unit: row.DutyUnit},
 		})
 	}
@@ -381,4 +402,25 @@ func nomenclatureImportInfo(record repository.TNVEDNomenclatureImport) Nomenclat
 		info.ActualDate = record.ActualDate.Format("2006-01-02")
 	}
 	return info
+}
+
+// antiDumpingRefs — меры реестра ЕЭК для кода (пустой список, если мер нет).
+func antiDumpingRefs(measures []antidumping.Measure, code string) []AntiDumpingRef {
+	refs := []AntiDumpingRef{}
+	for _, match := range antidumping.MatchCode(measures, code) {
+		measure := match.Measure
+		names := make([]string, 0, len(measure.Countries))
+		for _, country := range measure.Countries {
+			if name := antidumping.CountryNames[country]; name != "" {
+				names = append(names, name)
+			} else {
+				names = append(names, country)
+			}
+		}
+		refs = append(refs, AntiDumpingRef{
+			Number: measure.Number, ShortName: measure.ShortName, Countries: measure.Countries, CountryNames: strings.Join(names, ", "),
+			Rates: measure.Rates, Exact: match.Exact, Suspended: measure.Suspended, EndDate: measure.EndDate, DocumentURL: measure.DocumentURL,
+		})
+	}
+	return refs
 }

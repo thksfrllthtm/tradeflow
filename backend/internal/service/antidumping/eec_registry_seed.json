@@ -1,0 +1,875 @@
+{
+ "source": "https://remedies.eaeunion.org/dimd/ru/security/actions",
+ "downloadedAt": "2026-10-02",
+ "result": [
+  {
+   "investigationnumber": "AD-9",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Графитированные электроды",
+   "description": "<p>​Электроды, используемые в печах, графитированные круглого сечения диаметром более 520 мм, но не более 650 мм, или иного поперечного сечения площадью более 2 700 см<sup style=\"color: rgb(73, 80, 87);\">2</sup>, но не более 3 300 см<sup style=\"color: rgb(73, 80, 87);\">2</sup></p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Graphite India Limited — 32,83 %;</p><p>- для HEG Limited — 16,04 %;</p><p>- для прочих производителей — 32,83 %.</p>",
+   "tnved": [
+    "8545 11 002 0"
+   ],
+   "productposition": [
+    "8545"
+   ],
+   "exportingcountrycode": [
+    "IN"
+   ],
+   "startdate": "2013-01-26T00:00:00Z",
+   "enddate": "2029-03-31T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/277/1007/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 25 декабря 2012 г. № 288</u></a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/315/3377/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 19&nbsp;декабря 2017&nbsp;г. №&nbsp;183</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/253/3889/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 25 сентября 2018 г. № 156</u></a> - о продлении меры до 24 сентября 2023 г. включительно</p><p><a href=\"https://docs.eaeunion.org/documents/414/7543/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 18&nbsp;июля 2023&nbsp;г. №&nbsp;102</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/429/8024/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 1 апреля 2024 г. № 34</u>​</a> - о продлении меры до 31 марта 2029 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-11",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Холоднодеформированные бесшовные трубы из нержавеющей стали",
+   "description": "<p>Холоднодеформированные бесшовные трубы из нержавеющей стали</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в размере 29,39 % от таможенной стоимости​​</p>",
+   "tnved": [
+    "7304 41 000 5",
+    "7304 41 000 8"
+   ],
+   "productposition": [
+    "7304",
+    "7304"
+   ],
+   "exportingcountrycode": [
+    "CN",
+    "MY"
+   ],
+   "startdate": "2013-05-15T00:00:00Z",
+   "enddate": "2029-01-22T23:59:59Z",
+   "foundation": "<p>​<a href=\"https://docs.eaeunion.org/documents/251/866/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 9 апреля 2013 г. № 65</u></a> - о применении меры</p><p>​​<a href=\"https://docs.eaeunion.org/documents/292/1791/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 1 сентября&nbsp;2015 г. № 109</u></a><a href=\"http://www.eurasiancommission.orghttp//www.eurasiancommission.org/ru/act/trade/podm/quick_access/Pages/investigation_seamless_pipes.aspx\" rel=\"noopener noreferrer\" target=\"_blank\"><u>​</u></a>&nbsp;- о внесении изменений в части кодов ТН ВЭД ЕАЭС​</p><p><a href=\"https://docs.eaeunion.org/documents/315/3352/\" rel=\"noopener noreferrer\" target=\"_blank\">​​<u>Решение Коллегии ЕЭК от 13 декабря 2017 г. № 169</u>​</a><a href=\"http://www.eurasiancommission.orghttp//www.eurasiancommission.org/ru/act/trade/podm/quick_access/Pages/investigation_seamless_pipes.aspx\" rel=\"noopener noreferrer\" target=\"_blank\"><u>​</u></a>&nbsp;- о распространении меры на товар из Малайзии​</p><p>​<a href=\"https://docs.eaeunion.org/documents/253/6730/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 3 апреля 2018 г. № 49</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/253/4061/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 11&nbsp;декабря&nbsp;2018 г. №&nbsp;200​</u></a>&nbsp;- о продлении меры до 10 декабря 2023 г. включительно</p><p><a href=\"https://docs.eaeunion.org/documents/414/7656/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 25&nbsp;сентября&nbsp;2023&nbsp;г. № 144​</u></a>&nbsp;- продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/429/7929/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 23&nbsp;января&nbsp;2024&nbsp;г. № 6​</u></a>&nbsp;- об изменении ставки антидемпинговой&nbsp;пошлины&nbsp;с 19,15 % на 29,39 %</p><p><a href=\"https://docs.eaeunion.org/documents/429/7930/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 23&nbsp;января&nbsp;2024&nbsp;г. № 7​</u></a>&nbsp;- о продлении меры до 22 января 2029 г. включительно</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-1",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Некоторые виды стальных труб",
+   "description": "<p>​а) Обсадные трубы</p><p>б) Насосно-компрессорные трубы</p><p>в) Нефтепроводные трубы диаметром до 820 миллиметров включительно, газопроводные трубы диаметром до 820 миллиметров включительно и горячедеформированные трубы общего назначения диаметром до 820 миллиметров включительно</p>",
+   "actiondescription": "<p>Антидемпинговые пошлины:</p><p>а) для обсадных труб в размере 18,9 % от таможенной стоимости;</p><p>б) для насосно-компрессорных труб в размере 19,9 % от таможенной стоимости;</p><p>в) для нефтепроводных труб диаметром до 820 миллиметров включительно, газопроводных труб диаметром до 820 миллиметров включительно и горячедеформированных трубы общего назначения диаметром до 820 миллиметров включительно в следующих процентах от таможенной стоимости:</p><p>- для ОАО «ИНТЕРПАЙП НТЗ» — 19,4 %;</p><p>- для ООО «ИНТЕРПАЙП Нико Тьюб» — 19,4 %;</p><p>- для ОАО «ИНТЕРПАЙП НМТЗ» — 19,4 %;</p><p>- для ОАО «Днепропетровский трубный завод» — 37,8 %;</p><p>- для прочих производителей — 37,8 %.</p>",
+   "tnved": [
+    "7304 24 000 1",
+    "7304 24 000 2",
+    "7304 24 000 3",
+    "7304 24 000 4",
+    "7304 24 000 5",
+    "7304 24 000 6",
+    "7304 24 000 9",
+    "7304 29 100 1",
+    "7304 29 100 2",
+    "7304 29 100 3",
+    "7304 29 100 9",
+    "7304 29 300 1",
+    "7304 29 300 2",
+    "7304 29 300 3",
+    "7304 29 300 4",
+    "7304 29 300 9",
+    "7304 29 900 1",
+    "7304 29 900 9",
+    "7304",
+    "7305",
+    "7306"
+   ],
+   "productposition": [
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7305",
+    "7306"
+   ],
+   "exportingcountrycode": [
+    "UA"
+   ],
+   "startdate": "2011-10-01T00:00:00Z",
+   "enddate": "2026-12-20T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/192/632/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение КТС от 22 июня 2011 г. № 702</u></a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/202/9248/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение КТС от 9 декабря 2011 г. № 859</u></a> - об изменениях в части кодов ТН ВЭД ТС</p><p><a href=\"https://docs.eaeunion.org/documents/292/1870/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 6 октября 2015 г. № 133</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/305/2292/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 2 июня&nbsp;2016 г.&nbsp;№ 48</a> - о продлении меры до 1 июня 2021 г. включительно</p><p><a href=\"https://docs.eaeunion.org/documents/379/5786/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 20 апреля 2021 г. № 49</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/379/6310/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 21&nbsp;декабря&nbsp;2021&nbsp;г.&nbsp;№ 181</a><a href=\"https://docs.eaeunion.org/docs/ru-ru/01530841/err_24122021_181\" rel=\"noopener noreferrer\" target=\"_blank\">​</a> - о продлении меры до 20 декабря 2026 г. включительно</p>",
+   "note": "<p><a href=\"http://www.eurasiancommission.org/ru/act/trade/podm/rez_mer/Documents/Doklad_NKV_30_03_2011.1.pdf#page=26\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Результаты пересмотра в связи с распространением меры на ТТ ТС</u></a></p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-24",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Литые колесные диски",
+   "description": "<p>Литые алюминиевые колесные диски, представляющие собой колеса ходовые из алюминия диаметром от 13 до 20 дюймов включительно с максимально допустимой нагрузкой не более 1 150 кг с диаметром центрального отверстия до 131 мм включительно​</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в размере&nbsp;33,69 % от таможенной стоимости</p>",
+   "tnved": [
+    "8708 70 500 9"
+   ],
+   "productposition": [
+    "8708"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2019-04-28T00:00:00Z",
+   "enddate": "2029-11-18T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/docs/ru-ru/01521306/clcd_29032019_43\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение​ Коллегии ЕЭК от 26 марта 2019 г. № 43​​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/docs/ru-ru/01544632/err_21032024_23\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение​ Коллегии ЕЭК от 19 марта 2024 г. № 23​​</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/docs/ru-ru/01546448/err_22112024_128\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение​ Коллегии ЕЭК от 19 ноября 2024 г. № 128​​</a> - о продлении меры до 18 ноября 2029 г. включительно в отношении товара, классифицируемого кодом 8708 70 500 9 ТН ВЭД ЕАЭС</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-26",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Оцинкованный прокат",
+   "description": "<p>Плоский холоднокатаный прокат и горячекатаный прокат, оцинкованный горячим способом, с гальваническим или другим покрытием алюминиево-цинковыми сплавами</p>",
+   "actiondescription": "<p>Антидемпинговая мера в следующих формах:</p><p><br></p><p>А. Антидемпинговая пошлина для оцинкованного проката, происходящего из Китайской Народной Республики, в процентах от таможенной стоимости:</p><p>– для Angang Steel Company Limited — 17,00 %;</p><p>– для Shandong Esdawn Metal Technology Development Co., Ltd. — 15,12 %;</p><p>– для Xinjiang Bayi Iron &amp; Steel Co., Ltd. — 14,39 %;</p><p>– для DongE Yike Panel Co., Ltd. — 12,69 %;</p><p>– для Shandong Sino Steel Co., Ltd., Gansu Jiu Steel Group Hongxing Iron And Steel Co., Ltd. и Dalian Posco Co., Ltd. — 14,93 %;</p><p>– для прочих производителей — 17,00 %.</p><p><br></p><p>Б. Антидемпинговая пошлина для оцинкованного проката, происходящего из Украины, в процентах от таможенной стоимости:</p><p>– для ЧАО «ММК им. Ильича» (предприятие группы «Метинвест») — 23,90 %;</p><p>– для прочих производителей — 23,90 %.​</p><p><br></p><p>В. Ценовые обязательства компаний:</p><p>- Angang Steel Company Limited;</p><p>- Shandong Esdawn Metal Technology Development Co., Ltd.;</p><p>- Xinjiang Bayi Iron &amp; Steel Co., Ltd.;</p><p>- DongE Yike Panel Co., Ltd.;</p><p>- Gansu Jiu Steel Group Hongxing Iron And Steel Co., Ltd​​​.​​</p>",
+   "tnved": [
+    "7210 49 000 1",
+    "7210 49 000 9",
+    "7210 61 000 0",
+    "7212 30 000 0",
+    "7212 50 610 0",
+    "7225 92 000 0"
+   ],
+   "productposition": [
+    "7210",
+    "7210",
+    "7210",
+    "7212",
+    "7212",
+    "7225"
+   ],
+   "exportingcountrycode": [
+    "UA",
+    "CN"
+   ],
+   "startdate": "2020-01-05T00:00:00Z",
+   "enddate": "2030-06-09T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/335/4821/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решен​ие Коллегии ЕЭК от 3 декабря 2019 г. № 209​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/429/9711/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решен​ие Коллегии ЕЭК от 19 ноября 2024 г. № 127​</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/446/10034/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решен​ие Коллегии ЕЭК от 10 июня 2025 г. № 50​</a> - о продлении меры до 9 июня 2030 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-34",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Меламин",
+   "description": "<div class=\"ExternalClass2FAB9F910A624D1FB50FF0B358589CB0\"><p>​Меламин</p></div>",
+   "actiondescription": "<p>​Антидемпинговая мера в следующих формах:</p><p><br></p><p>​А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для компаний Yuxiang-Diversifous Poplar Chemical Co., Ltd., Sichuan Golden-Elephant Sincerity Chemical Co., Ltd., Xinjiang Golden Elephant Sincerity Coal Chemicals&amp;T Co., Ltd. — 19,08 %;</p><p>– для компании&nbsp;Xinjiang Xinlianxin Energy Chemical Co., Ltd. — 15,22 %;</p><p>– для прочих производителей — 19,08 %.</p><p><br></p><p>Б. Ценовые обязательства для поставок меламина:</p><p>- компаниями&nbsp;Yuxiang-Diversifous Poplar Chemical Co., Ltd., Sichuan Golden-Elephant Sincerity Chemical Co., Ltd., Xinjiang Golden Elephant Sincerity Coal Chemicals&amp;T Co., Ltd.;</p><p>- компанией&nbsp;Xinjiang Xinlianxin Energy Chemical Co., Ltd.</p>",
+   "tnved": [
+    "2933 61 000 0"
+   ],
+   "productposition": [
+    "2933"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2022-05-08T00:00:00Z",
+   "enddate": "2027-05-07T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/399/6565/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 5 апреля 2022 г. №&nbsp;56​​</a> - о применении меры</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-28",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Алюминиевая лента",
+   "description": "<p>Алюминиевая лента, представляющая собой прямоугольные (включая квадратные) плоские алюминиевые изделия, свернутые или несвернутые в рулоны, толщиной более 0,2 мм, но менее 3 мм, с покрытием или без (за исключением отдельных разновидностей алюминиевой ленты)</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:​</p><p>- для&nbsp;алюминиевой ленты, происходящей из Азербайджанской Республики&nbsp;— 16,18 %;</p><p>- для алюминиевой ленты, происходящей из Китайской Народной Республики&nbsp;— 13,14 %.</p>",
+   "tnved": [
+    "7606 11 910 0",
+    "7606 12 200 3",
+    "7606 12 200 8",
+    "7606 12 920 3",
+    "7606 12 920 8",
+    "7607 11 900 0"
+   ],
+   "productposition": [
+    "7606",
+    "7606",
+    "7606",
+    "7606",
+    "7606",
+    "7607"
+   ],
+   "exportingcountrycode": [
+    "AZ",
+    "CN"
+   ],
+   "startdate": "2020-10-24T00:00:00Z",
+   "enddate": "2031-05-24T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/247/5342/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 22 сентября 2020 г. №&nbsp;115​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/379/5616/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 12 января 2021 г. № 1​</a> - о внесении изменений в части кодов ТН ВЭД ЕАЭС</p><p><a href=\"https://docs.eaeunion.org/documents/429/8273/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 27 августа 2024 г. № 102</a><a href=\"http://docs.eaeunion.org/docs/ru-ru/01228364/err_15012021_1\" rel=\"noopener noreferrer\" target=\"_blank\">​</a> - о распространении меры на товары из Азербайджанской Республики, классифицируемые кодом 7607 11 900 0 ТН ВЭД ЕАЭС, и алюминиевую ленту из Азербайджанской Республики, указанную в пункте 3 приложения № 2 к <a href=\"https://docs.eaeunion.org/documents/247/5342/\" rel=\"noopener noreferrer\" target=\"_blank\">Решению Коллегии ЕЭК от 22 сентября 2020 г. № 115</a></p><p><a href=\"https://docs.eaeunion.org/documents/446/10232/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 14 октября 2025 г. № 95</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/463/10705/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 25 мая 2026 г. №&nbsp;62​</a> - о применении меры до 24 мая 2031 г. включительно</p>",
+   "note": "<p>Подробнее об особенностях применения меры см. <a href=\"https://docs.eaeunion.org/documents/247/5342/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 22 сентября 2026 г. № 115</a> (с учетом последующих изменений)</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-21",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Нержавеющие трубы",
+   "description": "<p>Бесшовные трубы из коррозионностойкой (нержавеющей) стали диаметром до 426 мм включительно</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для ЧАО&nbsp;«Сентравис Продакшн Юкрейн» — 4,32 %;</p><p>- для ООО&nbsp;«Интерпайп Нико Тьюб» — 4,32 %;</p><p>- для ООО «ПО «Оскар» — 18,96 %;</p><p>- для прочих производителей — 18,96 %.</p>",
+   "tnved": [
+    "7304 41 000 1",
+    "7304 41 000 5",
+    "7304 41 000 8",
+    "7304 49 100 0",
+    "7304 49 930 1",
+    "7304 49 930 9",
+    "7304 49 950 1",
+    "7304 49 950 9",
+    "7304 49 990 0",
+    "7304 90 000 1",
+    "7304 90 000 9"
+   ],
+   "productposition": [
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304"
+   ],
+   "exportingcountrycode": [
+    "UA"
+   ],
+   "startdate": "2016-02-26T00:00:00Z",
+   "enddate": "2027-04-29T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/305/2095/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 26 января 2016 г. № 6</a><a href=\"https://docs.eaeunion.org/docs/ru-ru/0119455/clcd_27012016_6_doc.pdf\" rel=\"noopener noreferrer\" target=\"_blank\">​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/247/5583/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 29 декабря 2020 г. № 185</a><a href=\"https://docs.eaeunion.org/docs/ru-ru/0119455/clcd_27012016_6_doc.pdf\" rel=\"noopener noreferrer\" target=\"_blank\">​</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/379/6044/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 7 сентября 2021 г. № 110</a> - о продлении меры до 6 сентября 2026 г. включительно</p><p><a href=\"https://docs.eaeunion.org/documents/463/10782/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 7 июля 2026 г. № 84</a>​ - о продлении меры на период расследования</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-20",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Ферросиликомарганец",
+   "description": "<p>​Ферросиликомарганец</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в размере 26,35 %&nbsp;от таможенной стоимости</p>",
+   "tnved": [
+    "7202 30 000 0"
+   ],
+   "productposition": [
+    "7202"
+   ],
+   "exportingcountrycode": [
+    "UA"
+   ],
+   "startdate": "2016-10-28T00:00:00Z",
+   "enddate": "2027-12-05T23:59:59Z",
+   "foundation": "<p>​<a href=\"https://docs.eaeunion.org/documents/305/2305/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 2 июня&nbsp;2016 г. №&nbsp;58​​</a> - о применении меры</p><p>​<a href=\"https://docs.eaeunion.org/documents/310/2539/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Евразийского межправительственного совета&nbsp;от 27 октября&nbsp;2016 г. № 9​</a> - о вступлении в силу Решения Коллегии ЕЭК от 2 июня 2016 г. № 58</p><p>​<a href=\"https://docs.eaeunion.org/documents/379/6031/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 24 августа&nbsp;2021 г. №&nbsp;108​​</a> - о продлении меры на период расследования</p><p>​<a href=\"https://docs.eaeunion.org/documents/399/6660/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 23 мая&nbsp;2022 г. №&nbsp;86​​</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/399/7098/\" rel=\"noopener noreferrer\" target=\"_blank\">​​​Решение Коллегии ЕЭК от&nbsp;6&nbsp;декабря&nbsp;2022&nbsp;г. № 193​​​</a> - о продлении меры до 5 декабря 2027 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-31",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Графитированные электроды диаметром не более 520 мм",
+   "description": "<p>Электроды,&nbsp;используемые&nbsp;в печах, графитированные круглого сечения диаметром не более 520 мм или иного поперечного сечения площадью не более 2 700 см<sup>2</sup></p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Shandong Basan Graphite New Material Plant — 28,20 %;</p><p>- для Fangda Carbon New Material Co., Ltd., Chengdu Rongguang Carbon Co., Ltd., Fushun Carbon Co., Ltd., Hefei Carbon Co., Ltd. — 14,04 %;</p><p>- для Liaoyang Carbon Co., Ltd., Sichuan Guanghan Shida Carbon Co., Ltd., Liaoyang Shoushan Carbon Factory, Jianglong Carbon (Shanghai) Co., Limited, Asahi Fine Carbon Dalian Co., Ltd., Shandong Asahi Graphite New Material Technology Co., Ltd., Jilin City Zhaochen Carbon Co., Ltd., Jilin Carbon Company, Ltd., Anshan Carbon Co., Ltd., Dandong Xinxing Carbon Co., Ltd., Hebei Ruitong Carbon Co., Ltd., Linzhang Send Carbon Technology Co., Ltd., Jilin City Chengxin Carbon Co., Ltd., Fushun Oriental Carbon Co., Ltd. — 28,20 %;</p><p>- для прочих производителей — 28,20 %.​</p>",
+   "tnved": [
+    "8545 11 008 9"
+   ],
+   "productposition": [
+    "8545"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2022-10-01T00:00:00Z",
+   "enddate": "2027-09-30T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/379/6072/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 21 сентября 2021 г. № 129​​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/384/6219/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Евразийского межправительственного совета от 19 ноября 2021 г. № 11</a>​ – о необходимости внесения изменений в Решение Коллегии ЕЭК от 21 сентября 2021 г. № 129</p><p><a href=\"https://docs.eaeunion.org/documents/379/6288/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 7 декабря 2021 г. № 173</a> - о внесении изменений в Решение Коллегии ЕЭК от 21 сентября 2021 г. № 129</p><p><a href=\"https://docs.eaeunion.org/documents/399/6531/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 29 марта 2022 г. № 47​</a> - о переносе срока начала применения меры на 1 октября 2022 г.</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-3",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Подшипники качения (за исключением игольчатых)",
+   "description": "<p>​Подшипники качения (за исключением игольчатых)​</p>",
+   "actiondescription": "<p>​Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для ООО&nbsp;«Подшипники качения Уси» — 31,3 %;</p><p>- для прочих производителей — 41,5 %.</p>",
+   "tnved": [
+    "8482 10 100 1",
+    "8482 10 100 2",
+    "8482 10 100 9",
+    "8482 10 900 1",
+    "8482 10 900 2",
+    "8482 10 900 3",
+    "8482 10 900 8",
+    "8482 20 000 1",
+    "8482 20 000 2",
+    "8482 20 000 9",
+    "8482 30 000 1",
+    "8482 30 000 9",
+    "8482 50 000 1",
+    "8482 50 000 2",
+    "8482 50 000 9",
+    "8482 80 000 1",
+    "8482 80 000 2",
+    "8482 80 000 9",
+    "8482 91 100 0",
+    "8482 91 900 0",
+    "8482 99 000 0"
+   ],
+   "productposition": [
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482",
+    "8482"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2011-08-21T00:00:00Z",
+   "enddate": "2029-03-31T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/192/9034/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Комиссии ТС от 22 июня 2011 г.&nbsp;№ 705</u></a> - об установлении меры до 20 января 2013 г. включительно в отношении товара из Китайской Народной Республики (включая Тайвань и специальные административные районы Китайской Народной Республики Гонконг и Макао)</p><p><a href=\"https://docs.eaeunion.org/documents/277/1082/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 4 декабря 2012 г.&nbsp;№ 244</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/251/319/\" rel=\"noopener noreferrer\" target=\"_blank\">​​<u>Решение Коллегии ЕЭК от 17 сентября 2013 г.&nbsp;№ 197</u></a> - о продлении меры до 20 января 2018 г. включительно в отношении товара из Китайской Народной Республики</p><p><a href=\"https://docs.eaeunion.org/documents/315/3282/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 14 ноября 2017 г.&nbsp;№ 150</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/253/3836/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 21 августа 2018 г.&nbsp;№ 139</u></a> - о продлении меры до 20 августа 2024 г. включительно</p><p><a href=\"https://docs.eaeunion.org/documents/414/7544/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 18&nbsp;июля&nbsp;2023&nbsp;г.&nbsp;№ 103</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/docs/ru-ru/01543855/err_02042024_35\" rel=\"noopener noreferrer\" target=\"_blank\">​</a><a href=\"https://docs.eaeunion.org/documents/429/8021/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 1&nbsp;апреля&nbsp;2024&nbsp;г.&nbsp;№ 35</u></a> - о продлении меры до 31 марта 2029 г. включительно</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-27",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Горячедеформированные бесшовные трубы из коррозионностойкой стали",
+   "description": "<p>Бесшовные трубы круглого поперечного сечения из коррозионностойкой стали наружным диаметром до 650 мм включительно, изготовленные методом горячей деформации</p>",
+   "actiondescription": "<p>​​Антидемпинговая пошлина в размере 15,50 % от таможенной стоимости</p>",
+   "tnved": [
+    "7304 49 100 0",
+    "7304 49 930 1",
+    "7304 49 930 9",
+    "7304 49 950 1",
+    "7304 49 950 9",
+    "7304 49 990 0 "
+   ],
+   "productposition": [
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2020-02-01T00:00:00Z",
+   "enddate": "2030-06-23T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/335/4839/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 3 декабря 2019 г. № 218</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/429/9742/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 17 декабря 2024 г. № 145</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/446/10052/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 24 июня 2025 г. № 56</a> - о продлении меры до 23 июня 2030 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-16",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Нефтегазопромысловые трубы",
+   "description": "<p>Стальные бесшовные трубы, применяемые для бурения и эксплуатации нефтяных и газовых скважин (за исключением бурильных труб, производимых в соответствии с пунктом 10 стандарта Specification for Rotary Drill ​​Stem Elements (ANSI/API Specification 7-1) в редакции с учетом изменений, внесенных Дополнением 1 (март 2007 г.)</p>",
+   "actiondescription": "<p>Антидемпинговая мера в следующих формах:</p><p><br></p><p>А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Tianjin Pipe Corporation — 31,00 %;</p><p>- для Hengyang Valin Steel Tube Co., Ltd., Hengyang Valin MPM Co., Ltd. — 25,21 %;</p><p>- для Hunting Energy Services (Wuxi) Co. Ltd. — 12,23 %;</p><p>- для Shanghai Hilong Drill Pipe Co., Ltd., Nantong Hilong Steel Tube Co., Ltd., Shanghai Tube-Cote Petroleum Pipe Coating Co., Ltd. — 12,30 %;</p><p>- для Shengli Oil Field Freet Petroleum Equipment Co., Ltd., Shengli Oil Field Freet Petroleum Steel Pipe Co., Ltd., Jiangsu ChangBao Steel Tube Limited Co., Jiangsu ChangBao Precision Steel Tube Co., Ltd., Shandong Molong Petroleum Machinery Co., Ltd., Shandong Weima Equipment Science &amp; Technology Corporation Limited, Tianjin Tiangang Special Petroleum Pipe Manufacture Co., Ltd., TianJin BinHai TianCheng Drill Equipment Co., Ltd., Dalipal Pipe Company, Anhui Tianda Oil Pipe Company Limited, Pan Gang Group Chengdu Steel &amp; Vanadium Co., Ltd., Baoji Petroleum Steel Pipe Co., Ltd. — 23,18 %;</p><p>- для прочих производителей — 31,00 %.</p><p><br></p><p>Б. Ценовые обязательства компаний:</p><p>- Tianjin Pipe Corporation;</p><p>- Hengyang Valin Steel Tube Co., Ltd.;</p><p>- Hengyang Valin MPM Co., Ltd.;</p><p>- Hunting Energy Services (Wuxi) Co., Ltd.</p>",
+   "tnved": [
+    "7304 22 000 1",
+    "7304 22 000 2",
+    "7304 22 000 9",
+    "7304 23 000 1",
+    "7304 23 000 2",
+    "7304 23 000 9",
+    "7304 24 000 1",
+    "7304 24 000 2",
+    "7304 24 000 3",
+    "7304 24 000 4",
+    "7304 24 000 5",
+    "7304 24 000 6",
+    "7304 24 000 9",
+    "7304 29 100 1",
+    "7304 29 100 2",
+    "7304 29 100 3",
+    "7304 29 100 9",
+    "7304 29 300 1",
+    "7304 29 300 2",
+    "7304 29 300 3",
+    "7304 29 300 4",
+    "7304 29 300 9",
+    "7304 29 900 1",
+    "7304 29 900 9"
+   ],
+   "productposition": [
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304",
+    "7304"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2015-09-23T00:00:00Z",
+   "enddate": "2026-12-21T23:59:59Z",
+   "foundation": "<p>​<a href=\"https://docs.eaeunion.org/documents/292/1772/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 18 августа 2015 г. № 101</u></a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/315/2747/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 16 января 2017 г. № 3</a>&nbsp;и <a href=\"https://docs.eaeunion.org/documents/315/3003/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 8 июня 2017 г. № 63</u></a> - о внесении изменений в Решение Коллегии ЕЭК от 18 августа 2015 г. № 101 в части перечня производителей, чьи ценовые обязательства одобрены</p><p>​<a href=\"https://docs.eaeunion.org/documents/247/5264/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 11 августа 2020 г. № 98</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/379/5805/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 27 апреля 2021 г. № 52​</u></a> - о продлении меры до 26 апреля 2026 г. включительно</p><p><a href=\"https://docs.eaeunion.org/documents/463/10504/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 17 февраля 2026 г. № 17</a>​ - о продлении меры на период расследования и внесении изменений в Решение Коллегии ЕЭК от 18 августа 2015 г. № 101 в части формы сертификата производителя</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-18",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Грузовые шины",
+   "description": "<p>​​Грузовые шины, представляющие собой предназначенные для эксплуатации на различных осях грузовых автомобилей, автобусов, троллейбусов, самосвалов, прицепов и полуприцепов шины и покрышки пневматические резиновые новые с посадочным диаметром от 17,5 до 24,5 дюйма включительно с нанесенными на них обозначениями категорий скорости в соответствии с обозначениями, указанными в таблице 5.1 раздела 5 приложения № 8 к техническому регламенту Таможенного союза «О безопасности колесных транспортных средств» (ТР ТС 018/2011), принятому&nbsp;<a href=\"https://docs.eaeunion.org/documents/202/8935/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решением Комиссии Таможенного союза от 9 декабря 2011 г. № 877</u></a>&nbsp;(за исключением обозначений V, W и Y), с индексом нагрузки более 115 (за исключением&nbsp;шин и покрышек пневматических резиновых новых по перечню согласно приложению № 2 к <a href=\"https://docs.eaeunion.org/documents/292/1947/\" rel=\"noopener noreferrer\" target=\"_blank\">Решению Коллегии ЕЭК от 17 ноября 2015 г. № 154</a>), а также колеса ходовые, классифицируемые кодом 8708 70 990 9 ТН ВЭД ЕАЭС и поставляемые в сборе (комплекте) с вышеуказанными грузовыми шинами</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Aeolus Tyre Co., Ltd. — 19,86 %;</p><p>- для Triangle Tyre Co., Ltd. — 14,79 %;</p><p>- для Shandong Wanda Boto Tyre Co., Ltd. — 28,03 %;</p><p>- для Deruibao Tire Co., Ltd. — 35,35 %;</p><p>- для Guizhou Tyre Co., Ltd. — 32,14 %;</p><p>- для Chaoyang Long March Tyre Co., Ltd.; Cooper Chengshan (Shandong) Tire Co, Ltd.; Double Coin Holdings Ltd.; Double Coin Group (Jiang Su) Tyre Co., Ltd.; Xinjiang Kunlun Engineering Co., Ltd.; Giti Tire (Chongqing) Co., Ltd.; Giti Tire (Fujian) Co., Ltd.; Giti Tire (Anhui) Co., Ltd.; Shandong Hengyu Rubber Co., Ltd.; Shandong Hengyu Science &amp; Technology Co., Ltd.; Jiangsu General Science Technology Co., Ltd.; Jiangsu Hankook Tire Co., Ltd.; Shandong Linglong Tyre Co., Ltd.; Sailun Group Co., Ltd.; Shandong Hengfeng Rubber &amp; Plastic Co., Ltd.; Shandong Hawk International Rubber Industry Co., Ltd.; Shandong Huasheng Rubber Co., Ltd.; Shandong Jinyu Tire Co., Ltd.; Shandong O’Green Tyres Co., Ltd.; Shandong Wanshine Tire Co., Ltd.; Shengtai Group Co., Ltd.; Sichuan Kalevei Technology Co., Ltd.; South China Tire &amp; Rubber Co., Ltd.; Techking Tires Limited; Weifang Yuelong Rubber Co., Ltd.; Xingyuan Tire Group Co., Ltd.; Shandong Yinbao Tyre Group Co., Ltd.; Shandong Shouguang Yinbao Rubber Industry Co., Ltd.; Shandong Yongtai Chemical Co., Ltd.; Weifang Shunfuchang Rubber and Plastic Products Co., Ltd.&nbsp;— 19,52 %;</p><p>- для прочих производителей — 35,35 %.​</p>",
+   "tnved": [
+    "4011 20 100 0",
+    "4011 20 900 0",
+    "8708 70 990 9"
+   ],
+   "productposition": [
+    "4011",
+    "4011",
+    "8708"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2015-12-18T00:00:00Z",
+   "enddate": "2026-11-13T23:59:59Z",
+   "foundation": "<p>​<a href=\"https://docs.eaeunion.org/documents/292/1947/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 17 ноября 2015 г. №&nbsp;154​</u></a> - о применении меры</p><p>​<a href=\"https://docs.eaeunion.org/documents/247/5456/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 13 ноября 2020 г. №&nbsp;143​</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/379/5930/\" rel=\"noopener noreferrer\" target=\"_blank\">​<u>Решение Коллегии ЕЭК от 29 июня 2021&nbsp;г. №&nbsp;84</u></a> - о продлении меры до 28 июня 2026 г. включительно</p><p><a href=\"https://docs.eaeunion.org/docs/ru-ru/01129718/err_02072021_84_doc.pdf\" rel=\"noopener noreferrer\" target=\"_blank\">​</a><a href=\"https://docs.eaeunion.org/documents/414/7239/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 31 января 2023&nbsp;г. № 14</u></a>&nbsp;- о распространении меры на колеса ходовые, поставляемые в сборе (комплекте) с грузовыми шинами​</p><p><a href=\"https://docs.eaeunion.org/documents/463/10582/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 24 марта 2026 г. № 37</a>​ - о продлении меры на период расследования</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-8",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Металлопрокат с полимерным покрытием",
+   "description": "<p>​Плоский холоднокатаный прокат толщиной более 0,2 мм, но не более 2 мм, шириной более 50 мм, с полимерным покрытием, и плоский холоднокатаный оцинкованный прокат толщиной более 0,2 мм, но не более 2 мм, шириной более 50 мм, с полимерным покрытием</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Angang Steel Co., Ltd. — 11,87 %;</p><p>- для Dalian POSCO Co., Ltd. — 10,34 %;</p><p>- для Shandong Guanzhou Co., Ltd. — 6,98 %;</p><p>- для прочих производителей — 20,20 %.</p>",
+   "tnved": [
+    "7210",
+    "7212",
+    "7225"
+   ],
+   "productposition": [
+    "7210",
+    "7212",
+    "7225"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2012-07-01T00:00:00Z",
+   "enddate": "2028-07-17T23:59:59Z",
+   "foundation": "<p>​​<a href=\"https://docs.eaeunion.org/documents/277/9236/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 24 мая 2012 г. № 49</u></a> - о применении меры</p><p>​​<a href=\"https://docs.eaeunion.org/documents/254/351/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 21 октября 2014 г. № 191</u></a> - о внесении изменений в Решение Коллегии ЕЭК от 24 мая 2012 г. № 49</p><p>​​<a href=\"https://docs.eaeunion.org/documents/315/2950/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 11 мая 2017 г. № 45</u></a> - о продлении меры на период расследования</p><p>​​<a href=\"https://docs.eaeunion.org/documents/253/3457/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 23 января 2018 г. № 14</u></a> - о продлении меры до 22 января 2023 г. включительно</p><p>​​<a href=\"https://docs.eaeunion.org/documents/399/7086/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 29 ноября 2022 г. № 186</u></a> - о продлении меры на период расследования</p><p>​​<a href=\"https://docs.eaeunion.org/documents/414/7552/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 18 июля 2023 г. № 106</u></a> - о продлении меры до 17 июля 2028 г. включительно</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-32",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Алюминиевая посуда",
+   "description": "<p>​Штампованная и литая алюминиевая посуда для бытовых и иных нужд, с покрытием и без него, предназначенная для приготовления или подогрева пищи тепловым способом</p>",
+   "actiondescription": "<p>​Антидемпинговая пошлина в размере 21,89 % от таможенной стоимости​​</p>",
+   "tnved": [
+    "7615 10 100 0",
+    "7615 10 800 9",
+    "7616 99 100 8",
+    "7616 99 900 8"
+   ],
+   "productposition": [
+    "7615",
+    "7615",
+    "7616",
+    "7616"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2021-09-25T00:00:00Z",
+   "enddate": "2027-05-28T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/379/6030/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 24 августа 2021 г. № 107​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/463/10890/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 25 августа 2026 г. № 108​</a> - о продлении действия меры на период расследования</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-17",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Гусеничные бульдозеры",
+   "description": "<div class=\"ExternalClass2AEB5B1EEABE4E038B5AF714FFBAAD6C\"><span >​</span><span >Гусеничные бульдозеры с неповоротным и поворотным отвалом мощностью до 250 л.с.​​​</span></div>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Xuanhua Construction Machinery Co., Ltd. — 9,65 %;</p><p>- для Shantui Construction Machinery Co., Ltd. — 11,31 %;</p><p>- для Shanxi Zoomlion Heavy Industry Science &amp; Technology Machinery Co., Ltd.&nbsp;— 13,80 %;</p><p>- для Caterpillar (Qingzhou) Ltd. — 18,50 %;</p><p>- для Tianjin Liugong Machinery Co., Ltd. — 44,65 %;</p><p>- для прочих производителей — 44,65 %.​​​​</p>",
+   "tnved": [
+    "8429 11 009 0"
+   ],
+   "productposition": [
+    "8429"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2015-12-12T00:00:00Z",
+   "enddate": "2027-02-25T23:59:59Z",
+   "foundation": "<p>​<a href=\"https://docs.eaeunion.org/documents/292/1933/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 10 ноября 2015&nbsp;г. № 148​</u></a> - о применении меры</p><p>​<a href=\"https://docs.eaeunion.org/documents/253/3999/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 20 ноября 2018 г.&nbsp;№ 188​</u></a> - об установлении индивидуальной ставки антидемпинговой пошлины для Caterpillar (Qingzhou) Ltd.</p><p>​<a href=\"https://docs.eaeunion.org/documents/247/5433/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 3 ноября 2020&nbsp;г. № 142​</u></a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/379/5901/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 29 июня 2021 г.&nbsp;№ 68​​</a> - о продлении меры до 28 июня 2026 г. включительно</p><p>​<a href=\"https://docs.eaeunion.org/documents/463/10706/\" rel=\"noopener noreferrer\" target=\"_blank\"><u>Решение Коллегии ЕЭК от 25 мая 2026&nbsp;г. № 63​</u></a> - о продлении меры на период расследования</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-33",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Первичный полиэтилен высокой плотности",
+   "description": "<p>​Первичный полиэтилен в твердых первичных формах с удельным весом 0,94 г/см<sup>3</sup> и более</p>",
+   "actiondescription": "<p>Антидемпинговая мера в следующих формах:</p><p><br></p><p>​А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для ООО СП «Uz-Kor Gas Chemical» — 20,3 %;</p><p>– для ООО «Шуртанский газохимический комплекс» — 20,3 %;</p><p>– для прочих производителей — 20,3 %.</p><p><br></p><p>Б. Совместные ценовые обязательства компаний ООО СП «Uz-Kor Gas Chemical» и ООО «Шуртанский газохимический комплекс».</p>",
+   "tnved": [
+    "3901 20 900 9"
+   ],
+   "productposition": [
+    "3901"
+   ],
+   "exportingcountrycode": [
+    "UZ"
+   ],
+   "startdate": "2022-02-25T00:00:00Z",
+   "enddate": "2027-02-24T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/399/6391/\" rel=\"noopener noreferrer\" target=\"_blank\">​Ре​шение Коллегии ЕЭК от 25 января 2022 г. № 17​</a> - о применении меры</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-35",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Клиновые задвижки",
+   "description": "<p>Стальные клиновые задвижки номинальным диаметром от 50 до 1 000 мм включительно, на номинальное давление от 16 до 250 кгс/см<sup>2</sup> включительно</p>",
+   "actiondescription": "<p>​Антидемпинговая мера в следующих формах:</p><p><br></p><p>​А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для компании&nbsp;Neway Valve (Suzhou) Co., Ltd. — 25,57 %;</p><p>– для компании&nbsp;Yuanda Valve Group Co., Ltd. — 29,73 %;</p><p>– для компании Zhejiang Neoval Valve Co., Ltd. — 36,23 %;</p><p>– для прочих производителей — 36,23 %.</p><p><br></p><p>Б. Ценовые обязательства для поставок клиновых задвижек компанией&nbsp;Neway Valve (Suzhou)&nbsp;Co., Ltd.​</p>",
+   "tnved": [
+    "8481 80 631 0",
+    "8481 80 632 0",
+    "8481 80 639 0"
+   ],
+   "productposition": [
+    "8481",
+    "8481",
+    "8481"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2023-01-22T00:00:00Z",
+   "enddate": "2028-01-21T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/399/7140/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 20 декабря 2022 г. № 197​​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/463/10954/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 29 сентября 2026 г. № 125</a>​ – о внесении изменения в Решение Коллегии ЕЭК от 20 декабря 2022 г. № 197 в части перечня производителей, чьи ценовые обязательства одобрены</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-30",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Сварные трубы из коррозионностойкой стали",
+   "description": "<p>Сварные трубы, трубки и профили полые из коррозионностойкой (нержавеющей) стали с толщиной стенки от 0,4 до 6 мм включительно, круглого поперечного сечения с наружным диаметром от 6 до 115 мм включительно, или квадратного поперечного сечения с периметром поперечного сечения не более 400 мм, или прямоугольного поперечного сечения с периметром поперечного сечения не более 400 мм и наибольшим размером стороны сечения до 120 мм включительно</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для Foshan Vinmay Stainless Steel Co., Ltd. — 14,62 %;</p><p>- для Guangdong Sumwin New Material Group Co., Ltd. — 17,28 %;</p><p>- для прочих производителей — 17,28 ​%.</p>",
+   "tnved": [
+    "7306 40 200 9",
+    "7306 40 800 1",
+    "7306 40 800 8",
+    "7306 61 100 9"
+   ],
+   "productposition": [
+    "7306",
+    "7306",
+    "7306",
+    "7306"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2021-03-14T00:00:00Z",
+   "enddate": "2031-09-07T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/379/5653/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 9 февраля 2021 г.&nbsp;№ 12​​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/463/10454/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 20 января 2026 г. № 4</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/463/10918/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 8 сентября 2026 г. № 121</a> - о продлении меры до 7 сентября 2031 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-36",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Ферросиликомарганец",
+   "description": "<p>Ферросиликомарганец</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>- для ООО «Джорджиан Манганези» — 21,40 %;</p><p>- для ООО «Чиатурманганум Джорджия» — 24,22 %;</p><p>- для прочих производителей — 24,22 %.</p>",
+   "tnved": [
+    "7202 30 000 0"
+   ],
+   "productposition": [
+    "7202"
+   ],
+   "exportingcountrycode": [
+    "GE"
+   ],
+   "startdate": "2023-01-22T00:00:00Z",
+   "enddate": "2028-01-21T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/399/7144/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 20 декабря 2022 г. № 201​</a> - о применении меры</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-22",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Стальные уголки",
+   "description": "<p>​Уголки стальные горячекатаные равнополочные шириной полки от 20 до 200 мм включительно из углеродистой, низколегированной и легированной (за исключением коррозионностойкой) стали</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в размере 37,89 %&nbsp;от таможенной стоимости​​​​</p>",
+   "tnved": [
+    "7216 21 000 0",
+    "7216 40 100 0",
+    "7216 50 100 0",
+    "7216 50 990 0",
+    "7228 70 100 0 "
+   ],
+   "productposition": [
+    "7216",
+    "7216",
+    "7216",
+    "7216",
+    "7228"
+   ],
+   "exportingcountrycode": [
+    "UA"
+   ],
+   "startdate": "2017-06-11T00:00:00Z",
+   "enddate": "2028-03-06T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/315/3199/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 3&nbsp;октября&nbsp;2017&nbsp;г. №&nbsp;133​</a> - о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/399/6659/\" rel=\"noopener noreferrer\" target=\"_blank\">​​​Решение Коллегии ЕЭК от 23&nbsp;мая&nbsp;2022&nbsp;г. № 85​</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/414/7294/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 7 марта 2023 г. №26​</a> - о продлении меры до 6 марта 2028 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-29",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Листовые рессоры",
+   "description": "<div class=\"ExternalClassAA3A1C956F634D529DB527D91939B636\"><p>​Рессоры листовые и листы для них, обработанные горячим способом, предназначенные для грузового автомобильного транспорта, грузопассажирского транспорта, автобусов, троллейбусов, тракторов, прицепов и полуприцепов, карьерной, строительной и дорожно-строительной техники</p></div>",
+   "actiondescription": "<p>Антидемпинговая&nbsp;пошлина&nbsp;в размере 14,11 % от таможенной стоимости</p>",
+   "tnved": [
+    "7320 10"
+   ],
+   "productposition": [
+    "7320"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2021-03-21T00:00:00Z",
+   "enddate": "2031-08-24T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/379/5673/\" rel=\"noopener noreferrer\" target=\"_blank\">​​Решение Коллегии ЕЭК от 16 февраля 2021 г. № 17​</a> - о применении меры</p><p>​​<a href=\"https://docs.eaeunion.org/documents/379/5709/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 16 марта 2021 г. № 29​</a> -&nbsp;о внесении изменений в Решение Коллегии ЕЭК от 16 февраля 2021 г. № 17 в части рекомендованных подходов к осуществлению поставок в Республику Казахстан</p><p><a href=\"https://docs.eaeunion.org/documents/463/10506/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 17 февраля 2026 г. № 19</a> - о продлении меры на период расследования</p><p><a href=\"https://docs.eaeunion.org/documents/446/10034/\" rel=\"noopener noreferrer\" target=\"_blank\">​</a>​<a href=\"https://docs.eaeunion.org/documents/463/10894/\" rel=\"noopener noreferrer\" target=\"_blank\">Решен​ие Коллегии ЕЭК от 25 августа 2026 г. № 111</a>​ - о продлении меры до 24 августа 2031 г. включительно</p>",
+   "note": "",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-37",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Литые колесные диски",
+   "description": "<p>Новые и бывшие в употреблении литые алюминиевые колесные диски диаметром от 13 до 20 дюймов включительно, с максимально допустимой нагрузкой не более 1 150 кг, с диаметром центрального отверстия не более 131 мм, укомплектованные или не укомплектованные шиной, и (или) одной или несколькими другими частями колес в сборе, и (или) дополнительными принадлежностями колесных дисков</p>",
+   "actiondescription": "<p>Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для компаний CMS Jant Sanayi A.Ş., CMS Jant ve Makina Sanayii A.Ş — 35,29 %;</p><p>– для прочих производителей Турецкой Республики — 35,29 %;</p><p>– для производителей Японии* — 36,54 %;</p><p>– для производителей Королевства Таиланд — 42,82 %;</p><p>– для производителей Малайзии — 9,38 %.</p><p><br></p><p>* Антидемпинговая пошлина не применяется в отношении бывших в употреблении литых алюминиевых колесных дисков, ввозимых на территорию Кыргызской Республики в объеме не более 300 тонн в год и на территорию Республики Казахстан в объеме не более 135 тонн в год.</p>",
+   "tnved": [
+    "8708 70 500 9"
+   ],
+   "productposition": [
+    "8708"
+   ],
+   "exportingcountrycode": [
+    "JP",
+    "TH",
+    "TR",
+    "MY"
+   ],
+   "startdate": "2025-03-22T00:00:00Z",
+   "enddate": "2030-03-21T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/446/9817/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 14 января 2025 г. № 7​</a><span style=\"color: rgb(0, 0, 0);\"> </span>–<span style=\"color: rgb(0, 0, 0);\"> о применении меры</span></p><p><a href=\"https://docs.eaeunion.org/documents/448/9845/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Евразийского межправительственного совета от 31 января 2025 г. № 1​</a><span style=\"color: rgb(0, 0, 0);\"> </span>–<span style=\"color: rgb(0, 0, 0);\"> о необходимости внесения изменений в Решение Коллегии ЕЭК от 14 января 2025 г. № 7 и дате начала действия меры</span></p><p><a href=\"https://docs.eaeunion.org/documents/446/9865/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 18 февраля 2025 г. № 20​</a><span style=\"color: rgb(0, 0, 0);\"> </span>–<span style=\"color: rgb(0, 0, 0);\"> о внесении изменений в Решение Коллегии ЕЭК от 14 января 2025 г. № 7 и начале действия меры</span></p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-38",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Диоксид титана",
+   "description": "<p>Пигменты, изготовленные на основе диоксида титана, содержащие 80 мас. % или более диоксида титана в пересчете на сухое вещество (за исключением разновидностей пигментов по перечню согласно приложению № 2 к <a href=\"https://docs.eaeunion.org/documents/446/10233/\" rel=\"noopener noreferrer\" target=\"_blank\">Решению Коллегии ЕЭК от 14 октября 2025 г. № 96</a>)</p>",
+   "actiondescription": "<p>​Антидемпинговая мера в следующих формах:</p><p><br></p><p>​А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для компаний LB Group Co., Ltd., Henan Billions Advanced Material Co., Ltd., LB Lufeng Titanium Industry Co., Ltd., LB Sichuan Titanium Industry Co., Ltd., LB Xiangyang Titanium Industry Co., Ltd. — 14,27 %;</p><p>– для компании Shandong Dawn Titanium Industry Co., Ltd. — 16,25 %;</p><p>– для прочих производителей — 16,25 %.</p><p><br></p><p>Б. Ценовые обязательства для поставок диоксида титана компаниями LB Group Co., Ltd., Henan Billions Advanced Material Co., Ltd., LB Lufeng Titanium Industry Co., Ltd., LB Sichuan Titanium Industry Co., Ltd., LB Xiangyang Titanium Industry Co., Ltd.</p>",
+   "tnved": [
+    "3206 11 000 0"
+   ],
+   "productposition": [
+    "3206"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2025-11-16T00:00:00Z",
+   "enddate": "2030-11-15T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/446/10233/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 14 октября 2025 г. № 96</a>​ – о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/463/10925/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 21 сентября 2026 г. № 124</a>​ – о временном неприменении меры и внесении изменения в Решение Коллегии ЕЭК от 14 октября 2025 г. № 96 в части перечня производителей, чьи ценовые обязательства одобрены</p>",
+   "note": "<p>Согласно пункту 5 <a href=\"https://docs.eaeunion.org/documents/446/10233/\" rel=\"noopener noreferrer\" target=\"_blank\">Решения Коллегии ЕЭК от 14 октября 2025 г. № 96</a>, антидемпинговая пошлина не взимается при ввозе на таможенную территорию Союза диоксида титана в пределах ежегодных объемов (вне рамок ценовых обязательств) и при наличии у декларанта на дату регистрации декларации на товары документа, подтверждающего целевое назначение диоксида титана, выданного уполномоченным органом исполнительной власти государства-члена, на территорию которого осуществляется его ввоз, и содержащего сведения о количестве ввозимого товара, в размере:</p><p>- 250 тонн для Республики Армения,</p><p>- 4 500 тонн для Республики Беларусь, предназначенных для использования при производстве товаров, из которых не менее 2 000 тонн&nbsp;для производства бумаги-основы для декоративных облицовочных материалов,</p><p>- 5 000 тонн для Республики Казахстан, </p><p>- 300 тонн&nbsp;для Кыргызской Республики.</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-39",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Алюминиевая фольга",
+   "description": "<p>Алюминиевая фольга толщиной&nbsp;не менее 0,0046 мм, но не более 0,2 мм, шириной не менее 20 мм, но не более 1 616 мм, длиной более 150 метров,&nbsp;в рулонах, с основой или без основы, с покрытием или без покрытия (за исключением разновидностей алюминиевой фольги по перечню согласно приложению № 2 к <a href=\"https://docs.eaeunion.org/documents/446/10234/\" rel=\"noopener noreferrer\" target=\"_blank\">Решению Коллегии ЕЭК от 14 октября 2025 г. № 97</a>)</p>",
+   "actiondescription": "<p>​Антидемпинговая мера в следующих формах:</p><p><br></p><p>​А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для компаний Dingsheng Aluminium Industries (HongKong) Trading Co., Ltd., Hangzhou Dingsheng Import&amp;Export Co., Ltd., Jiangsu Dingsheng New Materials Joint-Stock Co., Ltd., Inner Mongolia Lian Sheng New Energy Material Co., Ltd., Hangzhou Five Star Aluminium Co., Ltd. — 20,24 %;</p><p>– для компаний Shanghai Sunho Aluminum Foil Co., Ltd., Sunho New Materials Technology Co., Ltd. — 17,16 %;</p><p>– для компании Xiamen Xiashun Aluminium Foil Co., Ltd. — 19,52 %;</p><p>– для прочих производителей — 20,24 %.</p><p><br></p><p>Б. Ценовые обязательства для поставок алюминиевой фольги компанией Xiamen Xiashun Aluminium Foil Co., Ltd.</p>",
+   "tnved": [
+    "7607 11 110 9",
+    "7607 11 190 9",
+    "7607 11 900 0",
+    "7607 19 100 0",
+    "7607 19 900 9",
+    "7607 20 100 0",
+    "7607 20 900 0"
+   ],
+   "productposition": [
+    "7607",
+    "7607",
+    "7607",
+    "7607",
+    "7607",
+    "7607",
+    "7607"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2025-11-16T00:00:00Z",
+   "enddate": "2030-11-15T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/446/10234/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 14 октября 2025 г. № 97​</a> – о применении меры</p>",
+   "note": "<p>Согласно пункту 5 <a href=\"https://docs.eaeunion.org/documents/446/10234/\" rel=\"noopener noreferrer\" target=\"_blank\">Решения Коллегии ЕЭК от 14 октября 2025 г. № 97</a>, антидемпинговая пошлина не взимается при ввозе на таможенную территорию Союза алюминиевой фольги в пределах ежегодных объемов (вне рамок ценовых обязательств) и при наличии у декларанта на дату регистрации декларации на товары документа, подтверждающего целевое назначение алюминиевой фольги, выданного уполномоченным органом исполнительной власти государства-члена, на территорию которого осуществляется ее ввоз, и содержащего сведения о количестве ввозимого товара, в размере:\t</p><p>- 385 тонн для Республики Беларусь, предназначенных для использования при производстве товаров,</p><p>- 500 тонн в 2025 году, 1 000 тонн в 2026 году, 1 300 тонн в 2027 году, 1 500 тонн в 2028 году, 1 650 тонн в 2029 году и 1 650 тонн в 2030 году для Республики Казахстан,&nbsp;</p><p>- 325 тонн для Кыргызской Республики.</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-40",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Графитированные электроды диаметром более 520 мм, но не более 650 мм",
+   "description": "<p>Электроды, используемые в печах, графитированные круглого сечения диаметром более 520 мм, но не более 650 мм, или иного поперечного сечения площадью более 2 700 см<sup style=\"color: rgb(73, 80, 87);\">2</sup>, но не более 3 300 см<sup style=\"color: rgb(73, 80, 87);\">2</sup></p>",
+   "actiondescription": "<p>​Антидемпинговая мера в следующих формах:</p><p><br></p><p>​А. Антидемпинговая пошлина в процентах от таможенной стоимости:</p><p>– для компаний Jilin Carbon Company Ltd., Jimeng Carbon Co., Ltd. — 19,92 %;</p><p>– для компании Fangda Carbon New Material Co., Ltd. — 21,73 %;</p><p>– для компании Jiangsu Jianglong New Energy Technology Co., Ltd. — 22,51 %;</p><p>– для компаний Anshan Carbon Co., Ltd., Yingkou Deyuan Carbon Co., Ltd., Liaoning Dantan New Materials Co., Ltd. — 20,83 %;</p><p>– для прочих производителей — 22,51 %.</p><p><br></p><p>Б. Ценовые обязательства для поставок графитированных электродов компанией Liaoning Dantan New Materials Co., Ltd.</p>",
+   "tnved": [
+    "8545 11 002 0"
+   ],
+   "productposition": [
+    "8545"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2026-01-18T00:00:00Z",
+   "enddate": "2031-01-17T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/446/10292/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 17 ноября 2025 г. № 101</a>​ – о применении меры</p><p><a href=\"https://docs.eaeunion.org/documents/448/10357/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Евразийского межправительственного совета от 11 декабря 2025 г. № 7​</a> – о необходимости внесения изменений в Решение Коллегии ЕЭК от 17 ноября 2025 г. № 101 и дате начала действия меры</p><p><a href=\"https://docs.eaeunion.org/documents/446/10377/\" rel=\"noopener noreferrer\" target=\"_blank\">​Решение Коллегии ЕЭК от 16 декабря 2025 г. № 130</a>​ – о внесении изменений в Решение Коллегии ЕЭК от 17 ноября 2025 г. № 101 и начале действия меры</p>",
+   "note": "<p>Согласно пункту 1<sup>3</sup> <a href=\"https://docs.eaeunion.org/documents/446/10292/\" rel=\"noopener noreferrer\" target=\"_blank\">Решения Коллегии ЕЭК от 17 ноября 2025 г. № 101</a>, антидемпинговая пошлина не взимается при ввозе на таможенную территорию Союза графитированных электродов в пределах ежегодных объемов (вне рамок ценовых обязательств) и при наличии у декларанта на дату регистрации декларации на товары документа, подтверждающего целевое назначение графитированных электродов, выданного уполномоченным органом исполнительной власти государства-члена, на территорию которого осуществляется их ввоз, и содержащего сведения о количестве ввозимого товара, в размере:</p><p>- 700 тонн для Республики Армения,</p><p>- 1 000 тонн для Республики Беларусь, предназначенных для использования при производстве товаров,</p><p>- 1 000 тонн для Республики Казахстан.</p>",
+   "statuscode": "1",
+   "actual": true
+  },
+  {
+   "investigationnumber": "AD-41",
+   "investigationtype": "AD",
+   "measuretypeid": "1",
+   "shortname": "Свечи зажигания",
+   "description": "<p>Свечи зажигания искровые</p>",
+   "actiondescription": "<p>​Антидемпинговая пошлина в размере 17,23 % от таможенной стоимости</p>",
+   "tnved": [
+    "8511 10 000 1",
+    "8511 10 000 9"
+   ],
+   "productposition": [
+    "8511",
+    "8511"
+   ],
+   "exportingcountrycode": [
+    "CN"
+   ],
+   "startdate": "2026-05-10T00:00:00Z",
+   "enddate": "2031-05-09T23:59:59Z",
+   "foundation": "<p><a href=\"https://docs.eaeunion.org/documents/463/10611/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 7 апреля 2026 г. № 46</a> - о применении меры</p>",
+   "note": "<p>Подробнее об особенностях применения меры см. <a href=\"https://docs.eaeunion.org/documents/463/10611/\" rel=\"noopener noreferrer\" target=\"_blank\">Решение Коллегии ЕЭК от 7 апреля 2026 г. № 46</a></p>",
+   "statuscode": "1",
+   "actual": true
+  }
+ ]
+}

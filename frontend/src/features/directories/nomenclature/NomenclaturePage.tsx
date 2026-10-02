@@ -15,10 +15,12 @@ import { useKzListPanel } from '../kzList/KzListPanel'
 import { KzImport } from '../kzList/kzListApi'
 import { nomenclatureApi } from './nomenclatureApi'
 import { directoryDraft } from './nomenclatureDraft'
+import { AntiDumpingPanel } from './AntiDumpingPanel'
+import { countryNames, formatMeasureCode, percentText } from './antiDumping'
 import '@/shared/styles/list-page.css'
 import '../components/DirectoryTransfer.css'
 import './nomenclature.css'
-import { NomenclatureCode, NomenclatureImport } from '@/shared/tnved/nomenclature'
+import { AntiDumpingRef, NomenclatureCode, NomenclatureImport } from '@/shared/tnved/nomenclature'
 import { nameParts } from '@/shared/tnved/codes'
 
 const pageSize = 100
@@ -44,6 +46,8 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
   const [uploading, setUploading] = useState(false)
   const [uploaded, setUploaded] = useState<NomenclatureImport | null>(null)
   const [rowErrors, setRowErrors] = useState<DirectoryImportResult['errors']>([])
+  const [antiDumpingOpen, setAntiDumpingOpen] = useState(false)
+  const [antiDumpingCount, setAntiDumpingCount] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -91,6 +95,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
         </div>
         <div className="dir-head-actions dir-transfer">
           {codeCheck.button}
+          <button type="button" className={antiDumpingOpen ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setAntiDumpingOpen((value) => !value)} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
           {admin && kzList.button}
           {admin && <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
             {uploading ? 'Загружаем…' : source ? 'Обновить из файла TWS' : 'Загрузить файл TWS'}
@@ -100,6 +105,8 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
       </div>
 
       {codeCheck.panel}
+      {antiDumpingOpen && <AntiDumpingPanel admin={admin} onLoaded={setAntiDumpingCount} onRefreshed={() => setRefreshKey((value) => value + 1)}
+        onPickCode={(code) => { setQuery(formatMeasureCode(code)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
       {admin && kzList.panel}
       {uploaded && <p className="dir-transfer-ok nom-note" role="status">
         Загружено {formatDisplayNumber(uploaded.codeCount)} {plural(uploaded.codeCount, 'код', 'кода', 'кодов')}: новых {formatDisplayNumber(uploaded.addedCount)}, удалено {formatDisplayNumber(uploaded.removedCount)}, изменились наименование или ставка — {formatDisplayNumber(uploaded.changedCount)}.
@@ -118,9 +125,9 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
 
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
         <table className="dir-table nom-table">
-          <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Наименование</th><th className="nom-rate">Пошлина ЕТТ</th><th className="nom-kz" title="Ставка ниже ЕТТ по обязательствам Казахстана в ВТО">Ставка РК</th><th className="nom-vat">НДС</th><th className="nom-link" aria-label="Подробнее" /><th className="nom-state">В справочнике</th></tr></thead>
+          <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Наименование</th><th className="nom-rate">Пошлина ЕТТ</th><th className="nom-kz" title="Ставка ниже ЕТТ по обязательствам Казахстана в ВТО">Ставка РК</th><th className="nom-vat">НДС</th><th className="nom-ad" title="Антидемпинговая пошлина ЕАЭС сверх ЕТТ, % для прочих производителей">Антидемпинг</th><th className="nom-link" aria-label="Подробнее" /><th className="nom-state">В справочнике</th></tr></thead>
           <tbody>
-            {items.length === 0 ? <tr><td colSpan={7} className="dir-empty">{loading ? 'Загрузка…'
+            {items.length === 0 ? <tr><td colSpan={8} className="dir-empty">{loading ? 'Загрузка…'
               : !source ? admin ? <>Номенклатура ещё не загружена. Скачайте Excel на <a href="https://www.tws.by/tws/tnved/download" target="_blank" rel="noreferrer">tws.by</a> и нажмите «Загрузить файл TWS».</> : 'Номенклатура ещё не загружена администратором.'
               : empty ? 'Ничего не найдено. Проверьте код или попробуйте другие слова.' : ''}</td></tr>
               : items.map((item) => {
@@ -134,6 +141,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
                   <td className="nom-rate">{item.tariffText || <span className="dir-none">не указана</span>}</td>
                   <td className={item.kz?.active ? 'nom-kz active' : 'nom-kz'} title={item.kz?.notesText || undefined}>{item.kz ? <>{item.kz.rateText}<small>{item.kz.status}</small></> : <span className="dir-none">{kzSource ? '—' : ''}</span>}</td>
                   <td className="nom-vat">{item.vatPercent ? `${item.vatPercent}%` : <span className="dir-none">—</span>}</td>
+                  <td className="nom-ad">{item.antiDumping?.length ? item.antiDumping.map((ref) => <AntiDumpingCell key={ref.number} measure={ref} />) : <span className="dir-none">—</span>}</td>
                   <td className="nom-link">{item.detailsUrl && <a href={item.detailsUrl} target="_blank" rel="noreferrer" title={`Код ${item.code} на ${source?.source ?? 'сайте источника'}: примечания, документы, меры`}>Подробнее</a>}</td>
                   <td className="nom-state">
                     {item.inDirectory ? <span className="nom-in">Есть</span>
@@ -153,4 +161,22 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
     </section>
     {draft && <TNVEDEntryPanel draft={draft} canVerify={admin} onClose={() => setDraft(null)} onSaved={() => { setDraft(null); setRefreshKey((value) => value + 1) }} />}
   </main>
+}
+
+// Антидемпинг кода в таблице: ставка для прочих производителей и страны; мера на часть товаров
+// позиции — «возможно», временно не применяемая — серым. Нажатие открывает решение ЕЭК.
+function AntiDumpingCell({ measure }: { measure: AntiDumpingRef }) {
+  const rates = [...new Set(measure.countries.map((country) => measure.rates[country]).filter(Boolean))].sort((a, b) => Number(a) - Number(b))
+  const value = rates.length <= 1 ? percentText(rates[0] ?? '') : `${percentText(rates[0])}–${percentText(rates[rates.length - 1])}`
+  const title = [
+    `${measure.number} «${measure.shortName}»: ${measure.countries.map((country) => `${countryNames[country] ?? country} ${percentText(measure.rates[country] ?? '')}`).join(', ')}`,
+    measure.endDate && `действует по ${formatRuDate(measure.endDate)}`,
+    !measure.exact && 'мера на часть товаров позиции — сверьте описание товара с решением ЕЭК',
+    measure.suspended && 'временно не применяется',
+  ].filter(Boolean).join(' · ')
+  const className = measure.suspended ? 'nom-ad-chip off' : measure.exact ? 'nom-ad-chip' : 'nom-ad-chip maybe'
+  const body = <><b>{measure.exact ? value : 'возможно'}</b><small>{measure.suspended ? 'не применяется' : measure.countryNames}</small></>
+  return measure.documentUrl
+    ? <a className={className} href={measure.documentUrl} target="_blank" rel="noreferrer" title={title}>{body}</a>
+    : <span className={className} title={title}>{body}</span>
 }

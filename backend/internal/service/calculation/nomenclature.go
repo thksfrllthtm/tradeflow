@@ -1,8 +1,8 @@
 package calculation
 
-// Ставки строки сметы — только из номенклатуры ТН ВЭД ЕАЭС: пошлина ЕТТ и НДС кода. Справочник
-// ТН ВЭД и карточка товара дают строке название и ИТС, но не ставки; антидемпинга в
-// номенклатуре нет, поэтому он не начисляется. Ставки перечня РК пока не применяются.
+// Ставки строки сметы — из номенклатуры ТН ВЭД ЕАЭС (пошлина ЕТТ и НДС кода) и реестра мер
+// защиты рынка ЕЭК (антидемпинг по коду и стране происхождения сметы). Справочник ТН ВЭД и
+// карточка товара дают строке название и ИТС, но не ставки. Ставки перечня РК пока не применяются.
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
 
@@ -21,6 +22,9 @@ type NomenclatureRates struct {
 	Loaded     bool
 	ActualDate string
 	ByCode     map[string]repository.TNVEDNomenclatureCode
+	// Действующие антидемпинговые меры и страна происхождения сметы (поле «Страна»).
+	AntiDumping []antidumping.Measure
+	Origin      string
 }
 
 var excelDecimalCode = regexp.MustCompile(`^(\d{10})\.0+$`)
@@ -61,8 +65,9 @@ func nomenclatureName(name string) string {
 	return service.TruncateRunes(strings.Join(parts, " "), 300)
 }
 
-// applyNomenclatureRates возвращает снимок строки со ставками из номенклатуры. Название и ИТС
-// выбранной карточки остаются; ставки и антидемпинг справочника отбрасываются. Кода нет в
+// applyNomenclatureRates возвращает снимок строки со ставками из номенклатуры и антидемпингом
+// из реестра ЕЭК. Название и ИТС выбранной карточки остаются; ставки и антидемпинг справочника
+// отбрасываются. Кода нет в
 // номенклатуре (или она не загружена) — ставки неизвестны, а rateError объясняет почему.
 // Строка без кода и без карточки остаётся без снимка.
 func ApplyNomenclatureRates(snapshot map[string]any, cell string, rates NomenclatureRates) map[string]any {
@@ -102,5 +107,16 @@ func ApplyNomenclatureRates(snapshot map[string]any, cell string, rates Nomencla
 		"currency": row.DutyCurrency, "unit": row.DutyUnit, "source": source, "sourceKind": "nomenclature",
 	}
 	result["vat"] = map[string]any{"type": "percentage", "percent": row.VATPercent.String(), "source": source, "sourceKind": "nomenclature"}
+	// Антидемпинг — по реестру ЕЭК: точный код меры и страна происхождения из её списка.
+	resolution := antidumping.Resolve(rates.AntiDumping, code, rates.Origin)
+	if resolution.Percent != "" {
+		result["antiDumpingPercent"] = resolution.Percent
+	}
+	if resolution.Info != nil {
+		result["antiDumping"] = resolution.Info
+	}
+	if resolution.Warning != "" {
+		result["antiDumpingWarning"] = resolution.Warning
+	}
 	return result
 }

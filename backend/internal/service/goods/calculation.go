@@ -10,6 +10,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/calculation"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/shopspring/decimal"
@@ -129,6 +130,10 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		if err != nil {
 			return GoodsCalculationResult{}, err
 		}
+		if rates.AntiDumping, err = antidumping.NewService(s.repository).Measures(ctx); err != nil {
+			return GoodsCalculationResult{}, err
+		}
+		rates.Origin = input.Origin
 		for index, inItem := range input.Items {
 			snapshots[index] = calculation.ApplyNomenclatureRates(snapshots[index], inItem.Code, rates)
 		}

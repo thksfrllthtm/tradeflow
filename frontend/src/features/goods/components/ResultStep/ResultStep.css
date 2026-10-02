@@ -51,3 +51,6 @@
 @media (max-width: 900px) {
   .rs-toolbar { align-items: flex-start; }
 }
+
+/* Подсказка об антидемпинге под пошлиной: мера возможна или нужна страна происхождения. */
+.goods-page .rs-table .rs-sub.rs-ad-note { color: #9a6a10; cursor: help; }

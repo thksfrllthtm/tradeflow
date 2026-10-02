@@ -4,6 +4,7 @@ package calculation
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
@@ -282,6 +283,10 @@ func CalculateTariff(out *CalculationItem, net, pairs, places *decimal.Decimal, 
 		return
 	}
 	out.DutyKZT = duty.Round(2).StringFixed(2)
+	// Расчёт пошлин строки повторяется после распределения доставки — предупреждение не дублируем.
+	if message := service.StringValue(snap, "antiDumpingWarning"); message != "" && !slices.Contains(*warnings, message) {
+		*warnings = append(*warnings, message)
+	}
 	antiDumping, antiDumpingKnown := antiDumpingDuty(snap, customs.Round(2), warnings)
 	if !antiDumpingKnown {
 		out.AntiDumpingKZT = ""

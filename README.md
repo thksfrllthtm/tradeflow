@@ -109,7 +109,7 @@ backend/
 │       ├── goods/           сметы товаров: разбор Excel, расчёт, выгрузка, подбор цен
 │       ├── rates/           курс НБРК
 │       └── tnvedagent/      ИИ-агент подбора кода ТН ВЭД
-└── migrations/              000001…000032
+└── migrations/              000001…000033
 
 frontend/src/
 ├── app/                     корень приложения, выбор страницы
@@ -152,6 +152,7 @@ frontend/src/
 | `/api/product-directory` (+ `export`, `import`, `:id/archive`, `restore`, `copy`) | справочник товаров (правка — админ) |
 | `GET /api/tnved-nomenclature`, `POST lookup`, `POST import` | номенклатура ТН ВЭД ЕАЭС (загрузка — админ) |
 | `POST /api/tnved-kz-rates/excel`, `import-pdf`, `import` | перечень РК (админ) |
+| `GET /api/tnved-antidumping`, `POST …/refresh` | антидемпинговые меры ЕАЭС из реестра ЕЭК; обновление — админ |
 | `/api/code-decisions` (+ `stats`, `import`, `:id/verify`, `:id/reject`) | база решений (проверка, правка, импорт — админ) |
 | `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `begin`, `messages`, `rerun`, `cancel`, `apply`, `name`) | ИИ-агент подбора кода |
 | `/api/ceramics/*` | керамика: база марок, разбор, подбор, цена |

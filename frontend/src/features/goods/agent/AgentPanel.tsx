@@ -499,6 +499,10 @@ function CandidateCard({ candidate, applied, busy, onApplyCode }: { candidate: A
       <i className={`ag-pill ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i>
     </div>
     {candidate.nomenclature && <p className="ag-rates">Пошлина {candidate.nomenclature.tariffText || 'не указана'} · НДС {candidate.nomenclature.vatPercent || '16'}%</p>}
+    {candidate.nomenclature?.antiDumping?.map((measure) => <p key={measure.number} className={measure.exact && !measure.suspended ? 'ag-antidumping' : 'ag-antidumping maybe'}>
+      {measure.suspended ? 'Антидемпинг временно не применяется' : measure.exact ? 'Антидемпинг' : 'Возможен антидемпинг'}: {measure.number} «{measure.shortName}» — {measure.countries.map((country) => `${measure.countryNames && measure.countries.length === 1 ? measure.countryNames : country} ${(measure.rates[country] ?? '').replace('.', ',')}%`).join(', ')}
+      {!measure.exact && ' (мера на часть товаров позиции — сверьте описание)'}
+    </p>)}
     {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'со страницы кода (TWS.BY)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
     {candidate.reason && <p className="ag-reason">{candidate.reason}</p>}
     {candidate.check && <p className="ag-check"><b>Уточнить:</b> {candidate.check}</p>}

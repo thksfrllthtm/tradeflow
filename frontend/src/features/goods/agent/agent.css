@@ -144,3 +144,7 @@
 /* Второстепенное действие текстом («только код»). */
 .ag-actions button.ag-text { height: auto; padding: 0; border: 0; background: transparent; color: #56665c; font-size: .78rem; font-weight: 600; }
 .ag-actions button.ag-text:hover:not(:disabled) { background: transparent; color: #1b6b43; text-decoration: underline; }
+
+/* Антидемпинг ЕАЭС по коду кандидата (реестр ЕЭК). */
+.ag-antidumping { margin: 0; padding: 4px 8px; border-radius: 6px; background: #fdecec; color: #8a2626; font-size: .76rem; font-weight: 600; }
+.ag-antidumping.maybe { background: #fff6dd; color: #7a5810; }
