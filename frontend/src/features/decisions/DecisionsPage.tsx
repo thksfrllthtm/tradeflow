@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
@@ -107,7 +108,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
                 <td className="dc-photo-col">{item.thumb ? <img src={item.thumb} alt="" /> : <span className="dc-nophoto" aria-hidden="true" />}</td>
                 <td className="dc-names"><span>{item.invoiceName || item.supplierName || '—'}</span>{item.supplierName && item.supplierName !== item.invoiceName && <small>{item.supplierName}</small>}</td>
                 <td className="dc-names"><span>{item.finalName || <span className="dir-none">—</span>}</span></td>
-                <td className="dc-code-col"><b>{formatCode(item.code)}</b>{!item.nomenclature && <small className="dc-warn">нет в номенклатуре</small>}</td>
+                <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <small className="dc-warn">нет в номенклатуре</small>}</td>
                 <td className="dc-status-col"><span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>{item.agentCorrect === false && <small className="dc-warn" title={`ИИ предлагал ${formatCode(item.agentCode)}`}>ИИ ошибся</small>}{item.agentCorrect === true && <small className="dc-ok">ИИ верно</small>}</td>
                 <td className="dc-from-col"><span>{decisionSourceLabels[item.source]}</span><small>{item.createdByName || '—'} · {formatRuDate(item.createdAt.slice(0, 10))}</small></td>
               </tr>)}

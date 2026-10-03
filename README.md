@@ -109,7 +109,7 @@ backend/
 │       ├── goods/           сметы товаров: разбор Excel, расчёт, выгрузка, подбор цен
 │       ├── rates/           курс НБРК
 │       └── tnvedagent/      ИИ-агент подбора кода ТН ВЭД
-└── migrations/              000001…000033
+└── migrations/              000001…000034
 
 frontend/src/
 ├── app/                     корень приложения, выбор страницы
@@ -154,7 +154,7 @@ frontend/src/
 | `POST /api/tnved-kz-rates/excel`, `import-pdf`, `import` | перечень РК (админ) |
 | `GET /api/tnved-antidumping`, `POST …/refresh` | антидемпинговые меры ЕАЭС из реестра ЕЭК; обновление — админ |
 | `/api/code-decisions` (+ `stats`, `import`, `:id/verify`, `:id/reject`) | база решений (проверка, правка, импорт — админ) |
-| `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `begin`, `messages`, `rerun`, `cancel`, `apply`, `name`) | ИИ-агент подбора кода |
+| `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `begin`, `messages`, `rerun`, `cancel`, `apply`, `name`), `reference` (+ `:id`) | ИИ-агент подбора кода; `reference` — чат-справочник на главной |
 | `/api/ceramics/*` | керамика: база марок, разбор, подбор, цена |
 
 Неизвестный адрес под `/api` отвечает JSON `404`.

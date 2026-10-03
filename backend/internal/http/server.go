@@ -197,6 +197,9 @@ func (s *Server) Router() *gin.Engine {
 	agent.POST("/sessions/:id/cancel", s.cancelAgentSession)
 	agent.POST("/sessions/:id/apply", s.applyAgentSession)
 	agent.POST("/sessions/:id/name", s.applyAgentName)
+	agent.GET("/reference", s.referenceHistory)
+	agent.POST("/reference", s.askReference)
+	agent.DELETE("/reference/:id", s.deleteReference)
 
 	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
 	ceramics := router.Group("/api/ceramics")

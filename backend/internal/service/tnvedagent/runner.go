@@ -27,6 +27,8 @@ type agentRunner struct {
 	emit       func(kind string, content any)
 	onStep     func(transcript []map[string]any, usage agentUsage)
 	maxSteps   int
+	// tools — инструменты запуска (nil — как при подборе для строки сметы).
+	tools []agentTool
 }
 
 // materialize — переписка для модели: системная подсказка, ссылки на фото заменены самими фото.
@@ -112,7 +114,10 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	if maxSteps <= 0 {
 		maxSteps = agentMaxSteps
 	}
-	tools := agentTools()
+	tools := r.tools
+	if tools == nil {
+		tools = agentTools(false)
+	}
 	nudged, finishRetried, forced := false, false, false
 	for step := 0; ; step++ {
 		if err := ctx.Err(); err != nil {

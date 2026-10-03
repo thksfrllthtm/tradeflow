@@ -13,9 +13,10 @@ import { estimateTitle } from '@/shared/lib/estimateTitle'
 import { formatRuDate, todayIso } from '@/shared/lib/dates'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { greeting, longDate, updatedText } from './homeText'
+import { ReferenceChat } from './ReferenceChat/ReferenceChat'
 import './HomePage.css'
 
-const recentLimit = 6
+const recentLimit = 8
 
 const icon = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
 const PlusIcon = () => <svg {...icon}><path d="M10 4.5v11M4.5 10h11" /></svg>
@@ -23,7 +24,8 @@ const CodesIcon = () => <svg {...icon}><rect x="3.5" y="3" width="13" height="14
 const CeramicsIcon = () => <svg {...icon}><path d="M4 8.5h12l-1.3 6.2a2 2 0 0 1-2 1.6H7.3a2 2 0 0 1-2-1.6z" /><path d="M7.5 8.5a2.5 2.5 0 0 1 5 0" /></svg>
 const ArrowIcon = () => <svg {...icon} width={16} height={16}><path d="M7 5l5 5-5 5" /></svg>
 
-// Главная: приветствие, три быстрых действия, что ждёт проверки и последние сметы.
+// Главная: приветствие и курсы; слева — чат-справочник ТН ВЭД, справа — быстрые действия, что
+// ждёт проверки и последние сметы.
 export function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const admin = isAdmin(user)
   const [estimates, setEstimates] = useState<GoodsEstimateSummary[] | null>(null)
@@ -83,6 +85,9 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
 
         {error && <p className="home-error" role="alert">{error}</p>}
 
+        <div className="home-grid">
+        <div className="home-chat"><ReferenceChat /></div>
+        <aside className="home-side">
         <div className="home-actions">
           <button type="button" className="home-action primary" onClick={() => void create()} disabled={creating}>
             <ActionBody icon={<PlusIcon />} title={creating ? 'Создаём…' : 'Новая смета'} text="Загрузите инвойс в Excel и получите расчёт растаможки" />
@@ -125,6 +130,8 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
               </Link>)}
             </div>}
         </section>
+        </aside>
+        </div>
       </div>
     </div>
   </main>

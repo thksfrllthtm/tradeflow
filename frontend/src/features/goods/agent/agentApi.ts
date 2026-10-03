@@ -60,6 +60,9 @@ export type AgentMessage =
 
 export type AgentSession = {
   id: number
+  // row — подбор для строки сметы, reference — чат-справочник на главной (title — первый вопрос).
+  mode?: 'row' | 'reference'
+  title?: string
   estimateId: number | null
   itemId: string
   status: AgentSessionStatus
@@ -77,6 +80,9 @@ export type AgentSession = {
   updatedAt: string
 }
 
+// Вопрос чата-справочника в истории сотрудника.
+export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string }
+
 export type AgentRowStatus = { sessionId: number; itemId: string; status: AgentSessionStatus; bestCode: string; verdict: string }
 
 export const agentApi = {
@@ -92,6 +98,10 @@ export const agentApi = {
   cancel: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/cancel`, { method: 'POST' }),
   // Наименование: перевод русской части на китайский — только по «Применить наименование».
   name: (id: number, name: string) => request<{ name: string }>(`/api/tnved-agent/sessions/${id}/name`, { method: 'POST', body: JSON.stringify({ name }) }),
+  // Чат-справочник: вопрос о товаре (текст и/или фото), история и удаление вопроса.
+  ask: (input: { text: string; photos: string[] }) => request<AgentSession>('/api/tnved-agent/reference', { method: 'POST', body: JSON.stringify(input) }),
+  history: () => request<{ items: ReferenceSummary[] }>('/api/tnved-agent/reference'),
+  removeQuestion: (id: number) => request<void>(`/api/tnved-agent/reference/${id}`, { method: 'DELETE' }),
   apply: (id: number, code: string, name: string) => request<CodeDecision>(`/api/tnved-agent/sessions/${id}/apply`, { method: 'POST', body: JSON.stringify({ code, name }) }),
 }
 

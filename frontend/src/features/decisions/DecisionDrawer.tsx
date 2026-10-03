@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { formatRuDate } from '@/shared/lib/dates'
 import { decisionSourceLabels, decisionsApi } from './decisionsApi'
 import '@/shared/styles/drawer.css'
@@ -96,7 +97,7 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
               <label className="drawer-field"><span>Наименование для декларации</span><textarea rows={2} value={finalName} onChange={(event) => setFinalName(event.target.value)} /></label>
               <label className="drawer-field"><span>Почему этот код</span><textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
             </> : <>
-              <p className="dc-code">{formatCode(decision.code)}</p>
+              <p className="dc-code"><CopyCode code={decision.code} /></p>
               {decision.finalName && <p className="dc-text">{decision.finalName}</p>}
               {decision.reason && <p className="dc-sub">{decision.reason}</p>}
             </>}

@@ -13,10 +13,13 @@ import (
 )
 
 type TNVEDAgentSession struct {
-	ID               int64           `gorm:"primaryKey"`
-	UserID           int64           `gorm:"not null"`
-	EstimateID       *int64          `gorm:"column:estimate_id"`
-	ItemID           string          `gorm:"size:64;not null"`
+	ID         int64  `gorm:"primaryKey"`
+	UserID     int64  `gorm:"not null"`
+	EstimateID *int64 `gorm:"column:estimate_id"`
+	ItemID     string `gorm:"size:64;not null"`
+	// Mode — row (строка сметы) или reference (чат-справочник на главной); Title — первый вопрос.
+	Mode             string          `gorm:"size:16;not null;default:row"`
+	Title            string          `gorm:"not null"`
 	Status           string          `gorm:"size:16;not null"`
 	Item             JSON            `gorm:"type:jsonb;not null"`
 	Photos           JSON            `gorm:"type:jsonb;not null"`
@@ -199,4 +202,28 @@ func (r *Repository) DetailsPages(ctx context.Context, codes []string) ([]TNVEDD
 
 func (r *Repository) SaveDetailsPage(ctx context.Context, page TNVEDDetailsPage) error {
 	return r.db.WithContext(ctx).Save(&page).Error
+}
+
+// ReferenceSession — вопрос чата-справочника для списка прошлых вопросов.
+type ReferenceSession struct {
+	ID        int64
+	Title     string
+	Status    string
+	Result    JSON
+	Photos    JSON
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// ReferenceSessions — вопросы сотрудника в чате-справочнике, последние — первыми.
+func (r *Repository) ReferenceSessions(ctx context.Context, userID int64, limit int) ([]ReferenceSession, error) {
+	var rows []ReferenceSession
+	err := r.db.WithContext(ctx).Table("tnved_agent_sessions").Select("id, title, status, result, photos, created_at, updated_at").
+		Where("user_id = ? AND mode = 'reference'", userID).Order("updated_at DESC, id DESC").Limit(limit).Scan(&rows).Error
+	return rows, err
+}
+
+// DeleteAgentSession удаляет сессию агента вместе с сообщениями.
+func (r *Repository) DeleteAgentSession(ctx context.Context, id int64) error {
+	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&TNVEDAgentSession{}).Error
 }

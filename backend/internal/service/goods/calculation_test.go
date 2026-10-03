@@ -411,3 +411,38 @@ func TestExportContainsRowsPhotoTotalsAndSummary(t *testing.T) {
 		t.Fatalf("fee parameters expected, got %q", cell("Итоги", "B9"))
 	}
 }
+
+// Картинка в объединённой ячейке (B2:B5) короче ячейки — фото получают все её строки.
+func TestGoodsParseXlsxPictureInMergedCellCoversAllRows(t *testing.T) {
+	book := excelize.NewFile()
+	for cell, value := range map[string]string{"A1": "Наименование", "A2": "Цепь 3*2,3", "A3": "Цепь 4*2,3", "A4": "Цепь 5*2,3", "A5": "Цепь 10*2,3", "A6": "Брусок"} {
+		if err := book.SetCellValue("Sheet1", cell, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := book.MergeCell("Sheet1", "B2", "B5"); err != nil {
+		t.Fatal(err)
+	}
+	var picture bytes.Buffer
+	if err := png.Encode(&picture, image.NewRGBA(image.Rect(0, 0, 10, 15))); err != nil {
+		t.Fatal(err)
+	}
+	if err := book.AddPictureFromBytes("Sheet1", "B2", &excelize.Picture{Extension: ".png", File: picture.Bytes()}); err != nil {
+		t.Fatal(err)
+	}
+	buffer, err := book.WriteToBuffer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := NewGoodsService().ParseXlsxWithSharedImages(context.Background(), bytes.NewReader(buffer.Bytes()), int64(buffer.Len()), "test.xlsx", "Sheet1", 1, 2)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	rows := map[int]bool{}
+	for _, link := range parsed.Images {
+		rows[link.SourceRow] = true
+	}
+	if !rows[2] || !rows[3] || !rows[4] || !rows[5] || rows[6] {
+		t.Fatalf("фото должны получить строки 2–5 объединённой ячейки, получили %v", rows)
+	}
+}

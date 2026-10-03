@@ -204,3 +204,40 @@ func (s *Server) beginAgentSession(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, view)
 }
+
+// Чат-справочник на главной: вопрос о товаре (фото и/или текст), история вопросов сотрудника.
+func (s *Server) askReference(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20)
+	var input tnvedagent.ReferenceInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		badRequest(c, "Некорректный вопрос", "")
+		return
+	}
+	view, err := s.agent.AskReference(c.Request.Context(), currentUser(c), input)
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusCreated, view)
+}
+
+func (s *Server) referenceHistory(c *gin.Context) {
+	items, err := s.agent.ReferenceHistory(c.Request.Context(), currentUser(c))
+	if err != nil {
+		internalError(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": items})
+}
+
+func (s *Server) deleteReference(c *gin.Context) {
+	id, ok := sessionID(c)
+	if !ok {
+		return
+	}
+	if err := s.agent.DeleteReference(c.Request.Context(), currentUser(c), id); err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}

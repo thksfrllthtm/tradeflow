@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { decimalText } from '@/shared/lib/rounding'
@@ -404,7 +405,7 @@ function perUnit(total: string, quantity: string) {
 function CodeLine({ code, name }: { code: string; name?: string }) {
   const parts = name ? nameParts(name) : []
   return <div className="ag-code-line">
-    <b className="ag-code">{formatCode(code)}</b>
+    <CopyCode code={code} className="ag-code" />
     {parts.length > 0 && <span title={parts.join(' › ')}>{parts.slice(-2).join(' › ')}</span>}
   </div>
 }

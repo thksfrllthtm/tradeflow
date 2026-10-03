@@ -73,9 +73,35 @@ func stringProperty(description string) map[string]any {
 	return map[string]any{"type": "string", "description": description}
 }
 
-func agentTools() []agentTool {
+// agentTools — инструменты агента; в справочнике (reference) у итога нет наименования для декларации.
+func agentTools(reference bool) []agentTool {
 	tool := func(name, description string, parameters map[string]any) agentTool {
 		return agentTool{Type: "function", Function: agentToolFunction{Name: name, Description: description, Parameters: parameters}}
+	}
+	finish := tool("finish", "Итог подбора. Вызывается один раз в конце.", objectSchema(map[string]any{
+		"description": stringProperty("Что это за товар, 1–2 предложения; расхождения наименования с фото"),
+		"candidates": map[string]any{"type": "array", "description": "1–4 кандидата, лучший первым", "items": objectSchema(map[string]any{
+			"code":    stringProperty("Код, 10 цифр"),
+			"verdict": map[string]any{"type": "string", "enum": []string{"fits", "doubtful", "no"}},
+			"quote":   stringProperty("Дословная цитата из open_details этого кода или из его наименования; пусто, если нет"),
+			"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
+			"check":   stringProperty("Что уточнить; пусто, если нечего"),
+		}, "code", "verdict", "reason")},
+		"name":  stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
+		"notes": stringProperty("Замечания сотруднику; пусто, если нет"),
+	}, "description", "candidates", "name"))
+	if reference {
+		finish = tool("finish", "Ответ сотруднику. Вызывается один раз в конце.", objectSchema(map[string]any{
+			"description": stringProperty("Ответ сотруднику. На первый вопрос — что это за товар, какой код и главное отличие от соседних, 2–4 предложения. На уточнение — только прямой ответ на него, без пересказа прежнего ответа"),
+			"candidates": map[string]any{"type": "array", "description": "1–4 кода: подходящие первыми, затем 1–2 соседних неподходящих (verdict no) с объяснением", "items": objectSchema(map[string]any{
+				"code":    stringProperty("Код, 10 цифр"),
+				"verdict": map[string]any{"type": "string", "enum": []string{"fits", "doubtful", "no"}},
+				"quote":   stringProperty("Дословная цитата из open_details этого кода или из его наименования; пусто, если нет"),
+				"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
+				"check":   stringProperty("Что уточнить; пусто, если нечего"),
+			}, "code", "verdict", "reason")},
+			"notes": stringProperty("Короткое дополнение, которого нет в description; пусто, если нечего добавить. Не повторяй description"),
+		}, "description", "candidates"))
 	}
 	return []agentTool{
 		tool("search_nomenclature", "Поиск кодов в номенклатуре ТН ВЭД ЕАЭС по словам наименования (по-русски). Каждое слово ищется по основе, все слова должны встретиться в наименовании кода с его деревом. Лучше 1–3 слова. Возвращает до 30 кодов с наименованием и пошлиной ЕТТ.",
@@ -92,18 +118,7 @@ func agentTools() []agentTool {
 			objectSchema(map[string]any{"query": stringProperty("Слова наименования")}, "query")),
 		tool("ask_user", "Задать сотруднику один короткий вопрос, если без ответа код не определить. После вызова жди ответа.",
 			objectSchema(map[string]any{"question": stringProperty("Вопрос по-русски, одно предложение")}, "question")),
-		tool("finish", "Итог подбора. Вызывается один раз в конце.", objectSchema(map[string]any{
-			"description": stringProperty("Что это за товар, 1–2 предложения; расхождения наименования с фото"),
-			"candidates": map[string]any{"type": "array", "description": "1–4 кандидата, лучший первым", "items": objectSchema(map[string]any{
-				"code":    stringProperty("Код, 10 цифр"),
-				"verdict": map[string]any{"type": "string", "enum": []string{"fits", "doubtful", "no"}},
-				"quote":   stringProperty("Дословная цитата из open_details этого кода или из его наименования; пусто, если нет"),
-				"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
-				"check":   stringProperty("Что уточнить; пусто, если нечего"),
-			}, "code", "verdict", "reason")},
-			"name":  stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
-			"notes": stringProperty("Замечания сотруднику; пусто, если нет"),
-		}, "description", "candidates", "name")),
+		finish,
 	}
 }
 
