@@ -13,3 +13,6 @@ export type GoodsMapping = {
   // Цена за единицу из файла (USD); у строк без цены стоимость считается как обычно.
   pricePerPair: string
 }
+
+// Что сейчас ждёт ответа сервера: кнопки показывают «Подождите…» только у своего действия.
+export type CalculatorActivity = '' | 'calculate' | 'save' | 'export'

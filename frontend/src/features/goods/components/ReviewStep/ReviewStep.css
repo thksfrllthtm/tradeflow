@@ -1,70 +1,188 @@
-/* Этап 2: параметры расчёта и таблица строк (шапка, колонки, закрепление, итоги). */
+/* Этап 2: параметры расчёта, панель и фильтр строк, таблица на всю оставшуюся высоту окна.
+   Всё оформление — только для этапа 2 (.rv-step и .is-review); цвета — токены ниже:
+   текст не светлее 4,5:1 на белом и на подсветке строк. */
 
-.rv-step { gap: 10px; }
+.rv-step {
+  --rv-ink: #1f2d24;
+  --rv-ink-2: #46564c;
+  --rv-ink-3: #5a6960;
+  --rv-line: #e4eae6;
+  --rv-line-strong: #ccd7cf;
+  --rv-head: #f2f6f3;
+  --rv-green: #1c6b43;
+  --rv-green-dark: #154f32;
+  --rv-focus: #1c6b43;
+  --rv-bad: #a12a2a;
+  --rv-bad-row: #fff6f6;
+  --rv-warn: #75520a;
+  --rv-warn-row: #fffbef;
+  --rv-changed: #2c4f86;
+  --rv-changed-row: #f4f7fd;
+  --rv-field: #8a968f;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rv-step :is(button, input, select, summary):focus-visible { outline: 2px solid var(--rv-focus); outline-offset: 2px; }
+.rv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Этап занимает высоту окна: параметры, панель и кнопки — по содержимому, таблица — остальное.
+   Базовая высота таблицы 300px: на низком окне страница прокручивается целиком. */
+.goods-calculator-embedded.is-review { height: 100%; }
+.goods-calculator-embedded.is-review .goods-page { display: flex; flex-direction: column; height: 100%; min-height: 600px; padding-bottom: 12px; }
+.goods-calculator-embedded.is-review .goods-page > * { flex: 0 0 auto; }
+.goods-calculator-embedded.is-review .goods-page > .rv-step { flex: 1 1 auto; min-height: min-content; }
+.rv-step > .rv-card { flex: 1 1 auto; min-height: min-content; }
+.rv-step .rv-grid-wrap { flex: 1 0 auto; height: 300px; max-height: none; overscroll-behavior: contain; }
+@media (max-width: 760px) {
+  .goods-calculator-embedded.is-review, .goods-calculator-embedded.is-review .goods-page { height: auto; min-height: 0; }
+  .rv-step .rv-grid-wrap { height: 70vh; }
+}
+
+/* ── Параметры расчёта: одна строка, связанные значения — в одном поле ── */
 .rv-step .goods-params { border-radius: 10px; background: #fff; }
-.rv-step .goods-params > summary { padding: 9px 14px; }
-
-/* Параметры расчёта: одна строка, связанные значения — в одном поле */
-.rv-params { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 28px; padding: 10px 14px 12px; border-top: 1px solid #e6ece8; }
+.rv-step .goods-params > summary { padding: 9px 14px; color: var(--rv-ink); font-size: .93rem; }
+.rv-step .goods-params > summary::before { color: var(--rv-ink-3); }
+.rv-step .goods-params-summary { color: var(--rv-ink-3); font-size: .86rem; }
+.rv-params { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 28px; padding: 10px 14px 12px; border-top: 1px solid var(--rv-line); }
 .rv-params-group { display: flex; align-items: flex-end; gap: 10px; }
-.rv-params .rv-field { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0; color: #6b7a71; font-size: .74rem; font-weight: 600; white-space: nowrap; }
-.rv-field small { display: inline-block; max-width: 150px; margin-left: 6px; overflow: hidden; color: #28734b; font-weight: 500; text-overflow: ellipsis; vertical-align: bottom; }
-.rv-params input, .rv-params select { box-sizing: border-box; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .84rem; }
+.rv-params .rv-field { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0; color: var(--rv-ink-2); font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.rv-field small { display: inline-block; max-width: 160px; margin-left: 6px; overflow: hidden; color: var(--rv-green); font-weight: 500; text-overflow: ellipsis; vertical-align: bottom; }
+.rv-params input, .rv-params select { box-sizing: border-box; height: 32px; margin: 0; padding: 4px 8px; border: 1px solid var(--rv-field); border-radius: 6px; background: #fff; color: var(--rv-ink); font-size: .93rem; }
 .rv-params input[inputmode="decimal"] { text-align: right; font-variant-numeric: tabular-nums; }
-.rv-params input:focus, .rv-params select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.rv-params .rv-w-date { width: 136px; }
-.rv-params .rv-w-country { width: 150px; }
-.rv-params .rv-w-md { width: 88px; }
-.rv-params .rv-w-sm { width: 56px; }
-.rv-joined { display: inline-flex; align-items: stretch; height: 30px; box-sizing: border-box; overflow: hidden; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; }
-.rv-joined:focus-within { border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.rv-params .rv-joined input, .rv-params .rv-joined select { height: 28px; border: 0; border-radius: 0; box-shadow: none; }
-.rv-params .rv-joined select { width: auto; padding-right: 4px; border-right: 1px solid #e6ece8; background: #f8faf8; font-size: .8rem; }
-.rv-joined-sep { display: flex; align-items: center; color: #9aa59e; font-size: .8rem; }
-.rv-joined-unit { display: flex; align-items: center; padding: 0 8px; border-left: 1px solid #e6ece8; background: #f5f8f6; color: #7a877f; font-size: .74rem; font-weight: 600; }
-.rv-params .rv-rate-button { min-width: 52px; margin: 0; padding: 0 10px; border: 0; border-left: 1px solid #e6ece8; border-radius: 0; background: #eef7f1; color: #24704a; font-size: .74rem; font-weight: 700; }
-.rv-params .rv-rate-button:hover:not(:disabled) { background: #24704a; color: #fff; }
+.rv-params input::placeholder { color: #68766e; }
+.rv-params input:focus, .rv-params select:focus { outline: 2px solid var(--rv-focus); outline-offset: 0; border-color: var(--rv-focus); }
+.rv-params .rv-w-date { width: 140px; }
+.rv-params .rv-w-country { width: 156px; }
+.rv-params .rv-w-md { width: 92px; }
+.rv-params .rv-w-sm { width: 60px; }
+.rv-joined { display: inline-flex; align-items: stretch; height: 32px; box-sizing: border-box; overflow: hidden; border: 1px solid var(--rv-field); border-radius: 6px; background: #fff; }
+.rv-joined:focus-within { border-color: var(--rv-focus); box-shadow: 0 0 0 1px var(--rv-focus); }
+.rv-params .rv-joined input, .rv-params .rv-joined select { height: 30px; border: 0; border-radius: 0; box-shadow: none; outline: none; }
+.rv-params .rv-joined select { width: auto; padding-right: 4px; border-right: 1px solid var(--rv-line); background: #f8faf8; font-size: .86rem; }
+.rv-joined-sep { display: flex; align-items: center; color: var(--rv-ink-3); font-size: .86rem; }
+.rv-joined-unit { display: flex; align-items: center; padding: 0 8px; border-left: 1px solid var(--rv-line); background: #f5f8f6; color: var(--rv-ink-3); font-size: .82rem; font-weight: 600; }
+.rv-params .rv-rate-button { min-width: 56px; margin: 0; padding: 0 10px; border: 0; border-left: 1px solid var(--rv-line); border-radius: 0; background: #eef7f1; color: var(--rv-green-dark); font-size: .82rem; font-weight: 700; }
+.rv-params .rv-rate-button:hover:not(:disabled) { background: var(--rv-green); color: #fff; }
 
-/* Панель над таблицей: счётчики слева, подсказка и «+ Строка» справа */
-.rv-bar-count { padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 650; white-space: nowrap; cursor: help; }
-.rv-bar-count.warn { background: #fdf3d8; color: #85640a; }
-.rv-bar-count.bad { background: #fde8e8; color: #a33232; }
+/* ── Панель над таблицей: счётчики слева, «+ Строка» справа; при выборе — массовые действия ── */
+.rv-step .rv-bar { gap: 8px 12px; min-height: 46px; color: var(--rv-ink-2); font-size: .86rem; }
+.rv-step .rv-bar b { color: var(--rv-ink); }
+.rv-step .rv-bar .rv-bar-button { height: 32px; padding: 0 12px; border: 1px solid var(--rv-line-strong); border-radius: 7px; background: #fff; color: var(--rv-ink); font-size: .86rem; font-weight: 600; }
+.rv-step .rv-bar .rv-bar-button:hover:not(:disabled) { border-color: var(--rv-green); background: #f0f7f2; color: var(--rv-green-dark); }
+.rv-step .rv-bar .rv-bar-button.primary { border-color: #b8cfc0; background: #eef6f1; color: var(--rv-green-dark); }
+.rv-step .rv-bar .rv-bar-button:disabled { opacity: 1; color: #7d8a82; }
+.rv-step .rv-bar .button-link { font-size: .86rem; }
+.rv-bar-sub { color: var(--rv-ink-3); font-weight: 500; }
+.rv-bar-note { color: var(--rv-ink-2); font-weight: 600; }
 .rv-bar-end { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-.rv-bar-end .rv-bar-button:disabled { opacity: .5; cursor: not-allowed; }
 
-.rv-card .goods-table-top-scroll { margin: 0; border: 0; border-bottom: 1px solid #e6ece8; border-radius: 0; }
+/* Фильтр строк, следующая проблема, источник ошибок, плотность. */
+.rv-filterbar { display: flex; align-items: center; flex-wrap: nowrap; gap: 6px 10px; padding: 4px 14px; border-bottom: 1px solid var(--rv-line); background: #fafcfb; }
+.rv-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rv-line-strong); border-radius: 8px; background: #fff; }
+.rv-step .rv-seg button { height: 26px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--rv-ink-2); font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.rv-step .rv-seg button b { margin-left: 3px; color: inherit; font-variant-numeric: tabular-nums; }
+.rv-step .rv-seg button:hover:not(:disabled) { background: #edf4ef; color: var(--rv-ink); }
+.rv-step .rv-seg button.active, .rv-step .rv-seg button.active:hover:not(:disabled) { background: var(--rv-green); color: #fff; }
+.rv-step .rv-seg button:disabled { color: #7d8a82; opacity: 1; }
+.rv-step button.rv-next { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 1px solid var(--rv-line-strong); border-radius: 7px; background: #fff; color: var(--rv-ink); font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.rv-step button.rv-next:hover:not(:disabled) { border-color: var(--rv-green); background: #f0f7f2; }
+.rv-step button.rv-next:disabled { opacity: 1; color: #7d8a82; }
+.rv-next kbd { padding: 0 4px; border: 1px solid var(--rv-line-strong); border-radius: 4px; background: #f5f8f6; color: var(--rv-ink-3); font: inherit; font-size: .78rem; }
+.rv-check-source { flex: 0 1 auto; min-width: 0; margin: 0; overflow: hidden; color: var(--rv-ink-3); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.rv-check-source.past { padding: 2px 8px; border-radius: 6px; background: #eef2fa; color: var(--rv-changed); font-weight: 600; }
+.rv-check-source b { color: inherit; }
+.rv-seg { flex: 0 0 auto; }
+.rv-density { margin-left: auto; }
 
-/* Таблица — в стиле этапа 3: компактные строки, числа по правому краю.
-   Правый отступ заголовков и итогов = отступ ячейки + отступ текста в поле, чтобы цифры стояли в одну линию. */
-.goods-page .rv-grid { width: 100%; min-width: 1040px !important; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: .82rem; line-height: 1.3; }
-.goods-page .rv-grid th, .goods-page .rv-grid td { padding: 5px 6px !important; border-bottom: 1px solid #edf1ee; background: #fff; color: #1f2d24; font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; vertical-align: middle; }
+/* Удалённая строка: вернуть на место. */
+.rv-undo { display: flex; align-items: center; gap: 12px; padding: 6px 14px; border-bottom: 1px solid #ecd59a; background: #fffaeb; color: #5c4105; font-size: .86rem; }
+.rv-step .rv-undo .button-link { color: #154f32; font-size: .86rem; font-weight: 700; }
+.rv-step .rv-undo button.rv-undo-close { margin-left: auto; padding: 0 6px; border: 0; background: transparent; color: #5c4105; font-size: 1.1rem; line-height: 1; }
+
+.rv-step .rv-card .goods-table-top-scroll { margin: 0; border: 0; border-bottom: 1px solid var(--rv-line); border-radius: 0; }
+
+/* ── Таблица ── */
+.goods-page .rv-grid { width: 100%; min-width: 1000px !important; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: .93rem; line-height: 1.3; }
+.goods-page .rv-grid th, .goods-page .rv-grid td { padding: 5px 6px !important; overflow: visible; border-bottom: 1px solid var(--rv-line); background: #fff; color: var(--rv-ink); font-size: .93rem; font-variant-numeric: tabular-nums; text-align: right; text-overflow: clip; vertical-align: middle; }
+.goods-page .rv-grid tbody tr:nth-child(even) td { background: #fff; }
 .goods-page .rv-grid tbody tr:last-child td { border-bottom: 0; }
-.goods-page .rv-grid th { position: sticky; top: 0; z-index: 3; padding: 8px 6px !important; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; color: #5d6d63; font-size: .72rem !important; font-weight: 650; white-space: nowrap; }
-.goods-page .rv-grid th small, .goods-page .rv-grid tfoot small { color: #9aa59e; font-size: .72rem; font-weight: 500; }
+.goods-page .rv-grid th { position: sticky; top: 0; z-index: 3; padding: 8px 6px !important; border-bottom: 1px solid var(--rv-line-strong); background: var(--rv-head); color: var(--rv-ink-2); font-size: .82rem !important; font-weight: 650; line-height: 1.25; white-space: nowrap; }
+.goods-page .rv-grid tfoot small { color: var(--rv-ink-3); font-size: .82rem; font-weight: 500; }
 .goods-page .rv-grid .rv-product { text-align: left; }
-.goods-page .rv-grid th.rv-product { padding-left: 55px !important; }
+.goods-page .rv-grid th.rv-product, .goods-page .rv-grid tfoot td.rv-product { padding-left: 50px !important; }
+.goods-page .rv-grid .rv-product-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.goods-page .rv-grid .rv-th-hint { color: var(--rv-ink-3); font-size: .78rem; font-weight: 500; }
 .goods-page .rv-grid th.rv-qty, .goods-page .rv-grid th.rv-net, .goods-page .rv-grid tfoot .rv-qty, .goods-page .rv-grid tfoot .rv-net { padding-right: 15px !important; }
 .rv-grid .rv-check { width: 36px; text-align: center !important; }
-.rv-grid .rv-num { width: 32px; color: #8a968f; text-align: center !important; }
-.rv-grid .rv-qty { width: 88px; }
-.rv-grid .rv-net { width: 150px; }
-.rv-grid .rv-include { width: 72px; text-align: center !important; }
-.rv-grid .rv-status { width: 30px; text-align: center !important; }
-.rv-grid .rv-remove-col { width: 34px; text-align: center !important; }
+.rv-grid .rv-num { width: 58px; color: var(--rv-ink-3); text-align: left !important; }
+.rv-grid .rv-qty { width: 96px; }
+.rv-grid .rv-net { width: 168px; }
+.rv-grid .rv-include { width: 76px; text-align: center !important; }
+.rv-grid .rv-remove-col { width: 40px; text-align: center !important; }
 
-/* Выбор и номер строки остаются видны при горизонтальной прокрутке */
+/* Закреплены при горизонтальной прокрутке: галочка, № с состоянием и товар. */
 .goods-page .rv-grid .rv-check { position: sticky; left: 0; z-index: 2; }
-.goods-page .rv-grid .rv-num { position: sticky; left: 36px; z-index: 2; box-shadow: inset -1px 0 0 #edf1ee; }
-.goods-page .rv-grid th.rv-check, .goods-page .rv-grid th.rv-num { z-index: 4; }
-.goods-page .rv-grid input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #24704a; cursor: pointer; }
+.goods-page .rv-grid .rv-num { position: sticky; left: 36px; z-index: 2; }
+.goods-page .rv-grid .rv-product { position: sticky; left: 94px; z-index: 2; box-shadow: inset -1px 0 0 var(--rv-line-strong); }
+.goods-page .rv-grid th.rv-check, .goods-page .rv-grid th.rv-num, .goods-page .rv-grid th.rv-product { z-index: 4; }
+.goods-page .rv-grid input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--rv-green); cursor: pointer; }
 
-.goods-page .rv-grid tbody tr:hover td { background: #f7faf8; }
-.goods-page .rv-grid tbody tr.rv-selected td { background: #eef7f1; }
-.goods-page .rv-grid tbody tr.rv-error td:first-child { box-shadow: inset 2px 0 0 #e08a8a; }
-.goods-page .rv-grid tbody tr.rv-excluded td:not(.rv-check):not(.rv-include):not(.rv-remove-col) > * { opacity: .45; }
-.goods-page .rv-grid tbody tr.rv-excluded .rv-num { color: #c3cbc5; }
+.rv-num-cell { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding-left: 2px; }
+.rv-state { display: inline-grid; flex: 0 0 auto; place-items: center; width: 18px; height: 18px; border-radius: 50%; }
+.rv-state.ok { background: #e2f2e8; color: #1a6a3e; }
+.rv-state.bad { background: var(--rv-bad); color: #fff; }
+.rv-state.warn { background: #f3c548; color: #3d2c00; }
+.rv-state.todo { border: 1.5px dashed #b88a1e; color: #75520a; }
+.rv-state.changed { background: #dfe8f8; color: var(--rv-changed); }
+.rv-state.off { background: #e9edea; color: var(--rv-ink-3); }
+/* Ошибка прошлого расчёта — тот же цвет, но значок обведён: не актуальная проверка. */
+.rv-state.past { box-shadow: 0 0 0 2px #fff, 0 0 0 3px currentColor; }
+.rv-state.bad.past { box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--rv-bad); }
 
-/* Итого — закреплено внизу, как на этапе 3 */
-.goods-page .rv-grid tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid #cfd9d2; border-bottom: 0; background: #f5f8f6; color: #1c3b28; font-weight: 700; }
-.goods-page .rv-grid tfoot td.rv-product { padding-left: 55px !important; }
-.goods-page .rv-grid tfoot td.rv-check, .goods-page .rv-grid tfoot td.rv-num { z-index: 4; }
+/* Подсветка строк: ошибка, предупреждение, изменена, выбрана, исключена. */
+.goods-page .rv-grid tbody tr:hover td { background: #eef5f0; }
+.goods-page .rv-grid tbody tr.rv-row-bad td { background: var(--rv-bad-row); }
+.goods-page .rv-grid tbody tr.rv-row-warn td, .goods-page .rv-grid tbody tr.rv-row-todo td { background: var(--rv-warn-row); }
+.goods-page .rv-grid tbody tr.rv-row-changed.attention td { background: var(--rv-changed-row); }
+.goods-page .rv-grid tbody tr.rv-row-bad:hover td { background: #fcebeb; }
+.goods-page .rv-grid tbody tr.rv-row-warn:hover td, .goods-page .rv-grid tbody tr.rv-row-todo:hover td { background: #fdf4dc; }
+.goods-page .rv-grid tbody tr.rv-selected td { background: #e3f1e8; }
+.goods-page .rv-grid tbody tr.rv-excluded td:not(.rv-check):not(.rv-include):not(.rv-remove-col) > * { opacity: .55; }
+.goods-page .rv-grid .rv-empty-filter td { padding: 28px 16px !important; color: var(--rv-ink-2); text-align: center; }
+
+/* Итого — закреплено внизу. */
+.goods-page .rv-grid tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid var(--rv-line-strong); border-bottom: 0; background: var(--rv-head); color: #17331f; font-weight: 700; }
+.goods-page .rv-grid tfoot td.rv-check, .goods-page .rv-grid tfoot td.rv-num, .goods-page .rv-grid tfoot td.rv-product { z-index: 4; }
+
+/* ── Нижняя строка: статус сохранения, «…» (очистить), сохранить, рассчитать ── */
+.rv-step .rv-actions { flex: 0 0 auto; }
+.rv-step .rv-actions-note { overflow: hidden; color: var(--rv-ink-3); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.rv-step .goods-storage-error { font-size: .86rem; }
+.rv-more { position: relative; }
+.rv-more > summary { display: grid; place-items: center; height: 36px; padding: 0 12px; border-radius: 7px; color: var(--rv-ink-2); font-size: .9rem; font-weight: 600; line-height: 1; cursor: pointer; list-style: none; }
+.rv-more > summary::-webkit-details-marker { display: none; }
+.rv-more > summary:hover, .rv-more[open] > summary { background: #edf4ef; }
+.rv-more-menu { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 30; min-width: 190px; padding: 6px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(20, 45, 30, .16); }
+.rv-step .rv-actions .rv-more-menu button.rv-clear { width: 100%; min-height: 34px; border: 0; border-radius: 6px; background: transparent; color: var(--rv-bad); font-weight: 600; text-align: left; }
+.rv-step .rv-actions .rv-more-menu button.rv-clear:hover:not(:disabled) { background: #fdecec; color: var(--rv-bad); }
+.rv-step .rv-actions .btn-save-draft { border-color: #b8cfc0; color: var(--rv-green-dark); }
+
+/* Компактно: одна строка на товар — фото меньше, код в строку с названием, причина остаётся. */
+.rv-step.compact .rv-product-grid { grid-template-columns: 24px minmax(120px, 1fr) minmax(0, max-content); }
+.rv-step.compact .rv-photo { grid-row: auto; width: 24px; height: 24px; }
+.goods-page .rv-step.compact .rv-grid .rv-thumb, .rv-step.compact .rv-photo-add.rv-photo-empty { width: 24px; height: 24px; }
+.goods-page .rv-step.compact .rv-grid td { padding-block: 3px !important; }
+.goods-page .rv-step.compact .rv-grid .rv-code-line { max-width: 300px; }
+.goods-page .rv-step.compact .rv-grid .rv-other-names { display: none; }
+
+@media (max-width: 1500px) {
+  .rv-grid .rv-net { width: 150px; }
+}
+@media (max-width: 1280px) {
+  .goods-page .rv-grid th.rv-product .rv-th-hint { display: none; }
+}
+@media (max-width: 900px) {
+  .rv-filterbar { flex-wrap: wrap; }
+  .rv-density { margin-left: 0; }
+}

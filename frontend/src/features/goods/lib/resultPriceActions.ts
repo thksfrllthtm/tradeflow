@@ -50,8 +50,9 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
       void calculate(nextItems, false)
     },
 
+    // Сброс к ценам строк сметы — тоже откатывается кнопкой «Отменить».
     restoreInitialResult() {
-      setPreviousBulkResult(null)
+      if (result) setPreviousBulkResult(result)
       void calculate(undefined, false)
     },
 

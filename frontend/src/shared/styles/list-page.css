@@ -66,7 +66,7 @@
 .dir-table .c-status { width: 170px; }
 .dir-table .c-actions { width: 104px; }
 
-.dir-table code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; font-weight: 700; white-space: nowrap; }
+.dir-table code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 700; white-space: nowrap; }
 .dir-table .dir-name {
   display: -webkit-box;
   max-width: 100%;

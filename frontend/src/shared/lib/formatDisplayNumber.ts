@@ -12,3 +12,9 @@ export function formatDisplayNumber(value: string | number | undefined | null): 
   const integer = match[2].replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   return `${sign}${integer}${match[3] ?? ''}`
 }
+
+// То же для показа по-русски: дробная часть через запятую («12 345,67»). Только отображение —
+// значения, поля ввода и расчёт по-прежнему работают с точкой.
+export function formatRuNumber(value: string | number | undefined | null): string {
+  return formatDisplayNumber(value).replace(/^([+-]?[\d ]+)\.(\d+)$/, '$1,$2')
+}

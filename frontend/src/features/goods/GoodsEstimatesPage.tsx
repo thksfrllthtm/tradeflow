@@ -124,6 +124,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
           key={selected.id}
           estimateId={selected.id}
           onEstimateSaved={onEstimateSaved}
+          exportName={[estimateTitle(selected.name), selected.client].filter(Boolean).join(' — ')}
           headerSlot={<div className="estimate-bar-meta">
             <h1 title={estimateTitle(selected.name)}>{estimateTitle(selected.name)}</h1>
             <span className="estimate-bar-sub">{selected.client || 'Клиент не указан'} · {formatRuDate(selected.assessmentDate)}</span>

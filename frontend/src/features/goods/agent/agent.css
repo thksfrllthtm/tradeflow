@@ -37,7 +37,7 @@
 .ag-seen { margin: 0; padding-top: 8px; border-top: 1px dashed #e3e9e5; color: #8a968f; font-size: .74rem; line-height: 1.4; }
 
 .ag-code-line { display: grid; gap: 1px; min-width: 0; }
-.ag-code { color: #1f2d24; font-family: ui-monospace, Consolas, monospace; font-size: .95rem; letter-spacing: .03em; }
+.ag-code { color: #1f2d24; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .95rem; letter-spacing: .03em; }
 .ag-code-line span { overflow: hidden; color: #7a877f; font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
 .ag-pills { display: inline-flex; flex: 0 0 auto; gap: 5px; }
 .ag-pill { padding: 2px 8px; border-radius: 999px; background: #eef2ef; color: #4d5d53; font-size: .7rem; font-style: normal; font-weight: 700; white-space: nowrap; }

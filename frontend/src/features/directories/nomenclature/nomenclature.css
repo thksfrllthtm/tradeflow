@@ -78,7 +78,7 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .ad-rates em { color: #56665c; font-style: normal; }
 .ad-rates b { color: #8a2626; font-variant-numeric: tabular-nums; }
 .ad-codes { max-width: 320px; }
-.ad-table .ad-codes button { height: auto; margin: 0 4px 4px 0; padding: 1px 6px; border: 1px solid #dfe7e1; border-radius: 5px; background: #fff; color: #1f2d24; font-family: ui-monospace, Consolas, monospace; font-size: .72rem; cursor: pointer; }
+.ad-table .ad-codes button { height: auto; margin: 0 4px 4px 0; padding: 1px 6px; border: 1px solid #dfe7e1; border-radius: 5px; background: #fff; color: #1f2d24; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .72rem; cursor: pointer; }
 .ad-table .ad-codes button:hover { border-color: #24704a; background: #eef6f1; }
 .ad-table .ad-codes button.heading { border-style: dashed; color: #7a5810; }
 .ad-table .ad-codes button.ad-codes-more { border: 0; color: #1b6b43; font-family: inherit; font-weight: 600; }

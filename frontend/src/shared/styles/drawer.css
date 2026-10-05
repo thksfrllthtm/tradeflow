@@ -49,7 +49,7 @@
 .drawer-field textarea { min-height: 0; line-height: 1.4; resize: vertical; }
 .drawer-field input:focus, .drawer-field select:focus, .drawer-field textarea:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
 .drawer-field input::placeholder, .drawer-field textarea::placeholder { color: #a9b3ad; }
-.drawer-field .mono { font-family: ui-monospace, Consolas, monospace; font-size: .95rem; letter-spacing: .06em; }
+.drawer-field .mono { font-family: inherit; font-variant-numeric: tabular-nums; font-size: .95rem; letter-spacing: .06em; }
 .drawer-hint { margin: 0; color: #7a877f; font-size: .72rem; font-weight: 400; line-height: 1.4; }
 
 /* Поле с единицей справа (%, USD…) */

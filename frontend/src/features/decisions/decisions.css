@@ -13,7 +13,7 @@
 .dc-table .dc-names > span { display: -webkit-box; overflow: hidden; color: #1f2d24; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .dc-table .dc-names small { display: block; overflow: hidden; color: #8a968f; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
 .dc-table .dc-code-col { width: 150px; white-space: nowrap; }
-.dc-table .dc-code-col b { font-family: ui-monospace, Consolas, monospace; font-weight: 650; letter-spacing: .03em; }
+.dc-table .dc-code-col b { font-family: inherit; font-variant-numeric: tabular-nums; font-weight: 650; letter-spacing: .03em; }
 .dc-table .dc-status-col { width: 140px; }
 .dc-table .dc-from-col { width: 170px; }
 .dc-table td small { display: block; margin-top: 2px; font-size: .7rem; }
@@ -36,7 +36,7 @@ p.dc-warn { margin: 0; font-size: .78rem; }
 .dc-text { margin: 0; color: #1f2d24; font-size: .88rem; font-weight: 600; line-height: 1.4; }
 .dc-sub { margin: 0; color: #56665c; font-size: .8rem; line-height: 1.45; }
 .dc-sub a { color: #1b6b43; font-weight: 600; text-decoration: none; }
-.dc-code { margin: 0; color: #1f2d24; font-family: ui-monospace, Consolas, monospace; font-size: 1.1rem; letter-spacing: .05em; }
+.dc-code { margin: 0; color: #1f2d24; font-family: inherit; font-variant-numeric: tabular-nums; font-size: 1.1rem; letter-spacing: .05em; }
 .dc-quote { margin: 0; padding: 6px 10px; border-left: 3px solid #9cc7ab; border-radius: 0 6px 6px 0; background: #eef6f1; color: #26352c; font-size: .8rem; font-style: italic; }
 .dc-error { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: #fff1ee; color: #9a3024; font-size: .8rem; font-weight: 600; }
 .dc-muted { color: #8a968f; font-size: .82rem; }

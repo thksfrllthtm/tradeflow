@@ -26,6 +26,9 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
+/* Один шрифт во всём приложении: коды (code, kbd, pre) и меню таблицы «Как в Excel» (jsuites)
+   тоже в нём, без моноширинного и системного шрифта браузера. */
+code, kbd, pre, samp, body .jcontextmenu > div, body .jtooltip { font-family: inherit; }
 h1, h2, h3, h4, h5, h6, p { margin-top: 0; }
 
 /* ── Элементы форм ── */

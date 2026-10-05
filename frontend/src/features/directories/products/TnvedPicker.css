@@ -38,11 +38,11 @@
 }
 .tnved-picker-list li.active { background: #eef6f1; }
 .tnved-picker-list li.selected code::after { content: ' ✓'; color: #24704a; }
-.tnved-picker-list code { grid-row: span 2; color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; font-weight: 700; }
+.tnved-picker-list code { grid-row: span 2; color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .8rem; font-weight: 700; }
 .tnved-picker-list span { overflow: hidden; color: #1f2d24; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
 .tnved-picker-list small { color: #7a877f; font-size: .7rem; }
 .tnved-picker-list .tnved-picker-empty { display: block; color: #7a877f; font-size: .8rem; cursor: default; }
 
 .tnved-picker-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 8px 12px; border-radius: 7px; background: #f3f8f5; color: #56665c; font-size: .76rem; }
-.tnved-picker-card code { color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .84rem; font-weight: 700; }
+.tnved-picker-card code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .84rem; font-weight: 700; }
 .tnved-picker-card .warn { color: #9a5d0c; font-weight: 600; }

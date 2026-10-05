@@ -1,4 +1,4 @@
-import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { moneyText, weightText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult } from '@/shared/types/goods'
 
@@ -24,9 +24,10 @@ export function calculatorInputValue(value: Value) {
 export const display = (value: Value) =>
   value === undefined || value === null || value === '' ? '—' : String(value)
 
+// Число для показа: разряды пробелом, дробная часть через запятую. Значение не меняется.
 export const displayNumber = (value: Value) => {
   const shown = display(value)
-  return shown === '—' ? shown : formatDisplayNumber(shown)
+  return shown === '—' ? shown : formatRuNumber(shown)
 }
 
 type DisplayNameItem = { standardName?: string; name?: string; supplierName?: string; productDirectoryId?: number; directorySnapshot?: Record<string, unknown> }
@@ -64,4 +65,26 @@ export function rowTotals(result: GoodsCalculationResult) {
     totals.places += number(item.places)
     return totals
   }, { quantity: 0, grossKg: 0, netKg: 0, places: 0 })
+}
+
+// Состояние строки результата: исключена, ошибка (не рассчитана), предупреждение
+// (не рассчитана без ошибок или рассчитана с предупреждениями), рассчитана.
+export type RowState = 'off' | 'bad' | 'warn' | 'ok'
+export function rowState(item: { excluded?: boolean; status?: string; errors?: string[]; warnings?: string[] }): RowState {
+  if (item.excluded) return 'off'
+  if (item.errors?.length) return 'bad'
+  if (item.status !== 'calculated' || item.warnings?.length) return 'warn'
+  return 'ok'
+}
+
+// Ставка пошлины ЕТТ из снимка строки (подставлена сервером из номенклатуры) — подпись под суммой.
+export function dutyRateText(snapshot?: Record<string, unknown>) {
+  const duty = snapshot?.duty as { type?: string; percent?: string; amount?: string; currency?: string; unit?: string } | undefined
+  if (!duty) return ''
+  const percent = duty.percent ? `${formatRuNumber(duty.percent)}%` : ''
+  const specific = duty.amount ? `${formatRuNumber(duty.amount)} ${duty.currency ?? ''}${duty.unit ? `/${duty.unit}` : ''}`.trim() : ''
+  if (duty.type === 'percentage') return percent ? `ЕТТ ${percent}` : ''
+  if (duty.type === 'specific') return specific ? `ЕТТ ${specific}` : ''
+  if (duty.type === 'combined_minimum') return percent && specific ? `ЕТТ ${percent}, не менее ${specific}` : ''
+  return ''
 }

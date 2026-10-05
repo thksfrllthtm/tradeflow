@@ -13,16 +13,6 @@
   flex-direction: column;
 }
 
-/* Ссылка-кнопка (используется на этапах сметы) */
-.button-link {
-  background: transparent;
-  padding: 4px 0;
-  text-decoration: none;
-  color: #b8d4c2;
-  font-weight: 500;
-  border-bottom: 1px solid transparent;
-}
-.button-link:hover:not(:disabled) { background: transparent; color: #fff; border-bottom-color: rgba(255,255,255,.3); }
 
 /* ── Всплывающее сообщение: ошибка (по умолчанию) или успех (.ok) ── */
 .banner {

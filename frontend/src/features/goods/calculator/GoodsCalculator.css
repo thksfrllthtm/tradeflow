@@ -24,7 +24,7 @@
 .est-steps button.active .est-step-num { border-color: #24704a; background: #24704a; color: #fff; }
 .est-steps button.done .est-step-num { border-color: #9cc9ae; background: #e3f1e8; color: #1c6b43; }
 
-.goods-estimates-app .goods-disclaimer { margin: 10px 0 0; padding: 0 2px; border: 0; background: none; color: #9aa59e; font-size: .7rem; }
+.goods-estimates-app .goods-disclaimer { flex: 0 0 auto; margin: 10px 0 0; padding: 0 2px; border: 0; background: none; color: #5a6960; font-size: .82rem; }
 
 @media (max-width: 900px) {
   .estimate-bar { flex-wrap: wrap; }

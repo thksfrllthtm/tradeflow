@@ -1,47 +1,69 @@
-/* Карточка итогов: растаможка, справочные суммы, калькулятор ИТП. */
+/* Полоса итогов: растаможка, слагаемые, справочные суммы, сохранение и кнопки — в одну строку
+   на широком экране, в две — на узком. Пока идёт пересчёт, итог приглушён. */
 
-.rs-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 290px) auto; align-items: stretch; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
-.rs-block { display: flex; flex: 1 1 auto; flex-direction: column; gap: 8px; margin: 0; padding: 14px 20px; box-shadow: -1px -1px 0 #e6ece8; }
-.rs-title { color: #6b7a71; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.rs-op { align-self: center; color: #b3bdb6; font-size: 1.1rem; font-weight: 500; }
-.rs-formula { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
-.rs-total { display: flex; flex-direction: column; margin-right: 4px; }
-.rs-total strong { color: #1c5538; font-size: 1.55rem; font-weight: 750; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rs-total small { color: #8a968f; font-size: .76rem; font-variant-numeric: tabular-nums; }
-.rs-part { display: flex; align-items: center; gap: 14px; }
-.rs-part > div { display: flex; flex-direction: column; gap: 1px; }
-.rs-part span:not(.rs-op) { color: #7a877f; font-size: .74rem; font-weight: 600; }
-.rs-part b { color: #1f2d24; font-size: .98rem; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rs-part b small, .rs-ref dd small { color: #8a968f; font-size: .72rem; font-weight: 500; }
-.rs-partial { align-self: flex-start; padding: 3px 9px; border-radius: 6px; background: #fdf3d8; color: #85640a; font-size: .74rem; font-weight: 600; }
-.rs-ref > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-.rs-ref dt { color: #7a877f; font-size: .76rem; font-weight: 600; white-space: nowrap; }
-.rs-ref dd { margin: 0; color: #1f2d24; font-size: .9rem; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rs-its { background: #fbfcfb; }
-.rs-title small { margin-left: 6px; color: #a3aea7; font-size: .7rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
-.rs-its-grid { display: grid; grid-template-columns: 104px auto 104px auto 96px auto auto; justify-content: start; align-items: end; gap: 8px 10px; }
-.rs-its-grid > label { display: flex; flex-direction: column; gap: 3px; margin: 0; color: #7a877f; font-size: .7rem; font-weight: 600; white-space: nowrap; }
-.rs-its-grid > .rs-op { align-self: end; height: 30px; line-height: 30px; text-align: center; }
-.rs-summary .rs-its input { box-sizing: border-box; width: 100%; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; }
-.rs-summary .rs-its input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.rs-summary .rs-its input::placeholder { color: #b3bdb6; }
-@media (max-width: 1100px) {
-  .rs-summary { grid-template-columns: minmax(0, 1fr) auto; }
-  .rs-ref { grid-column: 1 / -1; grid-row: 2; }
-}
+.rs-summary { position: relative; display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: 10px 16px; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
+.rs-summary dl { margin: 0; }
+.rs-summary dd { margin: 0; }
+
+.rs-sum-total { display: grid; gap: 1px; min-width: 0; }
+.rs-sum-label { color: #46564c; font-size: .86rem; font-weight: 650; }
+.rs-sum-total strong { color: #154f32; font-size: 1.55rem; font-weight: 750; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; transition: opacity .2s ease-out; }
+.rs-sum-sub { color: #5a6960; font-size: .86rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-sum-sub em { color: #75520a; font-style: normal; font-weight: 650; }
+.rs-summary.calculating .rs-sum-total strong, .rs-summary.calculating .rs-sum-parts dd { opacity: .45; }
+.rs-partial { justify-self: start; margin-top: 3px; padding: 1px 8px; border-radius: 5px; background: #fdf3d6; color: #6b4b06; font-size: .82rem; font-weight: 650; white-space: nowrap; }
+
+/* Формула и справочная строка под ней; на узком окне слагаемые переносятся, кнопки остаются в ряду. */
+.rs-sum-body { display: grid; flex: 1 1 340px; gap: 6px; min-width: 0; }
+.rs-sum-parts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.rs-part { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; }
+.rs-part .rs-op { grid-row: 1 / span 2; color: #5a6960; font-size: 1.05rem; font-weight: 500; }
+.rs-part dt { color: #5a6960; font-size: .82rem; font-weight: 600; }
+.rs-part dd { color: #1f2d24; font-size: .98rem; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; transition: opacity .2s ease-out; }
+.rs-summary dd small { color: #5a6960; font-size: .82rem; font-weight: 500; }
+.rs-sum-ref { display: flex; flex-wrap: wrap; gap: 2px 18px; padding-top: 6px; border-top: 1px solid #e9eeeb; }
+.rs-sum-ref > div { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.rs-sum-ref dt { color: #5a6960; font-size: .82rem; font-weight: 600; }
+.rs-sum-ref dd { color: #1f2d24; font-size: .86rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.rs-sum-actions { display: grid; justify-items: end; gap: 6px; margin-left: auto; }
+.rs-sum-meta { display: flex; align-items: center; gap: 4px 12px; min-width: 0; }
+.rs-save-state { max-width: 300px; margin: 0; overflow: hidden; color: #5a6960; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.rs-save-state.failed { padding: 2px 8px; border: 1px solid #efcaca; border-radius: 6px; background: #fff7f7; color: #8d2929; font-weight: 600; white-space: normal; }
+.rs-sum-buttons { display: flex; align-items: center; gap: 8px; }
+.rs-summary .rs-sum-buttons > button { height: 36px; padding: 0 16px; border-radius: 8px; font-size: .9rem; font-weight: 650; white-space: nowrap; }
+.rs-summary button.rs-save { border: 1px solid #b8cfc0; background: #fff; color: #154f32; }
+.rs-summary button.rs-save:hover:not(:disabled) { border-color: #1c6b43; background: #f0f7f2; }
+.rs-summary button.rs-export { min-width: 150px; }
+
+/* «Сверка по ИТП» — окошко под кнопкой. */
+.rs-itp { position: relative; }
+.rs-itp > summary { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 6px; color: #154f32; font-size: .82rem; font-weight: 650; cursor: pointer; list-style: none; white-space: nowrap; }
+.rs-itp > summary::-webkit-details-marker { display: none; }
+.rs-itp > summary:hover, .rs-itp[open] > summary { background: #edf4ef; }
+.rs-itp > summary::after { content: ''; width: 6px; height: 6px; margin: -3px 0 0 8px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.rs-itp[open] > summary::after { margin-top: 3px; transform: rotate(225deg); }
+.rs-itp-pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; display: grid; gap: 10px; width: max-content; max-width: min(640px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(20, 45, 30, .16); }
+.rs-itp-note { margin: 0; color: #5a6960; font-size: .82rem; }
+.rs-its-grid { display: grid; grid-template-columns: 112px auto 112px auto 104px auto auto; justify-content: start; align-items: end; gap: 8px 10px; }
+.rs-its-grid > label { display: flex; flex-direction: column; gap: 3px; margin: 0; color: #46564c; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.rs-its-grid > .rs-op { align-self: end; height: 32px; color: #5a6960; font-size: 1.1rem; line-height: 32px; text-align: center; }
+.rs-itp input { box-sizing: border-box; width: 100%; height: 32px; margin: 0; padding: 4px 8px; border: 1px solid #8a968f; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .93rem; text-align: right; font-variant-numeric: tabular-nums; }
+.rs-itp input:focus { outline: 2px solid #1c6b43; outline-offset: 0; border-color: #1c6b43; }
+.rs-itp input::placeholder { color: #68766e; }
+.rs-its-total { display: grid; margin-left: 4px; }
+.rs-its-total strong { color: #154f32; font-size: 1.15rem; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-its-total small { color: #5a6960; font-size: .82rem; }
+
 @media (max-width: 700px) {
-  .rs-summary { grid-template-columns: 1fr; }
+  .rs-sum-actions { justify-items: start; margin-left: 0; }
+  .rs-its-grid { grid-template-columns: 1fr; }
+  .rs-its-grid > .rs-op { display: none; }
+  .rs-itp-pop { right: auto; left: 0; }
 }
-.rs-its-total { margin-left: 4px; }
-/* «Сверка по ИТП» свёрнута: заголовок-переключатель, поля — по раскрытию. */
-.rs-summary details.rs-its { grid-column: 1 / -1; gap: 0; padding-top: 9px; padding-bottom: 9px; }
-.rs-summary details.rs-its[open] { gap: 8px; }
-.rs-its > summary { width: fit-content; cursor: pointer; list-style: none; }
-.rs-its > summary::-webkit-details-marker { display: none; }
-.rs-its > summary::before { content: '▸'; display: inline-block; width: 14px; color: #9aa59e; }
-.rs-its[open] > summary::before { content: '▾'; }
-.rs-its > summary:hover { color: #24704a; }
-.rs-ref-note { margin: 2px 0 0; color: #9aa59e; font-size: .7rem; }
-/* Сохранить и Экспорт — справа в карточке итогов. */
-.rs-actions { justify-content: center; gap: 8px; }
-.rs-actions button { width: 100%; min-width: 160px; height: 36px; padding: 0 16px; font-size: .84rem; }
+/* Окно уже 1500px: пояснение к доставке — только в подсказке, справочная строка короче. */
+@media (max-width: 1500px) {
+  .rs-summary .rs-wide { display: none; }
+  .rs-summary { gap: 10px 20px; }
+  .rs-sum-ref { gap: 2px 14px; }
+}

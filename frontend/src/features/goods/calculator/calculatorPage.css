@@ -7,6 +7,17 @@
   .goods-calculator-embedded .goods-page { padding-inline: 12px; }
 }
 
+/* Этап результата занимает высоту окна: шапка, итоги и панель — по содержимому, таблица —
+   всё остальное и прокручивается сама. На низком окне страница прокручивается целиком. */
+.goods-calculator-embedded.is-result { height: 100%; }
+.goods-calculator-embedded.is-result .goods-page { display: flex; flex-direction: column; height: 100%; min-height: 600px; padding-bottom: 12px; }
+.goods-calculator-embedded.is-result .goods-page > * { flex: 0 0 auto; }
+.goods-calculator-embedded.is-result .goods-page > .rs-step { flex: 1 1 auto; min-height: min-content; }
+@media (max-width: 760px) {
+  .goods-calculator-embedded.is-result, .goods-calculator-embedded.is-result .goods-page { height: auto; min-height: 0; }
+  .goods-calculator-embedded.is-result .rs-table-wrap { height: 70vh; }
+}
+
 .goods-page table,
 .goods-calculator-embedded table {
   width: 100%;

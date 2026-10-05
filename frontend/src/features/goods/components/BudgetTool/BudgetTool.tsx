@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { decimalText, moneyText } from '@/shared/lib/rounding'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
 import './BudgetTool.css'
 
-const money = (value: number) => formatDisplayNumber(moneyText(value))
+const money = (value: number) => formatRuNumber(moneyText(value))
 
 const hint = (min: string, max: string, over: boolean) => `Цены подбираются так, чтобы «Растаможка к оплате» была на ${min}–${max} USD ${over ? 'больше бюджета (перерасход)' : 'меньше бюджета (недостача)'}. По умолчанию — недостача 20–30 USD. `
   + 'Строки с ценой (из Excel, по ИТП, вручную) не меняются; строки без цены с тем же кодом ТН ВЭД получают ту же цену. '
@@ -22,8 +22,8 @@ export function BudgetControls({ budget, disabled }: { budget: BudgetDistributio
   const gapValid = budget.gap !== null
   return <div className="budget-controls">
     <label className="budget-field" title={HINT}>
-      <span>Бюджет растаможки</span>
-      <span className="budget-input"><input inputMode="decimal" value={budget.budget} onChange={(event) => budget.setBudget(event.target.value.replace(',', '.'))} placeholder="сумма" aria-label="Бюджет растаможки, USD" /><i>USD</i></span>
+      <span>Бюджет<span className="rs-wide"> растаможки</span></span>
+      <span className="budget-input"><input inputMode="decimal" value={budget.budget} onChange={(event) => budget.setBudget(event.target.value.replace(',', '.'))} onKeyDown={(event) => { if (event.key === 'Enter' && valid && gapValid && !busy) { event.preventDefault(); void budget.run('math') } }} placeholder="сумма" aria-label="Бюджет растаможки, USD; Enter — подобрать цены" /><i>USD</i></span>
     </label>
     <GapPicker budget={budget} amount={valid ? amount : null} />
     <button type="button" className="budget-run" onClick={() => void budget.run('math')} disabled={!valid || !gapValid || busy} title={`${HINT}\nПропорции: история цен из прошлых смет, вес нетто единицы или поровну.`}>{budget.running === 'math' ? `Подбираем… ${budget.evaluations}` : 'Подобрать цены'}</button>
@@ -31,7 +31,7 @@ export function BudgetControls({ budget, disabled }: { budget: BudgetDistributio
   </div>
 }
 
-const usd = (value: number) => formatDisplayNumber(decimalText(value, 2))
+const usd = (value: number) => formatRuNumber(decimalText(value, 2))
 
 // Значок «недостача 20–30 ▾» и окошко настройки разницы с бюджетом.
 function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount: number | null }) {
@@ -125,7 +125,7 @@ export function BudgetStatus({ budget }: { budget: BudgetDistributionState }) {
   </div>
 }
 
-// Значок «!» в правом верхнем углу поля цены, пришедшей от ИИ; пояснение — при наведении и в списке «Пояснения ИИ».
+// Метка «ИИ» у поля цены, пришедшей от ИИ; пояснение — при наведении и в списке «Пояснения ИИ».
 export function BudgetNote({ note }: { note?: string }) {
-  return note ? <span className="budget-ai-mark" title={`ИИ: ${note}`} aria-label={`Пояснение ИИ: ${note}`}>!</span> : null
+  return note ? <span className="rs-tag ai" title={`Цену поставил ИИ: ${note}`} aria-label={`Цену поставил ИИ: ${note}`}>ИИ</span> : null
 }

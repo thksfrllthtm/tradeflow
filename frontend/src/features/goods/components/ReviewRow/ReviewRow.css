@@ -1,79 +1,103 @@
-/* Ячейки строки на этапе 2: поля ввода, товар с фото и кодом, нетто, переключатель.
-   Поля без рамок в покое (читаются как таблица), рамка — при наведении на строку, зелёная — в фокусе. */
+/* Ячейки строки на этапе 2: поля ввода, товар с фото и кодом, причина, нетто, переключатель.
+   Поля без рамок в покое (читаются как таблица), рамка — при наведении на строку, зелёная — в фокусе.
+   Рассчитанные значения («авто …») — приглушённым курсивом не светлее 4,5:1, пустые — «—». */
 
-.goods-page .rv-grid .rv-input { width: 100%; height: 28px; margin: 0; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #1f2d24; font-size: .82rem; line-height: 1.2; font-variant-numeric: tabular-nums; text-align: right; transition: border-color .12s, background .12s, box-shadow .12s; }
-.goods-page .rv-grid tr:hover .rv-input { border-color: #dfe7e1; background: #fff; }
-.goods-page .rv-grid .rv-input:focus { outline: none; border-color: #24704a; background: #fff; box-shadow: 0 0 0 3px #24704a1f; }
-.goods-page .rv-grid .rv-input::placeholder { color: #aab4ad; }
-.goods-page .rv-grid .rv-name { height: 26px; padding: 2px 6px; font-variant-numeric: normal; font-weight: 550; text-align: left; text-overflow: ellipsis; }
+.goods-page .rv-grid .rv-input { width: 100%; height: 28px; margin: 0; padding: 3px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--rv-ink); font-size: .93rem; line-height: 1.2; font-variant-numeric: tabular-nums; text-align: right; transition: border-color .12s, background .12s; }
+.goods-page .rv-grid tr:hover .rv-input { border-color: var(--rv-line-strong); background: #fff; }
+.goods-page .rv-grid .rv-input:focus { outline: 2px solid var(--rv-focus); outline-offset: 0; border-color: var(--rv-focus); background: #fff; }
+.goods-page .rv-grid .rv-input::placeholder { color: #68766e; opacity: 1; }
+.goods-page .rv-grid .rv-input.rv-auto::placeholder { color: var(--rv-ink-3); font-style: italic; }
+/* Нет брутто для авто-нетто: пунктирная рамка, видна и без наведения. */
+.goods-page .rv-grid .rv-input.rv-need { border: 1px dashed #b88a1e; background: #fffaeb; }
+.goods-page .rv-grid .rv-name { height: 28px; padding: 2px 6px; font-variant-numeric: normal; font-weight: 550; text-align: left; text-overflow: ellipsis; }
 
-/* Товар: фото слева, под названием — код ТН ВЭД (как на этапе 3) */
+/* Товар: фото слева, под названием — код ТН ВЭД; ниже — причина, если строка требует внимания. */
 .rv-product-grid { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 1px 10px; }
 .rv-photo { position: relative; grid-row: 1 / span 2; width: 32px; height: 32px; }
-.goods-page .rv-grid .rv-thumb { position: relative; display: block; width: 32px; height: 32px; padding: 0; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 6px; background: #fff; cursor: zoom-in; }
-.rv-thumb:hover { border-color: #24704a; }
+.goods-page .rv-grid .rv-thumb { position: relative; display: block; width: 32px; height: 32px; padding: 0; overflow: hidden; border: 1px solid var(--rv-line-strong); border-radius: 6px; background: #fff; cursor: zoom-in; }
+.rv-thumb:hover { border-color: var(--rv-green); }
 .rv-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.rv-thumb b { position: absolute; bottom: 1px; left: 1px; padding: 0 3px; border-radius: 3px; background: rgba(20, 40, 28, .72); color: #fff; font-size: .58rem; line-height: 12px; }
-.rv-photo-add { position: absolute; top: -5px; right: -5px; display: flex; width: 16px; height: 16px; align-items: center; justify-content: center; margin: 0; border: 1px solid #b8d3c1; border-radius: 50%; background: #fff; color: #24704a; font-size: .74rem; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .12s; }
+.rv-thumb b { position: absolute; bottom: 1px; left: 1px; padding: 0 3px; border-radius: 3px; background: #24382c; color: #fff; font-size: .72rem; line-height: 14px; }
+.rv-photo-add { position: absolute; top: -5px; right: -5px; display: flex; width: 18px; height: 18px; align-items: center; justify-content: center; margin: 0; border: 1px solid #8fb39c; border-radius: 50%; background: #fff; color: var(--rv-green); font-size: .82rem; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .12s; }
 .rv-grid tr:hover .rv-photo-add, .rv-photo-add:focus-within { opacity: 1; }
+.rv-photo-add:focus-within { outline: 2px solid var(--rv-focus); outline-offset: 1px; }
 .rv-photo-add input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-/* Без фото — едва заметная рамка, ярче при наведении на строку */
-.rv-photo-add.rv-photo-empty { position: static; width: 32px; height: 32px; border: 1px dashed #e0e7e2; border-radius: 6px; background: transparent; color: #c3ccc6; font-size: 1rem; font-weight: 500; opacity: 1; transition: border-color .12s, color .12s; }
-.rv-grid tr:hover .rv-photo-add.rv-photo-empty { border-color: #b8c7bd; color: #7a8f81; }
-.rv-photo-add.rv-photo-empty:hover { border-color: #24704a !important; color: #24704a !important; }
+/* Без фото — пунктирная рамка, «+» не светлее 3:1. */
+.rv-photo-add.rv-photo-empty { position: static; width: 32px; height: 32px; border: 1px dashed #a9b8ae; border-radius: 6px; background: transparent; color: #5a6960; font-size: 1rem; font-weight: 500; opacity: 1; transition: border-color .12s, color .12s; }
+.rv-photo-add.rv-photo-empty:hover { border-color: var(--rv-green) !important; color: var(--rv-green) !important; }
 
-.rv-code-line { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; padding-left: 1px; white-space: nowrap; line-height: 18px; }
-.goods-page .rv-grid .rv-code { padding: 0 5px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .72rem; font-weight: 700; letter-spacing: .02em; line-height: 16px; cursor: pointer; }
+.rv-code-line { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; padding-left: 1px; white-space: nowrap; line-height: 20px; }
+.goods-page .rv-grid .rv-code { padding: 0 5px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--rv-green); font-family: inherit; font-variant-numeric: tabular-nums; font-size: .86rem; font-weight: 700; letter-spacing: .01em; line-height: 18px; cursor: pointer; }
 .goods-page .rv-grid .rv-code:hover { border-color: #b8d3c1; background: #eef6f1; }
-.goods-page .rv-grid .rv-code.warn { background: #fdf6e3; color: #7a5a12; }
+.goods-page .rv-grid .rv-code.warn { background: #fdf6e3; color: #6b4d0c; }
 .goods-page .rv-grid .rv-code.warn:hover { border-color: #e6c77a; }
-.goods-page .rv-grid .rv-code.missing { border: 1px dashed #d9b75f; background: #fffaf0; color: #8a6414; font-family: inherit; font-weight: 600; letter-spacing: 0; }
+.goods-page .rv-grid .rv-code.missing { border: 1px dashed #b88a1e; background: #fffaf0; color: #75520a; font-family: inherit; font-weight: 600; letter-spacing: 0; }
 .goods-page .rv-grid .rv-code.missing:hover { border-style: solid; }
-.rv-code-note { color: #956b16; font-size: .7rem; }
-.goods-page .rv-grid .rv-code-clear { padding: 0; border: 0; background: none; color: #9aa59e; font-size: .7rem; cursor: pointer; opacity: 0; transition: opacity .12s; }
+.rv-code-note { color: #75520a; font-size: .8rem; }
+.goods-page .rv-grid .rv-code-clear { padding: 0; border: 0; background: none; color: var(--rv-ink-3); font-size: .8rem; cursor: pointer; opacity: 0; transition: opacity .12s; }
 .goods-page .rv-grid tr:hover .rv-code-clear, .goods-page .rv-grid .rv-code-clear:focus-visible { opacity: 1; }
-.goods-page .rv-grid .rv-code-clear:hover { color: #a33232; text-decoration: underline; }
+.goods-page .rv-grid .rv-code-clear:hover:not(:disabled) { background: none; color: var(--rv-bad); text-decoration: underline; }
 
-/* Нетто — одна строка: слева упаковка места (едва видна, ярче при наведении; своя — подсвечена),
-   справа поле нетто. Авто-нетто — серым в самом поле. Подсказка под полем — только при ошибке. */
+/* Причина под названием: одна строка, по щелчку — все сообщения полностью. */
+.goods-page .rv-grid button.rv-reason { display: flex; flex-wrap: wrap; gap: 2px 6px; width: 100%; height: auto; margin: 3px 0 0; padding: 0 0 0 42px; border: 0; border-radius: 4px; background: transparent; font-size: .82rem; font-weight: 600; line-height: 1.3; text-align: left; white-space: nowrap; cursor: pointer; }
+.goods-page .rv-grid button.rv-reason > span { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.goods-page .rv-grid button.rv-reason[aria-expanded="true"] { flex-direction: column; white-space: normal; }
+.goods-page .rv-grid button.rv-reason[aria-expanded="true"] > span { overflow: visible; overflow-wrap: anywhere; }
+.goods-page .rv-grid button.rv-reason:hover:not(:disabled) { background: transparent; text-decoration: underline; }
+.goods-page .rv-grid button.rv-reason.bad { color: var(--rv-bad); }
+.goods-page .rv-grid button.rv-reason.warn, .goods-page .rv-grid button.rv-reason.todo, .goods-page .rv-grid button.rv-reason.ok { color: var(--rv-warn); }
+.goods-page .rv-grid button.rv-reason.changed { color: var(--rv-changed); }
+.goods-page .rv-grid .rv-reason-label { flex: 0 0 auto; font-weight: 700; }
+.goods-page .rv-step.compact .rv-grid button.rv-reason { padding-left: 34px; }
+
+/* Нетто — одна строка: слева упаковка места (видна при наведении; своя — подсвечена), справа поле
+   нетто. Авто-нетто — «авто …» в самом поле. Подсказка под полем — только при ошибке. */
 .rv-net-box { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 .rv-net-input { position: relative; flex: 1 1 auto; min-width: 0; }
 .goods-page .rv-grid .rv-net .rv-input { padding-left: 22px; }
-.goods-page .rv-grid .rv-net .rv-input.rv-auto::placeholder { color: #7f8c84; }
-.goods-page .rv-grid .rv-net-reset { position: absolute; top: 50%; left: 4px; width: 16px; height: 16px; padding: 0; transform: translateY(-50%); border: 0; border-radius: 4px; background: #eef3ef; color: #56665c; font-size: .72rem; line-height: 1; cursor: pointer; }
-.goods-page .rv-grid .rv-net-reset:hover { background: #24704a; color: #fff; }
-.goods-page .rv-grid .rv-pkg { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; margin: 0; color: #aab4ad; font-size: .66rem; font-weight: 600; white-space: nowrap; cursor: text; opacity: 0; transition: opacity .12s; }
+.goods-page .rv-grid .rv-net-reset { position: absolute; top: 50%; left: 4px; width: 16px; height: 16px; padding: 0; transform: translateY(-50%); border: 0; border-radius: 4px; background: #eef3ef; color: var(--rv-ink-2); font-size: .78rem; line-height: 1; cursor: pointer; }
+.goods-page .rv-grid .rv-net-reset:hover:not(:disabled) { background: var(--rv-green); color: #fff; }
+.goods-page .rv-grid .rv-pkg { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; margin: 0; color: var(--rv-ink-3); font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: text; opacity: 0; transition: opacity .12s; }
 .goods-page .rv-grid tr:hover .rv-pkg, .goods-page .rv-grid .rv-pkg:focus-within, .goods-page .rv-grid .rv-pkg.own { opacity: 1; }
-.goods-page .rv-grid .rv-pkg input { width: 34px; height: 20px; margin: 0; padding: 0 3px; border: 1px solid #e3e9e5; border-radius: 4px; background: #fff; color: #7a877f; font-size: .68rem; font-variant-numeric: tabular-nums; text-align: right; }
-.goods-page .rv-grid .rv-pkg input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 2px #24704a1f; }
-.goods-page .rv-grid .rv-pkg.own { color: #8a5a00; }
-.goods-page .rv-grid .rv-pkg.own input { border-color: #f0c36d; background: #fff8e6; color: #7a4f00; font-weight: 700; }
-.goods-page .rv-grid .rv-pkg button { width: 16px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: #fcefd2; color: #8a5a00; font-size: .72rem; line-height: 1; cursor: pointer; }
+.goods-page .rv-grid .rv-pkg input { width: 38px; height: 22px; margin: 0; padding: 0 3px; border: 1px solid var(--rv-field); border-radius: 4px; background: #fff; color: var(--rv-ink-2); font-size: .8rem; font-variant-numeric: tabular-nums; text-align: right; }
+.goods-page .rv-grid .rv-pkg input:focus { outline: 2px solid var(--rv-focus); outline-offset: 0; border-color: var(--rv-focus); }
+.goods-page .rv-grid .rv-pkg.own { color: #75520a; }
+.goods-page .rv-grid .rv-pkg.own input { border-color: #d9a845; background: #fff8e6; color: #6b4500; font-weight: 700; }
+.goods-page .rv-grid .rv-pkg button { width: 16px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: #fcefd2; color: #6b4500; font-size: .78rem; line-height: 1; cursor: pointer; }
 .goods-page .rv-grid .rv-pkg button:hover:not(:disabled) { background: #8a5a00; color: #fff; }
-.rv-hint { display: block; margin-top: 2px; padding-right: 8px; overflow: hidden; font-size: .66rem; font-weight: 600; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.rv-hint { display: block; margin-top: 2px; padding-right: 8px; overflow: hidden; font-size: .78rem; font-weight: 600; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.rv-hint.net-bad { color: var(--rv-bad); }
 
 .rv-switch { position: relative; display: inline-flex; margin: 0; vertical-align: middle; cursor: pointer; }
 .goods-page .rv-grid .rv-switch input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
-.rv-switch span { position: relative; width: 28px; height: 16px; border-radius: 999px; background: #cfd8d2; transition: background .15s; }
-.rv-switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .15s; }
-.rv-switch input:checked + span { background: #24704a; }
+.rv-switch span { position: relative; width: 30px; height: 18px; border-radius: 999px; background: #a9b5ad; transition: background .15s; }
+.rv-switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .15s; }
+.rv-switch input:checked + span { background: var(--rv-green); }
 .rv-switch input:checked + span::after { transform: translateX(12px); }
-.rv-switch input:focus-visible + span { box-shadow: 0 0 0 3px #24704a33; }
+.rv-switch input:focus-visible + span { outline: 2px solid var(--rv-focus); outline-offset: 2px; }
 
-/* Удаление — только при наведении на строку, чтобы не шуметь в каждой строке */
-.goods-page .rv-grid .rv-remove { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #b3bdb6; font-size: 1.05rem; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .12s; }
-.goods-page .rv-grid tr:hover .rv-remove, .goods-page .rv-grid .rv-remove:focus-visible { opacity: 1; }
-.goods-page .rv-grid .rv-remove:hover { background: #fdecec; color: #a33232; }
+/* Удаление: крестик виден всегда, но тихо; строку можно вернуть сообщением над таблицей. */
+.goods-page .rv-grid .rv-remove { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #5a6960; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.goods-page .rv-grid .rv-remove:hover:not(:disabled) { background: #fdecec; color: var(--rv-bad); }
 
-/* Кнопка чата подбора кода ИИ: подпись и цвет — состояние подбора строки. */
-.rv-code-line button.rv-agent { flex: 0 0 auto; height: 20px; padding: 0 7px; border: 1px solid #cfdcd3; border-radius: 999px; background: #fff; color: #3d5245; font-size: .66rem; font-weight: 750; letter-spacing: .02em; white-space: nowrap; }
-.rv-code-line button.rv-agent:hover:not(:disabled) { border-color: #24704a; background: #e8f3ec; color: #1a4d33; }
-.rv-code-line button.rv-agent.running { border-color: #9cc7ab; background: #eef6f1; color: #24704a; animation: rv-agent-pulse 1.2s infinite ease-in-out; }
-.rv-code-line button.rv-agent.waiting { border-color: #e7c86b; background: #fff8e3; color: #7a5810; }
-.rv-code-line button.rv-agent.error { border-color: #e2a99d; background: #fff1ee; color: #9a3024; }
-.rv-code-line button.rv-agent.same { border-color: #9cc7ab; background: #e3f1e8; color: #1c5c38; }
-.rv-code-line button.rv-agent.suggest { border-color: #e7c86b; background: #fff8e3; color: #6b4d0c; font-family: ui-monospace, Consolas, monospace; }
-@keyframes rv-agent-pulse { 50% { opacity: .55; } }
+/* Кнопка чата подбора кода ИИ: подпись и цвет — состояние подбора; без подбора — тихая кнопка «Подбор». */
+.rv-code-line button.rv-agent { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; height: 22px; padding: 0 8px; border: 1px solid #c3d3c8; border-radius: 999px; background: #fff; color: var(--rv-ink-2); font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.rv-code-line button.rv-agent:hover:not(:disabled) { border-color: var(--rv-green); background: #e8f3ec; color: var(--rv-green-dark); }
+.rv-code-line button.rv-agent.idle { padding: 0 6px; border-color: transparent; background: transparent; color: var(--rv-ink-3); font-weight: 650; }
+.rv-code-line button.rv-agent.idle:hover:not(:disabled) { border-color: #c3d3c8; }
+.rv-code-line button.rv-agent.running { border-color: #9cc7ab; background: #eef6f1; color: var(--rv-green-dark); }
+.rv-code-line button.rv-agent.running::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: rv-agent-pulse 1.2s infinite ease-in-out; }
+.rv-code-line button.rv-agent.waiting { border-color: #e7c86b; background: #fff8e3; color: #6b4d0c; }
+.rv-code-line button.rv-agent.error { border-color: #e2a99d; background: #fff1ee; color: #8f2a1f; }
+.rv-code-line button.rv-agent.same { border-color: #9cc7ab; background: #e3f1e8; color: #1a5534; }
+.rv-code-line button.rv-agent.suggest { border-color: #e7c86b; background: #fff8e3; color: #5f430a; font-family: inherit; font-variant-numeric: tabular-nums; }
+@keyframes rv-agent-pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .rv-code-line button.rv-agent.running::before { animation: none; } }
 
-/* Другие колонки наименования из файла — мелко рядом с кодом. */
-.rv-other-names { min-width: 0; overflow: hidden; color: #8a968f; font-size: .72rem; text-overflow: ellipsis; }
+/* Другие колонки наименования из файла — рядом с кодом. */
+.rv-other-names { min-width: 0; overflow: hidden; color: var(--rv-ink-3); font-size: .8rem; text-overflow: ellipsis; }
+/* Компактно: у кнопки подбора — только значок или отметка состояния (слово «Подбор» — в подсказке и для диктора), иначе она не помещается рядом с названием и кодом. */
+.goods-page .rv-step.compact .rv-code-line button.rv-agent:not(.idle) .rv-agent-label, .goods-page .rv-step.compact .rv-code-line button.rv-agent.idle .rv-agent-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+/* Компактно: «снять» не занимает место, пока строку не выбрали мышью или клавиатурой. */
+.goods-page .rv-step.compact .rv-grid .rv-code-clear { display: none; }
+.goods-page .rv-step.compact .rv-grid tr:hover .rv-code-clear, .goods-page .rv-step.compact .rv-grid tr:focus-within .rv-code-clear { display: inline; }

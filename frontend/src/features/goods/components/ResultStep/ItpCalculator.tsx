@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { moneyText, weightText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult } from '@/shared/types/goods'
 import { calculatorInputValue, parseCalculatorNumber, weightInputValue } from './resultValues'
@@ -27,9 +27,16 @@ export function ItpCalculator({ result }: { result: GoodsCalculationResult }) {
     ? itsUsd * exchangeRate
     : null
 
+  // Окошко под кнопкой в полосе итогов; Esc закрывает и возвращает фокус на кнопку.
   return (
-    <details className="rs-block rs-its">
-      <summary className="rs-title">Сверка по ИТП <small>на расчёт не влияет</small></summary>
+    <details className="rs-itp" onKeyDown={(event) => {
+      if (event.key !== 'Escape' || !event.currentTarget.open) return
+      event.currentTarget.open = false
+      event.currentTarget.querySelector('summary')?.focus()
+    }}>
+      <summary>Сверка по ИТП</summary>
+      <div className="rs-itp-pop" role="group" aria-label="Сверка по ИТП">
+      <p className="rs-itp-note">ИТП × нетто × курс — только для сверки, на расчёт не влияет</p>
       <div className="rs-its-grid">
         <label>ИТП, USD за 1 кг<input inputMode="decimal" value={itsValue} onChange={(event) => setItsValue(event.target.value.replace(',', '.'))} onBlur={() => setItsValue(calculatorInputValue(itsValue))} placeholder="введите" /></label>
         <span className="rs-op">×</span>
@@ -38,9 +45,10 @@ export function ItpCalculator({ result }: { result: GoodsCalculationResult }) {
         <label>Курс, ₸ за 1 USD<input inputMode="decimal" value={itsRate} onChange={(event) => setItsRate(event.target.value.replace(',', '.'))} onBlur={() => setItsRate(calculatorInputValue(itsRate))} /></label>
         <span className="rs-op">=</span>
         <div className="rs-total rs-its-total">
-          <strong>{itsKzt !== null ? `${formatDisplayNumber(moneyText(itsKzt))} ₸` : '—'}</strong>
-          <small>{itsUsd !== null ? `≈ ${formatDisplayNumber(moneyText(itsUsd))} USD` : 'введите ИТП'}</small>
+          <strong>{itsKzt !== null ? `${formatRuNumber(moneyText(itsKzt))} ₸` : '—'}</strong>
+          <small>{itsUsd !== null ? `≈ ${formatRuNumber(moneyText(itsUsd))} USD` : 'введите ИТП'}</small>
         </div>
+      </div>
       </div>
     </details>
   )

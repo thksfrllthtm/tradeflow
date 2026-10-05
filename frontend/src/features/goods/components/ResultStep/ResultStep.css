@@ -1,54 +1,174 @@
-/* Этап 3: панель инструментов цен и компактная таблица результата, помещающаяся по ширине. */
+/* Этап 3: панель цен, фильтр строк и таблица результата на всю оставшуюся высоту окна.
+   Цвета экрана — токены ниже: вторичный текст не светлее 4,5:1 на белом и на подсветке строк. */
 
-.rs-step { gap: 10px; }
-
-/* Панель: слева подбор цен под бюджет, справа правка цен. */
-.rs-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px; border-bottom: 1px solid #e6ece8; }
-.rs-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
-/* Кнопки правки цен: контурные, тёмный текст; неактивные — серые, но читаемые. */
-.rs-selected { color: #1c5538; font-size: .78rem; white-space: nowrap; }
-.rs-decrease { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: #56665c; font-size: .78rem; font-weight: 600; white-space: nowrap; cursor: help; }
-.rs-joined { display: inline-flex; align-items: stretch; height: 32px; border: 1px solid #d4dcd6; border-radius: 8px; background: #fff; overflow: hidden; }
-.rs-joined:focus-within { border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.rs-joined input { box-sizing: border-box; width: 64px; height: 100%; margin: 0; padding: 0 4px 0 10px; border: 0; background: transparent; font-size: .84rem; text-align: right; font-variant-numeric: tabular-nums; }
-.rs-joined input:focus { outline: none; box-shadow: none; }
-.rs-joined input::placeholder { color: #b3bdb6; }
-.rs-joined i { display: flex; align-items: center; padding: 0 8px 0 2px; color: #8a968f; font-size: .72rem; font-style: normal; }
-.rs-price-tool .rs-joined button { height: 100%; padding: 0 12px; border: 0; border-left: 1px solid #e3e9e5; border-radius: 0; background: #f5f8f6; color: #1c5538; font-size: .78rem; font-weight: 650; white-space: nowrap; }
-.rs-price-tool .rs-joined button:hover:not(:disabled) { background: #e8f3ec; }
-.rs-price-tool .rs-joined button:disabled { background: #f7f9f8; color: #a3aea7; opacity: 1; }
-.rs-tool-sep { width: 1px; height: 20px; background: #e1e8e3; }
-.rs-price-tool button.rs-quiet { height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #34443b; font-size: .78rem; font-weight: 600; white-space: nowrap; }
-.rs-price-tool button.rs-quiet:hover:not(:disabled) { background: #f1f6f2; color: #1c5538; }
-.rs-price-tool button.rs-quiet:disabled { background: transparent; color: #a3aea7; opacity: 1; }
-.rv-card > .budget-status { padding: 6px 14px; border-bottom: 1px solid #e6ece8; background: #f7faf8; }
-
-/* Таблица: на всю ширину, название забирает свободное место. */
-.rs-table-wrap { max-height: max(300px, calc(100vh - 410px)); }
-.goods-page .rs-table { width: 100%; min-width: 980px; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
-.goods-page .rs-table th, .goods-page .rs-table td { padding: 6px 8px !important; overflow: visible; border-bottom: 1px solid #edf1ee; background: #fff; color: #1f2d24; font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; vertical-align: middle; }
-.goods-page .rs-table th { position: sticky; top: 0; z-index: 3; padding: 8px 8px !important; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; color: #5d6d63; font-size: .72rem !important; font-weight: 650; }
-.goods-page .rs-table th small { color: #9aa59e; font-weight: 500; }
-.goods-page .rs-table td small { color: #8a968f; font-size: .72rem; }
-.goods-page .rs-table .rs-sub { display: block; margin-top: 1px; color: #9aa59e; font-size: .68rem; font-weight: 500; line-height: 1.2; }
-.goods-page .rs-table .rs-check { position: sticky; left: 0; z-index: 2; width: 32px; min-width: 32px; text-align: center; }
-.goods-page .rs-table .rs-num { position: sticky; left: 32px; z-index: 2; width: 28px; min-width: 28px; color: #8a968f; text-align: center; }
-.goods-page .rs-table .rs-name { position: sticky; left: 60px; z-index: 2; width: 100%; min-width: 220px; max-width: 0; text-align: left; box-shadow: inset -1px 0 0 #e6ece8; }
-.goods-page .rs-table .rs-name-text { display: block; overflow: hidden; font-weight: 550; text-overflow: ellipsis; }
-.goods-page .rs-table .rs-name code { display: block; margin-top: 1px; color: #1b6b43; font-family: ui-monospace, Consolas, monospace; font-size: .7rem; font-weight: 700; }
-.goods-page .rs-table th.rs-check, .goods-page .rs-table th.rs-num, .goods-page .rs-table th.rs-name { z-index: 4; }
-.goods-page .rs-table input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #24704a; cursor: pointer; }
-.goods-page .rs-table .rs-price { display: inline-block; vertical-align: middle; box-sizing: border-box; width: 80px; height: 28px; margin: 0; padding: 3px 7px; border: 1px solid #e3e9e5; border-radius: 6px; background: #fff; font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
-.goods-page .rs-table tr:hover .rs-price { border-color: #cfd9d2; }
-.goods-page .rs-table .rs-price:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.goods-page .rs-table .rs-status { width: 28px; text-align: center; }
-.goods-page .rs-table tbody tr:hover td { background: #f7faf8; }
-.goods-page .rs-table tbody tr.rv-selected td { background: #eef7f1; }
-.goods-page .rs-table tbody tr.rv-excluded td { color: #b3bdb6; }
-.goods-page .rs-table tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid #cfd9d2; border-bottom: 0; background: #f5f8f6; color: #1c3b28; font-weight: 700; }
-.goods-page .rs-table tfoot td.rs-check, .goods-page .rs-table tfoot td.rs-num, .goods-page .rs-table tfoot td.rs-name { z-index: 4; }
-
-@media (max-width: 900px) {
-  .rs-toolbar { align-items: flex-start; }
+.rs-step {
+  --rs-ink: #1f2d24;
+  --rs-ink-2: #46564c;
+  --rs-ink-3: #5a6960;
+  --rs-line: #e4eae6;
+  --rs-line-strong: #ccd7cf;
+  --rs-head: #f2f6f3;
+  --rs-green: #1c6b43;
+  --rs-green-dark: #154f32;
+  --rs-focus: #1c6b43;
+  --rs-bad: #a12a2a;
+  --rs-bad-bg: #fdf0f0;
+  --rs-bad-row: #fff6f6;
+  --rs-warn: #75520a;
+  --rs-warn-bg: #fdf3d6;
+  --rs-warn-row: #fffbef;
+  --rs-price-band: #f4f8f5;
+  --rs-field: #8a968f;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
+/* Видимый фокус для всех элементов экрана (клавиатура). */
+.rs-step :is(button, input, summary, select):focus-visible { outline: 2px solid var(--rs-focus); outline-offset: 2px; }
+.rs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── Карточка таблицы ── */
+/* min-content: карточка с overflow:hidden иначе сжалась бы и обрезала таблицу вместе с «Итого». */
+.rs-card { flex: 1 1 auto; min-height: min-content; }
+
+/* Панель: слева подбор цен под бюджет, справа правка цен. */
+.rs-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px; border-bottom: 1px solid var(--rs-line); }
+.rs-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.rs-decrease { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--rs-ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.rs-joined { display: inline-flex; align-items: stretch; height: 32px; border: 1px solid var(--rs-field); border-radius: 8px; background: #fff; overflow: hidden; }
+.rs-joined:focus-within { border-color: var(--rs-focus); box-shadow: 0 0 0 2px #1c6b4340; }
+.rs-joined input { box-sizing: border-box; width: 72px; height: 100%; margin: 0; padding: 0 4px 0 10px; border: 0; background: transparent; color: var(--rs-ink); font-size: .93rem; text-align: right; font-variant-numeric: tabular-nums; }
+.rs-step .rs-joined input:focus-visible { outline: none; }
+.rs-joined input::placeholder { color: #68766e; }
+.rs-joined i { display: flex; align-items: center; padding: 0 9px 0 3px; color: var(--rs-ink-3); font-size: .8rem; font-style: normal; font-weight: 600; }
+.rs-price-tool button.rs-apply { height: 32px; padding: 0 12px; border: 1px solid #b8cfc0; border-radius: 8px; background: #eef6f1; color: var(--rs-green-dark); font-size: .86rem; font-weight: 650; white-space: nowrap; }
+.rs-price-tool button.rs-apply:hover:not(:disabled) { border-color: var(--rs-green); background: #e1efe6; }
+.rs-price-tool button.rs-apply:disabled { border-color: var(--rs-line); background: #f6f8f7; color: #7d8a82; opacity: 1; }
+.rs-tool-sep { width: 1px; height: 20px; background: var(--rs-line-strong); }
+.rs-price-tool button.rs-quiet { height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--rs-ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.rs-price-tool button.rs-quiet:hover:not(:disabled) { background: #edf4ef; color: var(--rs-green-dark); }
+.rs-price-tool button.rs-quiet:disabled { background: transparent; color: #8a968f; opacity: 1; }
+.rs-card > .budget-status { padding: 6px 14px; border-bottom: 1px solid var(--rs-line); background: #f7faf8; }
+
+/* Фильтр строк, счётчики, плотность. */
+.rs-filterbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; padding: 7px 14px; border-bottom: 1px solid var(--rs-line); background: #fafcfb; }
+.rs-filterbar p { margin: 0; color: var(--rs-ink-2); font-size: .86rem; white-space: nowrap; }
+.rs-filterbar b { color: var(--rs-ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.rs-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rs-line-strong); border-radius: 8px; background: #fff; }
+.rs-step .rs-seg button { height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--rs-ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.rs-step .rs-seg button b { margin-left: 4px; color: inherit; }
+.rs-step .rs-seg button:hover:not(:disabled) { background: #edf4ef; color: var(--rs-ink); }
+.rs-step .rs-seg button.active, .rs-step .rs-seg button.active:hover:not(:disabled) { background: var(--rs-green); color: #fff; }
+.rs-step .rs-seg button:disabled { color: #7d8a82; opacity: 1; }
+.rs-counts { display: inline-flex; gap: 14px; }
+.rs-counts span { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+.rs-counts .bad { color: var(--rs-bad); }
+.rs-counts .warn { color: var(--rs-warn); }
+.rs-counts .ad { color: var(--rs-warn); }
+.rs-changed b { color: var(--rs-green-dark); }
+.rs-density { margin-left: auto; }
+
+/* ── Таблица ── */
+.rs-top-scroll { flex: 0 0 auto; margin: 0; border-width: 0 0 1px; border-radius: 0; }
+/* Базовая высота 300px: таблица растёт на всё свободное место, а карточка (min-content) не уже 300px таблицы. */
+.rs-table-wrap { flex: 1 0 auto; height: 300px; overflow: auto; overscroll-behavior: contain; }
+.goods-page .rs-table { width: 100%; min-width: 1060px; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .93rem; line-height: 1.3; }
+.goods-page .rs-table th, .goods-page .rs-table td { padding: 6px 10px !important; overflow: visible; border-bottom: 1px solid var(--rs-line); background: #fff; color: var(--rs-ink); font-size: .93rem; line-height: 1.3; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; vertical-align: top; }
+.goods-page .rs-table th { position: sticky; top: 0; z-index: 3; padding: 8px 10px !important; border-bottom: 1px solid var(--rs-line-strong); background: var(--rs-head); color: var(--rs-ink-2); font-size: .82rem !important; font-weight: 650; line-height: 1.25; vertical-align: bottom; }
+.goods-page .rs-table .rs-th-hint { display: block; color: var(--rs-ink-3); font-size: .82rem; font-weight: 500; }
+.goods-page .rs-table .rs-name-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.goods-page .rs-table .rs-name-head .rs-th-hint { display: inline; }
+.goods-page .rs-table td small { color: var(--rs-ink-3); font-size: .82rem; }
+.goods-page .rs-table .rs-sub { display: block; margin-top: 2px; color: var(--rs-ink-3); font-size: .82rem; font-weight: 500; line-height: 1.25; }
+.goods-page .rs-table tbody tr:nth-child(even) td { background: #fff; }
+.goods-page .rs-table tbody tr:hover td { background: #eef5f0; }
+
+/* Закреплённая левая зона: галочка, № с состоянием, товар. */
+.goods-page .rs-table .rs-check { position: sticky; left: 0; z-index: 2; width: 34px; min-width: 34px; max-width: 34px; padding-inline: 0 !important; text-align: center; }
+.goods-page .rs-table .rs-num { position: sticky; left: 34px; z-index: 2; width: var(--rs-num-w); min-width: var(--rs-num-w); max-width: var(--rs-num-w); padding-inline: 4px 6px !important; color: var(--rs-ink-3); text-align: left; }
+.goods-page .rs-table .rs-name { position: sticky; left: calc(34px + var(--rs-num-w)); z-index: 2; width: 100%; min-width: 280px; max-width: 0; text-align: left; white-space: normal; box-shadow: inset -1px 0 0 var(--rs-line-strong); }
+.goods-page .rs-table th.rs-check, .goods-page .rs-table th.rs-num, .goods-page .rs-table th.rs-name { z-index: 4; }
+.goods-page .rs-table input[type="checkbox"] { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--rs-green); cursor: pointer; }
+.goods-page .rs-table input[type="checkbox"]:disabled { cursor: not-allowed; opacity: .4; }
+.goods-page .rs-table input[type="checkbox"]:focus-visible { outline: 2px solid var(--rs-focus); outline-offset: 2px; }
+
+.rs-num-cell { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.rs-state { display: inline-grid; flex: 0 0 auto; place-items: center; width: 18px; height: 18px; border-radius: 50%; }
+.rs-state.ok { background: #e2f2e8; color: #1a6a3e; }
+.rs-state.bad { background: var(--rs-bad); color: #fff; }
+.rs-state.warn { background: #f3c548; color: #3d2c00; }
+.rs-state.off { background: #e9edea; color: #5a6960; }
+
+.goods-page .rs-table .rs-name-line { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.goods-page .rs-table .rs-name-text { flex: 1 1 auto; min-width: 0; overflow: hidden; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.goods-page .rs-table .rs-name.open .rs-name-text { white-space: normal; overflow-wrap: anywhere; }
+.goods-page .rs-table .rs-name code { flex: 0 0 auto; color: var(--rs-green); font-family: inherit; font-variant-numeric: tabular-nums; font-size: .86rem; font-weight: 700; letter-spacing: .01em; }
+
+/* Причина под названием: одна строка, по щелчку — все сообщения полностью. */
+.goods-page .rs-table button.rs-reason { display: flex; flex-direction: column; gap: 2px; width: 100%; height: auto; margin: 3px 0 0; padding: 0; border: 0; border-radius: 4px; background: transparent; font-size: .82rem; font-weight: 600; line-height: 1.3; text-align: left; white-space: nowrap; cursor: pointer; }
+.goods-page .rs-table button.rs-reason > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.goods-page .rs-table button.rs-reason[aria-expanded="true"] { white-space: normal; }
+.goods-page .rs-table button.rs-reason[aria-expanded="true"] > span { overflow: visible; overflow-wrap: anywhere; }
+.goods-page .rs-table button.rs-reason b { font-weight: 700; }
+.goods-page .rs-table button.rs-reason:hover:not(:disabled) { background: transparent; text-decoration: underline; }
+.goods-page .rs-table button.rs-reason.bad { color: var(--rs-bad); }
+.goods-page .rs-table button.rs-reason.warn, .goods-page .rs-table button.rs-reason.ok, .goods-page .rs-table button.rs-reason.off { color: var(--rs-warn); }
+
+/* Подсветка строк: ошибка, предупреждение, выбранная, исключённая, переход из плашки. */
+.goods-page .rs-table tbody tr.rs-row-bad td { background: var(--rs-bad-row); }
+.goods-page .rs-table tbody tr.rs-row-warn td { background: var(--rs-warn-row); }
+.goods-page .rs-table tbody tr.rs-row-bad:hover td { background: #fcebeb; }
+.goods-page .rs-table tbody tr.rs-row-warn:hover td { background: #fdf4dc; }
+.goods-page .rs-table tbody tr.rv-selected td { background: #e3f1e8; }
+.goods-page .rs-table tbody tr.rv-excluded td { color: var(--rs-ink-3); }
+.goods-page .rs-table tbody tr.rv-excluded .rs-name-text { text-decoration: line-through; text-decoration-color: #9aa59e; }
+.goods-page .rs-table tbody tr.flash td { animation: rs-flash 1.8s ease-out; }
+@keyframes rs-flash { 0%, 30% { background: #d6ecdf; } }
+@media (prefers-reduced-motion: reduce) { .goods-page .rs-table tbody tr.flash td { animation: none; background: #d6ecdf; } }
+
+/* Колонка цены — единственная редактируемая: светлая полоса и видимая рамка поля. */
+.goods-page .rs-table .rs-price-col { background: var(--rs-price-band); }
+.goods-page .rs-table th.rs-price-col { background: #e8f1eb; color: var(--rs-green-dark); }
+.goods-page .rs-table .price-field { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: top; }
+.goods-page .rs-table .rs-price { display: inline-block; box-sizing: border-box; width: 92px; height: 28px; margin: 0; padding: 3px 8px; border: 1px solid var(--rs-field); border-radius: 6px; background: #fff; color: var(--rs-ink); font-size: .93rem; text-align: right; font-variant-numeric: tabular-nums; }
+.goods-page .rs-table .rs-price.changed { border-color: var(--rs-green); font-weight: 650; }
+.goods-page .rs-table .rs-price:focus { outline: 2px solid var(--rs-focus); outline-offset: 0; border-color: var(--rs-focus); }
+.goods-page .rs-table .rs-price:disabled { border-color: var(--rs-line); background: transparent; color: var(--rs-ink-3); }
+.rs-tag { display: inline-grid; place-items: center; height: 19px; padding: 0 5px; border-radius: 4px; font-size: .8rem; font-weight: 700; line-height: 1; cursor: help; white-space: nowrap; }
+.rs-tag.ai { background: #e7edf9; color: #263f78; }
+.rs-tag.edited { background: #e1efe6; color: var(--rs-green-dark); }
+
+/* Граница между суммами в USD и в тенге. */
+.goods-page .rs-table .rs-kzt-start { box-shadow: inset 1px 0 0 var(--rs-line-strong); }
+
+.goods-page .rs-table .rs-empty td { padding: 28px 16px !important; color: var(--rs-ink-2); text-align: center; white-space: normal; }
+
+.goods-page .rs-table tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid var(--rs-line-strong); border-bottom: 0; background: var(--rs-head); color: #17331f; font-weight: 700; }
+.goods-page .rs-table tfoot td.rs-price-col { background: var(--rs-head); }
+.goods-page .rs-table tfoot td.rs-check, .goods-page .rs-table tfoot td.rs-num, .goods-page .rs-table tfoot td.rs-name { z-index: 4; }
+.goods-page .rs-table tfoot .rs-sub, .goods-page .rs-table tfoot .rs-foot-note { font-weight: 500; }
+
+/* Компактно: одна строка на товар — подписи под числами скрыты, причина остаётся. */
+.goods-page .rs-step.compact .rs-table tbody .rs-sub { display: none; }
+.goods-page .rs-step.compact .rs-table td { padding-block: 3px !important; vertical-align: middle; }
+.goods-page .rs-step.compact .rs-table .rs-price { height: 26px; }
+.goods-page .rs-step.compact .rs-table button.ad-choose { display: inline-flex; margin: 0 0 0 6px; }
+
+@media (max-width: 1280px) {
+  .goods-page .rs-table .rs-name { min-width: 220px; }
+}
+@media (max-width: 900px) {
+  .rs-toolbar { align-items: flex-start; }
+  .rs-density { margin-left: 0; }
+}
+/* Окно уже 1500px: короткие подписи панели («Бюджет», «Снизить на»), чтобы она помещалась в строку. */
+@media (max-width: 1500px) {
+  .rs-step .rs-wide { display: none; }
+  .rs-step .budget-input input { width: 116px; }
+  .rs-toolbar { gap: 8px 12px; padding-inline: 12px; }
+  .rs-step .rs-tool-group { gap: 6px; }
+  .rs-step .budget-controls { gap: 6px; }
+  .rs-step .budget-controls button.budget-run, .rs-step .budget-controls button.budget-ai, .rs-price-tool button.rs-apply { padding-inline: 10px; }
+  .rs-price-tool button.rs-quiet { padding-inline: 8px; }
+}
