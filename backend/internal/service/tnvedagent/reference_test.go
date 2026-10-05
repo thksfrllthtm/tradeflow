@@ -9,7 +9,7 @@ import (
 // Справочник: итог без наименования для декларации, подсказка без правила наименования.
 func TestReferenceModeHasNoDeclarationName(t *testing.T) {
 	finishSchema := func(reference bool) string {
-		for _, tool := range agentTools(reference) {
+		for _, tool := range agentTools(reference, false) {
 			if tool.Function.Name == "finish" {
 				data, _ := json.Marshal(tool.Function.Parameters)
 				return string(data)

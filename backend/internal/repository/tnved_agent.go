@@ -18,8 +18,10 @@ type TNVEDAgentSession struct {
 	EstimateID *int64 `gorm:"column:estimate_id"`
 	ItemID     string `gorm:"size:64;not null"`
 	// Mode — row (строка сметы) или reference (чат-справочник на главной); Title — первый вопрос.
-	Mode             string          `gorm:"size:16;not null;default:row"`
-	Title            string          `gorm:"not null"`
+	Mode  string `gorm:"size:16;not null;default:row"`
+	Title string `gorm:"not null"`
+	// DocumentsCode — запуск в режиме «Документы для ввоза» для этого кода; "" — обычный подбор.
+	DocumentsCode    string          `gorm:"size:10;not null"`
 	Status           string          `gorm:"size:16;not null"`
 	Item             JSON            `gorm:"type:jsonb;not null"`
 	Photos           JSON            `gorm:"type:jsonb;not null"`
@@ -57,6 +59,17 @@ type TNVEDDetailsPage struct {
 }
 
 func (TNVEDDetailsPage) TableName() string { return "tnved_details_pages" }
+
+// WebPageCache — сохранённая веб-страница для агента (справка tnved.info, акты): текст и ссылки.
+type WebPageCache struct {
+	URL       string    `gorm:"primaryKey;size:1000"`
+	Title     string    `gorm:"not null"`
+	Text      string    `gorm:"not null"`
+	Links     JSON      `gorm:"type:jsonb;not null"`
+	FetchedAt time.Time `gorm:"not null"`
+}
+
+func (WebPageCache) TableName() string { return "web_pages" }
 
 func (r *Repository) CreateAgentSession(ctx context.Context, session TNVEDAgentSession) (TNVEDAgentSession, error) {
 	return session, r.db.WithContext(ctx).Create(&session).Error
@@ -136,7 +149,7 @@ func (r *Repository) CountAgentRunsSince(ctx context.Context, userID int64, sinc
 	var count int64
 	err := r.db.WithContext(ctx).Table("tnved_agent_messages AS m").
 		Joins("JOIN tnved_agent_sessions s ON s.id = m.session_id").
-		Where("s.user_id = ? AND m.created_at >= ? AND (m.kind IN ('start', 'user', 'rerun') OR (m.kind = 'input' AND m.content->>'ai' = 'true'))", userID, since).
+		Where("s.user_id = ? AND m.created_at >= ? AND (m.kind IN ('start', 'user', 'rerun', 'documents') OR (m.kind = 'input' AND m.content->>'ai' = 'true'))", userID, since).
 		Count(&count).Error
 	return count, err
 }
@@ -201,6 +214,22 @@ func (r *Repository) DetailsPages(ctx context.Context, codes []string) ([]TNVEDD
 }
 
 func (r *Repository) SaveDetailsPage(ctx context.Context, page TNVEDDetailsPage) error {
+	return r.db.WithContext(ctx).Save(&page).Error
+}
+
+// WebPage — сохранённая веб-страница; ErrNotFound, если её ещё не скачивали.
+func (r *Repository) WebPage(ctx context.Context, url string) (WebPageCache, error) {
+	var pages []WebPageCache
+	if err := r.db.WithContext(ctx).Where("url = ?", url).Limit(1).Find(&pages).Error; err != nil {
+		return WebPageCache{}, err
+	}
+	if len(pages) == 0 {
+		return WebPageCache{}, ErrNotFound
+	}
+	return pages[0], nil
+}
+
+func (r *Repository) SaveWebPage(ctx context.Context, page WebPageCache) error {
 	return r.db.WithContext(ctx).Save(&page).Error
 }
 

@@ -35,8 +35,8 @@ var (
 
 	// Go regexp без обратных ссылок: по шаблону на тег (иначе <header> закрылся бы чужим </head>).
 	htmlDropBlocks = []*regexp.Regexp{
-		regexp.MustCompile(`(?is)<script.*?</script>`), regexp.MustCompile(`(?is)<style.*?</style>`),
-		regexp.MustCompile(`(?is)<noscript.*?</noscript>`), regexp.MustCompile(`(?is)<svg.*?</svg>`), regexp.MustCompile(`(?is)<head.*?</head>`),
+		regexp.MustCompile(`(?is)<script\b.*?</script>`), regexp.MustCompile(`(?is)<style\b.*?</style>`),
+		regexp.MustCompile(`(?is)<noscript\b.*?</noscript>`), regexp.MustCompile(`(?is)<svg\b.*?</svg>`), regexp.MustCompile(`(?is)<head\b.*?</head>`),
 	}
 	htmlBlockTags = regexp.MustCompile(`(?i)</?(p|div|li|tr|td|th|h[1-6]|br|ul|ol|table|section)[^>]*>`)
 	htmlTags      = regexp.MustCompile(`<[^>]+>`)

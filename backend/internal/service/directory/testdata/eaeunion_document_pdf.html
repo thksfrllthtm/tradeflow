@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link href="/bitrix/cache/css/s1/regulation/page_5cf8726b5aa4045c1d42a71d4c880490/page_5cf8726b5aa4045c1d42a71d4c880490_v1.css?1790240763407" type="text/css"  rel="stylesheet" />
+<script>if(!window.BX)window.BX={};if(!window.BX.message)window.BX.message=function(mess){if(typeof mess==='object'){for(let i in mess) {BX.message[i]=mess[i];} return true;}};</script>
+<script>(window.BX||top.BX).message({"JS_CORE_LOADING":"Загрузка...","JS_CORE_NO_DATA":"- Нет данных -","JS_CORE_WINDOW_CLOSE":"Закрыть","JS_CORE_WINDOW_EXPAND":"Развернуть","JS_CORE_WINDOW_NARROW":"Свернуть в окно","JS_CORE_WINDOW_SAVE":"Сохранить","JS_CORE_WINDOW_CANCEL":"Отменить","JS_CORE_WINDOW_CONTINUE":"Продолжить","JS_CORE_H":"ч","JS_CORE_M":"м","JS_CORE_S":"с","JSADM_AI_HIDE_EXTRA":"Скрыть лишние","JSADM_AI_ALL_NOTIF":"Показать все","JSADM_AUTH_REQ":"Требуется авторизация!","JS_CORE_WINDOW_AUTH":"Войти","JS_CORE_IMAGE_FULL":"Полный размер"});</script>
+
+<script src="/bitrix/js/main/core/core.min.js?1762842677229643"></script>
+
+<script>BX.Runtime.registerExtension({"name":"main.core","namespace":"BX","loaded":true});</script>
+<script>BX.setJSList(["\/bitrix\/js\/main\/core\/core_ajax.js","\/bitrix\/js\/main\/core\/core_promise.js","\/bitrix\/js\/main\/polyfill\/promise\/js\/promise.js","\/bitrix\/js\/main\/loadext\/loadext.js","\/bitrix\/js\/main\/loadext\/extension.js","\/bitrix\/js\/main\/polyfill\/promise\/js\/promise.js","\/bitrix\/js\/main\/polyfill\/find\/js\/find.js","\/bitrix\/js\/main\/polyfill\/includes\/js\/includes.js","\/bitrix\/js\/main\/polyfill\/matches\/js\/matches.js","\/bitrix\/js\/ui\/polyfill\/closest\/js\/closest.js","\/bitrix\/js\/main\/polyfill\/fill\/main.polyfill.fill.js","\/bitrix\/js\/main\/polyfill\/find\/js\/find.js","\/bitrix\/js\/main\/polyfill\/matches\/js\/matches.js","\/bitrix\/js\/main\/polyfill\/core\/dist\/polyfill.bundle.js","\/bitrix\/js\/main\/core\/core.js","\/bitrix\/js\/main\/polyfill\/intersectionobserver\/js\/intersectionobserver.js","\/bitrix\/js\/main\/lazyload\/dist\/lazyload.bundle.js","\/bitrix\/js\/main\/polyfill\/core\/dist\/polyfill.bundle.js","\/bitrix\/js\/main\/parambag\/dist\/parambag.bundle.js"]);
+</script>
+<script>(window.BX||top.BX).message({"LANGUAGE_ID":"ru","FORMAT_DATE":"DD.MM.YYYY","FORMAT_DATETIME":"DD.MM.YYYY HH:MI:SS","COOKIE_PREFIX":"BITRIX_SM","SERVER_TZ_OFFSET":"10800","UTF_MODE":"Y","SITE_ID":"s1","SITE_DIR":"\/","USER_ID":"","SERVER_TIME":1791185623,"USER_TZ_OFFSET":0,"USER_TZ_AUTO":"Y","bitrix_sessid":"e76479ed19fec816e8cbce52ac78f2ba"});</script>
+
+
+<script>BX.setCSSList(["\/local\/templates\/.default\/components\/bitrix\/news\/documents\/bitrix\/news.detail\/.default\/style.css"]);</script>
+<script type='text/javascript'>window['recaptchaFreeOptions']={'size':'invisible','theme':'light','badge':'bottomright','version':'','action':'','lang':'ru','key':'6LfIlRkpAAAAAPKlk63eErRC7jhWZ2EjhC47jT4S'};</script>
+<script type="text/javascript">"use strict";!function(r,c){var l=l||{};l.form_submit;var i=r.recaptchaFreeOptions;l.loadApi=function(){if(!c.getElementById("recaptchaApi")){var e=c.createElement("script");e.async=!0,e.id="recaptchaApi",e.src="//www.google.com/recaptcha/api.js?onload=RecaptchafreeLoaded&render=explicit&hl="+i.lang,e.onerror=function(){console.error('Failed to load "www.google.com/recaptcha/api.js"')},c.getElementsByTagName("head")[0].appendChild(e)}return!0},l.loaded=function(){if(l.renderById=l.renderByIdAfterLoad,l.renderAll(),"invisible"===i.size){c.addEventListener("submit",function(e){if(e.target&&"FORM"===e.target.tagName){var t=e.target.querySelector("div.g-recaptcha").getAttribute("data-widget");grecaptcha.execute(t),l.form_submit=e.target,e.preventDefault()}},!1);for(var e=c.querySelectorAll(".grecaptcha-badge"),t=1;t<e.length;t++)e[t].style.display="none"}r.jQuery&&jQuery(c).ajaxComplete(function(){l.reset()}),void 0!==r.BX.addCustomEvent&&r.BX.addCustomEvent("onAjaxSuccess",function(){l.reset()})},l.renderAll=function(){for(var e=c.querySelectorAll("div.g-recaptcha"),t=0;t<e.length;t++)e[t].hasAttribute("data-widget")||l.renderById(e[t].getAttribute("id"))},l.renderByIdAfterLoad=function(e){var t=c.getElementById(e),a=grecaptcha.render(t,{sitekey:t.hasAttribute("data-sitekey")?t.getAttribute("data-sitekey"):i.key,theme:t.hasAttribute("data-theme")?t.getAttribute("data-theme"):i.theme,size:t.hasAttribute("data-size")?t.getAttribute("data-size"):i.size,callback:t.hasAttribute("data-callback")?t.getAttribute("data-callback"):i.callback,badge:t.hasAttribute("data-badge")?t.getAttribute("data-badge"):i.badge});t.setAttribute("data-widget",a)},l.reset=function(){l.renderAll();for(var e=c.querySelectorAll("div.g-recaptcha[data-widget]"),t=0;t<e.length;t++){var a=e[t].getAttribute("data-widget");r.grecaptcha&&grecaptcha.reset(a)}},l.submitForm=function(e){if(void 0!==l.form_submit){var t=c.createElement("INPUT");t.setAttribute("type","hidden"),t.name="g-recaptcha-response",t.value=e,l.form_submit.appendChild(t);for(var a=l.form_submit.elements,r=0;r<a.length;r++)if("submit"===a[r].getAttribute("type")){var i=c.createElement("INPUT");i.setAttribute("type","hidden"),i.name=a[r].name,i.value=a[r].value,l.form_submit.appendChild(i)}c.createElement("form").submit.call(l.form_submit)}},l.throttle=function(a,r,i){var n,d,c,l=null,o=0;i=i||{};function u(){o=!1===i.leading?0:(new Date).getTime(),l=null,c=a.apply(n,d),l||(n=d=null)}return function(){var e=(new Date).getTime();o||!1!==i.leading||(o=e);var t=r-(e-o);return n=this,d=arguments,t<=0||r<t?(l&&(clearTimeout(l),l=null),o=e,c=a.apply(n,d),l||(n=d=null)):l||!1===i.trailing||(l=setTimeout(u,t)),c}},l.replaceCaptchaBx=function(){var e=c.body.querySelectorAll("form img");l.renderAll();for(var t=0;t<e.length;t++){var a=e[t];if(/\/bitrix\/tools\/captcha\.php\?(captcha_code|captcha_sid)=[0-9a-z]+/i.test(a.src)&&(a.src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==",a.removeAttribute("width"),a.removeAttribute("height"),a.style.display="none",!a.parentNode.querySelector(".g-recaptcha"))){var r="d_recaptcha_"+Math.floor(16777215*Math.random()).toString(16),i=c.createElement("div");i.id=r,i.className="g-recaptcha",a.parentNode.appendChild(i),l.renderById(r)}}var n=c.querySelectorAll('form input[name="captcha_word"]');for(t=0;t<n.length;t++){var d=n[t];"none"!==d.style.display&&(d.style.display="none"),d.value=""}},l.init=function(){l.renderById=l.loadApi,c.addEventListener("DOMContentLoaded",function(){l.renderAll(),l.replaceCaptchaBx();var t=l.throttle(l.replaceCaptchaBx,200),e=r.MutationObserver||r.WebKitMutationObserver||r.MozMutationObserver;e?new e(function(e){e.forEach(function(e){"childList"===e.type&&0<e.addedNodes.length&&"IFRAME"!==e.addedNodes[0].tagName&&t()})}).observe(c.body,{attributes:!1,characterData:!1,childList:!0,subtree:!0,attributeOldValue:!1,characterDataOldValue:!1}):c.addEventListener("DOMNodeInserted",function(e){t()})})},l.init(),r.Recaptchafree=l,r.RecaptchafreeLoaded=l.loaded,r.RecaptchafreeSubmitForm=l.submitForm}(window,document);</script>
+
+
+
+    <title>Решение Коллегии ЕЭК № 89 от 07.10.2025 Об установлении на 2026 год тарифных квот в отношении отдельных видов сельскохозяйственных товаров, ввозимых на таможенную территорию Евразийского экономического союза, а также объемов тарифных квот в отношении этих товаров, ввозимых на территории государств – членов Евразийского экономического союза
+</title>
+
+    <link rel="stylesheet" href="/css/modal.min.css">
+<link rel="stylesheet" href="/css/style.css?v=1791185623">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+<script src="/js/modal.min.js"></script>
+<script src="/js/script.js?v=1791185623"></script>
+</head>
+<body>
+    <div class="Wrapper">
+        <header class="Header js-header">
+    <div class="Header_Top">
+        <div class="Container">
+            <div class="Header_Top__Inner">
+                <div class="Header_Top__Left">
+                    
+                    <a href="/hy/" class="Link">Հայ</a>
+                    <a href="/be/" class="Link">Бел</a>
+                    <a href="/kk/" class="Link">Қаз</a>
+                    <a href="/kg/" class="Link">Кыр</a>
+                    <a href="/" class="Link _active">Рус</a>
+                    <a href="/en/" class="Link">Eng</a>
+                    
+                </div>
+                <div class="Header_Top__Right">
+                  
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="Header_Middle">
+        <div class="Container">
+            <div class="Header_Middle__Inner">
+                <a href="http://www.eaeunion.org/" class="Link" target="_blank">Евразийский экономический союз</a>
+                <a href="https://eec.eaeunion.org/" class="Link" target="_blank">Евразийская экономическая комиссия</a>
+                <a href="http://courteurasian.org/" class="Link" target="_blank">Суд Евразийского экономического союза</a>
+            </div>
+        </div>
+    </div>
+    <div class="Header_Bottom">
+        <div class="Container">
+            <div class="Header_Bottom__Inner">
+                <div class="Header_Bottom__Logo">
+                    <a href="/">
+                        <img src="/img/logo.png" width="250" alt="">
+                    </a>
+                </div>
+                <div class="Header_Bottom__Title">
+                    Правовой портал                </div>
+                <div class="Header_Bottom__Date">
+                    <span>Сегодня</span>
+                    <div>05 октября 2026 г., понедельник</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</header>
+        <main class="Content">
+            <div class="Container"><script>if (window.location.hash != '' && window.location.hash != '#') top.BX.ajax.history.checkRedirectStart('bxajaxid', '50e6c8b9173e7a6712a2357457abc998')</script><div id="comp_50e6c8b9173e7a6712a2357457abc998">
+<div class="Content_Row">
+    <div class="Content_Col">
+
+
+
+<div class="Box _mb20">
+                            <div class="Box_Title">
+                                Информация о документе                             </div>
+                            <div class="Box_Content">
+                                <div class="DocDetail">
+                                    <div class="DocDetail_Info">
+                                        <div class="DocDetail_Row">
+                                            <div class="DocDetail_Col _title">
+                                                Полный заголовок документа                                            </div>
+                                            <div class="DocDetail_Col _value _full-title">
+                                                Об установлении на 2026 год тарифных квот в отношении отдельных видов сельскохозяйственных товаров, ввозимых на таможенную территорию Евразийского экономического союза, а также объемов тарифных квот в отношении этих товаров, ввозимых на территории государств – членов Евразийского экономического союза
+                                            </div>
+                                        </div>
+                                                                                <div class="DocDetail_Row">
+                                            <div class="DocDetail_Col _title">
+                                                Номер документа                                            </div>
+                                            <div class="DocDetail_Col _value">
+                                                89                                            </div>
+                                        </div>
+                                                                                                                        <div class="DocDetail_Row">
+                                            <div class="DocDetail_Col _title">
+                                                Короткий заголовок документа                                            </div>
+                                            <div class="DocDetail_Col _value">
+                                                Решение Коллегии ЕЭК № 89                                            </div>
+                                        </div>
+                                                                                <div class="DocDetail_Row">
+                                            <div class="DocDetail_Col _title">
+                                                Вид документа                                            </div>
+                                            <div class="DocDetail_Col _value">
+                                                Акты Евразийской экономической комиссии &ndash; Коллегия Евразийской экономической комиссии &ndash; Решения &ndash; 2025                                            </div>
+                                        </div>
+                                        <hr />
+                                                                                    <div class="DocDetail_Row">
+                                                <div class="DocDetail_Col _title">
+                                                    Дата принятия документа                                                </div>
+                                                <div class="DocDetail_Col _value">
+                                                    07.10.2025                                                </div>
+                                            </div>
+                                                                                                                            <div class="DocDetail_Row">
+                                                <div class="DocDetail_Col _title">
+                                                    Дата опубликования                                                </div>
+                                                <div class="DocDetail_Col _value">
+                                                    10.10.2025                                                </div>
+                                            </div>
+                                                                                                                            <div class="DocDetail_Row">
+                                                <div class="DocDetail_Col _title">
+                                                    Дата вступления в силу                                                </div>
+                                                <div class="DocDetail_Col _value">
+                                                    09.11.2025                                                </div>
+                                            </div>
+                                                                                                                                                                                                                                                                                        
+                                                                                
+                                        
+                                        
+                                        
+                                                                                
+                                                                            
+                                       
+                                    </div>
+                                    <div class="DocDetail_Files">
+                                        
+                                        
+<div class="DocDetail_Files_Group"><div class="DocDetail_Files_Title">
+        Документ
+    </div>
+    
+
+<div class="DocSearchResult_Item__File">
+    <div class="DocSearchResult_Item__FileInfo">
+        <div>
+            <a href="/upload/iblock/b47/uvbyquwdzpw1rx6y67w4p2g5qt56zsyg/Reshenie-Kollegii-_-89-ot-7-oktyabrya-2025-g.pdf" target="_blank">Рус</a><a href="/upload/iblock/8ae/6f1qhug4wi4oj51v6l126k7bg62ntisy/ETHK_voroshum_N89_2025_arm.docx" target="_blank">Հայ</a><a href="/upload/iblock/06d/9xf0ns4hsmg2wjt3hadp7mzd2svpcivw/Rashenne-Kalegii-_-89-ad-7-kastrychnika-2025-g.docx" target="_blank">Бел</a><a href="/upload/iblock/611/oup3dlbjolozele7z3nc8gb9valexvz7/Reshenie-Kollegii-EEK-_-89-ot-7-oktyabrya-2025_kaz-_1_.docx" target="_blank">Қаз</a><a href="/upload/iblock/be7/ncze9pmuarrje61o8bdmub89l7atvbpx/Reshenie-Kollegii-EEK-_-89-ot-07.10.2025-g..docx" target="_blank">Кыр</a>
+            <div class="DocSearchResult_Item__FileType">pdf</div>
+        </div>
+        
+        <a href="/upload/iblock/b47/uvbyquwdzpw1rx6y67w4p2g5qt56zsyg/Reshenie-Kollegii-_-89-ot-7-oktyabrya-2025-g.pdf" target="_blank">Решение Коллегии № 89 от 7 октября 2025 г</a>
+    </div>
+    
+    <div class="DocSearchResult_Item__FileLinks">
+        <a download href="/upload/iblock/b47/uvbyquwdzpw1rx6y67w4p2g5qt56zsyg/Reshenie-Kollegii-_-89-ot-7-oktyabrya-2025-g.pdf">Скачать</a>
+    </div>
+</div>
+
+</div>
+<div class="DocDetail_Files_Group"><div class="DocDetail_Files_Title">
+        Приложения
+    </div>
+    
+
+<div class="DocSearchResult_Item__File">
+    <div class="DocSearchResult_Item__FileInfo">
+        <div>
+            <a href="/upload/iblock/c9d/2cue3c32cbwhyohls693m0f3ngxdl3iy/skachat-v-word.zip" target="_blank">Рус</a>
+            <div class="DocSearchResult_Item__FileType">zip</div>
+        </div>
+        
+        <a href="/upload/iblock/c9d/2cue3c32cbwhyohls693m0f3ngxdl3iy/skachat-v-word.zip" target="_blank">скачать в word</a>
+    </div>
+    
+    <div class="DocSearchResult_Item__FileLinks">
+        <a download href="/upload/iblock/c9d/2cue3c32cbwhyohls693m0f3ngxdl3iy/skachat-v-word.zip">Скачать</a>
+    </div>
+</div>
+
+</div>                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+            
+                    
+            
+        
+        
+	
+    
+    
+
+
+
+
+
+
+        <p><a href="/documents/446/" onclick="BX.ajax.insertToNode('/documents/446/?bxajaxid=50e6c8b9173e7a6712a2357457abc998', 'comp_50e6c8b9173e7a6712a2357457abc998'); return false;"  >Возврат к списку</a></p>
+    </div>
+</div>
+</div><script>if (top.BX.ajax.history.bHashCollision) top.BX.ajax.history.checkRedirectFinish('bxajaxid', '50e6c8b9173e7a6712a2357457abc998');</script><script>top.BX.ready(BX.defer(function() {window.AJAX_PAGE_STATE = new top.BX.ajax.component('comp_50e6c8b9173e7a6712a2357457abc998'); top.BX.ajax.history.init(window.AJAX_PAGE_STATE);}))</script></div>
+        </main>
+
+        <footer class="Footer">
+    <div class="Container">
+        <div class="Footer_Row">
+            <div class="Footer_Col">
+                © Евразийский экономический союз, 2026            </div>
+            <div class="Footer_Col">
+                <a href="/api/">Открытые данные</a>
+                
+            </div>
+        </div>
+    </div>
+</footer>    </div>
+
+    <div class="Modal_Filter Modal modal" id="js-modal-filter-napravlenie" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <button type="button" class="Modal__Close" data-dismiss="modal" aria-label="Close">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.4591 16.014L25.6981 7.82004C26.0931 7.42904 26.0931 6.79604 25.6981 6.40604C25.3041 6.01504 24.6641 6.01504 24.2701 6.40604L16.0381 14.593L7.73006 6.28404C7.33606 5.88904 6.69606 5.88904 6.30206 6.28404C5.90806 6.68004 5.90806 7.32104 6.30206 7.71604L14.6041 16.019L6.27206 24.305C5.87806 24.696 5.87806 25.329 6.27206 25.719C6.66606 26.11 7.30606 26.11 7.70006 25.719L16.0251 17.44L24.3001 25.716C24.6941 26.111 25.3341 26.111 25.7281 25.716C26.1221 25.32 26.1221 24.679 25.7281 24.284L17.4591 16.014Z" fill="#999999"/>
+                </svg>
+            </button>
+
+            <div class="Modal__Inner">
+                <div class="Modal__Title">
+                    Направление деятельности                </div>
+                <form action="javascript:void(0)" class="js-modal-filter-napravlenie-form">
+                    <div class="Modal_Filter_Items">
+                        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_107" name="filter_sphere[]" value="107" data-name="Интеграция и макроэкономика">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Интеграция и макроэкономика
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_108" name="filter_sphere[]" value="108" data-name="Экономика и финансовая политика">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Экономика и финансовая политика
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_109" name="filter_sphere[]" value="109" data-name="Промышленность и агропромышленный комплекс">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Промышленность и агропромышленный комплекс
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_110" name="filter_sphere[]" value="110" data-name="Торговля">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Торговля
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_111" name="filter_sphere[]" value="111" data-name="Техническое регулирование">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Техническое регулирование
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_112" name="filter_sphere[]" value="112" data-name="Таможенное сотрудничество">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Таможенное сотрудничество
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_113" name="filter_sphere[]" value="113" data-name="Энергетика и инфраструктура">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Энергетика и инфраструктура
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_114" name="filter_sphere[]" value="114" data-name="Конкуренция и антимонопольное регулирование">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Конкуренция и антимонопольное регулирование
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_115" name="filter_sphere[]" value="115" data-name="Внутренние рынки, информатизация, информационно-коммуникационные технологии">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Внутренние рынки, информатизация, информационно-коммуникационные технологии
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+                            </div>
+                    <div class="Modal__Buttons">
+                        <button type="submit" class="Button">Выбрать</button>
+                        <button type="button" class="Button _white" data-dismiss="modal" aria-label="Close">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="Modal_Filter Modal modal" id="js-modal-filter-dept" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <button type="button" class="Modal__Close" data-dismiss="modal" aria-label="Close">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.4591 16.014L25.6981 7.82004C26.0931 7.42904 26.0931 6.79604 25.6981 6.40604C25.3041 6.01504 24.6641 6.01504 24.2701 6.40604L16.0381 14.593L7.73006 6.28404C7.33606 5.88904 6.69606 5.88904 6.30206 6.28404C5.90806 6.68004 5.90806 7.32104 6.30206 7.71604L14.6041 16.019L6.27206 24.305C5.87806 24.696 5.87806 25.329 6.27206 25.719C6.66606 26.11 7.30606 26.11 7.70006 25.719L16.0251 17.44L24.3001 25.716C24.6941 26.111 25.3341 26.111 25.7281 25.716C26.1221 25.32 26.1221 24.679 25.7281 24.284L17.4591 16.014Z" fill="#999999"/>
+                </svg>
+            </button>
+
+            <div class="Modal__Inner">
+                <div class="Modal__Title">
+                    Ответственный департамент                </div>
+                <form action="javascript:void(0)" class="js-modal-filter-dept-form">
+                    <div class="Modal_Filter_Items">
+                        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_3" name="filter_departament[]" value="3" data-name="Департамент финансов">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент финансов
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_4" name="filter_departament[]" value="4" data-name="Правовой департамент">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Правовой департамент
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_5" name="filter_departament[]" value="5" data-name="Департамент управления делами">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент управления делами
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_6" name="filter_departament[]" value="6" data-name="Департамент протокола и организационного обеспечения">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент протокола и организационного обеспечения
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_7" name="filter_departament[]" value="7" data-name="Департамент макроэкономической политики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент макроэкономической политики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_8" name="filter_departament[]" value="8" data-name="Департамент промышленной политики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент промышленной политики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_9" name="filter_departament[]" value="9" data-name="Департамент таможенно-тарифного и нетарифного регулирования">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент таможенно-тарифного и нетарифного регулирования
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_10" name="filter_departament[]" value="10" data-name="Департамент статистики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент статистики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_11" name="filter_departament[]" value="11" data-name="Департамент развития интеграции">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент развития интеграции
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_12" name="filter_departament[]" value="12" data-name="Департамент развития предпринимательской деятельности">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент развития предпринимательской деятельности
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_13" name="filter_departament[]" value="13" data-name="Департамент агропромышленной политики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент агропромышленной политики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_14" name="filter_departament[]" value="14" data-name="Департамент защиты внутреннего рынка">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент защиты внутреннего рынка
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_15" name="filter_departament[]" value="15" data-name="Департамент финансовой политики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент финансовой политики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_16" name="filter_departament[]" value="16" data-name="Департамент трудовой миграции и социальной защиты">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент трудовой миграции и социальной защиты
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_17" name="filter_departament[]" value="17" data-name="Департамент торговой политики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент торговой политики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_18" name="filter_departament[]" value="18" data-name="Департамент технического регулирования и аккредитации">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент технического регулирования и аккредитации
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_19" name="filter_departament[]" value="19" data-name="Департамент санитарных фитосанитарных и ветеринарных мер">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент санитарных фитосанитарных и ветеринарных мер
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_20" name="filter_departament[]" value="20" data-name="Департамент таможенной инфраструктуры">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент таможенной инфраструктуры
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_21" name="filter_departament[]" value="21" data-name="Департамент таможенного законодательства и правоприменительной практики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент таможенного законодательства и правоприменительной практики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_22" name="filter_departament[]" value="22" data-name="Департамент транспорта и инфраструктуры">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент транспорта и инфраструктуры
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_23" name="filter_departament[]" value="23" data-name="Департамент энергетики">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент энергетики
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_24" name="filter_departament[]" value="24" data-name="Департамент антимонопольного регулирования">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент антимонопольного регулирования
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_25" name="filter_departament[]" value="25" data-name="Департамент конкурентной политики и политики в области государственных закупок">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент конкурентной политики и политики в области государственных закупок
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_26" name="filter_departament[]" value="26" data-name="Департамент информационных технологий">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент информационных технологий
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+        
+        <div class="Checkbox">
+            <label class="Checkbox__Label">
+                <div class="Checkbox__Row">
+                    <input class="Checkbox__Input" type="checkbox" id="elements_27" name="filter_departament[]" value="27" data-name="Департамент функционирования внутренних рынков">
+                    <div class="Checkbox__Col _box">
+                        <div class="Checkbox__Box"></div>
+                    </div>
+                    <div class="Checkbox__Col _text">
+                        <div class="Checkbox__Title">
+                        Департамент функционирования внутренних рынков
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+                            </div>
+                    <div class="Modal__Buttons">
+                        <button type="submit" class="Button">Выбрать</button>
+                        <button type="button" class="Button _white" data-dismiss="modal" aria-label="Close">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >
+   (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   m[i].l=1*new Date();
+   for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+   k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+   ym(99739886, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+   });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/99739886" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+</body>
+</html>

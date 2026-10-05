@@ -25,7 +25,7 @@
 }
 .app-header-name { font-size: .86rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
 
-.app-header-nav { display: flex; flex: 1 1 auto; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.app-header-nav { position: relative; display: flex; flex: 1 1 auto; align-items: center; gap: 4px; min-width: 0; }
 .app-header-nav a {
   flex: 0 0 auto;
   padding: 6px 12px;
@@ -39,6 +39,22 @@
 }
 .app-header-nav a:hover { background: rgba(255, 255, 255, .07); color: #fff; }
 .app-header-nav a.active { background: rgba(255, 255, 255, .13); color: #fff; }
+
+/* Разделы, которые не поместились, — в меню «Ещё»; скрытая копия меню нужна для замера ширины. */
+.app-header-measure { position: absolute; top: 0; left: 0; display: flex; gap: 4px; visibility: hidden; pointer-events: none; }
+.app-header-measure span { padding: 6px 12px; font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.app-header-more { position: relative; flex: 0 0 auto; }
+.app-header-more > summary { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 7px; color: #c3dccb; font-size: .82rem; font-weight: 600; list-style: none; cursor: pointer; white-space: nowrap; }
+.app-header-more > summary::-webkit-details-marker { display: none; }
+.app-header-more > summary:hover, .app-header-more[open] > summary { background: rgba(255, 255, 255, .07); color: #fff; }
+.app-header-more.active > summary { background: rgba(255, 255, 255, .13); color: #fff; }
+.app-header-more-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; display: grid; min-width: 200px; padding: 6px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(15, 46, 28, .22); }
+.app-header-nav .app-header-more-menu a { padding: 8px 10px; border-radius: 6px; color: #1f2d24; font-size: .86rem; }
+.app-header-nav .app-header-more-menu a:hover { background: #eef5f0; color: #13241a; }
+.app-header-nav .app-header-more-menu a.active { background: #e3f1e8; color: #154f32; }
+.app-header .app-header-more-menu :focus-visible { outline-color: #146c43; outline-offset: -2px; }
+/* Видимый фокус на тёмной шапке — светлая рамка. */
+.app-header :focus-visible { outline: 2px solid #cfe8d9; outline-offset: 2px; }
 
 .app-header-user { display: flex; flex: 0 1 auto; align-items: center; gap: 9px; min-width: 0; }
 .app-header-avatar {
@@ -54,7 +70,7 @@
   font-weight: 700;
 }
 .app-header-who { overflow: hidden; color: #cfe0d5; font-size: .8rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.app-header-who small { display: block; color: #8fb09c; font-size: .68rem; }
+.app-header-who small { display: block; color: #a9c7b4; font-size: .82rem; }
 .app-header .app-header-logout {
   flex: 0 0 auto;
   height: 28px;
@@ -63,7 +79,7 @@
   border-radius: 7px;
   background: transparent;
   color: #cfe0d5;
-  font-size: .76rem;
+  font-size: .82rem;
   font-weight: 600;
 }
 .app-header .app-header-logout:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .08); color: #fff; }
@@ -74,6 +90,6 @@
 }
 @media (max-width: 560px) {
   .app-header { gap: 8px; padding: 0 10px; }
-  .app-header-nav a { padding: 6px 8px; font-size: .78rem; }
+  .app-header-nav a, .app-header-measure span, .app-header-more > summary { padding: 6px 8px; font-size: .78rem; }
   .app-header-avatar { display: none; }
 }

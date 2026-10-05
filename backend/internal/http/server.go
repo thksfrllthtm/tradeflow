@@ -194,6 +194,7 @@ func (s *Server) Router() *gin.Engine {
 	agent.POST("/sessions/:id/begin", s.beginAgentSession)
 	agent.POST("/sessions/:id/messages", s.messageAgentSession)
 	agent.POST("/sessions/:id/rerun", s.rerunAgentSession)
+	agent.POST("/sessions/:id/documents", s.documentsAgentSession)
 	agent.POST("/sessions/:id/cancel", s.cancelAgentSession)
 	agent.POST("/sessions/:id/apply", s.applyAgentSession)
 	agent.POST("/sessions/:id/name", s.applyAgentName)

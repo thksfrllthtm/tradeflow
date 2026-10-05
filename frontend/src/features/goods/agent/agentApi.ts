@@ -26,7 +26,8 @@ export type AgentCandidate = {
   code: string
   verdict: 'fits' | 'doubtful' | 'no'
   quote: string
-  quoteSource: '' | 'page' | 'name'
+  // page — страница кода (TWS.BY), help — справка tnved.info или документ по ссылке, name — наименование кода.
+  quoteSource: '' | 'page' | 'help' | 'name'
   reason: string
   check: string
   pageOpened: boolean
@@ -40,7 +41,14 @@ export type AgentResult = {
   notes: string
   droppedCodes: string[]
   quotesRemoved: number
+  // Ответ по кнопке «Документы для ввоза»: для какого кода, меры и сколько чужих ссылок убрала программа.
+  documentsCode?: string
+  documents?: AgentDocument[]
+  linksRemoved?: number
 }
+
+// Мера или документ для ввоза: applies — относится ли мера к товару по пояснению под актом.
+export type AgentDocument = { measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no' }
 
 // photoDiffers — совпало наименование, но фото другое: фото главнее, это может быть другой товар.
 export type SameProductMatch = { decision: CodeDecision; byPhoto: boolean; byName: boolean; photoDiffers?: boolean }
@@ -57,6 +65,7 @@ export type AgentMessage =
   | { id: number; kind: 'similar'; content: { matches: SimilarMatch[]; description: string }; createdAt: string }
   | { id: number; kind: 'error'; content: { message: string }; createdAt: string }
   | { id: number; kind: 'rerun' | 'start'; content: Record<string, never>; createdAt: string }
+  | { id: number; kind: 'documents'; content: { code: string }; createdAt: string }
 
 export type AgentSession = {
   id: number
@@ -94,6 +103,8 @@ export const agentApi = {
   begin: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/begin`, { method: 'POST' }),
   get: (id: number, after = 0) => request<AgentSession>(`/api/tnved-agent/sessions/${id}?after=${after}`),
   message: (id: number, text: string) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
+  // «Документы для ввоза» для кода из ответа агента (ответ для того же кода повторно не запрашивается).
+  documents: (id: number, code: string) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/documents`, { method: 'POST', body: JSON.stringify({ code }) }),
   rerun: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/rerun`, { method: 'POST' }),
   cancel: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/cancel`, { method: 'POST' }),
   // Наименование: перевод русской части на китайский — только по «Применить наименование».

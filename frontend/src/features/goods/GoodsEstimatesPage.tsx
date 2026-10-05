@@ -60,6 +60,18 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     setMeta({ name: estimateTitle(selected.name), client: selected.client, assessmentDate: selected.assessmentDate })
   }, [selected])
 
+  // Новая смета с главной (?new=1): сразу открыть поля названия и клиента, курсор — в название.
+  useEffect(() => {
+    if (!selected || new URLSearchParams(window.location.search).get('new') !== '1') return
+    window.history.replaceState(window.history.state, '', window.location.pathname)
+    const editor = document.querySelector<HTMLDetailsElement>('.estimate-bar-editor')
+    if (!editor) return
+    editor.open = true
+    const input = editor.querySelector<HTMLInputElement>('input')
+    input?.focus()
+    input?.select()
+  }, [selected])
+
   async function create() {
     setError('')
     try {

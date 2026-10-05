@@ -28,3 +28,17 @@ func TestCleanTWSPageKeepsTreeNotesAndDropsBelarus(t *testing.T) {
 		}
 	}
 }
+
+// В шаблонах htmlDropBlocks стоял невидимый backspace вместо \b: скрипты, стили и <head> оставались в тексте.
+func TestHTMLToTextDropsScriptsStylesAndHead(t *testing.T) {
+	text := htmlToText(`<html><head><title>Заголовок</title><meta charset="utf-8"></head><body><style type="text/css">.a{color:red}</style>
+	<header>Шапка</header><p>Текст страницы</p><script type="text/javascript">var secret = 1</script><noscript>Включите JS</noscript><svg viewBox="0 0 1 1"><path d="M0"/></svg></body></html>`)
+	if !strings.Contains(text, "Текст страницы") || !strings.Contains(text, "Шапка") {
+		t.Fatalf("text lost: %q", text)
+	}
+	for _, unwanted := range []string{"Заголовок", "color:red", "secret", "Включите JS", "M0"} {
+		if strings.Contains(text, unwanted) {
+			t.Errorf("unexpected %q in %q", unwanted, text)
+		}
+	}
+}

@@ -7,8 +7,10 @@ package tnvedagent
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
 
 type agentOutcome struct {
@@ -29,6 +31,19 @@ type agentRunner struct {
 	maxSteps   int
 	// tools — инструменты запуска (nil — как при подборе для строки сметы).
 	tools []agentTool
+	// documents — запуск по кнопке «Документы для ввоза»: веб-инструменты и больше шагов.
+	documents bool
+}
+
+// stepLimit — шагов до принудительного итога: maxSteps, иначе по режиму.
+func (r *agentRunner) stepLimit() int {
+	switch {
+	case r.maxSteps > 0:
+		return r.maxSteps
+	case r.documents:
+		return agentDocumentsMaxSteps
+	}
+	return agentMaxSteps
 }
 
 // materialize — переписка для модели: системная подсказка, ссылки на фото заменены самими фото.
@@ -67,7 +82,8 @@ func (r *agentRunner) materialize() []agentMessage {
 	return messages
 }
 
-// restoreOpened — страницы, открытые в прежних запусках этого подбора (для проверки цитат).
+// restoreOpened — страницы, открытые в прежних запусках этого подбора (для проверки цитат), а также
+// справка, документы и ссылки с них: после ответа сотрудника на ask_user open_link иначе откажет.
 func (r *agentRunner) restoreOpened(ctx context.Context) {
 	names := map[string]string{}
 	for _, raw := range r.transcript {
@@ -84,15 +100,26 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 		if raw["role"] == "tool" {
 			id, _ := raw["tool_call_id"].(string)
 			content, _ := raw["content"].(string)
-			if names[id] != "open_details" {
-				continue
-			}
-			var page struct {
-				Code string `json:"code"`
-				Text string `json:"text"`
-			}
-			if json.Unmarshal([]byte(content), &page) == nil && page.Code != "" && page.Text != "" {
-				r.toolbox.opened[page.Code] = page.Text
+			switch names[id] {
+			case "open_details":
+				var page struct {
+					Code string `json:"code"`
+					Text string `json:"text"`
+				}
+				if json.Unmarshal([]byte(content), &page) == nil && page.Code != "" && page.Text != "" {
+					r.toolbox.opened[page.Code] = page.Text
+				}
+			case "open_goods_help", "open_link", "search_in_document":
+				var page struct {
+					URL       string              `json:"url"`
+					Text      string              `json:"text"`
+					Fragments []string            `json:"fragments"`
+					Links     []directory.WebLink `json:"links"`
+					Error     string              `json:"error"`
+				}
+				if json.Unmarshal([]byte(content), &page) == nil && page.URL != "" && page.Error == "" {
+					r.toolbox.rememberPage(page.URL, strings.TrimSpace(page.Text+"\n"+strings.Join(page.Fragments, "\n")), page.Links)
+				}
 			}
 		}
 	}
@@ -110,13 +137,10 @@ func (r *agentRunner) toolMessage(callID, content string) {
 }
 
 func (r *agentRunner) execute(ctx context.Context) agentOutcome {
-	maxSteps := r.maxSteps
-	if maxSteps <= 0 {
-		maxSteps = agentMaxSteps
-	}
+	maxSteps := r.stepLimit()
 	tools := r.tools
 	if tools == nil {
-		tools = agentTools(false)
+		tools = agentTools(false, r.documents)
 	}
 	nudged, finishRetried, forced := false, false, false
 	for step := 0; ; step++ {

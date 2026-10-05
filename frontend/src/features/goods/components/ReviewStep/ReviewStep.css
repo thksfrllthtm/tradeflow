@@ -78,7 +78,7 @@
 .rv-bar-end { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 
 /* Фильтр строк, следующая проблема, источник ошибок, плотность. */
-.rv-filterbar { display: flex; align-items: center; flex-wrap: nowrap; gap: 6px 10px; padding: 4px 14px; border-bottom: 1px solid var(--rv-line); background: #fafcfb; }
+.rv-filterbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 4px 14px; border-bottom: 1px solid var(--rv-line); background: #fafcfb; }
 .rv-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--rv-line-strong); border-radius: 8px; background: #fff; }
 .rv-step .rv-seg button { height: 26px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--rv-ink-2); font-size: .82rem; font-weight: 600; white-space: nowrap; }
 .rv-step .rv-seg button b { margin-left: 3px; color: inherit; font-variant-numeric: tabular-nums; }
@@ -89,7 +89,7 @@
 .rv-step button.rv-next:hover:not(:disabled) { border-color: var(--rv-green); background: #f0f7f2; }
 .rv-step button.rv-next:disabled { opacity: 1; color: #7d8a82; }
 .rv-next kbd { padding: 0 4px; border: 1px solid var(--rv-line-strong); border-radius: 4px; background: #f5f8f6; color: var(--rv-ink-3); font: inherit; font-size: .78rem; }
-.rv-check-source { flex: 0 1 auto; min-width: 0; margin: 0; overflow: hidden; color: var(--rv-ink-3); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.rv-check-source { flex: 1 1 140px; min-width: 0; margin: 0; overflow: hidden; color: var(--rv-ink-3); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
 .rv-check-source.past { padding: 2px 8px; border-radius: 6px; background: #eef2fa; color: var(--rv-changed); font-weight: 600; }
 .rv-check-source b { color: inherit; }
 .rv-seg { flex: 0 0 auto; }

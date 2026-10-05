@@ -1,19 +1,44 @@
 import { ClipboardEvent, DragEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
+import { LinkText } from '@/shared/components/LinkText/LinkText'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
+import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from '@/features/goods/agent/DocumentsAnswer'
 import './ReferenceChat.css'
 
 const pollInterval = 1500
 const maxPhotos = 3
 const examples = ['Лопата штыковая стальная с черенком', 'Перчатки трикотажные с покрытием ПВХ', 'Чем отличаются 6116 10 200 0 и 6116 10 800 0?']
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
-const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚' }
+const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎' }
 
 const isWorking = (session: AgentSession | null) => session?.status === 'running' || session?.status === 'searching'
+const isImage = (file: File) => file.type === 'image/jpeg' || file.type === 'image/png'
+// Вставку и «/» обрабатываем только вне полей ввода и открытых окон.
+const editable = (target: EventTarget | null) => target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]'))
+const dialogOpen = () => document.querySelector('[role="dialog"][aria-modal="true"]') !== null
+
+// Строка под вопросом в истории: что с ним сейчас, затем код.
+function historyState(item: ReferenceSummary) {
+  if (item.status === 'running' || item.status === 'searching') return 'ищет…'
+  if (item.status === 'waiting') return 'ждёт ответа'
+  if (item.status === 'error' || item.status === 'cancelled') return 'не завершён'
+  return item.bestCode ? formatCode(item.bestCode) : 'код не найден'
+}
+
+// Что озвучить экранному диктору при смене состояния вопроса.
+function liveText(session: AgentSession | null) {
+  if (!session) return ''
+  if (session.status === 'searching') return 'Ищу в базе решений'
+  if (session.status === 'running') return 'Агент ищет код'
+  if (session.status === 'waiting') return 'Агент задал уточняющий вопрос'
+  if (session.status === 'error') return 'Подбор прервался'
+  if (session.status === 'done') return 'Ответ готов'
+  return ''
+}
 
 // Чат-справочник ТН ВЭД на главной: фото и/или вопрос о товаре → коды и объяснение, почему они.
 // Без наименования и записи в базу решений. Слева — прошлые вопросы сотрудника.
@@ -28,6 +53,9 @@ export function ReferenceChat() {
   const [dragging, setDragging] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
+  // История — одна остановка Tab: по вопросам — стрелками (roving tabindex).
+  const [historyFocus, setHistoryFocus] = useState(0)
+  const historyRef = useRef<HTMLUListElement>(null)
   const lastId = useRef(0)
   const threadRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -70,7 +98,7 @@ export function ReferenceChat() {
   }, [messageCount, session?.status])
 
   async function addFiles(files: FileList | File[]) {
-    const images = [...files].filter((file) => file.type === 'image/jpeg' || file.type === 'image/png')
+    const images = [...files].filter(isImage)
     if (images.length === 0) { setError('Фото — JPG или PNG'); return }
     setError('')
     const loaded = await Promise.all(images.slice(0, maxPhotos).map((file) => new Promise<string>((resolve) => {
@@ -83,6 +111,35 @@ export function ReferenceChat() {
     setPhotos((current) => [...current, ...resized].slice(0, maxPhotos))
     inputRef.current?.focus()
   }
+
+  // Фото из буфера, вставленное вне полей ввода, становится вложением вопроса (не отправляется само).
+  // «/» вне полей — перейти к вопросу. В полях, окнах и с модификаторами ничего не перехватываем.
+  const addFilesRef = useRef(addFiles)
+  addFilesRef.current = addFiles
+  useEffect(() => {
+    const onWindowPaste = (event: globalThis.ClipboardEvent) => {
+      if (event.defaultPrevented || editable(event.target) || dialogOpen()) return
+      const files = [...(event.clipboardData?.files ?? [])].filter(isImage)
+      if (files.length === 0) return
+      event.preventDefault()
+      void addFilesRef.current(files)
+    }
+    const onWindowKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented || editable(event.target) || dialogOpen()) return
+      event.preventDefault()
+      inputRef.current?.focus()
+    }
+    window.addEventListener('paste', onWindowPaste)
+    window.addEventListener('keydown', onWindowKey)
+    return () => { window.removeEventListener('paste', onWindowPaste); window.removeEventListener('keydown', onWindowKey) }
+  }, [])
+
+  // Открыли главную, курсор нигде, а поле вопроса видно — сразу в него (без прокрутки страницы).
+  useEffect(() => {
+    const input = inputRef.current
+    const visible = input ? input.getBoundingClientRect().bottom <= window.innerHeight : false
+    if (visible && (document.activeElement === document.body || document.activeElement === null)) input?.focus({ preventScroll: true })
+  }, [])
 
   function onPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
     const files = [...event.clipboardData.files]
@@ -118,6 +175,21 @@ export function ReferenceChat() {
     }
   }
 
+  // «Документы для ввоза»: ответ для этого кода уже есть — прокрутка к нему, иначе запуск агента.
+  async function requestDocuments(code: string) {
+    if (!session || busy || isWorking(session)) return
+    if (scrollToDocuments(threadRef.current, code)) return
+    setBusy(true); setError('')
+    try {
+      accept(await agentApi.documents(session.id, code), false)
+      agentApi.status().then(setStatus).catch(() => undefined)
+    } catch (reason) {
+      setError(errorMessage(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() }
   }
@@ -136,16 +208,32 @@ export function ReferenceChat() {
     } catch (reason) { setError(errorMessage(reason)) }
   }
 
+  function onHistoryKey(event: KeyboardEvent<HTMLButtonElement>, index: number, id: number) {
+    const last = history.length - 1
+    const next = event.key === 'ArrowDown' ? Math.min(last, index + 1) : event.key === 'ArrowUp' ? Math.max(0, index - 1) : event.key === 'Home' ? 0 : event.key === 'End' ? last : -1
+    if (next >= 0) {
+      event.preventDefault()
+      setHistoryFocus(next)
+      historyRef.current?.querySelectorAll<HTMLButtonElement>('.rc-history-open')[next]?.focus()
+    } else if (event.key === 'Delete') {
+      event.preventDefault()
+      void remove(id)
+    }
+  }
+
   function startNew() {
     setSession(null); setText(''); setPhotos([]); setError(''); setHistoryOpen(false)
     inputRef.current?.focus()
   }
 
   const configured = status?.configured !== false
+  // Лимит вопросов на сегодня: от 80% — подсветка (лимит не меняется, только видно, что он близко).
+  const nearLimit = status !== null && status.dailyLimit > 0 && status.usedToday >= status.dailyLimit * .8
+  const rovingIndex = Math.min(historyFocus, Math.max(0, history.length - 1))
   const placeholder = !session ? 'Опишите товар, вставьте фото (Ctrl+V) или перетащите его сюда…'
     : session.status === 'waiting' ? 'Ответьте на вопрос…' : photos.length ? 'Добавьте пояснение к фото — это будет новый вопрос' : 'Уточните: «а если покрытие латекс?» — или добавьте фото для нового вопроса'
 
-  return <section className={dragging ? 'rc dragging' : 'rc'} aria-label="Справочник ТН ВЭД"
+  return <section className={dragging ? 'rc dragging' : 'rc'} aria-label="Подбор кода ТН ВЭД"
     onDragOver={(event) => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true) } }}
     onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false) }} onDrop={onDrop}>
     <header className="rc-head">
@@ -154,7 +242,7 @@ export function ReferenceChat() {
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5h12M4 10h8M4 14.5h5" /><circle cx="14.5" cy="13.5" r="2.6" /><path d="M16.4 15.4 18 17" /></svg>
         </span>
         <div>
-          <h2>Справочник ТН ВЭД</h2>
+          <h2>Подбор кода ТН ВЭД</h2>
           <p>Фото или описание товара — код и почему именно он</p>
         </div>
       </div>
@@ -168,16 +256,20 @@ export function ReferenceChat() {
       <aside className={historyOpen ? 'rc-history open' : 'rc-history'} aria-label="Прошлые вопросы">
         <p className="rc-history-title">Ваши вопросы</p>
         {history.length === 0 ? <p className="rc-history-empty">Здесь появятся ваши вопросы.</p>
-          : <ul>{history.map((item) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
-            <button type="button" onClick={() => void open(item.id)} title={item.title}>
-              <span className="rc-history-name">{item.hasPhoto && <i aria-hidden="true">📷</i>}{item.title}</span>
-              <small>{item.bestCode ? formatCode(item.bestCode) : item.status === 'running' || item.status === 'searching' ? 'ищет…' : item.status === 'waiting' ? 'ждёт ответа' : '—'} · {new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
-            </button>
-            <button type="button" className="rc-history-remove" onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить">×</button>
-          </li>)}</ul>}
+          : <>
+            <p id="rc-history-help" className="rc-sr">Стрелки вверх и вниз — по вопросам, Enter — открыть, Delete — удалить</p>
+            <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
+              <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
+                <span className="rc-history-name">{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
+                <small>{historyState(item)} · {new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
+              </button>
+              <button type="button" className="rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
+            </li>)}</ul>
+          </>}
       </aside>
 
       <div className="rc-main">
+        <p className="rc-sr" role="status" aria-live="polite">{liveText(session)}</p>
         <div className="rc-thread" ref={threadRef}>
           {!session ? <div className="rc-empty">
             <span className="rc-empty-icon" aria-hidden="true">
@@ -186,7 +278,8 @@ export function ReferenceChat() {
             <h3>Какой код у товара?</h3>
             <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент найдёт код в номенклатуре и объяснит выбор.</p>
             <div className="rc-examples">{examples.map((example) => <button key={example} type="button" onClick={() => { setText(example); inputRef.current?.focus() }}>{example}</button>)}</div>
-          </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })} />}
+          </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
+            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />}
           {error && <p className="rc-error" role="alert">{error}</p>}
         </div>
 
@@ -207,8 +300,8 @@ export function ReferenceChat() {
             </button>
           </div>
           <p className="rc-hint">
-            {!configured ? 'ИИ не настроен на сервере.' : <>Enter — отправить, Shift+Enter — новая строка{status && status.dailyLimit > 0 && <> · сегодня {status.usedToday} из {status.dailyLimit}</>}</>}
-            <span>Подсказка ИИ — код выбирает декларант</span>
+            {!configured ? 'ИИ не настроен на сервере.' : <span>Enter — отправить, Shift+Enter — новая строка, <kbd>/</kbd> — к вопросу{status && status.dailyLimit > 0 && <> · <b className={nearLimit ? 'rc-limit near' : 'rc-limit'}>сегодня {status.usedToday} из {status.dailyLimit}</b></>}</span>}
+            <span className="rc-disclaimer">Подсказка ИИ — код выбирает декларант</span>
           </p>
         </form>
       </div>
@@ -219,7 +312,9 @@ export function ReferenceChat() {
 }
 
 // Разговор: вопрос сотрудника, что нашлось в базе, ход поиска, вопросы агента, ответ.
-function Thread({ session, onPhoto }: { session: AgentSession; onPhoto: (photos: string[], index: number) => void }) {
+type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void }
+
+function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProps) {
   const photos = session.photos ?? []
   const blocks = useMemo(() => threadBlocks(session.messages), [session.messages])
   const working = isWorking(session)
@@ -233,10 +328,12 @@ function Thread({ session, onPhoto }: { session: AgentSession; onPhoto: (photos:
           {message.content.item.name && <p>{message.content.item.name}</p>}
         </div>
         case 'user': return <div key={message.id} className="rc-user"><p>{message.content.text}</p></div>
+        case 'documents': return <div key={message.id} className="rc-user"><p>Документы для ввоза · {formatCode(message.content.code)}</p></div>
         case 'question': return <div key={message.id} className="rc-bot rc-question"><b>Уточните</b>{message.content.text}</div>
         case 'match': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.byPhoto ? 'то же фото' : 'то же наименование', verified: match.decision.status === 'verified' }))} title="Этот товар уже оформляли" /> : null
         case 'similar': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.verdict === 'same' ? `тот же товар · ${match.score}%` : `похожий · ${match.score}%`, verified: match.decision.status === 'verified' }))} title="Похожие товары в базе решений" /> : null
-        case 'result': return <Answer key={message.id} result={message.content} previous={block.previous} />
+        case 'result': return message.content.documentsCode ? <DocumentsAnswer key={message.id} result={message.content} />
+          : <Answer key={message.id} result={message.content} previous={block.previous} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
         case 'notice': return <p key={message.id} className="rc-notice">{message.content.text}</p>
         case 'error': return <p key={message.id} className="rc-error">{message.content.message}</p>
         case 'rerun': return <p key={message.id} className="rc-divider"><span>заново</span></p>
@@ -244,7 +341,7 @@ function Thread({ session, onPhoto }: { session: AgentSession; onPhoto: (photos:
       }
     })}
     {session.status === 'searching' && <p className="rc-typing"><span /><span /><span /> ищу в базе решений…</p>}
-    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> агент ищет код…</p>}
+    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агент читает справку tnved.info и акты…' : 'агент ищет код…'}</p>}
   </>
 }
 
@@ -257,7 +354,8 @@ function threadBlocks(messages: AgentMessage[]): Block[] {
   for (const message of messages) {
     if (message.kind === 'result') {
       blocks.push({ type: 'message', message, previous })
-      previous = message.content
+      // Ответ про документы — не ответ о коде: следующее уточнение сравнивается с прежним.
+      if (!message.content.documentsCode) previous = message.content
       continue
     }
     if (message.kind === 'rerun') previous = undefined
@@ -310,13 +408,15 @@ function mainCodes(result: AgentResult): string {
 
 // Ответ агента: что за товар, подходящие коды с цитатой и ставками, затем почему не соседние.
 // Ответ на уточнение с теми же кодами — только текст и строка с кодом, без повторных карточек.
-function Answer({ result, previous }: { result: AgentResult; previous?: AgentResult }) {
+type AnswerProps = { result: AgentResult; previous?: AgentResult; documentsDisabled: boolean; onDocuments: (code: string) => void }
+
+function Answer({ result, previous, documentsDisabled, onDocuments }: AnswerProps) {
   const main = result.candidates.filter((candidate) => candidate.verdict !== 'no')
   const rejected = result.candidates.filter((candidate) => candidate.verdict === 'no')
   if (previous && main.length > 0 && mainCodes(previous) === mainCodes(result)) {
     return <div className="rc-answer rc-answer-short">
-      {result.description && <p className="rc-answer-text">{result.description}</p>}
-      {result.notes && <p className="rc-note">{result.notes}</p>}
+      {result.description && <p className="rc-answer-text"><LinkText text={result.description} /></p>}
+      {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
       <p className="rc-same-code">
         <span>{main.length > 1 ? 'Коды без изменений' : 'Код без изменений'}</span>
         {main.map((candidate) => <CopyCode key={candidate.code} code={candidate.code} className="rc-code small" />)}
@@ -324,20 +424,20 @@ function Answer({ result, previous }: { result: AgentResult; previous?: AgentRes
     </div>
   }
   return <div className="rc-answer">
-    {result.description && <p className="rc-answer-text">{result.description}</p>}
-    {main.map((candidate) => <Candidate key={candidate.code} candidate={candidate} />)}
+    {result.description && <p className="rc-answer-text"><LinkText text={result.description} /></p>}
+    {main.map((candidate) => <Candidate key={candidate.code} candidate={candidate} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     {rejected.length > 0 && <div className="rc-rejected">
       <p>Почему не эти коды</p>
       {rejected.map((candidate) => <div key={candidate.code} className="rc-rejected-row">
         <CopyCode code={candidate.code} className="rc-code small" />
-        <span>{candidate.reason}</span>
+        <span><LinkText text={candidate.reason} /></span>
       </div>)}
     </div>}
-    {result.notes && <p className="rc-note">{result.notes}</p>}
+    {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
   </div>
 }
 
-function Candidate({ candidate }: { candidate: AgentCandidate }) {
+function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: AgentCandidate; documentsDisabled: boolean; onDocuments: (code: string) => void }) {
   const parts = candidate.nomenclature ? nameParts(candidate.nomenclature.name) : []
   const nomenclature = candidate.nomenclature
   return <article className={`rc-cand ${candidate.verdict}`}>
@@ -353,9 +453,12 @@ function Candidate({ candidate }: { candidate: AgentCandidate }) {
         {measure.suspended ? 'антидемпинг не применяется' : `${measure.exact ? 'антидемпинг' : 'возможен антидемпинг'} ${measure.countries.map((country) => `${(measure.rates[country] ?? '').replace('.', ',')}%`).join(' / ')} (${measure.countryNames})`}
       </span>)}
     </p>}
-    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'пояснения к коду (TWS.BY)' : 'наименование кода в номенклатуре'}</cite></blockquote>}
-    {candidate.reason && <p className="rc-reason">{candidate.reason}</p>}
-    {candidate.check && <p className="rc-check"><b>Уточнить:</b> {candidate.check}</p>}
-    {nomenclature?.detailsUrl && <a className="rc-more" href={nomenclature.detailsUrl} target="_blank" rel="noreferrer">Страница кода ↗</a>}
+    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'пояснения к коду (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'наименование кода в номенклатуре'}</cite></blockquote>}
+    {candidate.reason && <p className="rc-reason"><LinkText text={candidate.reason} /></p>}
+    {candidate.check && <p className="rc-check"><b>Уточнить:</b> <LinkText text={candidate.check} /></p>}
+    <div className="rc-cand-actions">
+      {candidate.verdict !== 'no' && <DocumentsButton code={candidate.code} disabled={documentsDisabled} onClick={onDocuments} />}
+      {nomenclature?.detailsUrl && <a className="rc-more" href={nomenclature.detailsUrl} target="_blank" rel="noreferrer">Страница кода ↗</a>}
+    </div>
   </article>
 }

@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
+import { LinkText } from '@/shared/components/LinkText/LinkText'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { decimalText } from '@/shared/lib/rounding'
@@ -10,6 +11,7 @@ import { GoodsItemInput } from '@/shared/types/goods'
 import { photosOf } from '@/shared/lib/itemPhotos'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
+import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
 import '@/shared/styles/drawer.css'
 import './agent.css'
 import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
@@ -31,6 +33,7 @@ const pollInterval = 1500
 
 const toolIcons: Record<string, string> = {
   search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚',
+  open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎',
 }
 
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
@@ -161,6 +164,21 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
     await act(() => agentApi.message(session.id, value))
   }
 
+  // «Документы для ввоза»: ответ для этого кода уже есть — прокрутка к нему, иначе запуск агента.
+  async function requestDocuments(code: string) {
+    if (!session || busy || working) return
+    if (scrollToDocuments(bodyRef.current, code)) return
+    setBusy(true); setError('')
+    try {
+      accept(await agentApi.documents(session.id, code), false)
+      changedRef.current()
+    } catch (reason) {
+      setError(errorMessage(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function applyCode(code: string, record: boolean) {
     setBusy(true); setError('')
     try {
@@ -260,8 +278,9 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
         {blocks.map((block) => block.type === 'steps'
           ? <StepsGroup key={`steps-${block.messages[0].id}`} messages={block.messages} live={running && block === blocks[blocks.length - 1]} />
           : <MessageView key={block.message.id} message={block.message} applied={applied} busy={busy}
-            onApplyCode={applyCode} onApplyName={(name) => void applyName(name)} />)}
-        {running && <div className="ag-typing" aria-live="polite"><span /><span /><span /> агент работает — панель можно закрыть</div>}
+            onApplyCode={applyCode} onApplyName={(name) => void applyName(name)}
+            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />)}
+        {running && <div className="ag-typing" aria-live="polite"><span /><span /><span /> {documentsRequested(messages) ? 'агент читает справку tnved.info и акты' : 'агент работает'} — панель можно закрыть</div>}
         {error && <p className="ag-error" role="alert">{error}</p>}
       </div>
 
@@ -361,16 +380,20 @@ type MessageProps = {
   busy: boolean
   onApplyCode: (code: string, record: boolean) => void
   onApplyName: (name: string) => void
+  documentsDisabled: boolean
+  onDocuments: (code: string) => void
 }
 
-function MessageView({ message, applied, busy, onApplyCode, onApplyName }: MessageProps) {
+function MessageView({ message, applied, busy, onApplyCode, onApplyName, documentsDisabled, onDocuments }: MessageProps) {
   switch (message.kind) {
     case 'question': return <div className="ag-msg ag-question"><b>Вопрос агента</b>{message.content.text}</div>
     case 'user': return <div className="ag-msg ag-user">{message.content.text}</div>
+    case 'documents': return <div className="ag-msg ag-user">Документы для ввоза · {formatCode(message.content.code)}</div>
     case 'notice': return <p className="ag-notice">{message.content.text}</p>
     case 'error': return <p className="ag-error">{message.content.message}</p>
     case 'rerun': return <p className="ag-divider"><span>подбор заново</span></p>
-    case 'result': return <ResultCard result={message.content} applied={applied} busy={busy} onApplyCode={onApplyCode} onApplyName={onApplyName} />
+    case 'result': return message.content.documentsCode ? <DocumentsAnswer result={message.content} />
+      : <ResultCard result={message.content} applied={applied} busy={busy} onApplyCode={onApplyCode} onApplyName={onApplyName} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
     default: return null
   }
 }
@@ -493,7 +516,9 @@ function NameEditor({ suggested, applied, busy, onApply }: { suggested: string; 
   </div>
 }
 
-function CandidateCard({ candidate, applied, busy, onApplyCode }: { candidate: AgentCandidate; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void }) {
+type CandidateProps = { candidate: AgentCandidate; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void; documentsDisabled: boolean; onDocuments: (code: string) => void }
+
+function CandidateCard({ candidate, applied, busy, onApplyCode, documentsDisabled, onDocuments }: CandidateProps) {
   return <article className={`ag-cand ${candidate.verdict}`}>
     <div className="ag-row-top">
       <CodeLine code={candidate.code} name={candidate.nomenclature?.name} />
@@ -504,30 +529,33 @@ function CandidateCard({ candidate, applied, busy, onApplyCode }: { candidate: A
       {measure.suspended ? 'Антидемпинг временно не применяется' : measure.exact ? 'Антидемпинг' : 'Возможен антидемпинг'}: {measure.number} «{measure.shortName}» — {measure.countries.map((country) => `${measure.countryNames && measure.countries.length === 1 ? measure.countryNames : country} ${(measure.rates[country] ?? '').replace('.', ',')}%`).join(', ')}
       {!measure.exact && ' (мера на часть товаров позиции — сверьте описание)'}
     </p>)}
-    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'со страницы кода (TWS.BY)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
-    {candidate.reason && <p className="ag-reason">{candidate.reason}</p>}
-    {candidate.check && <p className="ag-check"><b>Уточнить:</b> {candidate.check}</p>}
+    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'со страницы кода (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
+    {candidate.reason && <p className="ag-reason"><LinkText text={candidate.reason} /></p>}
+    {candidate.check && <p className="ag-check"><b>Уточнить:</b> <LinkText text={candidate.check} /></p>}
     <div className="ag-actions">
       {candidate.verdict !== 'no' && (applied.code === candidate.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="ag-apply" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>Применить код</button>)}
+      {candidate.verdict !== 'no' && <DocumentsButton code={candidate.code} disabled={documentsDisabled} onClick={onDocuments} />}
       {candidate.nomenclature?.detailsUrl && <a href={candidate.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
     </div>
   </article>
 }
 
 // Итог: подходящие коды — сразу, неподходящие — свёрнуты; наименование и замечания.
-function ResultCard({ result, applied, busy, onApplyCode, onApplyName }: { result: AgentResult; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void; onApplyName: (name: string) => void }) {
+type ResultProps = { result: AgentResult; applied: Applied; busy: boolean; onApplyCode: (code: string, record: boolean) => void; onApplyName: (name: string) => void; documentsDisabled: boolean; onDocuments: (code: string) => void }
+
+function ResultCard({ result, applied, busy, onApplyCode, onApplyName, documentsDisabled, onDocuments }: ResultProps) {
   const main = result.candidates.filter((candidate) => candidate.verdict !== 'no')
   const rejected = result.candidates.filter((candidate) => candidate.verdict === 'no')
   return <section className="ag-card ag-result">
     <header className="ag-card-head"><h3>Итог подбора</h3></header>
-    {result.description && <p className="ag-desc">{result.description}</p>}
-    {main.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} />)}
+    {result.description && <p className="ag-desc"><LinkText text={result.description} /></p>}
+    {main.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     {rejected.length > 0 && <details className="ag-more">
       <summary>Не подходят: {rejected.map((candidate) => formatCode(candidate.code)).join(', ')}</summary>
-      {rejected.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} />)}
+      {rejected.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     </details>}
     {result.name && <NameEditor suggested={result.name} applied={applied} busy={busy} onApply={onApplyName} />}
-    {result.notes && <p className="ag-note">{result.notes}</p>}
+    {result.notes && <p className="ag-note"><LinkText text={result.notes} /></p>}
     {(result.droppedCodes.length > 0 || result.quotesRemoved > 0) && <p className="ag-notice">
       {result.droppedCodes.length > 0 && <>Программа убрала коды, которых нет в номенклатуре: {result.droppedCodes.map(formatCode).join(', ')}. </>}
       {result.quotesRemoved > 0 && <>Цитат, не найденных в источниках, убрано: {result.quotesRemoved}.</>}

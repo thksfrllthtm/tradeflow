@@ -12,8 +12,13 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
 
-// fakeAgentData — номенклатура из двух кодов, одна страница TWS, одна запись базы.
-type fakeAgentData struct{ pagesOpened []string }
+// fakeAgentData — номенклатура из двух кодов, одна страница TWS, одна запись базы; для режима
+// «документы» — справка tnved.info и документы по ссылкам (helpLimit — лимит tnved.info исчерпан).
+type fakeAgentData struct {
+	pagesOpened []string
+	webOpened   []string
+	helpLimit   bool
+}
 
 var fakeCodes = []directory.NomenclatureCode{
 	{Code: "6116102000", Name: "Перчатки, рукавицы и митенки трикотажные: 🠺 пропитанные, с покрытием или дублированные пластмассой или резиной: 🠺 перчатки, пропитанные или покрытые резиной", TariffText: "10%", VATPercent: "16", DetailsURL: "https://www.tws.by/tws/tnved/code/1"},
@@ -69,14 +74,16 @@ func (d *fakeAgentData) SearchDirectories(context.Context, string, int) ([]repos
 
 // scriptedModel отвечает заранее заданными шагами и запоминает, что ему прислали.
 type scriptedModel struct {
-	replies  []agentReply
-	calls    int
-	lastSeen []agentMessage
-	forced   []string
+	replies   []agentReply
+	calls     int
+	lastSeen  []agentMessage
+	lastTools []agentTool
+	forced    []string
 }
 
-func (m *scriptedModel) Complete(_ context.Context, messages []agentMessage, _ []agentTool, force string) (agentReply, error) {
+func (m *scriptedModel) Complete(_ context.Context, messages []agentMessage, tools []agentTool, force string) (agentReply, error) {
 	m.lastSeen = messages
+	m.lastTools = tools
 	m.forced = append(m.forced, force)
 	if m.calls >= len(m.replies) {
 		return agentReply{}, errors.New("script is over")

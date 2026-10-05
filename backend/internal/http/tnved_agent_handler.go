@@ -141,6 +141,27 @@ func (s *Server) rerunAgentSession(c *gin.Context) {
 	c.JSON(http.StatusOK, view)
 }
 
+// documentsAgentSession — кнопка «Документы для ввоза» на карточке кода (строка сметы и справочник).
+func (s *Server) documentsAgentSession(c *gin.Context) {
+	id, ok := sessionID(c)
+	if !ok {
+		return
+	}
+	var input struct {
+		Code string `json:"code"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		badRequest(c, "Укажите код", "code")
+		return
+	}
+	view, err := s.agent.Documents(c.Request.Context(), currentUser(c), id, input.Code)
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, view)
+}
+
 func (s *Server) cancelAgentSession(c *gin.Context) {
 	id, ok := sessionID(c)
 	if !ok {

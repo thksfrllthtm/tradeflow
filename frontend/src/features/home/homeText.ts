@@ -13,6 +13,16 @@ export function longDate(date: Date) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+// Как показать смету в списке, не меняя её название. Название по умолчанию «Смета товаров · дата»
+// ничего не говорит (дата есть во времени изменения): вместо него — клиент, а без клиента —
+// «Смета №id». Своё название сотрудника показывается как есть.
+export function estimateLabel(estimate: { id: number; name: string; client: string }, title: string) {
+  const client = estimate.client.trim()
+  const generic = /^Смета товаров(\s*·\s*\d{4}-\d{2}-\d{2})?$/.test(title.trim())
+  if (!generic) return { title, detail: client || 'Без клиента', untitled: false }
+  return client ? { title: client, detail: `Смета №${estimate.id}`, untitled: false } : { title: `Смета №${estimate.id}`, detail: 'Без названия и клиента', untitled: true }
+}
+
 // «сегодня, 14:20», «вчера, 09:05», иначе «21.09.2026».
 export function updatedText(value: string, now = new Date()) {
   const date = new Date(value)

@@ -1,16 +1,21 @@
 package tnvedagent
 
 // Инструменты агента подбора кода: все только читают данные (номенклатура, страницы TWS, база
-// решений, справочники). Итог агента (finish) проверяется: коды — только из номенклатуры,
-// цитаты — только дословные, из открытой страницы кода или из его наименования.
+// решений, справочники; в режиме «Документы для ввоза» — справка tnved.info и акты по ссылкам).
+// Итог агента (finish) проверяется: коды — только из номенклатуры, цитаты — только дословные, из
+// открытой страницы кода, справки или документа либо из наименования кода, ссылки на документы —
+// только с открытых страниц.
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
@@ -27,6 +32,12 @@ const (
 	agentMaxCandidates  = 5
 	agentMinQuoteRunes  = 12
 	agentMinQuoteWords  = 3
+	// Режим «документы»: начало страницы, ссылок со страницы, фрагментов поиска по документу.
+	agentPageRunes       = 6000
+	agentPageLinks       = 60
+	agentSearchFragments = 5
+	agentFragmentRunes   = 1500
+	agentMaxDocuments    = 20
 )
 
 // agentData — откуда инструменты берут данные; в тестах подменяется.
@@ -36,6 +47,8 @@ type agentData interface {
 	DetailsPage(ctx context.Context, code, url string) (string, bool, error)
 	SearchDecisions(ctx context.Context, query string, limit int) ([]repository.CodeDecision, error)
 	SearchDirectories(ctx context.Context, query string, limit int) ([]repository.DirectoryHint, error)
+	GoodsHelp(ctx context.Context, code string) (directory.WebPage, error)
+	WebPage(ctx context.Context, url string) (directory.WebPage, error)
 }
 
 // repositoryAgentData — настоящие данные из базы и TWS.
@@ -43,6 +56,7 @@ type repositoryAgentData struct {
 	repository   *repository.Repository
 	nomenclature *directory.TNVEDNomenclatureService
 	details      *directory.DetailsFetcher
+	web          *directory.WebPageFetcher
 }
 
 func (d repositoryAgentData) SearchNomenclature(ctx context.Context, query string, limit int) ([]directory.NomenclatureCode, int64, error) {
@@ -65,6 +79,14 @@ func (d repositoryAgentData) SearchDirectories(ctx context.Context, query string
 	return d.repository.SearchDirectoriesForAgent(ctx, query, limit)
 }
 
+func (d repositoryAgentData) GoodsHelp(ctx context.Context, code string) (directory.WebPage, error) {
+	return d.web.GoodsHelp(ctx, code)
+}
+
+func (d repositoryAgentData) WebPage(ctx context.Context, url string) (directory.WebPage, error) {
+	return d.web.Page(ctx, url)
+}
+
 func objectSchema(properties map[string]any, required ...string) map[string]any {
 	return map[string]any{"type": "object", "properties": properties, "required": required}
 }
@@ -74,7 +96,8 @@ func stringProperty(description string) map[string]any {
 }
 
 // agentTools — инструменты агента; в справочнике (reference) у итога нет наименования для декларации.
-func agentTools(reference bool) []agentTool {
+// documents — режим «Документы для ввоза»: ещё справка tnved.info и документы по ссылкам, итог — меры.
+func agentTools(reference, documents bool) []agentTool {
 	tool := func(name, description string, parameters map[string]any) agentTool {
 		return agentTool{Type: "function", Function: agentToolFunction{Name: name, Description: description, Parameters: parameters}}
 	}
@@ -103,7 +126,32 @@ func agentTools(reference bool) []agentTool {
 			"notes": stringProperty("Короткое дополнение, которого нет в description; пусто, если нечего добавить. Не повторяй description"),
 		}, "description", "candidates"))
 	}
-	return []agentTool{
+	extra := []agentTool{}
+	if documents {
+		finish = tool("finish", "Итог по документам для ввоза. Вызывается один раз в конце.", objectSchema(map[string]any{
+			"description": stringProperty("Короткое резюме сотруднику, 2–4 предложения: какие документы и разрешения нужны для ввоза этого товара; если справка недоступна — скажи об этом"),
+			"documents": map[string]any{"type": "array", "description": "По одной записи на меру из справки (и из прочитанных актов)", "items": objectSchema(map[string]any{
+				"measure":     stringProperty("Вид меры: санитарно-эпидемиологический надзор, ветеринарный контроль, декларация соответствия ТР ТС, лицензия, тарифная квота, экспортный контроль и т. п."),
+				"act":         stringProperty("Акт, например «Решение КТС №299 от 28.05.2010»"),
+				"url":         stringProperty("Ссылка на акт или документ — только адрес с открытых страниц; пусто, если нет"),
+				"requirement": stringProperty("Что конкретно нужно для этого товара, 1–2 предложения; для maybe — что уточнить"),
+				"applies":     map[string]any{"type": "string", "enum": []string{"yes", "maybe", "no"}, "description": "Относится ли мера к этому товару по пояснению под актом"},
+			}, "measure", "act", "requirement", "applies")},
+			"notes": stringProperty("Короткое дополнение; пусто, если нечего добавить"),
+		}, "description", "documents"))
+		extra = []agentTool{
+			tool("open_goods_help", "Справка по товару tnved.info для кода (ввоз в ЕАЭС): акты со ссылками, меры нетарифного регулирования и пояснения, к каким товарам относится мера.",
+				objectSchema(map[string]any{"code": stringProperty("Код, 10 цифр")}, "code")),
+			tool("open_link", "Открыть ссылку с уже открытой страницы (справки или документа) или адрес tnved.info, tws.by: начало текста страницы и ссылки с неё. Большой документ целиком не отдаётся — ищи в нём через search_in_document.",
+				objectSchema(map[string]any{"url": stringProperty("Полный адрес https://…")}, "url")),
+			tool("search_in_document", "Найти в документе по ссылке фрагменты со словами запроса (с соседними абзацами). Для больших актов (перечни, единые требования) вместо чтения целиком.",
+				objectSchema(map[string]any{
+					"url":   stringProperty("Адрес документа — ссылка с открытой страницы"),
+					"query": stringProperty("2–5 слов: вид товара, материал, код или группа ТН ВЭД, номер раздела"),
+				}, "url", "query")),
+		}
+	}
+	return append([]agentTool{
 		tool("search_nomenclature", "Поиск кодов в номенклатуре ТН ВЭД ЕАЭС по словам наименования (по-русски). Каждое слово ищется по основе, все слова должны встретиться в наименовании кода с его деревом. Лучше 1–3 слова. Возвращает до 30 кодов с наименованием и пошлиной ЕТТ.",
 			objectSchema(map[string]any{"query": stringProperty("Слова для поиска, например «перчатки трикотажные»")}, "query")),
 		tool("get_codes", "Проверить конкретные коды: есть ли в номенклатуре, наименование с деревом, пошлина ЕТТ, НДС.",
@@ -119,7 +167,7 @@ func agentTools(reference bool) []agentTool {
 		tool("ask_user", "Задать сотруднику один короткий вопрос, если без ответа код не определить. После вызова жди ответа.",
 			objectSchema(map[string]any{"question": stringProperty("Вопрос по-русски, одно предложение")}, "question")),
 		finish,
-	}
+	}, extra...)
 }
 
 // AgentCandidate — код из итога агента после проверки программой.
@@ -127,7 +175,8 @@ type AgentCandidate struct {
 	Code    string `json:"code"`
 	Verdict string `json:"verdict"`
 	Quote   string `json:"quote"`
-	// page — цитата найдена на открытой странице кода, name — в наименовании кода; "" — цитаты нет.
+	// page — цитата найдена на открытой странице кода, help — в справке tnved.info или документе по
+	// ссылке, name — в наименовании кода; "" — цитаты нет.
 	QuoteSource  string                      `json:"quoteSource"`
 	Reason       string                      `json:"reason"`
 	Check        string                      `json:"check"`
@@ -143,6 +192,20 @@ type AgentResult struct {
 	// Коды, которых нет в номенклатуре, и сколько цитат не нашлось в источниках.
 	DroppedCodes  []string `json:"droppedCodes"`
 	QuotesRemoved int      `json:"quotesRemoved"`
+	// Ответ по кнопке «Документы для ввоза»: для какого кода, меры и сколько чужих ссылок убрано.
+	DocumentsCode string          `json:"documentsCode,omitempty"`
+	Documents     []AgentDocument `json:"documents,omitempty"`
+	LinksRemoved  int             `json:"linksRemoved,omitempty"`
+}
+
+// AgentDocument — мера или документ для ввоза. Applies: yes — относится к товару, maybe — зависит от
+// признака товара, no — по пояснению под актом мера для других товаров.
+type AgentDocument struct {
+	Measure     string `json:"measure"`
+	Act         string `json:"act"`
+	URL         string `json:"url"`
+	Requirement string `json:"requirement"`
+	Applies     string `json:"applies"`
 }
 
 // Best — первый подходящий код (или первый не «не подходит»).
@@ -223,10 +286,151 @@ func quoted(value string) string {
 type agentToolbox struct {
 	data   agentData
 	opened map[string]string
+	// web — текст справки и документов, который видел агент (для цитат); links — адреса с открытых
+	// страниц (их можно открыть и указать в итоге); docs — полный текст документов этого запуска.
+	web   map[string]string
+	links map[string]bool
+	docs  map[string]string
+	// documentsCode — запуск по кнопке «Документы для ввоза» для этого кода ("" — обычный подбор).
+	documentsCode string
 }
 
 func newAgentToolbox(data agentData) *agentToolbox {
-	return &agentToolbox{data: data, opened: map[string]string{}}
+	return &agentToolbox{data: data, opened: map[string]string{}, web: map[string]string{}, links: map[string]bool{}, docs: map[string]string{}}
+}
+
+// rememberPage — агент видел текст страницы и ссылки с неё.
+func (t *agentToolbox) rememberPage(address, text string, links []directory.WebLink) {
+	t.links[address] = true
+	if text != "" {
+		t.web[address] = strings.TrimSpace(t.web[address] + "\n" + text)
+	}
+	for _, link := range links {
+		t.links[link.URL] = true
+	}
+}
+
+// allowedURL — адрес для open_link и search_in_document: ссылка с открытой страницы или tnved.info, tws.by.
+func (t *agentToolbox) allowedURL(raw string) (string, string) {
+	address, ok := directory.CanonicalWebURL(raw)
+	if !ok {
+		return "", "Нужен полный адрес https://…"
+	}
+	if !t.links[address] && !directory.TrustedWebHost(address) {
+		return address, "Можно открывать только ссылки с уже открытых страниц (справки или документа) и адреса tnved.info, tws.by."
+	}
+	return address, ""
+}
+
+// webProblem — ответ агенту, если страница не открылась: файл и SPA — ссылку отдать сотруднику.
+func webProblem(err error) (answer, detail string) {
+	switch {
+	case errors.Is(err, directory.ErrWebPageFile):
+		return "По ссылке файл (PDF или Word) — программа его не читает. Дай эту ссылку сотруднику.", "файл — откройте по ссылке"
+	case errors.Is(err, directory.ErrWebPageScript):
+		return "Страница открывается только в браузере — программа её не прочитает. Дай эту ссылку сотруднику.", "читается только в браузере"
+	}
+	return "Страница не открылась. Опирайся на уже открытые страницы.", "не открылась"
+}
+
+// shortURL — адрес для подписи шага: сайт и начало пути.
+func shortURL(address string) string {
+	return service.TruncateRunes(strings.TrimPrefix(strings.TrimPrefix(address, "https://"), "www."), 70)
+}
+
+// documentText — полный текст документа: из этого запуска или через загрузчик (база, сайт).
+func (t *agentToolbox) documentText(ctx context.Context, address string) (directory.WebPage, error) {
+	if text, ok := t.docs[address]; ok {
+		return directory.WebPage{URL: address, Text: text, FromCache: true}, nil
+	}
+	page, err := t.data.WebPage(ctx, address)
+	if err == nil {
+		t.docs[address] = page.Text
+	}
+	return page, err
+}
+
+// searchDocument — абзацы с наибольшим числом слов запроса (по основе слова) с соседними абзацами,
+// в порядке документа; matches — сколько всего абзацев нашлось.
+func searchDocument(text, query string) (fragments []string, matches int) {
+	stems := []string{}
+	for _, word := range strings.Fields(strings.ToLower(query)) {
+		word = strings.TrimFunc(word, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
+		if utf8.RuneCountInString(word) >= 2 {
+			stems = append(stems, repository.SearchStem(word))
+		}
+	}
+	lines := strings.Split(text, "\n")
+	type hit struct{ line, score int }
+	hits := []hit{}
+	for index, line := range lines {
+		lower := strings.ToLower(line)
+		score := 0
+		for _, stem := range stems {
+			if strings.Contains(lower, stem) {
+				score++
+			}
+		}
+		if score > 0 {
+			hits = append(hits, hit{index, score})
+		}
+	}
+	sort.SliceStable(hits, func(a, b int) bool { return hits[a].score > hits[b].score })
+	chosen := []int{}
+	for _, candidate := range hits {
+		near := false
+		for _, line := range chosen {
+			if candidate.line >= line-1 && candidate.line <= line+3 {
+				near = true
+				break
+			}
+		}
+		if !near {
+			chosen = append(chosen, candidate.line)
+		}
+		if len(chosen) == agentSearchFragments {
+			break
+		}
+	}
+	sort.Ints(chosen)
+	for _, line := range chosen {
+		parts := []string{}
+		for index := max(0, line-1); index < min(len(lines), line+3); index++ {
+			if index == line {
+				parts = append(parts, aroundMatch(lines[index], stems, agentFragmentRunes/2))
+			} else {
+				parts = append(parts, service.TruncateRunes(lines[index], agentFragmentRunes/6))
+			}
+		}
+		fragments = append(fragments, strings.Join(parts, "\n"))
+	}
+	return fragments, len(hits)
+}
+
+// aroundMatch — длинный абзац (строка таблицы перечня) обрезается вокруг первого слова запроса.
+func aroundMatch(line string, stems []string, limit int) string {
+	runes := []rune(line)
+	if len(runes) <= limit {
+		return line
+	}
+	lower := []rune(strings.ToLower(line))
+	first := len(lower)
+	for _, stem := range stems {
+		if index := strings.Index(string(lower), stem); index >= 0 {
+			if position := utf8.RuneCountInString(string(lower)[:index]); position < first {
+				first = position
+			}
+		}
+	}
+	start := max(0, min(first-limit/4, len(runes)-limit))
+	text := string(runes[start : start+limit])
+	if start > 0 {
+		text = "…" + text
+	}
+	if start+limit < len(runes) {
+		text += "…"
+	}
+	return text
 }
 
 // run выполняет инструмент (кроме ask_user и finish): ответ модели и шаг для чата.
@@ -236,9 +440,14 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		Codes  []string `json:"codes"`
 		Prefix string   `json:"prefix"`
 		Code   string   `json:"code"`
+		URL    string   `json:"url"`
 	}
 	if err := json.Unmarshal([]byte(arguments), &args); err != nil {
 		return `{"error":"Аргументы не JSON"}`, agentToolEvent{Tool: name, Label: "Ошибка вызова инструмента", Failed: true}
+	}
+	// Веб-инструменты — только по кнопке «Документы для ввоза»: в обычном подборе их у модели нет.
+	if t.documentsCode == "" && (name == "open_goods_help" || name == "open_link" || name == "search_in_document") {
+		name = "unknown:" + name
 	}
 	switch name {
 	case "search_nomenclature":
@@ -350,6 +559,79 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 			entries = append(entries, map[string]any{"kind": hint.Kind, "name": hint.Name, "nameZh": hint.NameZH, "code": hint.Code, "verified": hint.VerificationStatus == "verified"})
 		}
 		return toolJSON(map[string]any{"entries": entries}), agentToolEvent{Tool: name, Label: "Справочники: " + quoted(query), Detail: fmt.Sprintf("записей %d", len(hints))}
+	case "open_goods_help":
+		code := nonDigits.ReplaceAllString(args.Code, "")
+		label := "Справка по товару " + FormatTNVEDCode(code)
+		if items, err := t.data.LookupCodes(ctx, []string{code}); err != nil || len(items) == 0 {
+			return toolJSON(map[string]any{"code": code, "error": "Кода нет в номенклатуре"}), agentToolEvent{Tool: name, Label: label, Detail: "кода нет в номенклатуре", Failed: true}
+		}
+		page, err := t.data.GoodsHelp(ctx, code)
+		if errors.Is(err, directory.ErrGoodsHelpLimit) {
+			return toolJSON(map[string]any{"code": code, "error": "Лимит запросов к справке tnved.info на сегодня исчерпан. Возьми меры нетарифного регулирования со страницы кода (open_details, TWS.BY), белорусские нормы отбрось и скажи сотруднику, что справка tnved.info сегодня недоступна."}),
+				agentToolEvent{Tool: name, Label: label, Detail: "лимит tnved.info на сегодня исчерпан — справку можно открыть в браузере", URL: page.URL, Failed: true}
+		}
+		if err != nil || page.Text == "" {
+			return toolJSON(map[string]any{"code": code, "error": "Справка не открылась. Возьми меры со страницы кода (open_details, TWS.BY), белорусские нормы отбрось."}),
+				agentToolEvent{Tool: name, Label: label, Detail: "не открылась", URL: page.URL, Failed: true}
+		}
+		t.rememberPage(page.URL, page.Text, page.Links)
+		detail := "tnved.info"
+		if page.FromCache {
+			detail = "сохранённая копия"
+		}
+		return toolJSON(map[string]any{"code": code, "url": page.URL, "text": page.Text, "links": page.Links}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: page.URL}
+	case "open_link":
+		address, problem := t.allowedURL(args.URL)
+		label := "Ссылка " + shortURL(firstNonEmpty(address, args.URL))
+		if problem != "" {
+			return toolJSON(map[string]any{"url": args.URL, "error": problem}), agentToolEvent{Tool: name, Label: label, Detail: "не с открытой страницы", Failed: true}
+		}
+		page, err := t.documentText(ctx, address)
+		if err != nil {
+			answer, detail := webProblem(err)
+			return toolJSON(map[string]any{"url": address, "error": answer}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: address, Failed: !errors.Is(err, directory.ErrWebPageFile)}
+		}
+		if page.Title != "" {
+			label = "Документ: " + quoted(page.Title)
+		}
+		text := service.TruncateRunes(page.Text, agentPageRunes)
+		links := page.Links
+		if len(links) > agentPageLinks {
+			links = links[:agentPageLinks]
+		}
+		t.rememberPage(address, text, links)
+		answer := map[string]any{"url": address, "title": page.Title, "text": text, "links": links}
+		total := utf8.RuneCountInString(page.Text)
+		detail := fmt.Sprintf("%d символов", total)
+		if total > agentPageRunes {
+			answer["hint"] = fmt.Sprintf("Показано начало: %d из %d символов. Нужное место найди через search_in_document.", agentPageRunes, total)
+			detail += ", показано начало"
+		}
+		if page.FromCache {
+			detail += " · сохранённая копия"
+		}
+		return toolJSON(answer), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: address}
+	case "search_in_document":
+		address, problem := t.allowedURL(args.URL)
+		query := service.TruncateRunes(strings.TrimSpace(args.Query), 100)
+		label := "Поиск в документе: " + quoted(query)
+		if problem != "" {
+			return toolJSON(map[string]any{"url": args.URL, "error": problem}), agentToolEvent{Tool: name, Label: label, Detail: "не с открытой страницы", Failed: true}
+		}
+		page, err := t.documentText(ctx, address)
+		if err != nil {
+			answer, detail := webProblem(err)
+			return toolJSON(map[string]any{"url": address, "error": answer}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: address, Failed: !errors.Is(err, directory.ErrWebPageFile)}
+		}
+		fragments, matches := searchDocument(page.Text, query)
+		t.rememberPage(address, strings.Join(fragments, "\n"), nil)
+		answer := map[string]any{"url": address, "query": query, "matches": matches, "fragments": fragments}
+		if matches == 0 {
+			answer["hint"] = "Ничего не найдено. Попробуй другие слова: основу слова, синоним, код или группу ТН ВЭД, номер раздела."
+		} else if matches > len(fragments) {
+			answer["hint"] = fmt.Sprintf("Показаны %d самых подходящих из %d абзацев — уточни запрос, если нужного нет.", len(fragments), matches)
+		}
+		return toolJSON(answer), agentToolEvent{Tool: name, Label: label, Detail: fmt.Sprintf("фрагментов %d из %d", len(fragments), matches), URL: address}
 	}
 	return `{"error":"Нет такого инструмента"}`, agentToolEvent{Tool: name, Label: "Неизвестный инструмент " + name, Failed: true}
 }
@@ -364,8 +646,15 @@ type finishArgs struct {
 		Reason  string `json:"reason"`
 		Check   string `json:"check"`
 	} `json:"candidates"`
-	Name  string `json:"name"`
-	Notes string `json:"notes"`
+	Name      string `json:"name"`
+	Notes     string `json:"notes"`
+	Documents []struct {
+		Measure     string `json:"measure"`
+		Act         string `json:"act"`
+		URL         string `json:"url"`
+		Requirement string `json:"requirement"`
+		Applies     string `json:"applies"`
+	} `json:"documents"`
 }
 
 // finish проверяет итог агента. problem — что исправить (модели дают одну попытку).
@@ -373,6 +662,10 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	var args finishArgs
 	if err := json.Unmarshal([]byte(arguments), &args); err != nil {
 		return nil, "Аргументы finish — не JSON по схеме", nil
+	}
+	if t.documentsCode != "" {
+		result, problem := t.finishDocuments(args)
+		return result, problem, nil
 	}
 	codes := []string{}
 	seen := map[string]bool{}
@@ -438,6 +731,42 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	return result, "", nil
 }
 
+// finishDocuments — итог по кнопке «Документы для ввоза»: меры с актами; ссылка остаётся, только если
+// такой адрес был на открытых страницах. Итог отдаётся и с problem: после повтора показывается как есть.
+func (t *agentToolbox) finishDocuments(args finishArgs) (*AgentResult, string) {
+	result := &AgentResult{
+		Description: service.TruncateRunes(strings.TrimSpace(args.Description), 1000), Notes: service.TruncateRunes(strings.TrimSpace(args.Notes), 1000),
+		Candidates: []AgentCandidate{}, DroppedCodes: []string{}, DocumentsCode: t.documentsCode, Documents: []AgentDocument{},
+	}
+	for _, document := range args.Documents {
+		item := AgentDocument{
+			Measure: service.TruncateRunes(strings.TrimSpace(document.Measure), 200), Act: service.TruncateRunes(strings.TrimSpace(document.Act), 300),
+			Requirement: service.TruncateRunes(strings.TrimSpace(document.Requirement), 600), Applies: document.Applies,
+		}
+		if item.Measure == "" && item.Act == "" {
+			continue
+		}
+		if item.Applies != "yes" && item.Applies != "maybe" && item.Applies != "no" {
+			item.Applies = "maybe"
+		}
+		if strings.TrimSpace(document.URL) != "" {
+			if address, ok := directory.CanonicalWebURL(document.URL); ok && t.links[address] {
+				item.URL = address
+			} else {
+				result.LinksRemoved++
+			}
+		}
+		result.Documents = append(result.Documents, item)
+		if len(result.Documents) == agentMaxDocuments {
+			break
+		}
+	}
+	if result.Description == "" && len(result.Documents) == 0 {
+		return result, "Итог пустой: в description — резюме, в documents — меры из справки с решением, относятся ли они к товару."
+	}
+	return result, ""
+}
+
 // quoteSource ищет цитату дословно (без учёта регистра и знаков препинания) на открытой странице
 // кода, затем в наименовании кода.
 func (t *agentToolbox) quoteSource(code, name, quote string) string {
@@ -458,6 +787,11 @@ func (t *agentToolbox) quoteSource(code, name, quote string) string {
 	}
 	if page, ok := t.opened[code]; ok && strings.Contains(decisions.NormalizeDecisionName(page), normalized) {
 		return "page"
+	}
+	for _, text := range t.web {
+		if strings.Contains(decisions.NormalizeDecisionName(text), normalized) {
+			return "help"
+		}
 	}
 	if strings.Contains(decisions.NormalizeDecisionName(name), normalized) {
 		return "name"
