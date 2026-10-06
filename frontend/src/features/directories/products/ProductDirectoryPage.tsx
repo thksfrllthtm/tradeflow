@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { tnvedDirectoryApi } from '../tnved/tnvedDirectoryApi'
-import { TNVEDDirectoryEntry } from '../tnved/types'
-import { rateLabel } from '../tnved/tnvedLabels'
+import { NomenclatureCode } from '@/shared/tnved/nomenclature'
+import { nomenclatureApi } from '../nomenclature/nomenclatureApi'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { isAdmin, User } from '@/shared/types/user'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
@@ -20,7 +19,8 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
   // Справочники меняет только администратор; остальные сотрудники их просматривают.
   const canEdit = isAdmin(user)
   const [items, setItems] = useState<ProductDirectoryEntry[]>([])
-  const [tnved, setTnved] = useState<TNVEDDirectoryEntry[]>([])
+  // Ставки кодов товаров — из номенклатуры ТН ВЭД ЕАЭС.
+  const [codes, setCodes] = useState<Record<string, NomenclatureCode>>({})
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [showArchived, setShowArchived] = useState(false)
@@ -31,16 +31,21 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
   const search = useDebouncedValue(query.trim(), 250)
   const transfer = useDirectoryTransfer({
     apiPath: '/api/product-directory', title: 'Справочник товаров', onImported: () => setRefresh((value) => value + 1),
-    hint: 'Обязательна колонка «Наименование»; код ТН ВЭД должен уже быть в справочнике ТН ВЭД. Товар с тем же наименованием и категорией обновляется, остальные добавляются.',
+    hint: 'Обязательны колонки «Наименование» и «Код ТН ВЭД» (код из номенклатуры ТН ВЭД ЕАЭС). Товар с тем же наименованием и категорией обновляется, остальные добавляются.',
   })
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    Promise.all([
-      productDirectoryApi.list({ q: search, status, includeArchived: showArchived }),
-      tnvedDirectoryApi.list({ status: 'all' }),
-    ]).then(([products, codes]) => { if (!cancelled) { setItems(products); setTnved(codes) } }).catch((reason) => { if (!cancelled) setError(errorMessage(reason)) }).finally(() => { if (!cancelled) setLoading(false) })
+    productDirectoryApi.list({ q: search, status, includeArchived: showArchived })
+      .then(async (products) => {
+        if (cancelled) return
+        setItems(products)
+        const unique = [...new Set(products.map((product) => product.code).filter(Boolean))]
+        const found = unique.length ? await nomenclatureApi.lookup(unique).catch(() => null) : null
+        if (!cancelled) setCodes(Object.fromEntries((found?.items ?? []).map((item) => [item.code, item])))
+      })
+      .catch((reason) => { if (!cancelled) setError(errorMessage(reason)) }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [search, status, showArchived, refresh])
 
@@ -83,8 +88,8 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
                   {(item.nameZh || item.synonymsRu[0]) && <small>{[item.nameZh, item.synonymsRu[0] && `синоним: ${item.synonymsRu[0]}`].filter(Boolean).join(' · ')}</small>}
                 </td>
                 <td className="c-tnved">
-                  {item.tnvedCode ? <code>{item.tnvedCode}</code> : <span className="dir-warn">Код не привязан</span>}
-                  {item.tnved && <small>пошлина {rateLabel(item.tnved.duty, 'Пошлина')} · НДС {rateLabel(item.tnved.vat, 'НДС')}{item.antiDumpingPercent ? ` · АД ${item.antiDumpingPercent}%` : ''}</small>}
+                  {item.code ? <code>{item.code}</code> : <span className="dir-warn">Код не указан</span>}
+                  {codes[item.code] && <small>ЕТТ {codes[item.code].tariffText || 'не указана'}{codes[item.code].vatPercent && ` · НДС ${codes[item.code].vatPercent}%`}</small>}
                 </td>
                 <td className="c-num">{item.companyCoefficient || <span className="dir-none">—</span>}</td>
                 <td className="c-unit">{item.unit}</td>
@@ -94,8 +99,8 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
           </tbody>
         </table>
       </div>
-      <p className="dir-foot">Карточка не меняет исходный файл. В смету записывается снимок выбранного кода ТН ВЭД и его ставок.</p>
+      <p className="dir-foot">Карточка не меняет исходный файл. Пошлина и НДС кода — из номенклатуры ТН ВЭД ЕАЭС на момент расчёта сметы.</p>
     </section>
-    {panel && <ProductEntryPanel item={panel.item} readOnly={!canEdit} tnved={tnved.filter((entry) => !entry.archivedAt)} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefresh((value) => value + 1) }} />}
+    {panel && <ProductEntryPanel item={panel.item} readOnly={!canEdit} onClose={() => setPanel(null)} onSaved={() => { setPanel(null); setRefresh((value) => value + 1) }} />}
   </main>
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func (r *Repository) ListProductDirectory(ctx context.Context, category, status string, includeArchived bool) ([]ProductDirectoryEntry, error) {
-	query := r.db.WithContext(ctx).Model(&ProductDirectoryEntry{}).Preload("TNVEDDirectoryEntry").Order("id ASC")
+	query := r.db.WithContext(ctx).Model(&ProductDirectoryEntry{}).Order("id ASC")
 	if strings.TrimSpace(category) != "" {
 		query = query.Where("category = ?", strings.TrimSpace(category))
 	}
@@ -26,7 +26,7 @@ func (r *Repository) ListProductDirectory(ctx context.Context, category, status 
 
 func (r *Repository) ProductDirectoryEntryByID(ctx context.Context, id int64) (ProductDirectoryEntry, error) {
 	var entry ProductDirectoryEntry
-	err := r.db.WithContext(ctx).Preload("TNVEDDirectoryEntry").First(&entry, id).Error
+	err := r.db.WithContext(ctx).First(&entry, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return ProductDirectoryEntry{}, ErrNotFound
 	}
@@ -45,7 +45,7 @@ func (r *Repository) UpdateProductDirectoryEntry(ctx context.Context, entry Prod
 		"category": entry.Category, "name": entry.Name, "name_zh": entry.NameZH, "unit": entry.Unit,
 		"company_coefficient": entry.CompanyCoefficient,
 		"synonyms_ru":         entry.SynonymsRU, "synonyms_zh": entry.SynonymsZH, "synonyms_en": entry.SynonymsEN,
-		"tnved_directory_entry_id": entry.TNVEDDirectoryEntryID, "verification_status": entry.VerificationStatus,
+		"code": entry.Code, "verification_status": entry.VerificationStatus,
 		"updated_by": entry.UpdatedBy, "updated_at": entry.UpdatedAt,
 	}
 	result := r.db.WithContext(ctx).Model(&ProductDirectoryEntry{}).Where("id = ?", entry.ID).Updates(updates)

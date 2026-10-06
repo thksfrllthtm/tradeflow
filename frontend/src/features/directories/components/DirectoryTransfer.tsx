@@ -4,9 +4,9 @@ import { DirectoryImportResult, downloadDirectory, uploadDirectory } from '../co
 import './DirectoryTransfer.css'
 
 type Props = {
-  // /api/tnved-directory или /api/product-directory
+  // /api/product-directory
   apiPath: string
-  // «Справочник ТН ВЭД» — для имени файла и подписей.
+  // «Справочник товаров» — для имени файла и подписей.
   title: string
   // Подсказка о колонках файла.
   hint: string

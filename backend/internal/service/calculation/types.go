@@ -9,7 +9,6 @@ import (
 type CalculationItemInput struct {
 	ProductID             int64          `json:"productId"`
 	SourceRow             int            `json:"sourceRow,omitempty"`
-	DirectoryEntryID      *int64         `json:"directoryEntryId,omitempty"`
 	DirectorySnapshot     map[string]any `json:"directorySnapshot,omitempty"`
 	StandardName          string         `json:"standardName"`
 	SupplierName          string         `json:"supplierName"`

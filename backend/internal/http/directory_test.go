@@ -9,9 +9,9 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 )
 
-func TestTNVEDDirectoryRequiresSession(t *testing.T) {
+func TestProductDirectoryRequiresSession(t *testing.T) {
 	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
-	request := httptest.NewRequest(http.MethodGet, "/api/tnved-directory?category=Перчатки", nil)
+	request := httptest.NewRequest(http.MethodGet, "/api/product-directory", nil)
 	response := httptest.NewRecorder()
 	server.Router().ServeHTTP(response, request)
 	if response.Code != http.StatusUnauthorized {

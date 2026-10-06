@@ -26,7 +26,6 @@ const userContextKey = "authenticated_user"
 type Server struct {
 	config            config.Config
 	auth              *auth.AuthService
-	tnvedDirectory    *directory.TNVEDDirectoryService
 	tnvedNomenclature *directory.TNVEDNomenclatureService
 	kzRates           *directory.TNVEDKZRateService
 	antiDumping       *antidumping.Service
@@ -48,7 +47,6 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 	return &Server{
 		config:            cfg,
 		auth:              auth.NewAuthService(database, cfg.SessionTTL),
-		tnvedDirectory:    directory.NewTNVEDDirectoryService(database),
 		tnvedNomenclature: directory.NewTNVEDNomenclatureService(database),
 		kzRates:           directory.NewTNVEDKZRateService(database),
 		antiDumping:       antidumping.NewService(database),
@@ -111,17 +109,6 @@ func (s *Server) Router() *gin.Engine {
 	pricing.POST("/price-weights", s.suggestPriceWeights)
 	pricing.POST("/price-history", s.priceHistory)
 
-	tnvedDirectory := router.Group("/api/tnved-directory")
-	tnvedDirectory.Use(s.requireUser)
-	tnvedDirectory.GET("", s.listTNVEDDirectory)
-	tnvedDirectory.GET("/export", s.requireAdmin, s.exportTNVEDDirectory)
-	tnvedDirectory.POST("/import", s.requireAdmin, s.importTNVEDDirectory)
-	tnvedDirectory.POST("", s.requireTNVEDAuthor, s.createTNVEDDirectory)
-	tnvedDirectory.PATCH("/:id", s.requireAdmin, s.updateTNVEDDirectory)
-	tnvedDirectory.POST("/:id/archive", s.requireAdmin, s.archiveTNVEDDirectory)
-	tnvedDirectory.POST("/:id/restore", s.requireAdmin, s.restoreTNVEDDirectory)
-	tnvedDirectory.POST("/:id/copy", s.requireAdmin, s.copyTNVEDDirectory)
-
 	tnvedNomenclature := router.Group("/api/tnved-nomenclature")
 	tnvedNomenclature.Use(s.requireUser)
 	tnvedNomenclature.GET("", s.listTNVEDNomenclature)
@@ -176,6 +163,8 @@ func (s *Server) Router() *gin.Engine {
 	goodsEstimates.PATCH("/:id/draft", s.saveGoodsEstimateDraft)
 
 	// Официальный курс НБРК на дату (?date=ГГГГ-ММ-ДД, ?currency=USD|EUR).
+	// Курсы на сегодня — без входа: их показывают страницы входа и регистрации.
+	router.GET("/api/rates/today", s.getTodayRates)
 	rates := router.Group("/api/rates")
 	rates.Use(s.requireUser)
 	rates.GET("/nbk", s.getNBKRate)

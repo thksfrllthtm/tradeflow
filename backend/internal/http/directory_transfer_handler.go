@@ -25,11 +25,6 @@ func sendDirectoryXLSX(c *gin.Context, name string, data []byte, err error) {
 	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", data)
 }
 
-func (s *Server) exportTNVEDDirectory(c *gin.Context) {
-	data, err := s.tnvedDirectory.Export(c.Request.Context())
-	sendDirectoryXLSX(c, "Справочник ТН ВЭД", data, err)
-}
-
 func (s *Server) exportProductDirectory(c *gin.Context) {
 	data, err := s.productDirectory.Export(c.Request.Context())
 	sendDirectoryXLSX(c, "Справочник товаров", data, err)
@@ -61,8 +56,6 @@ func (s *Server) importDirectory(c *gin.Context, run directoryImporter) {
 	}
 	c.JSON(http.StatusOK, result)
 }
-
-func (s *Server) importTNVEDDirectory(c *gin.Context) { s.importDirectory(c, s.tnvedDirectory.Import) }
 
 func (s *Server) importProductDirectory(c *gin.Context) {
 	s.importDirectory(c, s.productDirectory.Import)

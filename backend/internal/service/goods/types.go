@@ -94,7 +94,6 @@ type GoodsSourceSnapshot struct {
 type GoodsItemInput struct {
 	ID                 string `json:"id,omitempty"`
 	SourceRow          int    `json:"sourceRow,omitempty"`
-	DirectoryEntryID   *int64 `json:"directoryEntryId,omitempty"`
 	ProductDirectoryID *int64 `json:"productDirectoryId,omitempty"`
 	Name               string `json:"name"`
 	SupplierName       string `json:"supplierName"`

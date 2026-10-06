@@ -13,7 +13,7 @@ import (
 )
 
 // getNBKRate — курс НБРК на дату: USD по умолчанию, ?currency=EUR — евро
-// (показывается на главной справочно; расчёт идёт в долларах).
+// (справочно в шапке и на входе — через /api/rates/today; расчёт идёт в долларах).
 func (s *Server) getNBKRate(c *gin.Context) {
 	currency := strings.ToUpper(strings.TrimSpace(c.DefaultQuery("currency", "USD")))
 	if currency != "USD" && currency != "EUR" {
@@ -31,4 +31,15 @@ func (s *Server) getNBKRate(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"rate": rate})
+}
+
+// getTodayRates — курсы НБРК на сегодня для страниц входа и регистрации: открыт без входа,
+// дату выбирает сервер, ответ запоминается (rates.TodayRates).
+func (s *Server) getTodayRates(c *gin.Context) {
+	list, err := rates.TodayRates(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": gin.H{"message": err.Error()}})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"rates": list})
 }

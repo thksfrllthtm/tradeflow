@@ -57,8 +57,7 @@ type NomenclatureCode struct {
 	Duty       NomenclatureDuty `json:"duty"`
 	VATPercent string           `json:"vatPercent"`
 	// Страница кода в источнике («Подробнее» в выгрузке TWS); пусто, если ссылки нет.
-	DetailsURL  string `json:"detailsUrl"`
-	InDirectory bool   `json:"inDirectory"`
+	DetailsURL string `json:"detailsUrl"`
 	// Ставка по перечню РК (ниже ЕТТ); nil — кода в перечне нет.
 	KZ *KZRate `json:"kz"`
 	// Антидемпинговые меры ЕАЭС, под которые попадает код (exact — по точному коду, иначе по
@@ -371,7 +370,7 @@ func (s *TNVEDNomenclatureService) withKZRates(ctx context.Context, rows []repos
 	items := make([]NomenclatureCode, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, NomenclatureCode{
-			Code: row.Code, Name: row.Name, TariffText: row.TariffText, InDirectory: row.InDirectory,
+			Code: row.Code, Name: row.Name, TariffText: row.TariffText,
 			VATPercent: row.VATPercent.String(), DetailsURL: row.DetailsURL, KZ: kzRates[row.Code], AntiDumping: antiDumpingRefs(measures, row.Code),
 			Duty: NomenclatureDuty{Type: row.DutyType, Percent: service.DecimalText(row.DutyPercent), Amount: service.DecimalText(row.DutyAmount), Currency: row.DutyCurrency, Unit: row.DutyUnit},
 		})

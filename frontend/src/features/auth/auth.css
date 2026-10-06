@@ -37,3 +37,11 @@
 .password-toggle:hover:not(:disabled) { background: transparent; color: var(--c-green); }
 .password-field input { padding-right: 70px; }
 .field-hint { display: block; margin-top: 4px; color: var(--c-text-muted); font-size: .75rem; }
+
+/* Курс НБРК на сегодня — внизу карточки, справочно. */
+.auth-rates { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--c-border); }
+.auth-rates-title { color: var(--c-text-muted); font-size: .8rem; }
+.auth-rates-list { display: flex; gap: 16px; }
+.auth-rate { display: inline-flex; align-items: baseline; gap: 6px; }
+.auth-rate small { color: var(--c-text-muted); font-size: .78rem; font-weight: 600; }
+.auth-rate b { color: #1f2d24; font-size: .95rem; font-variant-numeric: tabular-nums; }

@@ -58,7 +58,7 @@ type User struct {
 // Роли сотрудников (users.role).
 const (
 	RoleAdmin      = "admin"      // полный доступ, управление сотрудниками и справочниками
-	RoleInvoicer   = "invoicer"   // калькуляторы; справочники для просмотра, кроме добавления кода ТН ВЭД без статуса «Проверено»
+	RoleInvoicer   = "invoicer"   // калькуляторы; справочники для просмотра
 	RoleTranslator = "translator" // пока те же права, что у инвойсера
 )
 
@@ -80,69 +80,26 @@ type Session struct {
 
 func (Session) TableName() string { return "sessions" }
 
-// TNVEDDirectoryEntry is an operator-managed overlay. It stores friendly
-// names and preliminary rate parameters without changing immutable classifier
-// versions or already saved estimates.
-type TNVEDDirectoryEntry struct {
+// ProductDirectoryEntry is a reusable product card shared between estimates: names, ИТС and
+// the TN VED code. Duty and VAT of the code come from the nomenclature at every calculation.
+type ProductDirectoryEntry struct {
 	ID                 int64            `gorm:"primaryKey" json:"id"`
 	Category           string           `gorm:"size:64;not null" json:"category"`
 	Name               string           `gorm:"size:300;not null" json:"name"`
 	NameZH             string           `gorm:"column:name_zh;type:text;not null" json:"nameZh"`
-	Code               string           `gorm:"size:10;not null" json:"code"`
+	Unit               string           `gorm:"size:64;not null" json:"unit"`
 	CompanyCoefficient *decimal.Decimal `gorm:"column:company_coefficient;type:numeric(30,12)" json:"companyCoefficient,omitempty"`
-	AntiDumpingPercent *decimal.Decimal `gorm:"column:anti_dumping_percent;type:numeric(30,12)" json:"antiDumpingPercent,omitempty"`
 	SynonymsRU         JSON             `gorm:"column:synonyms_ru;type:jsonb;not null" json:"synonymsRu"`
 	SynonymsZH         JSON             `gorm:"column:synonyms_zh;type:jsonb;not null" json:"synonymsZh"`
 	SynonymsEN         JSON             `gorm:"column:synonyms_en;type:jsonb;not null" json:"synonymsEn"`
+	Code               string           `gorm:"size:10;not null" json:"code"`
 	VerificationStatus string           `gorm:"column:verification_status;size:24;not null" json:"verificationStatus"`
-	DutyType           string           `gorm:"column:duty_type;size:24;not null" json:"dutyType"`
-	DutyPercent        *decimal.Decimal `gorm:"column:duty_percent;type:numeric(30,12)" json:"dutyPercent,omitempty"`
-	DutyAmount         *decimal.Decimal `gorm:"column:duty_amount;type:numeric(30,12)" json:"dutyAmount,omitempty"`
-	DutyCurrency       string           `gorm:"column:duty_currency;size:3;not null" json:"dutyCurrency"`
-	DutyUnit           string           `gorm:"column:duty_unit;size:64;not null" json:"dutyUnit"`
-	DutyValidFrom      *time.Time       `gorm:"column:duty_valid_from;type:date" json:"dutyValidFrom,omitempty"`
-	DutyValidTo        *time.Time       `gorm:"column:duty_valid_to;type:date" json:"dutyValidTo,omitempty"`
-	DutyCheckedAt      *time.Time       `gorm:"column:duty_checked_at;type:date" json:"dutyCheckedAt,omitempty"`
-	DutySource         string           `gorm:"column:duty_source;type:text;not null" json:"dutySource"`
-	VATType            string           `gorm:"column:vat_type;size:16;not null" json:"vatType"`
-	VATPercent         *decimal.Decimal `gorm:"column:vat_percent;type:numeric(30,12)" json:"vatPercent,omitempty"`
-	VATBasis           string           `gorm:"column:vat_basis;type:text;not null" json:"vatBasis"`
-	VATValidFrom       *time.Time       `gorm:"column:vat_valid_from;type:date" json:"vatValidFrom,omitempty"`
-	VATValidTo         *time.Time       `gorm:"column:vat_valid_to;type:date" json:"vatValidTo,omitempty"`
-	VATCheckedAt       *time.Time       `gorm:"column:vat_checked_at;type:date" json:"vatCheckedAt,omitempty"`
-	VATSource          string           `gorm:"column:vat_source;type:text;not null" json:"vatSource"`
 	ArchivedAt         *time.Time       `gorm:"column:archived_at" json:"archivedAt,omitempty"`
 	ArchivedBy         *int64           `gorm:"column:archived_by" json:"archivedBy,omitempty"`
 	CreatedBy          int64            `gorm:"column:created_by;not null" json:"createdBy"`
 	UpdatedBy          int64            `gorm:"column:updated_by;not null" json:"updatedBy"`
 	CreatedAt          time.Time        `gorm:"not null" json:"createdAt"`
 	UpdatedAt          time.Time        `gorm:"not null" json:"updatedAt"`
-}
-
-func (TNVEDDirectoryEntry) TableName() string { return "tnved_directory_entries" }
-
-// ProductDirectoryEntry is a reusable product card. Unlike an imported row,
-// it is shared between estimates and keeps only the operator's master data.
-// The linked TN VED card is copied into an estimate as an immutable snapshot.
-type ProductDirectoryEntry struct {
-	ID                    int64                `gorm:"primaryKey" json:"id"`
-	Category              string               `gorm:"size:64;not null" json:"category"`
-	Name                  string               `gorm:"size:300;not null" json:"name"`
-	NameZH                string               `gorm:"column:name_zh;type:text;not null" json:"nameZh"`
-	Unit                  string               `gorm:"size:64;not null" json:"unit"`
-	CompanyCoefficient    *decimal.Decimal     `gorm:"column:company_coefficient;type:numeric(30,12)" json:"companyCoefficient,omitempty"`
-	SynonymsRU            JSON                 `gorm:"column:synonyms_ru;type:jsonb;not null" json:"synonymsRu"`
-	SynonymsZH            JSON                 `gorm:"column:synonyms_zh;type:jsonb;not null" json:"synonymsZh"`
-	SynonymsEN            JSON                 `gorm:"column:synonyms_en;type:jsonb;not null" json:"synonymsEn"`
-	TNVEDDirectoryEntryID *int64               `gorm:"column:tnved_directory_entry_id" json:"tnvedDirectoryEntryId,omitempty"`
-	TNVEDDirectoryEntry   *TNVEDDirectoryEntry `gorm:"foreignKey:TNVEDDirectoryEntryID" json:"-"`
-	VerificationStatus    string               `gorm:"column:verification_status;size:24;not null" json:"verificationStatus"`
-	ArchivedAt            *time.Time           `gorm:"column:archived_at" json:"archivedAt,omitempty"`
-	ArchivedBy            *int64               `gorm:"column:archived_by" json:"archivedBy,omitempty"`
-	CreatedBy             int64                `gorm:"column:created_by;not null" json:"createdBy"`
-	UpdatedBy             int64                `gorm:"column:updated_by;not null" json:"updatedBy"`
-	CreatedAt             time.Time            `gorm:"not null" json:"createdAt"`
-	UpdatedAt             time.Time            `gorm:"not null" json:"updatedAt"`
 }
 
 func (ProductDirectoryEntry) TableName() string { return "product_directory_entries" }

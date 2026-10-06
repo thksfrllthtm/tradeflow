@@ -230,7 +230,7 @@ func (r *Repository) CodeDecisionStats(ctx context.Context) (CodeDecisionStats, 
 	return stats, err
 }
 
-// SearchDirectoriesForAgent — опыт компании в справочниках: товары и записи ТН ВЭД с кодом.
+// SearchDirectoriesForAgent — опыт компании в справочнике товаров: наименования, синонимы и код.
 type DirectoryHint struct {
 	Kind               string
 	Name               string
@@ -240,25 +240,14 @@ type DirectoryHint struct {
 }
 
 func (r *Repository) SearchDirectoriesForAgent(ctx context.Context, text string, limit int) ([]DirectoryHint, error) {
-	var hints []DirectoryHint
-	products := r.db.WithContext(ctx).Table("product_directory_entries AS p").
-		Joins("LEFT JOIN tnved_directory_entries t ON t.id = p.tnved_directory_entry_id").
-		Where("p.archived_at IS NULL")
+	products := r.db.WithContext(ctx).Table("product_directory_entries AS p").Where("p.archived_at IS NULL")
 	products = wordsWhere(products, text, "p.name", "p.name_zh", "p.synonyms_ru::text", "p.synonyms_zh::text", "p.synonyms_en::text")
 	var productRows []DirectoryHint
-	if err := products.Select("'product' AS kind, p.name, p.name_zh, COALESCE(t.code, '') AS code, p.verification_status").
+	if err := products.Select("'product' AS kind, p.name, p.name_zh, p.code, p.verification_status").
 		Order("p.updated_at DESC").Limit(limit).Scan(&productRows).Error; err != nil {
 		return nil, err
 	}
-	hints = append(hints, productRows...)
-	codes := r.db.WithContext(ctx).Table("tnved_directory_entries AS t").Where("t.archived_at IS NULL")
-	codes = wordsWhere(codes, text, "t.name", "t.name_zh", "t.synonyms_ru::text", "t.synonyms_zh::text", "t.synonyms_en::text")
-	var codeRows []DirectoryHint
-	if err := codes.Select("'tnved' AS kind, t.name, t.name_zh, t.code, t.verification_status").
-		Order("t.updated_at DESC").Limit(limit).Scan(&codeRows).Error; err != nil {
-		return nil, err
-	}
-	return append(hints, codeRows...), nil
+	return productRows, nil
 }
 
 // DeletePendingDecisionsForSession — непроверенная запись подбора заменяется новой при повторном «Применить».

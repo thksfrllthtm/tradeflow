@@ -9,7 +9,7 @@ export type DirectoryImportResult = {
 
 type ImportError = Error & { result?: DirectoryImportResult }
 
-// Скачивает XLSX: имя файла приходит от сервера («Справочник ТН ВЭД 2026-09-26.xlsx»).
+// Скачивает XLSX: имя файла приходит от сервера («Справочник товаров 2026-09-26.xlsx»).
 export async function downloadDirectory(path: string, fallbackName: string) {
   const response = await fetch(path, { credentials: 'include' })
   if (!response.ok) {

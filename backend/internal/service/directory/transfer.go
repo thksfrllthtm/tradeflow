@@ -1,12 +1,11 @@
 package directory
 
-// Export and import of the TN VED and product directories as XLSX, so that a filled
-// directory can be moved between servers or edited in Excel instead of card by card.
+// Export and import of the product directory as XLSX, so that a filled directory can be moved
+// between servers or edited in Excel instead of card by card.
 //
-// Export writes the active (not archived) entries. Import matches rows with active entries
-// by the directory's unique key — TN VED: code + category + description, product: category +
-// name — updates matches and creates the rest. The whole file is checked first: one invalid
-// row and nothing is saved. A column missing from the file keeps the stored value.
+// Export writes the active (not archived) entries. Import matches rows with active entries by
+// category + name, updates matches and creates the rest. The whole file is checked first: one
+// invalid row and nothing is saved. A column missing from the file keeps the stored value.
 
 import (
 	"bytes"
@@ -43,28 +42,6 @@ type DirectoryImportError struct {
 }
 
 // ── Values in cells ──
-
-var rateTypeLabels = map[string]string{
-	"unknown": "не указана", "percentage": "процент", "specific": "за единицу",
-	"combined_minimum": "комбинированная", "exempt": "освобождение",
-}
-
-func rateTypeFromCell(value string) (string, bool) {
-	value = strings.ToLower(strings.TrimSpace(value))
-	switch value {
-	case "", "не указана", "не указан", "неизвестно", "нет", "unknown":
-		return "unknown", true
-	case "процент", "процентная", "%", "percentage", "percent":
-		return "percentage", true
-	case "за единицу", "специфическая", "specific":
-		return "specific", true
-	case "комбинированная", "combined", "combined_minimum":
-		return "combined_minimum", true
-	case "освобождение", "освобождён", "освобожден", "exempt":
-		return "exempt", true
-	}
-	return "", false
-}
 
 func statusLabel(status string) string {
 	if status == "operator_verified" {
@@ -287,235 +264,11 @@ func validationMessage(err error) string {
 	return err.Error()
 }
 
-// ── TN VED ──
-
-var tnvedColumns = []directoryColumn{
-	{"Код ТН ВЭД", 14}, {"Описание", 40}, {"Описание (кит.)", 24}, {"Категория", 14},
-	{"Пошлина: тип", 16}, {"Пошлина, %", 11}, {"Пошлина: сумма", 13}, {"Пошлина: валюта", 12}, {"Пошлина: единица", 14},
-	{"Пошлина: действует с", 14}, {"Пошлина: действует по", 14}, {"Пошлина: проверено", 14}, {"Пошлина: источник", 24},
-	{"НДС: тип", 14}, {"НДС, %", 9}, {"НДС: основание освобождения", 24},
-	{"НДС: действует с", 14}, {"НДС: действует по", 14}, {"НДС: проверено", 14}, {"НДС: источник", 24},
-	{"Антидемпинг, %", 13}, {"ИТС компании", 13},
-	{"Синонимы (рус.)", 24}, {"Синонимы (кит.)", 20}, {"Синонимы (англ.)", 20}, {"Статус", 20},
-}
-
-func tnvedKey(code, category, name string) string {
-	return strings.TrimSpace(code) + "|" + strings.ToLower(strings.TrimSpace(category)) + "|" + strings.ToLower(strings.TrimSpace(name))
-}
-
-func tnvedInputFromEntry(entry repository.TNVEDDirectoryEntry) TNVEDDirectoryInput {
-	return TNVEDDirectoryInput{
-		Category: entry.Category, Name: entry.Name, NameZH: entry.NameZH, Code: entry.Code,
-		CompanyCoefficient: service.DecimalText(entry.CompanyCoefficient), AntiDumpingPercent: service.DecimalText(entry.AntiDumpingPercent),
-		SynonymsRU: decodeJSONStrings(entry.SynonymsRU), SynonymsZH: decodeJSONStrings(entry.SynonymsZH), SynonymsEN: decodeJSONStrings(entry.SynonymsEN),
-		VerificationStatus: entry.VerificationStatus,
-		Duty: RateInput{Type: entry.DutyType, Percent: service.DecimalText(entry.DutyPercent), Amount: service.DecimalText(entry.DutyAmount), Currency: entry.DutyCurrency, Unit: entry.DutyUnit,
-			ValidFrom: dateString(entry.DutyValidFrom), ValidTo: dateString(entry.DutyValidTo), CheckedAt: dateString(entry.DutyCheckedAt), Source: entry.DutySource},
-		VAT: RateInput{Type: entry.VATType, Percent: service.DecimalText(entry.VATPercent), Basis: entry.VATBasis,
-			ValidFrom: dateString(entry.VATValidFrom), ValidTo: dateString(entry.VATValidTo), CheckedAt: dateString(entry.VATCheckedAt), Source: entry.VATSource},
-	}
-}
-
-func (s *TNVEDDirectoryService) Export(ctx context.Context) ([]byte, error) {
-	entries, err := s.repository.ListTNVEDDirectory(ctx, "", "", false)
-	if err != nil {
-		return nil, err
-	}
-	rows := make([][]string, 0, len(entries))
-	for _, entry := range entries {
-		rows = append(rows, []string{
-			entry.Code, entry.Name, entry.NameZH, entry.Category,
-			rateTypeLabels[entry.DutyType], service.DecimalText(entry.DutyPercent), service.DecimalText(entry.DutyAmount), entry.DutyCurrency, entry.DutyUnit,
-			dateString(entry.DutyValidFrom), dateString(entry.DutyValidTo), dateString(entry.DutyCheckedAt), entry.DutySource,
-			rateTypeLabels[entry.VATType], service.DecimalText(entry.VATPercent), entry.VATBasis,
-			dateString(entry.VATValidFrom), dateString(entry.VATValidTo), dateString(entry.VATCheckedAt), entry.VATSource,
-			service.DecimalText(entry.AntiDumpingPercent), service.DecimalText(entry.CompanyCoefficient),
-			joinSynonyms(entry.SynonymsRU), joinSynonyms(entry.SynonymsZH), joinSynonyms(entry.SynonymsEN), statusLabel(entry.VerificationStatus),
-		})
-	}
-	return writeDirectoryXLSX("ТН ВЭД", tnvedColumns, rows)
-}
-
-// applyRateCells overlays the rate columns present in the file on a rate.
-func applyRateCells(sheet directorySheet, i int, prefix string, rate *RateInput, withAmount bool) error {
-	if value, ok := sheet.cell(i, prefix+": тип"); ok {
-		rateType, valid := rateTypeFromCell(value)
-		if !valid {
-			return fmt.Errorf("%s: тип «%s» не распознан — процент, за единицу, комбинированная, освобождение или пусто", prefix, value)
-		}
-		rate.Type = rateType
-	}
-	if value, ok := sheet.number(i, prefix+", %"); ok {
-		rate.Percent, rate.Value = value, ""
-		if rate.Percent != "" && (rate.Type == "" || rate.Type == "unknown") {
-			rate.Type = "percentage"
-		}
-	}
-	if withAmount {
-		if value, ok := sheet.number(i, prefix+": сумма"); ok {
-			rate.Amount = value
-		}
-		if value, ok := sheet.cell(i, prefix+": валюта"); ok {
-			rate.Currency = strings.ToUpper(value)
-		}
-		if value, ok := sheet.cell(i, prefix+": единица"); ok {
-			rate.Unit = value
-		}
-	} else if value, ok := sheet.cell(i, prefix+": основание освобождения"); ok {
-		rate.Basis = value
-	}
-	for header, target := range map[string]*string{": действует с": &rate.ValidFrom, ": действует по": &rate.ValidTo, ": проверено": &rate.CheckedAt} {
-		date, ok, err := sheet.date(i, prefix+header)
-		if err != nil {
-			return fmt.Errorf("%s%s: %s", prefix, header, err.Error())
-		}
-		if ok {
-			*target = date
-		}
-	}
-	if value, ok := sheet.cell(i, prefix+": источник"); ok {
-		rate.Source = value
-	}
-	// Fields that do not belong to the rate type are cleared, otherwise validation rejects them.
-	switch rate.Type {
-	case "unknown", "exempt":
-		rate.Percent, rate.Value, rate.Amount, rate.Currency, rate.Unit = "", "", "", "", ""
-	case "percentage":
-		rate.Amount, rate.Currency, rate.Unit = "", "", ""
-	case "specific":
-		rate.Percent, rate.Value = "", ""
-	}
-	if rate.Type != "exempt" {
-		rate.Basis = ""
-	}
-	return nil
-}
-
-func tnvedInputFromRow(sheet directorySheet, i int, base TNVEDDirectoryInput) (TNVEDDirectoryInput, error) {
-	input := base
-	if value, ok := sheet.code(i, "Код ТН ВЭД"); ok {
-		input.Code = value
-	}
-	if value, ok := sheet.cell(i, "Описание (кит.)"); ok {
-		input.NameZH = value
-	}
-	if value, ok := sheet.number(i, "Антидемпинг, %"); ok {
-		input.AntiDumpingPercent = value
-	}
-	if value, ok := sheet.number(i, "ИТС компании"); ok {
-		input.CompanyCoefficient = value
-	}
-	for header, target := range map[string]*[]string{"Синонимы (рус.)": &input.SynonymsRU, "Синонимы (кит.)": &input.SynonymsZH, "Синонимы (англ.)": &input.SynonymsEN} {
-		if value, ok := sheet.cell(i, header); ok {
-			*target = splitSynonyms(value)
-		}
-	}
-	if value, ok := sheet.cell(i, "Статус"); ok {
-		status, valid := statusFromCell(value)
-		if !valid {
-			return input, fmt.Errorf("статус «%s» не распознан — «Проверено оператором» или «Требует проверки»", value)
-		}
-		input.VerificationStatus = status
-	}
-	if err := applyRateCells(sheet, i, "Пошлина", &input.Duty, true); err != nil {
-		return input, err
-	}
-	if err := applyRateCells(sheet, i, "НДС", &input.VAT, false); err != nil {
-		return input, err
-	}
-	return input, nil
-}
-
-// Import loads TN VED cards; update=false only adds new codes and skips existing ones.
-func (s *TNVEDDirectoryService) Import(ctx context.Context, userID int64, file io.Reader, size int64, update bool) (DirectoryImportResult, error) {
-	result := DirectoryImportResult{Errors: []DirectoryImportError{}}
-	sheet, err := readDirectorySheet(file, size)
-	if err != nil {
-		return result, err
-	}
-	if !sheet.has("Код ТН ВЭД") {
-		return result, &service.ValidationError{Field: "file", Message: "В первой строке нет колонки «Код ТН ВЭД». Выгрузите справочник и заполните файл по его образцу"}
-	}
-	existing, err := s.repository.ListTNVEDDirectory(ctx, "", "", false)
-	if err != nil {
-		return result, err
-	}
-	byKey := map[string]repository.TNVEDDirectoryEntry{}
-	for _, entry := range existing {
-		byKey[tnvedKey(entry.Code, entry.Category, entry.Name)] = entry
-	}
-
-	type planned struct {
-		id    int64
-		input TNVEDDirectoryInput
-	}
-	plan := []planned{}
-	seen := map[string]int{}
-	for i, row := range sheet.rows {
-		rowNumber := sheet.first + i
-		if emptyRow(row) {
-			continue
-		}
-		// The key comes from the file: code + category + description (description defaults to the code).
-		code, _ := sheet.code(i, "Код ТН ВЭД")
-		category, hasCategory := sheet.cell(i, "Категория")
-		if !hasCategory || category == "" {
-			category = "Товары"
-		}
-		name, _ := sheet.cell(i, "Описание")
-		if name == "" {
-			name = code
-		}
-		key := tnvedKey(code, category, name)
-		if first, ok := seen[key]; ok {
-			result.fail(rowNumber, "код %s с тем же описанием и категорией уже есть в строке %d", code, first)
-			continue
-		}
-		seen[key] = rowNumber
-		current, found := byKey[key]
-		if found && !update {
-			result.Skipped++
-			continue
-		}
-		base := TNVEDDirectoryInput{Category: category, VerificationStatus: "needs_review", Duty: RateInput{Type: "unknown"}, VAT: RateInput{Type: "unknown"}}
-		if found {
-			base = tnvedInputFromEntry(current)
-		}
-		input, err := tnvedInputFromRow(sheet, i, base)
-		if err == nil {
-			input.Category, input.Name = category, name
-			_, err = validateDirectoryInput(input)
-		}
-		if err != nil {
-			result.fail(rowNumber, "%s", validationMessage(err))
-			continue
-		}
-		plan = append(plan, planned{id: current.ID, input: input})
-	}
-	if len(result.Errors) > 0 {
-		return result, nil
-	}
-	for _, item := range plan {
-		if item.id != 0 {
-			if _, err := s.Update(ctx, item.id, userID, item.input); err != nil {
-				return result, err
-			}
-			result.Updated++
-			continue
-		}
-		if _, err := s.Create(ctx, userID, item.input); err != nil {
-			return result, err
-		}
-		result.Created++
-	}
-	return result, nil
-}
-
 // ── Products ──
 
 var productColumns = []directoryColumn{
 	{"Наименование", 40}, {"Наименование (кит.)", 24}, {"Категория", 14}, {"Ед. изм.", 10},
-	{"Код ТН ВЭД", 14}, {"Описание ТН ВЭД", 30}, {"ИТС компании", 13},
+	{"Код ТН ВЭД", 14}, {"ИТС компании", 13},
 	{"Синонимы (рус.)", 24}, {"Синонимы (кит.)", 20}, {"Синонимы (англ.)", 20}, {"Статус", 20},
 }
 
@@ -528,7 +281,7 @@ func productInputFromEntry(entry repository.ProductDirectoryEntry) ProductDirect
 		Category: entry.Category, Name: entry.Name, NameZH: entry.NameZH, Unit: entry.Unit,
 		CompanyCoefficient: service.DecimalText(entry.CompanyCoefficient),
 		SynonymsRU:         decodeJSONStrings(entry.SynonymsRU), SynonymsZH: decodeJSONStrings(entry.SynonymsZH), SynonymsEN: decodeJSONStrings(entry.SynonymsEN),
-		TNVEDDirectoryEntryID: entry.TNVEDDirectoryEntryID, VerificationStatus: entry.VerificationStatus,
+		Code: entry.Code, VerificationStatus: entry.VerificationStatus,
 	}
 }
 
@@ -539,20 +292,15 @@ func (s *ProductDirectoryService) Export(ctx context.Context) ([]byte, error) {
 	}
 	rows := make([][]string, 0, len(entries))
 	for _, entry := range entries {
-		code, tnvedName := "", ""
-		if entry.TNVEDDirectoryEntry != nil {
-			code, tnvedName = entry.TNVEDDirectoryEntry.Code, entry.TNVEDDirectoryEntry.Name
-		}
 		rows = append(rows, []string{
-			entry.Name, entry.NameZH, entry.Category, entry.Unit, code, tnvedName, service.DecimalText(entry.CompanyCoefficient),
+			entry.Name, entry.NameZH, entry.Category, entry.Unit, entry.Code, service.DecimalText(entry.CompanyCoefficient),
 			joinSynonyms(entry.SynonymsRU), joinSynonyms(entry.SynonymsZH), joinSynonyms(entry.SynonymsEN), statusLabel(entry.VerificationStatus),
 		})
 	}
 	return writeDirectoryXLSX("Товары", productColumns, rows)
 }
 
-// Import loads product cards. The TN VED card is found by its code among active cards; when
-// one code has several cards, «Описание ТН ВЭД» (or the product category) picks one.
+// Import loads product cards. «Код ТН ВЭД» must be a code of the EAEU nomenclature.
 func (s *ProductDirectoryService) Import(ctx context.Context, userID int64, file io.Reader, size int64, update bool) (DirectoryImportResult, error) {
 	result := DirectoryImportResult{Errors: []DirectoryImportError{}}
 	sheet, err := readDirectorySheet(file, size)
@@ -570,43 +318,9 @@ func (s *ProductDirectoryService) Import(ctx context.Context, userID int64, file
 	for _, entry := range existing {
 		byKey[productKey(entry.Category, entry.Name)] = entry
 	}
-	tnvedEntries, err := s.repository.ListTNVEDDirectory(ctx, "", "", false)
+	nomenclature, err := s.repository.TNVEDNomenclatureCodeSet(ctx)
 	if err != nil {
 		return result, err
-	}
-	tnvedByCode := map[string][]repository.TNVEDDirectoryEntry{}
-	for _, entry := range tnvedEntries {
-		tnvedByCode[entry.Code] = append(tnvedByCode[entry.Code], entry)
-	}
-	findTNVED := func(code, tnvedName, category string) (*int64, error) {
-		candidates := tnvedByCode[code]
-		if len(candidates) == 0 {
-			return nil, fmt.Errorf("кода ТН ВЭД %s нет в справочнике ТН ВЭД — сначала загрузите или добавьте его", code)
-		}
-		narrow := func(keep func(repository.TNVEDDirectoryEntry) bool) {
-			filtered := []repository.TNVEDDirectoryEntry{}
-			for _, entry := range candidates {
-				if keep(entry) {
-					filtered = append(filtered, entry)
-				}
-			}
-			if len(filtered) > 0 {
-				candidates = filtered
-			}
-		}
-		if len(candidates) > 1 && tnvedName != "" {
-			narrow(func(entry repository.TNVEDDirectoryEntry) bool {
-				return strings.EqualFold(strings.TrimSpace(entry.Name), tnvedName)
-			})
-		}
-		if len(candidates) > 1 {
-			narrow(func(entry repository.TNVEDDirectoryEntry) bool { return strings.EqualFold(entry.Category, category) })
-		}
-		if len(candidates) > 1 {
-			return nil, fmt.Errorf("в справочнике несколько карточек с кодом %s — укажите «Описание ТН ВЭД»", code)
-		}
-		id := candidates[0].ID
-		return &id, nil
 	}
 
 	type planned struct {
@@ -667,19 +381,13 @@ func (s *ProductDirectoryService) Import(ctx context.Context, userID int64, file
 			input.VerificationStatus = status
 		}
 		if code, ok := sheet.code(i, "Код ТН ВЭД"); ok {
-			if code == "" {
-				input.TNVEDDirectoryEntryID = nil
-			} else {
-				tnvedName, _ := sheet.cell(i, "Описание ТН ВЭД")
-				id, err := findTNVED(code, tnvedName, category)
-				if err != nil {
-					result.fail(rowNumber, "%s", err.Error())
-					continue
-				}
-				input.TNVEDDirectoryEntryID = id
-			}
+			input.Code = code
 		}
 		if _, err := validateProductDirectoryInput(input); err != nil {
+			result.fail(rowNumber, "%s", validationMessage(err))
+			continue
+		}
+		if err := checkNomenclatureCode(nomenclature, input.Code); err != nil {
 			result.fail(rowNumber, "%s", validationMessage(err))
 			continue
 		}

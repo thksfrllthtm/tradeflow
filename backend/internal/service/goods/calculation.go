@@ -12,7 +12,6 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/calculation"
-	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/riskindicators"
 	"github.com/shopspring/decimal"
 )
@@ -162,7 +161,6 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		}
 		itemIn := calculation.CalculationItemInput{
 			SourceRow:             inItem.SourceRow,
-			DirectoryEntryID:      inItem.DirectoryEntryID,
 			StandardName:          strings.TrimSpace(inItem.StandardName),
 			SupplierName:          strings.TrimSpace(inItem.SupplierName),
 			Code:                  inItem.Code,
@@ -435,79 +433,39 @@ func (s *GoodsService) resolveDirectorySnapshot(ctx context.Context, item GoodsI
 		// servers always provide a repository and take the trusted path below.
 		return item.DirectorySnapshot, nil
 	}
-	if item.ProductDirectoryID != nil && *item.ProductDirectoryID > 0 {
-		product, err := s.repository.ProductDirectoryEntryByID(ctx, *item.ProductDirectoryID)
-		if err != nil {
-			if service.IsNotFound(err) {
-				return nil, fmt.Errorf("карточка товара не найдена")
-			}
-			return nil, fmt.Errorf("не удалось загрузить карточку товара")
-		}
-		if product.ArchivedAt != nil {
-			return nil, fmt.Errorf("выбранная карточка товара архивирована")
-		}
-		if product.TNVEDDirectoryEntry == nil {
-			return nil, fmt.Errorf("у выбранного товара не привязан код ТН ВЭД")
-		}
-		entry := *product.TNVEDDirectoryEntry
-		if entry.ArchivedAt != nil {
-			return nil, fmt.Errorf("карточка ТН ВЭД выбранного товара архивирована")
-		}
-		if !genericItems && strings.TrimSpace(entry.Category) != "Перчатки" {
-			return nil, fmt.Errorf("выбранная карточка относится не к категории «Перчатки»")
-		}
-		snapshot := directory.DirectorySnapshot(entry)
-		// In the universal goods calculator ИТП belongs to the selected
-		// product, not to its TN ВЭД code. Do not inherit a legacy coefficient
-		// that may still be stored on the tariff card.
-		if genericItems {
-			delete(snapshot, "companyCoefficient")
-		}
-		snapshot["name"] = strings.TrimSpace(product.Name)
-		if strings.TrimSpace(product.NameZH) != "" {
-			snapshot["nameZh"] = strings.TrimSpace(product.NameZH)
-		}
-		if product.CompanyCoefficient != nil {
-			snapshot["companyCoefficient"] = service.DecimalText(product.CompanyCoefficient)
-		}
-		// Marks a product card (not just a TN ВЭД code): only then the row takes
-		// the product name instead of the supplier name from Excel.
-		snapshot["productDirectoryId"] = product.ID
-		return snapshot, nil
-	}
-	if item.DirectoryEntryID == nil || *item.DirectoryEntryID < 1 {
+	if item.ProductDirectoryID == nil || *item.ProductDirectoryID < 1 {
+		// Строка без карточки товара: код — из ячейки, ставки — из номенклатуры по коду.
 		return nil, nil
 	}
-	entry, err := s.repository.TNVEDDirectoryEntryByID(ctx, *item.DirectoryEntryID)
+	product, err := s.repository.ProductDirectoryEntryByID(ctx, *item.ProductDirectoryID)
 	if err != nil {
 		if service.IsNotFound(err) {
-			if genericItems {
-				return nil, fmt.Errorf("карточка ТН ВЭД не найдена")
-			}
-			return nil, fmt.Errorf("карточка перчаток не найдена")
+			return nil, fmt.Errorf("карточка товара не найдена")
 		}
-		if genericItems {
-			return nil, fmt.Errorf("не удалось загрузить карточку ТН ВЭД")
-		}
-		return nil, fmt.Errorf("не удалось загрузить карточку перчаток")
+		return nil, fmt.Errorf("не удалось загрузить карточку товара")
 	}
-	if entry.ArchivedAt != nil {
-		if genericItems {
-			return nil, fmt.Errorf("выбранная карточка ТН ВЭД архивирована")
-		}
-		return nil, fmt.Errorf("выбранная карточка перчаток архивирована")
+	if product.ArchivedAt != nil {
+		return nil, fmt.Errorf("выбранная карточка товара архивирована")
 	}
-	if !genericItems && strings.TrimSpace(entry.Category) != "Перчатки" {
+	if strings.TrimSpace(product.Code) == "" {
+		return nil, fmt.Errorf("у выбранного товара не указан код ТН ВЭД")
+	}
+	if !genericItems && strings.TrimSpace(product.Category) != "Перчатки" {
 		return nil, fmt.Errorf("выбранная карточка относится не к категории «Перчатки»")
 	}
-	// A code selected directly is only a TN ВЭД card. ИТП and the product
-	// description are trusted only in the product branch above, where the row
-	// contains an explicit ProductDirectoryID. The same TN ВЭД code may belong
-	// to several different goods, so never restore product data from a stale
-	// browser snapshot here.
-	snapshot := directory.DirectorySnapshot(entry)
-	if genericItems {
-		delete(snapshot, "companyCoefficient")
+	// Название, код и ИТС — из карточки товара; пошлина, НДС и антидемпинг — из номенклатуры
+	// и реестра ЕЭК по коду (ApplyNomenclatureRates).
+	snapshot := map[string]any{
+		"category": product.Category, "name": strings.TrimSpace(product.Name), "code": product.Code,
+		"verificationStatus": product.VerificationStatus, "selectedAt": time.Now().UTC().Format(time.RFC3339),
+		// Отмечает карточку товара: только тогда строка берёт название товара вместо названия из Excel.
+		"productDirectoryId": product.ID,
+	}
+	if strings.TrimSpace(product.NameZH) != "" {
+		snapshot["nameZh"] = strings.TrimSpace(product.NameZH)
+	}
+	if product.CompanyCoefficient != nil {
+		snapshot["companyCoefficient"] = service.DecimalText(product.CompanyCoefficient)
 	}
 	return snapshot, nil
 }

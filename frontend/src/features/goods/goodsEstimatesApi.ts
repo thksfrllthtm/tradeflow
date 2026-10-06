@@ -20,8 +20,6 @@ export const goodsEstimatesApi = {
   remove: (id: number) => request<void>('/api/goods-estimates/' + id, { method: 'DELETE' }),
   patchDraft: async (id: number, patch: DraftPatch) => (await request<{ estimate: GoodsEstimateSummary }>('/api/goods-estimates/' + id + '/draft', { method: 'PATCH', body: JSON.stringify(patch) })).estimate,
   usdRate: async (assessmentDate: string): Promise<NBKRate> => (await request<{ rate: NBKRate }>(`/api/rates/nbk?date=${encodeURIComponent(assessmentDate)}`)).rate,
-  // Курс евро — только для справки на главной; расчёт идёт в долларах.
-  eurRate: async (assessmentDate: string): Promise<NBKRate> => (await request<{ rate: NBKRate }>(`/api/rates/nbk?date=${encodeURIComponent(assessmentDate)}&currency=EUR`)).rate,
   parseXlsx: (file: File, options?: { sheet?: string; headerRow?: number; dataStartRow?: number }): Promise<GoodsParseResult> => goodsApi.parseXlsx(file, { ...options, shareImages: true }),
   calculate: (input: GoodsCalculationInput): Promise<GoodsCalculationResult> => goodsApi.calculate(input),
   exportXlsx: (input: GoodsCalculationInput): Promise<Blob> => goodsApi.exportXlsx(input),

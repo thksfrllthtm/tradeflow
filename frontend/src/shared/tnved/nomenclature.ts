@@ -9,5 +9,5 @@ export type KzRate = { rateText: string; duty: Omit<NomenclatureDuty, 'type'> & 
 // Антидемпинговая мера ЕАЭС (реестр ЕЭК) для кода: rates — % для прочих производителей по стране (ISO),
 // exact — по точному коду, иначе по товарной позиции (решает описание товара), suspended — не применяется.
 export type AntiDumpingRef = { number: string; shortName: string; countries: string[]; countryNames: string; rates: Record<string, string>; exact: boolean; suspended: boolean; endDate: string; documentUrl: string }
-export type NomenclatureCode = { code: string; name: string; tariffText: string; duty: NomenclatureDuty; vatPercent: string; detailsUrl: string; inDirectory: boolean; kz: KzRate | null; antiDumping?: AntiDumpingRef[] }
+export type NomenclatureCode = { code: string; name: string; tariffText: string; duty: NomenclatureDuty; vatPercent: string; detailsUrl: string; kz: KzRate | null; antiDumping?: AntiDumpingRef[] }
 export type NomenclatureImport = { source: string; fileName: string; actualDate: string; codeCount: number; addedCount: number; removedCount: number; changedCount: number; importedAt: string; importedByName: string }

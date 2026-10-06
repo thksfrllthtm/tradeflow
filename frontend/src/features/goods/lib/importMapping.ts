@@ -53,7 +53,7 @@ export function buildGloveItems(rows: GoodsParseRow[], images: { sourceRow: numb
       coefficient: '', deliveryUsd: '', deliveryManual: false, deliveryIncluded: false, excluded: false, exclusionReason: '',
       deliveryAlreadyInCost: false,
       pricePerPair: price, sourcePricePerPair: price, costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '',
-      photoUrl: imageDataUrl(rowImages[0]), photoUrls: rowImages.map(imageDataUrl), directoryEntryId: undefined,
+      photoUrl: imageDataUrl(rowImages[0]), photoUrls: rowImages.map(imageDataUrl),
     }
   })
 }
@@ -79,7 +79,7 @@ export async function matchImportedTnvedCodes(input: GoodsItemInput[]): Promise<
     }
     matched += 1
     const snapshot = withNomenclatureRates(official, found.source)
-    return { ...item, code, standardName: String(snapshot.name), directoryEntryId: undefined, productDirectoryId: undefined, directorySnapshot: snapshot }
+    return { ...item, code, standardName: String(snapshot.name), productDirectoryId: undefined, directorySnapshot: snapshot }
   })
   return { items, matched, missing, nomenclatureLoaded: true }
 }

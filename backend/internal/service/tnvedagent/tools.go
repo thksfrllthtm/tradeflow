@@ -162,7 +162,7 @@ func agentTools(reference, documents bool) []agentTool {
 			objectSchema(map[string]any{"code": stringProperty("Код, 10 цифр")}, "code")),
 		tool("search_decisions", "База решений компании: товары, которые раньше оформляли, с итоговым кодом и наименованием; проверенные администратором — первыми.",
 			objectSchema(map[string]any{"query": stringProperty("Слова наименования (по-русски или по-китайски)")}, "query")),
-		tool("search_directory", "Справочники компании (справочник товаров и справочник ТН ВЭД): наименования, синонимы, коды и статус проверки.",
+		tool("search_directory", "Справочник товаров компании: наименования, синонимы, код ТН ВЭД и статус проверки.",
 			objectSchema(map[string]any{"query": stringProperty("Слова наименования")}, "query")),
 		tool("ask_user", "Задать сотруднику один короткий вопрос, если без ответа код не определить. После вызова жди ответа.",
 			objectSchema(map[string]any{"question": stringProperty("Вопрос по-русски, одно предложение")}, "question")),
@@ -552,13 +552,13 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		query := service.TruncateRunes(strings.TrimSpace(args.Query), 100)
 		hints, err := t.data.SearchDirectories(ctx, query, agentDirectoryLimit)
 		if err != nil {
-			return `{"error":"Справочники недоступны"}`, agentToolEvent{Tool: name, Label: "Справочники: " + quoted(query), Detail: "ошибка", Failed: true}
+			return `{"error":"Справочник товаров недоступен"}`, agentToolEvent{Tool: name, Label: "Справочник товаров: " + quoted(query), Detail: "ошибка", Failed: true}
 		}
 		entries := make([]map[string]any, 0, len(hints))
 		for _, hint := range hints {
-			entries = append(entries, map[string]any{"kind": hint.Kind, "name": hint.Name, "nameZh": hint.NameZH, "code": hint.Code, "verified": hint.VerificationStatus == "verified"})
+			entries = append(entries, map[string]any{"kind": hint.Kind, "name": hint.Name, "nameZh": hint.NameZH, "code": hint.Code, "verified": hint.VerificationStatus == "operator_verified"})
 		}
-		return toolJSON(map[string]any{"entries": entries}), agentToolEvent{Tool: name, Label: "Справочники: " + quoted(query), Detail: fmt.Sprintf("записей %d", len(hints))}
+		return toolJSON(map[string]any{"entries": entries}), agentToolEvent{Tool: name, Label: "Справочник товаров: " + quoted(query), Detail: fmt.Sprintf("записей %d", len(hints))}
 	case "open_goods_help":
 		code := nonDigits.ReplaceAllString(args.Code, "")
 		label := "Справка по товару " + FormatTNVEDCode(code)

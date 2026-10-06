@@ -56,6 +56,14 @@
 /* Видимый фокус на тёмной шапке — светлая рамка. */
 .app-header :focus-visible { outline: 2px solid #cfe8d9; outline-offset: 2px; }
 
+/* Курс НБРК на сегодня — справочно, рядом с пользователем: две валюты и дата курса под ними. */
+.app-header-rates { display: grid; grid-template-columns: auto auto; flex: 0 0 auto; column-gap: 14px; row-gap: 1px; padding-right: 18px; border-right: 1px solid rgba(255, 255, 255, .14); }
+.app-header-rate { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.app-header-rate small { color: #a9c7b4; font-size: .74rem; font-weight: 600; }
+.app-header-rate b { color: #fff; font-size: .86rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app-header-rate-date { grid-column: 1 / -1; color: #8fb39c; font-size: .7rem; white-space: nowrap; }
+@media (max-width: 900px) { .app-header-rates { display: none; } }
+
 .app-header-user { display: flex; flex: 0 1 auto; align-items: center; gap: 9px; min-width: 0; }
 .app-header-avatar {
   display: grid;

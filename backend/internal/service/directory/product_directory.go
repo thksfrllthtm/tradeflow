@@ -3,6 +3,7 @@ package directory
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,16 +14,16 @@ import (
 var ErrProductDirectoryConflict = errors.New("product directory entry already exists")
 
 type ProductDirectoryInput struct {
-	Category              string   `json:"category"`
-	Name                  string   `json:"name"`
-	NameZH                string   `json:"nameZh"`
-	Unit                  string   `json:"unit"`
-	CompanyCoefficient    string   `json:"companyCoefficient"`
-	SynonymsRU            []string `json:"synonymsRu"`
-	SynonymsZH            []string `json:"synonymsZh"`
-	SynonymsEN            []string `json:"synonymsEn"`
-	TNVEDDirectoryEntryID *int64   `json:"tnvedDirectoryEntryId"`
-	VerificationStatus    string   `json:"verificationStatus"`
+	Category           string   `json:"category"`
+	Name               string   `json:"name"`
+	NameZH             string   `json:"nameZh"`
+	Unit               string   `json:"unit"`
+	CompanyCoefficient string   `json:"companyCoefficient"`
+	SynonymsRU         []string `json:"synonymsRu"`
+	SynonymsZH         []string `json:"synonymsZh"`
+	SynonymsEN         []string `json:"synonymsEn"`
+	Code               string   `json:"code"`
+	VerificationStatus string   `json:"verificationStatus"`
 }
 
 type ProductDirectoryFilter struct {
@@ -41,7 +42,7 @@ func NewProductDirectoryService(r *repository.Repository) *ProductDirectoryServi
 func validateProductDirectoryInput(input ProductDirectoryInput) (repository.ProductDirectoryEntry, error) {
 	entry := repository.ProductDirectoryEntry{
 		Category: strings.TrimSpace(input.Category), Name: strings.TrimSpace(input.Name), NameZH: strings.TrimSpace(input.NameZH), Unit: strings.TrimSpace(input.Unit),
-		TNVEDDirectoryEntryID: input.TNVEDDirectoryEntryID, VerificationStatus: strings.TrimSpace(input.VerificationStatus),
+		Code: strings.Join(strings.Fields(input.Code), ""), VerificationStatus: strings.TrimSpace(input.VerificationStatus),
 	}
 	companyCoefficient, err := parseOptionalNonNegative(input.CompanyCoefficient, "companyCoefficient")
 	if err != nil {
@@ -69,8 +70,11 @@ func validateProductDirectoryInput(input ProductDirectoryInput) (repository.Prod
 	if len([]rune(entry.Unit)) > 64 {
 		return entry, &service.ValidationError{Field: "unit", Message: "Единица измерения слишком длинная"}
 	}
-	if entry.TNVEDDirectoryEntryID == nil {
-		return entry, &service.ValidationError{Field: "tnvedDirectoryEntryId", Message: "Привяжите к товару код ТН ВЭД"}
+	if entry.Code == "" {
+		return entry, &service.ValidationError{Field: "code", Message: "Укажите код ТН ВЭД товара"}
+	}
+	if !NomenclatureCodePattern.MatchString(entry.Code) {
+		return entry, &service.ValidationError{Field: "code", Message: "Код ТН ВЭД — 10 цифр"}
 	}
 	if entry.VerificationStatus == "" {
 		entry.VerificationStatus = "needs_review"
@@ -78,22 +82,24 @@ func validateProductDirectoryInput(input ProductDirectoryInput) (repository.Prod
 	if entry.VerificationStatus != "needs_review" && entry.VerificationStatus != "operator_verified" {
 		return entry, &service.ValidationError{Field: "verificationStatus", Message: "Укажите статус проверки"}
 	}
-	entry.SynonymsRU = repository.JSON(mustJSON(normalizeTNVEDSynonyms(input.SynonymsRU)))
-	entry.SynonymsZH = repository.JSON(mustJSON(normalizeTNVEDSynonyms(input.SynonymsZH)))
-	entry.SynonymsEN = repository.JSON(mustJSON(normalizeTNVEDSynonyms(input.SynonymsEN)))
+	entry.SynonymsRU = repository.JSON(mustJSON(normalizeSynonyms(input.SynonymsRU)))
+	entry.SynonymsZH = repository.JSON(mustJSON(normalizeSynonyms(input.SynonymsZH)))
+	entry.SynonymsEN = repository.JSON(mustJSON(normalizeSynonyms(input.SynonymsEN)))
 	return entry, nil
 }
 
-func (s *ProductDirectoryService) validateLink(ctx context.Context, entry repository.ProductDirectoryEntry) error {
-	if entry.TNVEDDirectoryEntryID == nil {
-		return nil
-	}
-	linked, err := s.repository.TNVEDDirectoryEntryByID(ctx, *entry.TNVEDDirectoryEntryID)
+// validateCode: код товара должен быть в номенклатуре ТН ВЭД ЕАЭС (пока она не загружена — любой из 10 цифр).
+func (s *ProductDirectoryService) validateCode(ctx context.Context, entry repository.ProductDirectoryEntry) error {
+	nomenclature, err := s.repository.TNVEDNomenclatureCodeSet(ctx)
 	if err != nil {
 		return err
 	}
-	if linked.ArchivedAt != nil {
-		return &service.ValidationError{Field: "tnvedDirectoryEntryId", Message: "Нельзя привязать архивную карточку ТН ВЭД"}
+	return checkNomenclatureCode(nomenclature, entry.Code)
+}
+
+func checkNomenclatureCode(nomenclature map[string]string, code string) error {
+	if _, ok := nomenclature[code]; !ok && len(nomenclature) > 0 {
+		return &service.ValidationError{Field: "code", Message: fmt.Sprintf("Кода %s нет в номенклатуре ТН ВЭД ЕАЭС — проверьте код", code)}
 	}
 	return nil
 }
@@ -113,9 +119,7 @@ func (s *ProductDirectoryService) List(ctx context.Context, filter ProductDirect
 		parts = append(parts, decodeJSONStrings(entry.SynonymsRU)...)
 		parts = append(parts, decodeJSONStrings(entry.SynonymsZH)...)
 		parts = append(parts, decodeJSONStrings(entry.SynonymsEN)...)
-		if entry.TNVEDDirectoryEntry != nil {
-			parts = append(parts, entry.TNVEDDirectoryEntry.Code, entry.TNVEDDirectoryEntry.Name, entry.TNVEDDirectoryEntry.NameZH)
-		}
+		parts = append(parts, entry.Code)
 		for _, part := range parts {
 			if strings.Contains(strings.ToLower(part), q) {
 				result = append(result, entry)
@@ -131,7 +135,7 @@ func (s *ProductDirectoryService) Create(ctx context.Context, userID int64, inpu
 	if err != nil {
 		return repository.ProductDirectoryEntry{}, err
 	}
-	if err := s.validateLink(ctx, entry); err != nil {
+	if err := s.validateCode(ctx, entry); err != nil {
 		return repository.ProductDirectoryEntry{}, err
 	}
 	now := time.Now().UTC()
@@ -148,7 +152,7 @@ func (s *ProductDirectoryService) Update(ctx context.Context, id, userID int64, 
 	if err != nil {
 		return repository.ProductDirectoryEntry{}, err
 	}
-	if err := s.validateLink(ctx, entry); err != nil {
+	if err := s.validateCode(ctx, entry); err != nil {
 		return repository.ProductDirectoryEntry{}, err
 	}
 	old, err := s.repository.ProductDirectoryEntryByID(ctx, id)
@@ -187,7 +191,7 @@ func (s *ProductDirectoryService) Copy(ctx context.Context, id, userID int64) (r
 		Category: source.Category, Name: source.Name + " (копия)", NameZH: source.NameZH, Unit: source.Unit,
 		CompanyCoefficient: service.DecimalText(source.CompanyCoefficient),
 		SynonymsRU:         decodeJSONStrings(source.SynonymsRU), SynonymsZH: decodeJSONStrings(source.SynonymsZH), SynonymsEN: decodeJSONStrings(source.SynonymsEN),
-		TNVEDDirectoryEntryID: source.TNVEDDirectoryEntryID, VerificationStatus: source.VerificationStatus,
+		Code: source.Code, VerificationStatus: source.VerificationStatus,
 	}
 	return s.Create(ctx, userID, input)
 }

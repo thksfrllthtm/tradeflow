@@ -1,7 +1,7 @@
 package repository
 
-// Full TN VED EAEU nomenclature with EAEU tariff import duty rates: a reference list the
-// working directory (tnved_directory_entries) takes codes from. Each import replaces it.
+// Full TN VED EAEU nomenclature with EAEU tariff import duty rates: estimates and product cards
+// take codes and rates from it. Each import replaces it.
 
 import (
 	"context"
@@ -25,8 +25,6 @@ type TNVEDNomenclatureCode struct {
 	DutyUnit     string           `gorm:"size:40;not null"`
 	VATPercent   decimal.Decimal  `gorm:"column:vat_percent;type:numeric(5,2);not null"`
 	DetailsURL   string           `gorm:"size:500;not null"`
-	// Filled by the list query: the code has an active entry in the working directory.
-	InDirectory bool `gorm:"->;-:migration"`
 }
 
 func (TNVEDNomenclatureCode) TableName() string { return "tnved_nomenclature" }
@@ -88,7 +86,7 @@ func (r *Repository) ListTNVEDNomenclature(ctx context.Context, filter TNVEDNome
 		return nil, 0, err
 	}
 	var codes []TNVEDNomenclatureCode
-	err := query.Select("n.*, EXISTS (SELECT 1 FROM tnved_directory_entries d WHERE d.code = n.code AND d.archived_at IS NULL) AS in_directory").
+	err := query.Select("n.*").
 		Order("n.code ASC").Limit(filter.Limit).Offset(filter.Offset).Scan(&codes).Error
 	return codes, total, err
 }
@@ -101,7 +99,7 @@ func (r *Repository) TNVEDNomenclatureByCodes(ctx context.Context, codes []strin
 		return found, nil
 	}
 	err := r.db.WithContext(ctx).Table("tnved_nomenclature AS n").Where("n.code IN ?", codes).
-		Select("n.*, EXISTS (SELECT 1 FROM tnved_directory_entries d WHERE d.code = n.code AND d.archived_at IS NULL) AS in_directory").
+		Select("n.*").
 		Order("n.code ASC").Scan(&found).Error
 	return found, err
 }
@@ -119,7 +117,7 @@ func (r *Repository) ReplaceTNVEDNomenclature(ctx context.Context, codes []TNVED
 			return err
 		}
 		if len(codes) > 0 {
-			if err := tx.Omit("InDirectory").CreateInBatches(codes, 1000).Error; err != nil {
+			if err := tx.CreateInBatches(codes, 1000).Error; err != nil {
 				return err
 			}
 		}

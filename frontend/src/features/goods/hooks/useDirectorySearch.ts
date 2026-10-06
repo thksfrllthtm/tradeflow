@@ -30,13 +30,13 @@ export function useDirectorySearch(onError: (message: string) => void) {
     setLoading(true)
     try {
       const [codes, products] = await Promise.all([nomenclatureApi.list({ q: nextQuery.trim(), offset: 0, limit: codeLimit }), productDirectoryApi.list({ q: nextQuery })])
-      const withCode = products.filter((product) => product.tnvedCode && !product.tnved?.archivedAt)
+      const withCode = products.filter((product) => product.code)
       // Ставки товаров — из номенклатуры по их кодам (одним запросом).
-      const official = withCode.length ? await nomenclatureApi.lookup([...new Set(withCode.map((product) => product.tnvedCode))]) : null
+      const official = withCode.length ? await nomenclatureApi.lookup([...new Set(withCode.map((product) => product.code))]) : null
       if (requestId !== requestRef.current) return
       const byCode = new Map((official?.items ?? []).map((item) => [item.code, item]))
       setResults({
-        products: withCode.map((product) => ({ kind: 'product', key: `product-${product.id}`, code: product.tnvedCode, product, nomenclature: byCode.get(product.tnvedCode) ?? null })),
+        products: withCode.map((product) => ({ kind: 'product', key: `product-${product.id}`, code: product.code, product, nomenclature: byCode.get(product.code) ?? null })),
         tnved: codes.items.map((item) => ({ kind: 'code', key: `code-${item.code}`, code: item.code, nomenclature: item })),
       })
       setCodeTotal(codes.total)

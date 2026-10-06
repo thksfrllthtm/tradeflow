@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { User } from '@/shared/types/user'
 import { authApi } from './authApi'
 import { authErrorMessage } from './authErrorMessage'
+import { AuthRates } from './AuthRates'
 import './auth.css'
 
 export function LoginPage({ notice, onLogin, onRegister }: { notice: string; onLogin: (user: User) => void; onRegister: () => void }) {
@@ -38,6 +39,7 @@ export function LoginPage({ notice, onLogin, onRegister }: { notice: string; onL
         <button type="submit" disabled={loading}>{loading ? 'Входим…' : 'Войти'}</button>
       </form>
       <button type="button" className="auth-switch" onClick={onRegister}>Нет аккаунта? Зарегистрироваться</button>
+      <AuthRates />
     </section>
   </main>
 }

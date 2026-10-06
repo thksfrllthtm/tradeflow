@@ -28,14 +28,8 @@
 .home-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .home-date { margin: 0 0 4px; color: var(--home-muted); font-size: .86rem; font-weight: 500; }
 .home-hero h1 { margin: 0; color: var(--home-ink); font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
-.home-rates { display: flex; flex: 0 0 auto; align-items: center; gap: 28px; }
-.home-rate { display: grid; flex: 0 0 auto; justify-items: end; gap: 1px; color: var(--home-ink); }
-.home-rate span { color: var(--home-muted); font-size: .86rem; font-weight: 600; }
-.home-rate strong { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-.home-rate small { color: var(--home-muted); font-size: .86rem; }
-.home-rates-note { color: var(--home-muted); font-size: .86rem; }
-.home .home-link-button, .home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; }
-.home .home-link-button:hover:not(:disabled), .home .home-retry:hover:not(:disabled) { background: transparent; color: #0e5233; }
+.home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; }
+.home .home-retry:hover:not(:disabled) { background: transparent; color: #0e5233; }
 
 .home-error { margin: 0; padding: 9px 12px; border: 1px solid #efcaca; border-radius: 10px; background: #fff4f2; color: #8d2929; font-size: .86rem; font-weight: 600; }
 
@@ -121,7 +115,6 @@ a.home-row:hover { background: #f4f8f5; }
   .home { box-sizing: border-box; height: 100%; gap: 14px; padding: 18px 28px 20px; }
   .home-hero { align-items: center; }
   .home-hero h1 { font-size: 1.5rem; }
-  .home-rate strong { font-size: 1.05rem; }
   .home-grid { flex: 1 1 auto; align-items: stretch; min-height: 0; }
   .home-chat { height: auto; min-height: 0; }
   .home-side { min-height: 0; }
@@ -161,7 +154,6 @@ a.home-row:hover { background: #f4f8f5; }
 @media (max-width: 600px) {
   .home-hero { align-items: flex-start; flex-direction: column; gap: 12px; }
   .home-hero h1 { font-size: 1.4rem; }
-  .home-rate { justify-items: start; }
   .home-actions { grid-template-columns: minmax(0, 1fr); }
   .home-chat { height: 80vh; }
 }

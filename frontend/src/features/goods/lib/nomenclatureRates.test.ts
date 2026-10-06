@@ -3,7 +3,7 @@ import { normalizeTnvedCode, withNomenclatureRates } from './nomenclatureRates'
 import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 
 const code: NomenclatureCode = {
-  code: '4015190000', name: 'перчатки, рукавицы и митенки: 🠺 прочие', tariffText: '10%', vatPercent: '16', detailsUrl: '', inDirectory: false,
+  code: '4015190000', name: 'перчатки, рукавицы и митенки: 🠺 прочие', tariffText: '10%', vatPercent: '16', detailsUrl: '',
   duty: { type: 'percentage', percent: '10', amount: '', currency: '', unit: '' },
   kz: { rateText: '8', duty: { type: 'percentage', percent: '8', amount: '', currency: '', unit: '' }, validFrom: '', validTo: '', active: true, status: 'действует', notesText: '' },
 }

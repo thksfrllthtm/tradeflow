@@ -82,7 +82,7 @@ func (r *Repository) DeleteUser(ctx context.Context, id, heirID int64) (int64, e
 			return result.Error
 		}
 		moved = result.RowsAffected
-		for _, table := range []string{"tnved_directory_entries", "product_directory_entries"} {
+		for _, table := range []string{"product_directory_entries"} {
 			for _, column := range []string{"created_by", "updated_by", "archived_by"} {
 				if err := tx.Table(table).Where(column+" = ?", id).Update(column, heirID).Error; err != nil {
 					return err

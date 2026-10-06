@@ -13,8 +13,6 @@ import (
 func TestDirectoryTransferRequiresSession(t *testing.T) {
 	server := NewServer(nil, config.Config{SessionCookieName: "test_session", SessionTTL: time.Hour})
 	for _, route := range []struct{ method, path string }{
-		{http.MethodGet, "/api/tnved-directory/export"},
-		{http.MethodPost, "/api/tnved-directory/import"},
 		{http.MethodGet, "/api/product-directory/export"},
 		{http.MethodPost, "/api/product-directory/import"},
 	} {

@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { TNVEDDirectoryEntry } from '../tnved/types'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { DirectoryPanel } from '../components/DirectoryPanel'
 import { StatusToggle } from '../components/StatusToggle'
@@ -10,8 +9,8 @@ import { TnvedPicker } from './TnvedPicker'
 import { ProductDirectoryEntry, ProductDirectoryInput } from './types'
 import './TnvedPicker.css'
 
-// Создание и редактирование карточки товара: название, ИТС, привязка к коду ТН ВЭД, синонимы.
-export function ProductEntryPanel({ item, tnved, onClose, onSaved, readOnly = false }: { readOnly?: boolean; item?: ProductDirectoryEntry; tnved: TNVEDDirectoryEntry[]; onClose: () => void; onSaved: () => void }) {
+// Создание и редактирование карточки товара: название, ИТС, код ТН ВЭД из номенклатуры, синонимы.
+export function ProductEntryPanel({ item, onClose, onSaved, readOnly = false }: { readOnly?: boolean; item?: ProductDirectoryEntry; onClose: () => void; onSaved: () => void }) {
   const initial = useMemo(() => item ? toInput(item) : emptyInput(), [item])
   const [form, setForm] = useState<ProductDirectoryInput>(initial)
   const [saving, setSaving] = useState(false)
@@ -19,7 +18,7 @@ export function ProductEntryPanel({ item, tnved, onClose, onSaved, readOnly = fa
   const dirty = JSON.stringify(form) !== JSON.stringify(initial)
   function setField<K extends keyof ProductDirectoryInput>(field: K, value: ProductDirectoryInput[K]) { setForm((previous) => ({ ...previous, [field]: value })) }
   async function save() {
-    if (!form.tnvedDirectoryEntryId) { setError('Выберите код ТН ВЭД'); return }
+    if (!form.code) { setError('Выберите код ТН ВЭД'); return }
     setSaving(true); setError('')
     try { if (item) await productDirectoryApi.update(item.id, form); else await productDirectoryApi.create(form); onSaved() } catch (reason) { setError(errorMessage(reason)) } finally { setSaving(false) }
   }
@@ -40,8 +39,8 @@ export function ProductEntryPanel({ item, tnved, onClose, onSaved, readOnly = fa
 
     <section className="drawer-section">
       <h3>Код ТН ВЭД <b className="req">*</b></h3>
-      <TnvedPicker entries={tnved} value={form.tnvedDirectoryEntryId} onChange={(id) => setField('tnvedDirectoryEntryId', id)} />
-      <p className="drawer-hint">Код, пошлина, НДС и антидемпинг берутся из справочника ТН ВЭД.</p>
+      <TnvedPicker value={form.code} onChange={(code) => setField('code', code)} disabled={readOnly} />
+      <p className="drawer-hint">Код — из номенклатуры ТН ВЭД ЕАЭС. Пошлина, НДС и антидемпинг в смете берутся по коду из номенклатуры и реестра ЕЭК.</p>
     </section>
 
     <SynonymFields value={form} hint="Другие названия этого товара — по ним карточка найдётся в смете." onChange={(field, lines) => setField(field, lines)} />

@@ -2,15 +2,17 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { isAdmin, roleLabels, User } from '@/shared/types/user'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
+import { useTodayRates } from '@/shared/api/todayRates'
+import { formatRuDate } from '@/shared/lib/dates'
+import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import './AppHeader.css'
 
 // home — главная: ни один раздел меню не подсвечен, на неё ведёт логотип.
-type AppSection = 'home' | 'estimates' | 'products' | 'tnved' | 'nomenclature' | 'decisions' | 'ceramics' | 'employees'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'employees'
 
 const sections: { value: AppSection; label: string; href: string }[] = [
   { value: 'estimates', label: 'Сметы', href: paths.goods() },
   { value: 'products', label: 'Справочник товаров', href: paths.products },
-  { value: 'tnved', label: 'Справочник ТН ВЭД', href: paths.tnved },
   { value: 'nomenclature', label: 'Номенклатура', href: paths.nomenclature },
   { value: 'decisions', label: 'База решений', href: paths.decisions },
   { value: 'ceramics', label: 'Керамика', href: paths.ceramics },
@@ -30,7 +32,7 @@ function initials(user: User) {
 const MORE_WIDTH = 76
 const GAP = 4
 
-// Общая шапка всех страниц: логотип, разделы, пользователь и выход. Разделы, которые не
+// Общая шапка всех страниц: логотип, разделы, курс НБРК на сегодня, пользователь и выход. Разделы, которые не
 // помещаются по ширине (окно рядом с Excel), уходят в меню «Ещё» — ничего не обрезается.
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
   const items = isAdmin(user) ? [...sections, ...adminSections] : sections
@@ -38,6 +40,7 @@ export function AppHeader({ user, section, onLogout }: { user: User; section: Ap
   const measureRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDetailsElement>(null)
   const [visible, setVisible] = useState(items.length)
+  const rates = useTodayRates()
 
   // Сколько пунктов помещается: ширины пунктов берутся из скрытой копии меню.
   useLayoutEffect(() => {
@@ -98,6 +101,10 @@ export function AppHeader({ user, section, onLogout }: { user: User; section: Ap
       </details>}
       <div className="app-header-measure" ref={measureRef} aria-hidden="true">{items.map((item) => <span key={item.value}>{item.label}</span>)}</div>
     </nav>
+    {rates && rates.length > 0 && <div className="app-header-rates" title={`Официальный курс Национального банка РК на ${formatRuDate(rates[0].date)}`} aria-label="Курс НБРК">
+      {rates.map((rate) => <span key={rate.currency} className="app-header-rate"><small>1 {rate.currency}</small><b>{formatRuNumber(rate.rate)} ₸</b></span>)}
+      <span className="app-header-rate-date">НБРК · {formatRuDate(rates[0].date)}</span>
+    </div>}
     <div className="app-header-user">
       <span className="app-header-avatar" aria-hidden="true">{initials(user)}</span>
       <span className="app-header-who" title={user.email}>{user.name || user.email}<small>{roleLabels[user.role] ?? ''}</small></span>

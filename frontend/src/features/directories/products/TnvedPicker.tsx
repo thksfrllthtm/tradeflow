@@ -1,23 +1,52 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react'
-import { TNVEDDirectoryEntry } from '../tnved/types'
-import { rateLabel } from '../tnved/tnvedLabels'
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+import { errorMessage } from '@/shared/lib/errorMessage'
+import { nameParts } from '@/shared/tnved/codes'
+import { NomenclatureCode } from '@/shared/tnved/nomenclature'
+import { nomenclatureApi } from '../nomenclature/nomenclatureApi'
 
-// Выбор кода ТН ВЭД с поиском по коду, описанию и синонимам (вместо длинного выпадающего списка).
-// ↑ ↓ — выбор, Enter — применить, Esc — закрыть список.
-export function TnvedPicker({ entries, value, onChange }: { entries: TNVEDDirectoryEntry[]; value?: number; onChange: (id: number | undefined) => void }) {
-  const selected = entries.find((entry) => entry.id === value)
+const shortName = (item: NomenclatureCode) => nameParts(item.name).slice(-1)[0] || 'Без наименования'
+const rates = (item: NomenclatureCode) => [`ЕТТ ${item.tariffText || 'не указана'}`, item.vatPercent && `НДС ${item.vatPercent}%`, item.kz?.active && `РК ${item.kz.rateText}`].filter(Boolean).join(' · ')
+
+// Код ТН ВЭД товара — из номенклатуры ТН ВЭД ЕАЭС: поиск по началу кода или словам наименования.
+// ↑ ↓ — выбор, Enter — применить, Esc — закрыть список. Под полем — выбранный код со ставками.
+export function TnvedPicker({ value, onChange, disabled = false }: { value: string; onChange: (code: string) => void; disabled?: boolean }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
+  const [matches, setMatches] = useState<NomenclatureCode[]>([])
+  // undefined — код ещё ищется в номенклатуре, null — его там нет.
+  const [selected, setSelected] = useState<NomenclatureCode | null | undefined>(undefined)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const listRef = useRef<HTMLUListElement | null>(null)
-  const needle = query.trim().toLowerCase()
-  const matches = needle ? entries.filter((entry) => [entry.code, entry.name, entry.nameZh, ...entry.synonymsRu, ...entry.synonymsZh, ...entry.synonymsEn].join(' ').toLowerCase().includes(needle)) : entries
+  const search = useDebouncedValue(query.trim(), 250)
 
-  useEffect(() => setActive(0), [query])
+  // Выбранный код: наименование и ставки из номенклатуры; кода в ней нет — selected пустой.
+  useEffect(() => {
+    if (!value) { setSelected(null); return }
+    let active = true
+    setSelected(undefined)
+    nomenclatureApi.lookup([value]).then((found) => { if (active) setSelected(found.items[0] ?? null) }).catch(() => { if (active) setSelected(null) })
+    return () => { active = false }
+  }, [value])
+
+  useEffect(() => {
+    if (!open || !search) { setMatches([]); return }
+    let active = true
+    setLoading(true); setError('')
+    nomenclatureApi.list({ q: search, offset: 0, limit: 30 })
+      .then((page) => { if (active) { setMatches(page.items); setActive(0) } })
+      .catch((reason) => { if (active) setError(errorMessage(reason)) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [search, open])
+
   useEffect(() => { listRef.current?.children[active]?.scrollIntoView({ block: 'nearest' }) }, [active])
 
-  function pick(entry: TNVEDDirectoryEntry) {
-    onChange(entry.id)
+  function pick(item: NomenclatureCode) {
+    onChange(item.code)
+    setSelected(item)
     setOpen(false)
     setQuery('')
   }
@@ -29,32 +58,32 @@ export function TnvedPicker({ entries, value, onChange }: { entries: TNVEDDirect
     if (event.key === 'Escape' && open) { event.preventDefault(); setOpen(false); setQuery('') }
   }
 
+  const empty = loading ? 'Ищем…' : error || (search ? 'Ничего не найдено в номенклатуре ТН ВЭД ЕАЭС.' : 'Начните вводить код (6116 10) или слова наименования.')
   return <div className="tnved-picker">
     <input
-      value={open ? query : selected ? `${selected.code} · ${selected.name}` : ''}
+      value={open ? query : value ? `${value}${selected ? ` · ${shortName(selected)}` : ''}` : ''}
       onChange={(event) => { setQuery(event.target.value); setOpen(true) }}
       onFocus={() => setOpen(true)}
       onBlur={() => { setOpen(false); setQuery('') }}
       onKeyDown={onKeyDown}
-      placeholder={selected ? 'Поиск другого кода…' : 'Начните вводить код или описание'}
+      placeholder={value ? 'Поиск другого кода…' : 'Начните вводить код или наименование'}
       role="combobox"
       aria-expanded={open}
       aria-label="Код ТН ВЭД"
+      disabled={disabled}
     />
     {open && <ul className="tnved-picker-list" ref={listRef} role="listbox">
-      {matches.length === 0 ? <li className="tnved-picker-empty">Ничего не найдено. Добавьте код в справочник ТН ВЭД.</li>
-        : matches.map((entry, index) => <li key={entry.id} role="option" aria-selected={entry.id === value} className={[index === active ? 'active' : '', entry.id === value ? 'selected' : ''].join(' ')} onMouseDown={(event) => { event.preventDefault(); pick(entry) }} onMouseEnter={() => setActive(index)}>
-          <code>{entry.code}</code>
-          <span>{entry.name || 'Без описания'}</span>
-          <small>{rateLabel(entry.duty, 'Пошлина')} · НДС {rateLabel(entry.vat, 'НДС')}</small>
+      {matches.length === 0 ? <li className="tnved-picker-empty">{empty}</li>
+        : matches.map((item, index) => <li key={item.code} role="option" aria-selected={item.code === value} className={[index === active ? 'active' : '', item.code === value ? 'selected' : ''].join(' ')} onMouseDown={(event) => { event.preventDefault(); pick(item) }} onMouseEnter={() => setActive(index)}>
+          <code>{item.code}</code>
+          <span title={nameParts(item.name).join(' ')}>{shortName(item)}</span>
+          <small>{rates(item)}</small>
         </li>)}
     </ul>}
-    {selected && !open && <div className="tnved-picker-card">
-      <code>{selected.code}</code>
-      <span>Пошлина {rateLabel(selected.duty, 'Пошлина')}</span>
-      <span>НДС {rateLabel(selected.vat, 'НДС')}</span>
-      {selected.antiDumpingPercent && <span>Антидемпинг {selected.antiDumpingPercent}%</span>}
-      {selected.verificationStatus !== 'operator_verified' && <span className="warn">код требует проверки</span>}
+    {value && !open && <div className="tnved-picker-card">
+      <code>{value}</code>
+      {selected === undefined ? null : selected ? <><span>{rates(selected)}</span>{selected.antiDumping?.some((measure) => measure.exact && !measure.suspended) && <span className="warn">есть антидемпинг</span>}</>
+        : <span className="warn">кода нет в номенклатуре ТН ВЭД ЕАЭС — проверьте код</span>}
     </div>}
   </div>
 }

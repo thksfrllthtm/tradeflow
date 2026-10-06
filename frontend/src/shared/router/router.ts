@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 //   /                        — главная: быстрые действия и последние сметы
 //   /estimates/goods[/id]    — сметы товаров
 //   /directory/products      — справочник товаров
-//   /directory/tnved         — справочник ТН ВЭД
 //   /directory/nomenclature  — полная номенклатура ТН ВЭД ЕАЭС (выгрузка TWS.BY)
 //   /decisions               — база решений «товар из инвойса → код ТН ВЭД»
 //   /employees               — сотрудники и роли (только администратор)
@@ -15,7 +14,6 @@ type Route =
   | { page: 'home' }
   | { page: 'goods'; estimateId: number | null }
   | { page: 'products' }
-  | { page: 'tnved' }
   | { page: 'nomenclature' }
   | { page: 'decisions' }
   | { page: 'employees' }
@@ -27,7 +25,6 @@ export const paths = {
   home: '/',
   goods: (id?: number | null) => id ? `/estimates/goods/${id}` : '/estimates/goods',
   products: '/directory/products',
-  tnved: '/directory/tnved',
   nomenclature: '/directory/nomenclature',
   decisions: '/decisions',
   employees: '/employees',
@@ -44,7 +41,6 @@ export function parseRoute(pathname: string): Route | null {
   const estimate = /^\/estimates\/goods(?:\/(\d+))?$/.exec(path)
   if (estimate) return { page: 'goods', estimateId: estimate[1] ? Number(estimate[1]) : null }
   if (path === paths.products) return { page: 'products' }
-  if (path === paths.tnved) return { page: 'tnved' }
   if (path === paths.nomenclature) return { page: 'nomenclature' }
   if (path === paths.decisions) return { page: 'decisions' }
   if (path === paths.employees) return { page: 'employees' }

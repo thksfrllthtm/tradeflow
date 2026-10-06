@@ -345,15 +345,15 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   function applyDirectoryEntry(entry: DirectoryPickerEntry) {
     if (pickerTargets.length === 0) return
     const product = entry.kind === 'product' ? entry.product : null
-    const fullDisplayName = product ? [product.name, product.nameZh || product.tnvedNameZh].filter((value) => value?.trim()).join(' / ') : ''
+    const fullDisplayName = product ? [product.name, product.nameZh].filter((value) => value?.trim()).join(' / ') : ''
     const companyCoefficient = product?.companyCoefficient || ''
-    const card: Record<string, unknown> = product ? { entryId: product.tnved?.id, category: product.category, name: product.name, nameZh: product.nameZh || product.tnvedNameZh, code: entry.code, companyCoefficient } : { code: entry.code }
+    const card: Record<string, unknown> = product ? { category: product.category, name: product.name, nameZh: product.nameZh, code: entry.code, companyCoefficient } : { code: entry.code }
     const snapshot = entry.nomenclature ? withNomenclatureRates(entry.nomenclature, directorySearch.source, card) : card
     const standardName = product ? fullDisplayName : String(snapshot.name ?? '')
     // Название строки меняется только при выборе товара из справочника товаров. Код ТН ВЭД
     // сам по себе название не меняет — остаётся название из Excel.
     const names = (item: GoodsItemInput) => product ? { name: fullDisplayName, supplierName: fullDisplayName } : { name: item.name, supplierName: item.supplierName }
-    setItems((current) => current.map((item) => pickerTargets.includes(item.id ?? '') ? { ...item, ...names(item), standardName, code: entry.code, coefficient: companyCoefficient, directoryEntryId: product?.tnved?.id, productDirectoryId: product?.id, directorySnapshot: snapshot } : item))
+    setItems((current) => current.map((item) => pickerTargets.includes(item.id ?? '') ? { ...item, ...names(item), standardName, code: entry.code, coefficient: companyCoefficient, productDirectoryId: product?.id, directorySnapshot: snapshot } : item))
     // Выбор для выбранных галочкой строк снимает галочки; выбор для одной строки их не трогает.
     if (pickerTargets.length > 1 || pickerTargets.every((id) => selectedForDirectory.includes(id))) setSelectedForDirectory((current) => current.filter((id) => !pickerTargets.includes(id)))
     setPickerTargets([])
@@ -367,7 +367,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     const found = await lookupNomenclature([code]).catch(() => null)
     const nomenclature = found?.byCode.get(code)
     const snapshot = nomenclature ? withNomenclatureRates(nomenclature, found?.source ?? null, { code }) : { code }
-    setItems((current) => current.map((item) => item.id === id ? { ...item, code, directoryEntryId: undefined, productDirectoryId: undefined, directorySnapshot: snapshot } : item))
+    setItems((current) => current.map((item) => item.id === id ? { ...item, code, productDirectoryId: undefined, directorySnapshot: snapshot } : item))
     setResult(null)
   }
 
@@ -411,7 +411,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }
 
   function clearRowDirectory(id: string) {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, standardName: '', code: '', coefficient: '', directoryEntryId: undefined, productDirectoryId: undefined, directorySnapshot: undefined } : item))
+    setItems((current) => current.map((item) => item.id === id ? { ...item, standardName: '', code: '', coefficient: '', productDirectoryId: undefined, directorySnapshot: undefined } : item))
     setSelectedForDirectory((current) => current.filter((selected) => selected !== id))
     setResult(null)
   }

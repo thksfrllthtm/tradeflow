@@ -172,17 +172,6 @@ func (s *Server) requireAdmin(c *gin.Context) {
 	c.Next()
 }
 
-// requireTNVEDAuthor follows requireUser on adding a TN VED code: an invoicer meets
-// missing codes while preparing an estimate and adds them without waiting for an
-// administrator. Only an administrator marks a code as verified (see createTNVEDDirectory).
-func (s *Server) requireTNVEDAuthor(c *gin.Context) {
-	if role := currentUser(c).Role; role != repository.RoleAdmin && role != repository.RoleInvoicer {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "Недостаточно прав: код ТН ВЭД добавляют администратор и инвойсер", "code": "forbidden"}})
-		return
-	}
-	c.Next()
-}
-
 // estimateScope is the owner filter for estimates: an administrator works with
 // every employee's estimates, everyone else only with their own.
 func estimateScope(c *gin.Context) int64 {
