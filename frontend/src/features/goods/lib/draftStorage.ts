@@ -34,7 +34,7 @@ export function draftSnapshot(params: GoodsParams, items: GoodsItemInput[], resu
 export const goodsPhotoStore = createPhotoStore('tradeflow-gloves-copy-photos')
 
 export function emptyParams(): GoodsParams {
-  return { assessmentDate: todayIso(), origin: '', usdKzt: '', eurKzt: '', deliveryMode: 'none', wagons: '', wagonTariffUsd: '420', deliveryTotalUsd: '', packageWeightKg: '0.3', customsFeeKzt: '', mrp: '4325', feeMultiplier: '6', cashUsd: '', directoryCoefficientOnly: true, genericItems: true }
+  return { assessmentDate: todayIso(), origin: '', usdKzt: '', eurKzt: '', deliveryMode: 'none', wagons: '', wagonTariffUsd: '420', deliveryTotalUsd: '', packageWeightKg: '0.3', customsFeeKzt: '', mrp: '4325', feeMultiplier: '6', cashUsd: '', directoryCoefficientOnly: true, genericItems: true, customsValueMode: 'invoice', sirWeight: 'net', sirDiscountPercent: '', sirCountry: 'CN' }
 }
 
 export function normalizeParams(value: Partial<GoodsParams>): GoodsParams {

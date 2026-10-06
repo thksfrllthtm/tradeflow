@@ -32,23 +32,13 @@
 /* min-content: карточка с overflow:hidden иначе сжалась бы и обрезала таблицу вместе с «Итого». */
 .rs-card { flex: 1 1 auto; min-height: min-content; }
 
-/* Панель: слева подбор цен под бюджет, справа правка цен. */
-.rs-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px; border-bottom: 1px solid var(--rs-line); }
-.rs-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
-.rs-decrease { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--rs-ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+/* Поля с единицей (бюджет, своё снижение СИР). */
 .rs-joined { display: inline-flex; align-items: stretch; height: 32px; border: 1px solid var(--rs-field); border-radius: 8px; background: #fff; overflow: hidden; }
 .rs-joined:focus-within { border-color: var(--rs-focus); box-shadow: 0 0 0 2px #1c6b4340; }
 .rs-joined input { box-sizing: border-box; width: 72px; height: 100%; margin: 0; padding: 0 4px 0 10px; border: 0; background: transparent; color: var(--rs-ink); font-size: .93rem; text-align: right; font-variant-numeric: tabular-nums; }
 .rs-step .rs-joined input:focus-visible { outline: none; }
 .rs-joined input::placeholder { color: #68766e; }
 .rs-joined i { display: flex; align-items: center; padding: 0 9px 0 3px; color: var(--rs-ink-3); font-size: .8rem; font-style: normal; font-weight: 600; }
-.rs-price-tool button.rs-apply { height: 32px; padding: 0 12px; border: 1px solid #b8cfc0; border-radius: 8px; background: #eef6f1; color: var(--rs-green-dark); font-size: .86rem; font-weight: 650; white-space: nowrap; }
-.rs-price-tool button.rs-apply:hover:not(:disabled) { border-color: var(--rs-green); background: #e1efe6; }
-.rs-price-tool button.rs-apply:disabled { border-color: var(--rs-line); background: #f6f8f7; color: #7d8a82; opacity: 1; }
-.rs-tool-sep { width: 1px; height: 20px; background: var(--rs-line-strong); }
-.rs-price-tool button.rs-quiet { height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--rs-ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
-.rs-price-tool button.rs-quiet:hover:not(:disabled) { background: #edf4ef; color: var(--rs-green-dark); }
-.rs-price-tool button.rs-quiet:disabled { background: transparent; color: #8a968f; opacity: 1; }
 .rs-card > .budget-status { padding: 6px 14px; border-bottom: 1px solid var(--rs-line); background: #f7faf8; }
 
 /* Фильтр строк, счётчики, плотность. */
@@ -85,10 +75,9 @@
 .goods-page .rs-table tbody tr:hover td { background: #eef5f0; }
 
 /* Закреплённая левая зона: галочка, № с состоянием, товар. */
-.goods-page .rs-table .rs-check { position: sticky; left: 0; z-index: 2; width: 34px; min-width: 34px; max-width: 34px; padding-inline: 0 !important; text-align: center; }
-.goods-page .rs-table .rs-num { position: sticky; left: 34px; z-index: 2; width: var(--rs-num-w); min-width: var(--rs-num-w); max-width: var(--rs-num-w); padding-inline: 4px 6px !important; color: var(--rs-ink-3); text-align: left; }
-.goods-page .rs-table .rs-name { position: sticky; left: calc(34px + var(--rs-num-w)); z-index: 2; width: 100%; min-width: 280px; max-width: 0; text-align: left; white-space: normal; box-shadow: inset -1px 0 0 var(--rs-line-strong); }
-.goods-page .rs-table th.rs-check, .goods-page .rs-table th.rs-num, .goods-page .rs-table th.rs-name { z-index: 4; }
+.goods-page .rs-table .rs-num { position: sticky; left: 0; z-index: 2; width: var(--rs-num-w); min-width: var(--rs-num-w); max-width: var(--rs-num-w); padding-inline: 4px 6px !important; color: var(--rs-ink-3); text-align: left; }
+.goods-page .rs-table .rs-name { position: sticky; left: var(--rs-num-w); z-index: 2; width: 100%; min-width: 280px; max-width: 0; text-align: left; white-space: normal; box-shadow: inset -1px 0 0 var(--rs-line-strong); }
+.goods-page .rs-table th.rs-num, .goods-page .rs-table th.rs-name { z-index: 4; }
 .goods-page .rs-table input[type="checkbox"] { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--rs-green); cursor: pointer; }
 .goods-page .rs-table input[type="checkbox"]:disabled { cursor: not-allowed; opacity: .4; }
 .goods-page .rs-table input[type="checkbox"]:focus-visible { outline: 2px solid var(--rs-focus); outline-offset: 2px; }
@@ -120,7 +109,6 @@
 .goods-page .rs-table tbody tr.rs-row-warn td { background: var(--rs-warn-row); }
 .goods-page .rs-table tbody tr.rs-row-bad:hover td { background: #fcebeb; }
 .goods-page .rs-table tbody tr.rs-row-warn:hover td { background: #fdf4dc; }
-.goods-page .rs-table tbody tr.rv-selected td { background: #e3f1e8; }
 .goods-page .rs-table tbody tr.rv-excluded td { color: var(--rs-ink-3); }
 .goods-page .rs-table tbody tr.rv-excluded .rs-name-text { text-decoration: line-through; text-decoration-color: #9aa59e; }
 .goods-page .rs-table tbody tr.flash td { animation: rs-flash 1.8s ease-out; }
@@ -146,7 +134,7 @@
 
 .goods-page .rs-table tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid var(--rs-line-strong); border-bottom: 0; background: var(--rs-head); color: #17331f; font-weight: 700; }
 .goods-page .rs-table tfoot td.rs-price-col { background: var(--rs-head); }
-.goods-page .rs-table tfoot td.rs-check, .goods-page .rs-table tfoot td.rs-num, .goods-page .rs-table tfoot td.rs-name { z-index: 4; }
+.goods-page .rs-table tfoot td.rs-num, .goods-page .rs-table tfoot td.rs-name { z-index: 4; }
 .goods-page .rs-table tfoot .rs-sub, .goods-page .rs-table tfoot .rs-foot-note { font-weight: 500; }
 
 /* Компактно: одна строка на товар — подписи под числами скрыты, причина остаётся. */
@@ -159,16 +147,12 @@
   .goods-page .rs-table .rs-name { min-width: 220px; }
 }
 @media (max-width: 900px) {
-  .rs-toolbar { align-items: flex-start; }
   .rs-density { margin-left: 0; }
 }
 /* Окно уже 1500px: короткие подписи панели («Бюджет», «Снизить на»), чтобы она помещалась в строку. */
 @media (max-width: 1500px) {
   .rs-step .rs-wide { display: none; }
   .rs-step .budget-input input { width: 116px; }
-  .rs-toolbar { gap: 8px 12px; padding-inline: 12px; }
-  .rs-step .rs-tool-group { gap: 6px; }
   .rs-step .budget-controls { gap: 6px; }
-  .rs-step .budget-controls button.budget-run, .rs-step .budget-controls button.budget-ai, .rs-price-tool button.rs-apply { padding-inline: 10px; }
-  .rs-price-tool button.rs-quiet { padding-inline: 8px; }
+  .rs-step .budget-controls button.budget-run, .rs-step .budget-controls button.budget-ai { padding-inline: 10px; }
 }

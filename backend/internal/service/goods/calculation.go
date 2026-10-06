@@ -13,6 +13,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/calculation"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/riskindicators"
 	"github.com/shopspring/decimal"
 )
 
@@ -108,6 +109,11 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		return GoodsCalculationResult{}, err
 	}
 
+	sir, err := parseSIRSettings(input)
+	if err != nil {
+		return GoodsCalculationResult{}, err
+	}
+
 	// A browser may keep a stale snapshot in local storage.  In the running
 	// server the directory entry id is the only trusted reference; names and
 	// ИТС are reloaded from PostgreSQL for every calculation, and duty/VAT come
@@ -136,6 +142,12 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		rates.Origin = input.Origin
 		for index, inItem := range input.Items {
 			snapshots[index] = calculation.ApplyNomenclatureRates(snapshots[index], inItem.Code, rates, inItem.AntiDumpingChoice)
+		}
+	}
+	indicators, indicatorsLoaded := map[string]riskindicators.Indicator{}, false
+	if sir.enabled && s.repository != nil {
+		if indicators, indicatorsLoaded, err = riskindicators.NewService(s.repository).Lookup(ctx, riskindicators.SortedCodes(codes), sir.country); err != nil {
+			return GoodsCalculationResult{}, err
 		}
 	}
 
@@ -174,6 +186,9 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 			Excluded:              inItem.Excluded,
 			DirectorySnapshot:     snapshot,
 			GenericItems:          input.GenericItems,
+		}
+		if sir.enabled {
+			itemIn.SIR = sir.basis(calculation.RowTNVEDCode(snapshot, inItem.Code), indicators, indicatorsLoaded)
 		}
 		if snapshot != nil {
 			itemIn.StandardName = directoryDisplayName(snapshot)
@@ -276,7 +291,7 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		items[i].Warnings = calculation.FilterRateWarnings(allIssues)
 		calculation.CalculateTariff(&items[i], calculation.ParseItemStringDecimal(items[i].NetKG), calculation.ParseItemStringDecimal(items[i].Pairs), calculation.ParseItemStringDecimal(items[i].Places), usd, service.DecimalValueOrZero(euro), &items[i].Warnings)
 		items[i].Errors, items[i].Warnings = calculation.SplitCalculationIssues(items[i].Warnings)
-		if len(items[i].Errors) == 0 && len(items[i].Warnings) == 0 && items[i].GoodsCost != "" && items[i].CustomsValueKZT != "" && items[i].DutyKZT != "" && items[i].VATKZT != "" {
+		if len(items[i].Errors) == 0 && len(items[i].Warnings) == 0 && (items[i].GoodsCost != "" || items[i].CustomsBasis == "sir") && items[i].CustomsValueKZT != "" && items[i].DutyKZT != "" && items[i].VATKZT != "" {
 			items[i].Status = "calculated"
 		} else {
 			items[i].Status = "needs_review"
@@ -368,20 +383,24 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 	}
 
 	result := GoodsCalculationResult{
-		AssessmentDate:   assessmentDate.Format("2006-01-02"),
-		Origin:           strings.TrimSpace(input.Origin),
-		UsdKzt:           usd.String(),
-		EurKzt:           service.DecimalPtrString(euro),
-		Wagons:           service.DecimalPtrString(wagons),
-		WagonTariffUsd:   tariff.String(),
-		DeliveryMode:     deliveryMode,
-		DeliveryTotalUsd: service.DecimalPtrString(deliveryTotalUSD),
-		PackageWeightKg:  pkg.String(),
-		CustomsFeeKzt:    service.DecimalPtrString(fee),
-		Mrp:              strings.TrimSpace(input.Mrp),
-		FeeMultiplier:    strings.TrimSpace(input.FeeMultiplier),
-		CashUsd:          service.DecimalPtrString(cash),
-		Items:            items,
+		AssessmentDate:     assessmentDate.Format("2006-01-02"),
+		Origin:             strings.TrimSpace(input.Origin),
+		UsdKzt:             usd.String(),
+		EurKzt:             service.DecimalPtrString(euro),
+		Wagons:             service.DecimalPtrString(wagons),
+		WagonTariffUsd:     tariff.String(),
+		DeliveryMode:       deliveryMode,
+		DeliveryTotalUsd:   service.DecimalPtrString(deliveryTotalUSD),
+		PackageWeightKg:    pkg.String(),
+		CustomsFeeKzt:      service.DecimalPtrString(fee),
+		Mrp:                strings.TrimSpace(input.Mrp),
+		FeeMultiplier:      strings.TrimSpace(input.FeeMultiplier),
+		CashUsd:            service.DecimalPtrString(cash),
+		CustomsValueMode:   sir.mode(),
+		SirWeight:          sir.weight,
+		SirDiscountPercent: sir.discount.String(),
+		SirCountry:         sir.country,
+		Items:              items,
 	}
 
 	result.Totals = calculation.CalculationTotals{

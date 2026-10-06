@@ -1,7 +1,7 @@
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { formatRuDate } from '@/shared/lib/dates'
 import { moneyText } from '@/shared/lib/rounding'
-import { GoodsCalculationResult } from '@/shared/types/goods'
+import { GoodsCalculationResult, ItpSaved } from '@/shared/types/goods'
 import { CalculatorActivity } from '../../types'
 import { storageFailed } from '../../lib/storageNotice'
 import { ItpCalculator } from './ItpCalculator'
@@ -16,11 +16,13 @@ type SummaryProps = {
   delivery: boolean
   saveDraft: () => void
   exportExcel: () => void
+  itp?: ItpSaved
+  onItpChange: (value: ItpSaved | undefined) => void
 }
 
 // Полоса итогов над таблицей: растаможка как формула из слагаемых, справочные суммы, состояние
 // сохранения и кнопки. Пока идёт пересчёт, итог приглушён и помечен «пересчёт…».
-export function ResultSummary({ result, loading, activity, storageNotice, delivery, saveDraft, exportExcel }: SummaryProps) {
+export function ResultSummary({ result, loading, activity, storageNotice, delivery, saveDraft, exportExcel, itp, onItpChange }: SummaryProps) {
   const customsPaymentsUsd = (() => {
     const kzt = parseCalculatorNumber(result.totals.customsPaymentsKzt) ?? NaN
     const rate = parseCalculatorNumber(result.usdKzt) ?? NaN
@@ -64,7 +66,7 @@ export function ResultSummary({ result, loading, activity, storageNotice, delive
       <div className="rs-sum-actions">
         <div className="rs-sum-meta">
           <p className={failed ? 'rs-save-state failed' : 'rs-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</p>
-          <ItpCalculator result={result} />
+          <ItpCalculator result={result} saved={itp} onSave={onItpChange} />
         </div>
         <div className="rs-sum-buttons">
           <button type="button" className="rs-save" onClick={saveDraft} disabled={loading} title="Сохранить на сервере сейчас, не дожидаясь автосохранения (Ctrl+S)">{activity === 'save' ? 'Сохраняем…' : 'Сохранить'}</button>

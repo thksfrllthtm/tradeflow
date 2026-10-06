@@ -1,6 +1,6 @@
-import { KeyboardEvent, useEffect, useRef, useState } from 'react'
-import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
-import { weightText } from '@/shared/lib/rounding'
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { GoodsCalculationResult, GoodsItemInput, ItpSaved, SirParams, SirResult } from '@/shared/types/goods'
+import { moneyText, weightText } from '@/shared/lib/rounding'
 import { BudgetControls, BudgetNote, BudgetStatus } from '../BudgetTool/BudgetTool'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
 import { useSyncedHorizontalScroll } from '../../hooks/useSyncedHorizontalScroll'
@@ -9,6 +9,8 @@ import { CalculatorActivity } from '../../types'
 import { CalculationErrors } from './CalculationErrors'
 import { AntiDumpingChooser, AntiDumpingInfo, antiDumpingTone } from './AntiDumpingChooser'
 import { ResultSummary } from './ResultSummary'
+import { SirControls } from './SirControls'
+import { SirCompareModal } from './SirCompareModal'
 import { plural } from './errorGroups'
 import { display, displayNumber, dutyRateText, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
 import '../../goods.css'
@@ -27,10 +29,18 @@ type Props = {
   onPriceBlur: (index: number, value: string) => void
   // Вариант антидемпинга строки ('' — как по стране, 'none' — не начислять); строка пересчитывается.
   onAntiDumpingChoice: (index: number, key: string) => void
-  onBulkPriceDecrease: (value: string, indexes?: number[]) => void
+  // Таможенная стоимость по инвойсу или по СИР и параметры СИР; смета пересчитывается.
+  sir: SirParams
+  onSirChange: (patch: SirParams) => void
+  // Пробный расчёт с другими параметрами СИР — для окна сравнения; смета не меняется.
+  previewSir: (patch: SirParams) => Promise<GoodsCalculationResult>
+  // «Сверка по ИТП», сохраняемая в смете.
+  itp?: ItpSaved
+  onItpChange: (value: ItpSaved | undefined) => void
   onRestoreInitial: () => void
-  onUndoBulkPriceDecrease: () => void
-  canUndoBulkPriceDecrease: boolean
+  // Откат последнего подбора под бюджет или сброса цен.
+  onUndoPrices: () => void
+  canUndoPrices: boolean
   budget: BudgetDistributionState
 }
 
@@ -59,6 +69,14 @@ function StateIcon({ state }: { state: RowState }) {
   </svg>
 }
 
+const WEIGHT_LABEL = { net: 'нетто', gross: 'брутто' }
+
+// Как посчитана ТС строки по СИР — подсказка ячейки ТС.
+function sirTitle(sir: SirResult) {
+  const discount = Number(sir.discountPercent) > 0 ? ` − ${displayNumber(sir.discountPercent)} % = ${displayNumber(sir.pricePerKgUsd)}` : ''
+  return `ТС по СИР (${sir.country}, профиль ${sir.profile}): ${displayNumber(sir.priceUsd)} USD/кг${discount} × ${displayNumber(sir.weightKg)} кг ${WEIGHT_LABEL[sir.weight] ?? sir.weight} = ${displayNumber(sir.valueUsd)} USD, плюс доставка`
+}
+
 // Этап 3: полоса итогов, панель цен, фильтр «требуют внимания» и таблица на всю оставшуюся высоту.
 // Состояние строки — в закреплённой левой зоне рядом с №, причина — строкой под названием.
 export function ResultStep({
@@ -73,14 +91,16 @@ export function ResultStep({
   onPriceChange,
   onPriceBlur,
   onAntiDumpingChoice,
-  onBulkPriceDecrease,
+  sir,
+  onSirChange,
+  previewSir,
+  itp,
+  onItpChange,
   onRestoreInitial,
-  onUndoBulkPriceDecrease,
-  canUndoBulkPriceDecrease,
+  onUndoPrices,
+  canUndoPrices,
   budget,
 }: Props) {
-  const [bulkPriceDecrease, setBulkPriceDecrease] = useState('')
-  const [selectedRows, setSelectedRows] = useState<number[]>([])
   // Цена, которую сейчас вводят: пока поле в фокусе, показываем ровно её (в том числе пустую),
   // иначе стёртое поле сразу заполнилось бы рассчитанной ценой. Пересчёт — при выходе из поля.
   const [draftPrices, setDraftPrices] = useState<Record<number, string>>({})
@@ -92,15 +112,22 @@ export function ResultStep({
   // Цена до начала ввода (для Esc) и строка, выход из которой не должен пересчитывать.
   const editStartRef = useRef<{ index: number; value: string } | null>(null)
   const skipBlurRef = useRef<number | null>(null)
-  const lastCheckedRef = useRef<number | null>(null)
   const { tableWrapRef, topScrollRef, syncHorizontalScroll } = useSyncedHorizontalScroll(true)
 
-  const validBulkPriceDecrease = /^\d+(\.\d+)?$/.test(bulkPriceDecrease) && Number(bulkPriceDecrease) > 0
   const checkTotals = rowTotals(result)
   const antiDumping = hasAntiDumping(result)
   // Колонка доставки нужна, только если доставка есть.
   const delivery = positive(result.totals.totalDeliveryUsd) || result.items.some((item) => positive(item.deliveryUsd))
-  const applyTo = selectedRows.length > 0 ? selectedRows : undefined
+  // По СИР цены инвойса на ТС не влияют: подбирать их под бюджет бессмысленно.
+  const sirMode = sir.customsValueMode === 'sir'
+  const includedRows = result.items.filter((item) => !item.excluded)
+  const sirRows = includedRows.filter((item) => item.customsBasis === 'sir').length
+  // По СИР колонки цены инвойса заменяются колонками, из которых считается ТС: вес, СИР, СИР со снижением, ТС в USD.
+  const sirGross = sir.sirWeight === 'gross'
+  const sirDiscount = Number(sir.sirDiscountPercent || 0)
+  const sirValueUsd = includedRows.reduce((total, item) => total + (parseCalculatorNumber(item.sir ? item.sir.valueUsd : item.costUsd) ?? 0), 0)
+  const [compareOpen, setCompareOpen] = useState(false)
+  const closeCompare = useCallback(() => setCompareOpen(false), [])
 
   const rows = result.items.map((item, index) => {
     const state = rowState(item)
@@ -115,9 +142,6 @@ export function ResultStep({
     attention: rows.filter((row) => row.attention).length,
   }
   const visible = filter === 'attention' ? rows.filter((row) => row.attention) : rows
-  const selectable = visible.filter((row) => !row.item.excluded).map((row) => row.index)
-  const allVisibleSelected = selectable.length > 0 && selectable.every((index) => selectedRows.includes(index))
-  const someVisibleSelected = selectable.some((index) => selectedRows.includes(index))
   const changed = changedFromExcel(items, result)
   // Ширина колонки № — по числу цифр: от неё зависит отступ закреплённой колонки «Товар».
   const numWidth = `${String(result.items.length).length * 8 + 46}px`
@@ -141,25 +165,6 @@ export function ResultStep({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-
-  function toggleSelectedRow(index: number, range: boolean) {
-    const last = lastCheckedRef.current
-    lastCheckedRef.current = index
-    if (range && last !== null && last !== index) {
-      // Shift+щелчок — диапазон видимых строк от прошлой отмеченной до этой.
-      const from = selectable.indexOf(last)
-      const to = selectable.indexOf(index)
-      if (from >= 0 && to >= 0) {
-        const span = selectable.slice(Math.min(from, to), Math.max(from, to) + 1)
-        const select = !selectedRows.includes(index)
-        setSelectedRows((current) => select ? [...new Set([...current, ...span])] : current.filter((selected) => !span.includes(selected)))
-        return
-      }
-    }
-    setSelectedRows((current) => current.includes(index)
-      ? current.filter((selected) => selected !== index)
-      : [...current, index])
-  }
 
   // Запоминается только явный выбор сотрудника.
   function chooseDensity(value: Density) {
@@ -206,16 +211,16 @@ export function ResultStep({
 
   function backToReview() {
     const count = changed.length
-    const bulk = canUndoBulkPriceDecrease || Object.keys(budget.notes).length > 0
+    const bulk = canUndoPrices || Object.keys(budget.notes).length > 0
     if ((count > 0 || bulk) && !window.confirm(count > 0
       ? `Цены этапа «Результат» вернутся к ценам из Excel: изменено ${count} ${plural(count, ['цена', 'цены', 'цен'])}. Перейти к проверке строк?`
-      : 'Цены подбора под бюджет и вычета сбросятся. Перейти к проверке строк?')) return
+      : 'Цены подбора под бюджет сбросятся. Перейти к проверке строк?')) return
     onBackToReview()
   }
 
   function restoreInitial() {
     const count = new Set([...changedFromRows(items, result), ...Object.keys(budget.notes).map(Number)]).size
-    if (count > 0 && !window.confirm(`Вернуть цены строк сметы? Изменится ${count} ${plural(count, ['цена', 'цены', 'цен'])} после подбора под бюджет и вычета. Вернуть их можно кнопкой «Отменить».`)) return
+    if (count > 0 && !window.confirm(`Вернуть цены строк сметы? Изменится ${count} ${plural(count, ['цена', 'цены', 'цен'])} после подбора под бюджет. Вернуть их можно кнопкой «Отменить».`)) return
     onRestoreInitial()
   }
 
@@ -229,37 +234,26 @@ export function ResultStep({
     exportExcel()
   }
 
-  const columns = 11 + (antiDumping ? 1 : 0) + (delivery ? 1 : 0)
+  const columns = 10 + (antiDumping ? 1 : 0) + (delivery ? 1 : 0) + (sirMode && sirDiscount > 0 ? 1 : 0)
 
   return (
     <div className={`goods-step-page rs-step${density === 'compact' ? ' compact' : ''}`}>
       <CalculationErrors result={result} onBackToReview={backToReview} onShowRow={showRow} />
 
-      <ResultSummary result={result} loading={loading} activity={activity} storageNotice={storageNotice} delivery={delivery} saveDraft={saveDraft} exportExcel={exportChecked} />
+      <ResultSummary result={result} loading={loading} activity={activity} storageNotice={storageNotice} delivery={delivery} saveDraft={saveDraft} exportExcel={exportChecked} itp={itp} onItpChange={onItpChange} />
 
       <section className="rv-card rs-card" aria-label="Строки расчёта">
-        <div className="rs-toolbar">
-          <div className="rs-tool-group" aria-label="Подбор цен под бюджет" role="group">
-            <BudgetControls budget={budget} disabled={loading} />
-          </div>
-          <div className="rs-tool-group rs-price-tool" aria-label="Правка цен" role="group">
-            <label className="rs-decrease" title="Вычесть сумму из цены единицы у всех строк или у выбранных галочкой">
-              <span>Снизить<span className="rs-wide"> цену</span> на</span>
-              <span className="rs-joined">
-                <input inputMode="decimal" value={bulkPriceDecrease} onChange={(event) => setBulkPriceDecrease(event.target.value.replace(',', '.'))}
-                  onKeyDown={(event) => { if (event.key === 'Enter' && validBulkPriceDecrease && !loading) { event.preventDefault(); onBulkPriceDecrease(bulkPriceDecrease, applyTo); setBulkPriceDecrease('') } }}
-                  placeholder="0,00" aria-label={`Сколько вычесть из цены единицы, USD, ${applyTo ? `у ${selectedRows.length} выбранных строк` : 'у всех строк'}`} />
-                <i>USD</i>
-              </span>
-            </label>
-            <button type="button" className="rs-apply" onClick={() => { onBulkPriceDecrease(bulkPriceDecrease, applyTo); setBulkPriceDecrease('') }} disabled={!validBulkPriceDecrease || loading}>
-              {applyTo ? `у выбранных · ${selectedRows.length}` : `у всех · ${result.items.filter((item) => !item.excluded).length}`}
+        {/* Одна полоса: как считать ТС, подбор под бюджет (по инвойсу) или условия СИР, откат цен, сравнение. */}
+        <SirControls sir={sir} sirRows={sirRows} totalRows={includedRows.length} disabled={loading} onChange={onSirChange} onCompare={() => setCompareOpen(true)}
+          invoiceTools={<BudgetControls budget={budget} disabled={loading} />}
+          priceTools={<>
+            <button type="button" className="rs-icon" onClick={onUndoPrices} disabled={!canUndoPrices || loading} title="Отменить: вернуть цены до последнего подбора или сброса" aria-label="Отменить последний подбор цен">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5.5 3.5 2.5 6.5l3 3" /><path d="M2.8 6.5h6.7a4 4 0 0 1 0 8H7" /></svg>
             </button>
-            <span className="rs-tool-sep" aria-hidden="true" />
-            <button type="button" className="rs-quiet" onClick={onUndoBulkPriceDecrease} disabled={!canUndoBulkPriceDecrease || loading} title="Вернуть цены до последнего вычета, подбора или сброса">Отменить</button>
-            <button type="button" className="rs-quiet" onClick={restoreInitial} disabled={loading} title="Вернуть цены строк сметы: отменяет подбор под бюджет и вычет; цены, введённые вручную, остаются">Сбросить цены</button>
-          </div>
-        </div>
+            <button type="button" className="rs-icon" onClick={restoreInitial} disabled={loading} title="Сбросить цены: вернуть цены строк сметы, отменяет подбор под бюджет; цены, введённые вручную, остаются" aria-label="Сбросить цены к ценам сметы">
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" /><path d="M13.5 2.5v3.2h-3.2" /></svg>
+            </button>
+          </>} />
 
         <div className="rs-filterbar">
           <div className="rs-seg" role="radiogroup" aria-label="Какие строки показать">
@@ -271,14 +265,13 @@ export function ResultStep({
             {counts.warn > 0 && <span className="warn"><StateIcon state="warn" /> предупреждения {counts.warn}</span>}
             {counts.ad > 0 && <span className="ad">АД: выбрать {counts.ad}</span>}
           </p>}
-          {changed.length > 0 && <p className="rs-changed" title="Цена единицы отличается от цены в Excel: правка, вычет или подбор под бюджет">изменено цен: <b>{changed.length}</b></p>}
-          {selectedRows.length > 0 && <p className="rs-selected">Выбрано: <b>{selectedRows.length}</b> <button type="button" className="button-link" onClick={() => setSelectedRows([])}>снять</button></p>}
+          {changed.length > 0 && <p className="rs-changed" title="Цена единицы отличается от цены в Excel: правка или подбор под бюджет">изменено цен: <b>{changed.length}</b></p>}
           <div className="rs-seg rs-density" role="radiogroup" aria-label="Плотность таблицы">
             <button type="button" role="radio" aria-checked={density === 'full'} className={density === 'full' ? 'active' : undefined} onClick={() => chooseDensity('full')} title="С подписями: места, брутто, ставка">Подробно</button>
             <button type="button" role="radio" aria-checked={density === 'compact'} className={density === 'compact' ? 'active' : undefined} onClick={() => chooseDensity('compact')} title="Одна строка на товар: больше строк на экране">Компактно</button>
           </div>
         </div>
-        <BudgetStatus budget={budget} />
+        {!sirMode && <BudgetStatus budget={budget} />}
 
         <div className="goods-table-top-scroll rs-top-scroll" ref={topScrollRef} onScroll={() => syncHorizontalScroll('top')} aria-hidden="true"><div /></div>
         <div className="rs-table-wrap" ref={tableWrapRef} onScroll={() => syncHorizontalScroll('body')}>
@@ -286,13 +279,19 @@ export function ResultStep({
             <caption className="rs-sr">Строки расчёта: цену единицы можно менять; Enter — следующая строка, Esc — вернуть цену</caption>
             <thead>
               <tr>
-                <th className="rs-check"><input type="checkbox" checked={allVisibleSelected} ref={(input) => { if (input) input.indeterminate = someVisibleSelected && !allVisibleSelected }} onChange={() => setSelectedRows((current) => allVisibleSelected ? current.filter((index) => !selectable.includes(index)) : [...new Set([...current, ...selectable])])} disabled={selectable.length === 0} aria-label="Выбрать все показанные строки" /></th>
                 <th className="rs-num" scope="col">№</th>
                 <th className="rs-name" scope="col"><span className="rs-name-head">Товар<span className="rs-th-hint">код ТН ВЭД</span></span></th>
                 <th scope="col" title="Количество; под ним — места × штук в месте">Кол-во, шт</th>
-                <th scope="col" title="Вес нетто; под ним — брутто">Нетто, кг</th>
-                <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD <span className="rs-th-hint">вводится</span></th>
-                <th scope="col">Стоимость, USD</th>
+                {sirMode ? <>
+                  <th scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС; под ним — нетто' : 'Вес нетто — по нему считается ТС; под ним — брутто'}>{sirGross ? 'Брутто' : 'Нетто'}, кг</th>
+                  <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СИР, $/кг</th>
+                  {sirDiscount > 0 && <th scope="col" className="rs-sir-col" title={`Индикатор со снижением: берётся ${100 - sirDiscount} %`}>−{displayNumber(sir.sirDiscountPercent)}%, $/кг</th>}
+                  <th scope="col" title="Вес × СИР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD</th>
+                </> : <>
+                  <th scope="col" title="Вес нетто; под ним — брутто">Нетто, кг</th>
+                  <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD <span className="rs-th-hint">вводится</span></th>
+                  <th scope="col">Стоимость, USD</th>
+                </>}
                 {delivery && <th scope="col">Доставка, USD</th>}
                 <th scope="col" className="rs-kzt-start" title="Таможенная стоимость">ТС, ₸</th>
                 <th scope="col">Пошлина, ₸</th>
@@ -323,14 +322,12 @@ export function ResultStep({
                 const rowClass = [
                   `rs-row-${state}`,
                   attention ? 'attention' : '',
-                  selectedRows.includes(index) ? 'rv-selected' : '',
                   item.excluded ? 'rv-excluded' : '',
                   flashRow === index ? 'flash' : '',
                 ].filter(Boolean).join(' ')
 
                 return (
                   <tr key={`${item.productId}-${index}`} id={`rs-row-${index}`} className={rowClass}>
-                    <td className="rs-check"><input type="checkbox" checked={selectedRows.includes(index)} onChange={(event) => toggleSelectedRow(index, (event.nativeEvent as MouseEvent).shiftKey)} disabled={item.excluded} aria-label={`Выбрать строку ${sourceRow}`} /></td>
                     <td className="rs-num">
                       <span className="rs-num-cell">
                         <span>{sourceRow}</span>
@@ -349,6 +346,12 @@ export function ResultStep({
                       </button>}
                     </td>
                     <td>{displayNumber(item.pairs)}{(item.places || item.pairsPerPlace) && <small className="rs-sub">{displayNumber(item.places)} × {displayNumber(item.pairsPerPlace)}</small>}</td>
+                    {sirMode ? <>
+                      <td>{displayNumber(sirGross ? item.grossKg : item.netKg)}{(sirGross ? item.netKg : item.grossKg) && <small className="rs-sub">{sirGross ? 'нетто' : 'брутто'} {displayNumber(sirGross ? item.netKg : item.grossKg)}</small>}</td>
+                      <td className="rs-sir-col" title={item.sir ? `Профиль риска ${item.sir.profile}, страна ${item.sir.country}` : 'Для кода индикатора нет — строка считается по инвойсу'}>{item.sir ? displayNumber(item.sir.priceUsd) : <span className="rs-sir-none">нет</span>}</td>
+                      {sirDiscount > 0 && <td className="rs-sir-col">{item.sir ? displayNumber(item.sir.pricePerKgUsd) : '—'}</td>}
+                      <td title={`Инвойс: ${displayNumber(price)} × ${displayNumber(item.pairs)} = ${displayNumber(item.goodsCost || item.costInput)} ${currency}${item.sir ? '' : '. Цену меняют в режиме «По инвойсу»'}`}>{item.sir ? displayNumber(item.sir.valueUsd) : <>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}<small className="rs-sub">по инвойсу</small></>}</td>
+                    </> : <>
                     <td>{displayNumber(item.netKg)}{item.grossKg && <small className="rs-sub">брутто {displayNumber(item.grossKg)}</small>}</td>
                     <td className="rs-price-col">
                       <span className="price-field">
@@ -376,8 +379,9 @@ export function ResultStep({
                       </span>
                     </td>
                     <td>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</td>
+                    </>}
                     {delivery && <td>{displayNumber(item.deliveryUsd)}</td>}
-                    <td className="rs-kzt-start">{displayNumber(item.customsValueKzt)}</td>
+                    <td className="rs-kzt-start" title={item.sir ? sirTitle(item.sir) : undefined}>{displayNumber(item.customsValueKzt)}{item.sir && !sirMode && <small className="rs-sub sir-sub">СИР {displayNumber(item.sir.pricePerKgUsd)} $/кг</small>}</td>
                     <td>{displayNumber(item.dutyKzt)}{rate && <small className="rs-sub">{rate}</small>}{antiDumpingInfo && <AntiDumpingChooser info={antiDumpingInfo} choice={source?.antiDumpingChoice} disabled={loading || item.excluded} onChoose={(key) => onAntiDumpingChoice(index, key)} />}</td>
                     {antiDumping && <td title={antiDumpingInfo?.text}>{displayNumber(item.antiDumpingKzt)}{(antiDumpingInfo?.status === 'applied' || antiDumpingInfo?.status === 'chosen') && <small className="rs-sub">{antiDumpingInfo.number} · {String(antiDumpingInfo.percent ?? '').replace('.', ',')}%</small>}</td>}
                     <td>{displayNumber(item.vatKzt)}</td>
@@ -388,13 +392,19 @@ export function ResultStep({
             </tbody>
             <tfoot>
               <tr>
-                <td className="rs-check" />
                 <td className="rs-num" />
                 <td className="rs-name">Итого{filter === 'attention' && <small className="rs-foot-note"> · по всем строкам</small>}</td>
                 <td>{displayNumber(checkTotals.quantity)}<small className="rs-sub">мест {displayNumber(checkTotals.places)}</small></td>
-                <td>{displayNumber(weightText(checkTotals.netKg))}<small className="rs-sub">брутто {displayNumber(weightText(checkTotals.grossKg))}</small></td>
-                <td className="rs-price-col" />
-                <td>{displayNumber(result.totals.totalCostUsd)}</td>
+                {sirMode ? <>
+                  <td>{displayNumber(weightText(sirGross ? checkTotals.grossKg : checkTotals.netKg))}<small className="rs-sub">{sirGross ? 'нетто' : 'брутто'} {displayNumber(weightText(sirGross ? checkTotals.netKg : checkTotals.grossKg))}</small></td>
+                  <td className="rs-sir-col" />
+                  {sirDiscount > 0 && <td className="rs-sir-col" />}
+                  <td>{displayNumber(moneyText(sirValueUsd))}</td>
+                </> : <>
+                  <td>{displayNumber(weightText(checkTotals.netKg))}<small className="rs-sub">брутто {displayNumber(weightText(checkTotals.grossKg))}</small></td>
+                  <td className="rs-price-col" />
+                  <td>{displayNumber(result.totals.totalCostUsd)}</td>
+                </>}
                 {delivery && <td>{displayNumber(result.totals.totalDeliveryUsd)}</td>}
                 <td className="rs-kzt-start">{displayNumber(result.totals.customsValueKzt)}</td>
                 <td>{displayNumber(result.totals.dutyKzt)}</td>
@@ -406,6 +416,7 @@ export function ResultStep({
           </table>
         </div>
       </section>
+      {compareOpen && <SirCompareModal result={result} items={items} sir={sir} preview={previewSir} onClose={closeCompare} />}
     </div>
   )
 }

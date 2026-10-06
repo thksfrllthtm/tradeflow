@@ -1,0 +1,32 @@
+/* Полоса инструментов результата: «Таможенная стоимость: по инвойсу / по СИР», бюджет или условия СИР,
+   откат цен и сравнение. В режиме СИР — лёгкий
+   жёлтый фон: смета считается не от цен инвойса, это должно быть видно сразу. */
+.sir-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 8px 14px; border-bottom: 1px solid var(--rs-line); }
+.sir-bar.on { background: #fffbef; }
+.sir-label { color: var(--rs-ink); font-size: .86rem; font-weight: 650; white-space: nowrap; }
+.sir-field { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--rs-ink-2); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.sir-sep { width: 1px; height: 20px; background: var(--rs-line-strong); }
+.rs-step .sir-bar.on .rs-seg button.active, .rs-step .sir-bar.on .rs-seg button.active:hover:not(:disabled) { background: var(--rs-warn); }
+.rs-joined.sir-custom input { width: 52px; }
+.rs-joined.sir-custom.active { border-color: var(--rs-warn); box-shadow: inset 0 0 0 1px var(--rs-warn); }
+.rs-joined.sir-custom.invalid, .sir-country.invalid { border-color: var(--rs-bad); }
+.sir-country { box-sizing: border-box; width: 46px; height: 32px; margin: 0; padding: 0 8px; border: 1px solid var(--rs-field); border-radius: 8px; background: #fff; color: var(--rs-ink); font-size: .93rem; font-weight: 600; text-align: center; text-transform: uppercase; }
+.sir-end { display: inline-flex; align-items: center; gap: 4px 8px; margin-left: auto; }
+.rs-step .sir-end button.rs-icon { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--rs-ink-2); }
+.rs-step .sir-end button.rs-icon:hover:not(:disabled) { border-color: var(--rs-line-strong); background: #edf4ef; color: var(--rs-green-dark); }
+.rs-step .sir-end button.rs-icon:disabled { background: transparent; color: #a3aea7; opacity: 1; }
+.sir-count { color: var(--rs-ink-2); font-size: .84rem; white-space: nowrap; }
+.sir-count b { color: var(--rs-ink); }
+.rs-step button.sir-compare { height: 32px; padding: 0 12px; border: 1px solid #b8cfc0; border-radius: 8px; background: #fff; color: var(--rs-green-dark); font-size: .86rem; font-weight: 650; white-space: nowrap; }
+.rs-step button.sir-compare:hover:not(:disabled) { border-color: var(--rs-green); background: #eef6f1; }
+.goods-page .rs-table .rs-sub.sir-sub { color: var(--rs-warn); }
+/* Колонки СИР в таблице результата — тем же жёлтым, что полоса режима. */
+.goods-page .rs-table .rs-sir-col { background: #fffbef; }
+.goods-page .rs-table thead .rs-sir-col, .goods-page .rs-table tfoot .rs-sir-col { background: #fdf3d6; color: var(--rs-warn); }
+.rs-sir-none { color: var(--rs-ink-3); }
+
+@media (max-width: 760px) {
+  .sir-bar { padding-inline: 12px; }
+  .sir-sep { display: none; }
+  .sir-end { margin-left: 0; }
+}

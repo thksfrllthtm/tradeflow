@@ -3,7 +3,7 @@ import { mappedFieldForHeader, normalizeStoredMapping } from '../lib/excelColumn
 import { mergeStoredPhotos, photosOf } from '@/shared/lib/itemPhotos'
 import { storageKey } from '../lib/localDraft'
 import { useSyncedHorizontalScroll } from '../hooks/useSyncedHorizontalScroll'
-import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimateSummary, GoodsItemInput, GoodsParams, GoodsParseRow, GoodsSourceSnapshot, SheetInfo } from '@/shared/types/goods'
+import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimateSummary, GoodsItemInput, GoodsParams, GoodsParseRow, GoodsResultTools, GoodsSourceSnapshot, SheetInfo, SirParams } from '@/shared/types/goods'
 import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { CalculatorActivity, GoodsMapping } from '../types'
 import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
@@ -185,8 +185,11 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
 
   const { setItem, addManualPhoto, addEmptyRow, removeRow, resetAutomaticNet } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
   const { setMappingForHeader, setRawRowIncluded } = columnMappingActions(setMapping, setRawRows)
-  const { recalculateResultPrice, decreaseResultPrices, restoreInitialResult, undoLastBulkPriceDecrease, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
-  const budget = useBudgetDistribution({ estimateId, unit: 'шт', result, items, preview: previewCalculation, apply: applyDistributedPrices })
+  const { recalculateResultPrice, restoreInitialResult, undoLastPriceChange, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
+  // Подбор под бюджет и сверка по ИТП хранятся в смете (параметр resultTools) и сохраняются автосохранением.
+  const setResultTool = <K extends keyof GoodsResultTools>(key: K, value: GoodsResultTools[K]) =>
+    setParams((current) => ({ ...current, resultTools: { ...current.resultTools, [key]: value } }))
+  const budget = useBudgetDistribution({ estimateId, unit: 'шт', result, items, preview: previewCalculation, apply: applyDistributedPrices, saved: params.resultTools?.budget, onSave: (value) => setResultTool('budget', value) })
 
   useEffect(() => { saveReviewCheck(reviewCheck, estimateId) }, [reviewCheck, estimateId])
 
@@ -414,7 +417,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }
 
   // Результат сохраняется на сервер автосохранением, как и любая другая правка.
-  async function calculate(itemsOverride?: GoodsItemInput[], updateInputItems = true) {
+  async function calculate(itemsOverride?: GoodsItemInput[], updateInputItems = true, paramsOverride?: GoodsParams) {
     const itemsToCalculate = itemsOverride ?? items
     if (itemsToCalculate.filter((item) => !item.excluded).length === 0) {
       setError('Добавьте хотя бы одну включённую строку')
@@ -426,7 +429,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     if (itemsOverride && updateInputItems) setItems(itemsOverride)
     try {
       const itemsForRequest = itemsToCalculate.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
-      const calculated = await goodsEstimatesApi.calculate({ ...params, items: itemsForRequest, source: sourceSnapshot ?? undefined })
+      const calculated = await goodsEstimatesApi.calculate({ ...(paramsOverride ?? params), items: itemsForRequest, source: sourceSnapshot ?? undefined })
       if (requestId !== calculationRequestRef.current) return
       setResult(calculated)
       setReviewCheck(checkFromResult(estimateId, itemsToCalculate, calculated))
@@ -439,9 +442,9 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }
 
   // Пробный расчёт для подбора цен под бюджет: без показа результата и без сохранения черновика.
-  function previewCalculation(nextItems: GoodsItemInput[]) {
+  function previewCalculation(nextItems: GoodsItemInput[], paramsOverride?: GoodsParams) {
     const itemsForRequest = nextItems.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
-    return goodsEstimatesApi.calculate({ ...params, items: itemsForRequest, source: sourceSnapshot ?? undefined })
+    return goodsEstimatesApi.calculate({ ...(paramsOverride ?? params), items: itemsForRequest, source: sourceSnapshot ?? undefined })
   }
 
   function returnToReview() {
@@ -463,6 +466,22 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, antiDumpingChoice: choice } : item))
     const nextItems = items.map((item, itemIndex) => ({ ...item, antiDumpingChoice: itemIndex === index ? choice : item.antiDumpingChoice, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
     void calculate(nextItems, false)
+  }
+
+  // ТС по инвойсу или по СИР, вес, снижение и страна СИР: хранятся в параметрах сметы, расчёт
+  // повторяется с ценами текущего результата. По СИР цены инвойса на ТС не влияют — подбор под бюджет сбрасывается.
+  function changeSir(patch: SirParams) {
+    const nextParams = { ...params, ...patch }
+    setParams(nextParams)
+    if (patch.customsValueMode === 'sir') budget.reset()
+    const nextItems = items.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
+    void calculate(nextItems, false, nextParams)
+  }
+
+  // Окно сравнения: та же смета с ценами текущего результата, но с другими параметрами СИР.
+  function previewSir(patch: SirParams) {
+    const nextItems = items.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
+    return previewCalculation(nextItems, { ...params, ...patch })
   }
 
   function changeResultPrice(index: number, value: string) {
@@ -606,7 +625,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         startAgentBatch={() => void startAgentBatch()}
       />}
 
-      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping} onBulkPriceDecrease={decreaseResultPrices} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoBulkPriceDecrease={() => { budget.reset(); undoLastBulkPriceDecrease() }} canUndoBulkPriceDecrease={Boolean(previousBulkResult)} budget={budget} />}
+      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping} sir={params} onSirChange={changeSir} previewSir={previewSir} itp={params.resultTools?.itp} onItpChange={(value) => setResultTool('itp', value)} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoPrices={() => { budget.reset(); undoLastPriceChange() }} canUndoPrices={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <DirectoryPickerModal
         title={pickerTitle}

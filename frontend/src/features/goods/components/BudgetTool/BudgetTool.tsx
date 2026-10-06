@@ -22,12 +22,12 @@ export function BudgetControls({ budget, disabled }: { budget: BudgetDistributio
   const gapValid = budget.gap !== null
   return <div className="budget-controls">
     <label className="budget-field" title={HINT}>
-      <span>Бюджет<span className="rs-wide"> растаможки</span></span>
+      <span>Бюджет</span>
       <span className="budget-input"><input inputMode="decimal" value={budget.budget} onChange={(event) => budget.setBudget(event.target.value.replace(',', '.'))} onKeyDown={(event) => { if (event.key === 'Enter' && valid && gapValid && !busy) { event.preventDefault(); void budget.run('math') } }} placeholder="сумма" aria-label="Бюджет растаможки, USD; Enter — подобрать цены" /><i>USD</i></span>
     </label>
     <GapPicker budget={budget} amount={valid ? amount : null} />
     <button type="button" className="budget-run" onClick={() => void budget.run('math')} disabled={!valid || !gapValid || busy} title={`${HINT}\nПропорции: история цен из прошлых смет, вес нетто единицы или поровну.`}>{budget.running === 'math' ? `Подбираем… ${budget.evaluations}` : 'Подобрать цены'}</button>
-    <button type="button" className="budget-ai" onClick={() => void budget.run('ai')} disabled={!valid || !gapValid || busy} title={`${HINT}\nИИ (DeepSeek) оценивает и объясняет цену каждого товара: разные товары одного кода получают разные цены, одинаковый товар (тот же код и название) — одну. Обычно 2–5 секунд; повторный подбор для тех же товаров — сразу.`}>{budget.running === 'ai' ? (budget.evaluations ? `Подбираем… ${budget.evaluations}` : 'ИИ обдумывает цены…') : 'Подобрать с ИИ'}</button>
+    <button type="button" className="budget-ai" onClick={() => void budget.run('ai')} disabled={!valid || !gapValid || busy} title={`${HINT}\n«По товарам»: каждый товар оценивается отдельно (DeepSeek), у цены — пояснение. Разные товары одного кода получают разные цены, одинаковый товар (тот же код и название) — одну. Обычно 2–5 секунд; повторный подбор для тех же товаров — сразу.`}>{budget.running === 'ai' ? (budget.evaluations ? `Подбираем… ${budget.evaluations}` : 'Оцениваем товары…') : 'По товарам'}</button>
   </div>
 }
 
@@ -111,7 +111,7 @@ export function BudgetStatus({ budget }: { budget: BudgetDistributionState }) {
     {budget.notice && <p className="budget-notice">{budget.notice}</p>}
     {budget.warning && <p className="budget-warning" role="alert">{budget.warning}</p>}
     {explanations.length > 0 && <details className="ai-explanations" open>
-      <summary>Пояснения ИИ <span>· {explanations.length} {productsLabel}</span></summary>
+      <summary>Пояснения к ценам <span>· {explanations.length} {productsLabel}</span></summary>
       <ul>
         {explanations.map((explanation) => <li key={`${explanation.code}-${explanation.rows.join(',')}`}>
           <code>{explanation.code}</code>
@@ -125,7 +125,7 @@ export function BudgetStatus({ budget }: { budget: BudgetDistributionState }) {
   </div>
 }
 
-// Метка «ИИ» у поля цены, пришедшей от ИИ; пояснение — при наведении и в списке «Пояснения ИИ».
+// Метка «оценка» у цены из подбора по товарам; пояснение — при наведении и в списке «Пояснения к ценам».
 export function BudgetNote({ note }: { note?: string }) {
-  return note ? <span className="rs-tag ai" title={`Цену поставил ИИ: ${note}`} aria-label={`Цену поставил ИИ: ${note}`}>ИИ</span> : null
+  return note ? <span className="rs-tag ai" title={`Цена — подбор по товарам: ${note}`} aria-label={`Цена — подбор по товарам: ${note}`}>оценка</span> : null
 }

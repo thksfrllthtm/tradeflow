@@ -69,12 +69,16 @@ func writeExportRows(book *excelize.File, styles exportStyles, input GoodsCalcul
 		"Места", perPlaceHeader, quantityHeader, "Брутто, кг", "Нетто, кг", "ИТС, USD/кг", unitPriceHeader, "Стоимость", "Валюта", "Доп. расходы",
 		"ТС напрямую, KZT", "Таможенная стоимость, KZT", "Пошлина, KZT", "Антидемпинг, KZT", "База НДС, KZT", "НДС, KZT", "Сбор, KZT", "Растаможка, KZT",
 		"Доставка, USD", "Доставка, KZT", "Статус", "Ошибки", "Предупреждения"}
+	sir := result.CustomsValueMode == "sir"
+	if sir {
+		headers = append(headers, "ТС по СИР")
+	}
 	for col, header := range headers {
 		_ = book.SetCellValue(sheet, exportCell(col+1, 1), header)
 	}
 	_ = book.SetCellStyle(sheet, "A1", exportCell(len(headers), 1), styles.header)
 	_ = book.SetRowHeight(sheet, 1, 32)
-	widths := map[int]float64{1: 5, exportPhotoColumn: 12, exportNameColumn: 34, 4: 30, exportCodeColumn: 14, 6: 18, 7: 12, exportErrorsColumn: 40, exportWarningsColumn: 40}
+	widths := map[int]float64{1: 5, exportPhotoColumn: 12, exportNameColumn: 34, 4: 30, exportCodeColumn: 14, 6: 18, 7: 12, exportErrorsColumn: 40, exportWarningsColumn: 40, exportWarningsColumn + 1: 52}
 	for col := 1; col <= len(headers); col++ {
 		width, ok := widths[col]
 		if !ok {
@@ -87,7 +91,11 @@ func writeExportRows(book *excelize.File, styles exportStyles, input GoodsCalcul
 	var places, quantity, gross, net decimalSum
 	for index, item := range result.Items {
 		row := index + 2
-		for col, value := range exportRowValues(input, index, item) {
+		values := exportRowValues(input, index, item)
+		if sir {
+			values = append(values, exportSIRText(item))
+		}
+		for col, value := range values {
 			cell := exportCell(col+1, row)
 			_ = book.SetCellValue(sheet, cell, value)
 			_ = book.SetCellStyle(sheet, cell, cell, styles.forColumn(col+1))
@@ -227,6 +235,9 @@ func writeExportSummary(book *excelize.File, styles exportStyles, input GoodsCal
 		rows = append(rows, []any{"Касса", "", exportNumericCell(result.CashUsd)}, []any{"Остаток кассы", "", exportNumericCell(totals.CashBalanceUSD)})
 	}
 	rows = append(rows, []any{}, []any{"Рассчитано строк", fmt.Sprintf("%d из %d", totals.CalculatedCount, totals.TotalCount)})
+	if result.CustomsValueMode == "sir" {
+		rows = append(rows, []any{"Таможенная стоимость", exportSIRSettings(result)})
+	}
 	if len(totals.BlockingErrors) > 0 {
 		rows = append(rows, []any{"Ошибки", strings.Join(totals.BlockingErrors, "; ")})
 	}
@@ -424,4 +435,34 @@ func (s decimalSum) String() string {
 		return ""
 	}
 	return s.value.String()
+}
+
+// exportSIRSettings — режим «ТС по СИР» для листа «Итоги».
+func exportSIRSettings(result GoodsCalculationResult) string {
+	weight := "нетто"
+	if result.SirWeight == "gross" {
+		weight = "брутто"
+	}
+	text := fmt.Sprintf("По СИР (страна %s): вес %s × индикатор", result.SirCountry, weight)
+	if discount := exportDecimal(result.SirDiscountPercent); discount != nil && discount.IsPositive() {
+		text += fmt.Sprintf(" − %s %%", formatExportNumber(result.SirDiscountPercent))
+	}
+	return text + "; строки без индикатора — по инвойсу"
+}
+
+// exportSIRText — как посчитана ТС строки: «27 USD/кг − 60 % = 10,8 × 100 кг нетто = 1 080 USD (профиль …)».
+func exportSIRText(item calculation.CalculationItem) string {
+	sir := item.SIRResult
+	if item.CustomsBasis != "sir" || sir == nil {
+		return "по инвойсу"
+	}
+	weight := "нетто"
+	if sir.Weight == "gross" {
+		weight = "брутто"
+	}
+	price := formatExportNumber(sir.PriceUSD) + " USD/кг"
+	if discount := exportDecimal(sir.DiscountPercent); discount != nil && discount.IsPositive() {
+		price += fmt.Sprintf(" − %s %% = %s", formatExportNumber(sir.DiscountPercent), formatExportNumber(sir.PricePerKgUSD))
+	}
+	return fmt.Sprintf("%s × %s кг %s = %s USD (профиль %s)", price, formatExportNumber(sir.WeightKg), weight, formatExportNumber(sir.ValueUSD), sir.Profile)
 }

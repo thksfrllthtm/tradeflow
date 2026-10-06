@@ -1,4 +1,5 @@
-/* Список смет слева. Кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
+/* Список смет слева. Смета открыта — узкая полоса (.es-rail), список выезжает поверх сметы (.es-panel).
+   Кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
 
 .es-sidebar {
   display: flex;
@@ -8,7 +9,13 @@
   border-right: 1px solid #dfe7e1;
   background: #fff;
 }
-.es-sidebar.collapsed { flex-basis: 52px; align-items: center; gap: 8px; padding: 12px 0; }
+.es-sidebar.es-rail { position: relative; z-index: 30; flex-basis: 60px; align-items: center; gap: 8px; padding: 12px 0; }
+.es-sidebar .es-rail-button { position: relative; display: grid; justify-items: center; gap: 3px; width: 48px; padding: 7px 0 6px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #34443b; font-size: .66rem; font-weight: 650; line-height: 1; }
+.es-sidebar .es-rail-button:hover:not(:disabled), .es-rail.open .es-rail-button { border-color: #dfe7e1; background: #f3f7f4; color: #1c5538; }
+.es-rail-button b { position: absolute; top: 2px; right: 3px; min-width: 16px; padding: 0 4px; border-radius: 999px; background: #e3efe8; color: #1c5538; font-size: .6rem; line-height: 15px; }
+.es-panel { position: absolute; top: 0; bottom: 0; left: 100%; display: flex; flex-direction: column; width: 300px; min-height: 0; border-right: 1px solid #dfe7e1; background: #fff; box-shadow: 12px 0 32px #1d332a2e; animation: es-slide .14s ease-out; }
+@keyframes es-slide { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .es-panel { animation: none; } }
 
 .es-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 12px 8px 16px; }
 .es-head h2 { display: flex; align-items: center; gap: 7px; margin: 0; color: #1f2d24; font-size: .92rem; font-weight: 700; letter-spacing: -.01em; }
@@ -88,6 +95,9 @@
 
 @media (max-width: 760px) {
   .es-sidebar { flex: 0 0 auto; max-height: 240px; border-right: 0; border-bottom: 1px solid #dfe7e1; }
-  .es-sidebar.collapsed { flex-basis: auto; flex-direction: row; justify-content: flex-start; max-height: none; padding: 8px 12px; }
+  .es-sidebar.es-rail { flex-basis: auto; flex-direction: row; justify-content: flex-start; max-height: none; padding: 8px 12px; }
+  .es-sidebar .es-rail-button { display: flex; width: auto; padding: 6px 10px; font-size: .78rem; }
+  .es-rail-button b { position: static; }
+  .es-panel { position: fixed; top: 0; bottom: 0; left: 0; width: min(320px, 86vw); max-height: none; }
   .es-remove { opacity: 1; }
 }

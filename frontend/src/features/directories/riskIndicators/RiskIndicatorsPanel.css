@@ -1,0 +1,18 @@
+/* Панель «СИР»: рамка, крестик, сообщения — из DirectoryTransfer.css, шаг загрузки — из KzListPanel.css. */
+
+.sir-empty { margin: 0 0 10px; color: #5a6960; font-size: .84rem; }
+.sir-profiles { width: 100%; margin: 0 0 10px; border-collapse: collapse; font-size: .84rem; }
+.sir-profiles th { padding: 6px 8px; border-bottom: 1px solid #e4eae6; color: #5a6960; font-size: .76rem; font-weight: 650; text-align: left; }
+.sir-profiles td { padding: 8px; border-bottom: 1px solid #eef2ef; color: #1f2d24; vertical-align: top; }
+.sir-profiles td small { display: block; margin-top: 2px; color: #5a6960; font-size: .76rem; }
+.sir-profiles .sir-num { font-variant-numeric: tabular-nums; text-align: right; }
+.sir-groups { display: flex; flex-wrap: wrap; gap: 4px; }
+.sir-groups span { padding: 1px 7px; border-radius: 999px; background: #f2f6f3; color: #46564c; font-size: .76rem; white-space: nowrap; }
+.sir-groups span.cn { background: #fdf3d6; color: #75520a; font-weight: 650; }
+
+@media (max-width: 640px) {
+  .sir-profiles thead { display: none; }
+  .sir-profiles tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 8px 0; border-bottom: 1px solid #eef2ef; }
+  .sir-profiles td { padding: 0; border: 0; }
+  .sir-profiles td:nth-child(3) { grid-column: 1 / -1; }
+}

@@ -1,6 +1,5 @@
 import { Dispatch, SetStateAction } from 'react'
 import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
-import { priceText } from './priceText'
 
 type PriceState = {
   items: GoodsItemInput[]
@@ -12,12 +11,12 @@ type PriceState = {
   calculate: (itemsOverride?: GoodsItemInput[], updateInputItems?: boolean) => Promise<void>
 }
 
-// Этап 3: временные цены единицы — ручная правка, массовое уменьшение и откат.
+// Этап 3: временные цены единицы — ручная правка, цены подбора под бюджет и откат.
 export function resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate }: PriceState) {
   return {
     recalculateResultPrice(index: number, value: string) {
-      // Остальные строки сохраняют цены текущего результата (после распределения бюджета или
-      // массового вычета), иначе правка одной цены сбросила бы их к исходным.
+      // Остальные строки сохраняют цены текущего результата (после распределения бюджета),
+      // иначе правка одной цены сбросила бы их к исходным.
       const nextItems = items.map((item, itemIndex) => itemIndex === index
         ? { ...item, pricePerPair: value }
         : { ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair })
@@ -25,26 +24,7 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
       void calculate(nextItems, false)
     },
 
-    decreaseResultPrices(value: string, selectedIndexes?: number[]) {
-      const decrement = Number(String(value).replace(',', '.'))
-      if (!Number.isFinite(decrement) || decrement <= 0 || !result) return
-      const selected = selectedIndexes ? new Set(selectedIndexes) : null
-
-      const nextItems = items.map((item, index) => {
-        const resultItem = result.items[index]
-        const currentPrice = Number(resultItem?.pricePerPair || resultItem?.pairPrice || item.pricePerPair || '')
-        if (!Number.isFinite(currentPrice)) return item
-        if (selected && !selected.has(index)) {
-          return { ...item, pricePerPair: priceText(currentPrice) }
-        }
-        const nextPrice = Math.max(0, currentPrice - decrement)
-        return { ...item, pricePerPair: priceText(nextPrice) }
-      })
-      setPreviousBulkResult(result)
-      void calculate(nextItems, false)
-    },
-
-    // Цены после распределения бюджета: как массовый вычет — прежний результат остаётся для отката.
+    // Цены после распределения бюджета: прежний результат остаётся для отката.
     applyDistributedPrices(nextItems: GoodsItemInput[]) {
       if (result) setPreviousBulkResult(result)
       void calculate(nextItems, false)
@@ -56,7 +36,7 @@ export function resultPriceActions({ items, result, previousBulkResult, setResul
       void calculate(undefined, false)
     },
 
-    undoLastBulkPriceDecrease() {
+    undoLastPriceChange() {
       if (!previousBulkResult) return
       setResult(previousBulkResult)
       setPreviousBulkResult(null)

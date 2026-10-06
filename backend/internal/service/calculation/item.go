@@ -192,7 +192,8 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 			// price-per-pair inputs existed.
 			calculated := coeff.Mul(*net)
 			cost = &calculated
-		} else {
+		} else if !in.SIR.HasIndicator() {
+			// По СИР ТС считается от веса: цена инвойса для неё не нужна.
 			if in.GenericItems {
 				warnings = append(warnings, "Укажите цену за единицу товара")
 			} else {
@@ -241,7 +242,7 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 	}
 	out.Warnings = warnings
 	out.Errors, out.Warnings = SplitCalculationIssues(warnings)
-	if len(out.Errors) == 0 && len(out.Warnings) == 0 && out.GoodsCost != "" && out.CustomsValueKZT != "" && out.DutyKZT != "" && out.VATKZT != "" {
+	if len(out.Errors) == 0 && len(out.Warnings) == 0 && (out.GoodsCost != "" || out.CustomsBasis == "sir") && out.CustomsValueKZT != "" && out.DutyKZT != "" && out.VATKZT != "" {
 		out.Status = "calculated"
 	}
 	return out
@@ -318,6 +319,7 @@ func antiDumpingDuty(snapshot map[string]any, customs decimal.Decimal, warnings 
 }
 
 func customsValueForItem(out *CalculationItem, usd, euro decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
+	out.CustomsBasis, out.SIRResult = "", nil
 	if direct := strings.TrimSpace(out.CustomsValueDirectKZT); direct != "" {
 		value := service.ParseItemDecimal(direct, "Таможенная стоимость в тенге", warnings)
 		if value == nil {
@@ -328,6 +330,15 @@ func customsValueForItem(out *CalculationItem, usd, euro decimal.Decimal, warnin
 			return decimal.Zero, false
 		}
 		return value.Round(2), true
+	}
+	if out.SIR != nil {
+		if out.SIR.PriceUSD != nil {
+			return sirCustomsValue(out, usd, euro, warnings)
+		}
+		// Индикатора нет — строка по инвойсу; расчёт повторяется после доставки, сообщение одно.
+		if message := out.SIR.Missing; message != "" && !slices.Contains(*warnings, message) {
+			*warnings = append(*warnings, message)
+		}
 	}
 	cost := out.costDecimal
 	currency := out.costCurrencyValue
@@ -359,20 +370,8 @@ func customsValueForItem(out *CalculationItem, usd, euro decimal.Decimal, warnin
 	if out.extraDecimal != nil {
 		base = base.Add(service.RoundMoney(*out.extraDecimal))
 	}
-	rate := decimal.NewFromInt(1)
-	switch strings.ToUpper(currency) {
-	case "USD":
-		rate = usd
-	case "EUR":
-		if euro.IsZero() {
-			*warnings = append(*warnings, "Для стоимости в EUR укажите курс EUR")
-			return decimal.Zero, false
-		}
-		rate = euro
-	case "KZT":
-		rate = decimal.NewFromInt(1)
-	default:
-		*warnings = append(*warnings, "Валюта стоимости не поддерживается")
+	rate, ok := currencyRate(currency, usd, euro, warnings)
+	if !ok {
 		return decimal.Zero, false
 	}
 	customs := base.Mul(rate)
@@ -385,6 +384,70 @@ func customsValueForItem(out *CalculationItem, usd, euro decimal.Decimal, warnin
 	}
 	return customs.Round(2), true
 }
+
+// currencyRate — курс валюты стоимости строки к тенге.
+func currencyRate(currency string, usd, euro decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
+	switch strings.ToUpper(currency) {
+	case "USD":
+		return usd, true
+	case "EUR":
+		if euro.IsZero() {
+			*warnings = append(*warnings, "Для стоимости в EUR укажите курс EUR")
+			return decimal.Zero, false
+		}
+		return euro, true
+	case "KZT":
+		return decimal.NewFromInt(1), true
+	}
+	*warnings = append(*warnings, "Валюта стоимости не поддерживается")
+	return decimal.Zero, false
+}
+
+// sirCustomsValue — ТС строки по СИР: вес (нетто или брутто) × индикатор × (1 − снижение %),
+// до двух знаков в USD, × курс USD. Доставка добавляется всегда — цена инвойса, в которую она
+// могла входить, в ТС не участвует; доп. расходы строки — тоже сверху, в их валюте.
+func sirCustomsValue(out *CalculationItem, usd, euro decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
+	sir := out.SIR
+	weightText, label := out.NetKG, "нетто"
+	if sir.Weight == "gross" {
+		weightText, label = out.GrossKG, "брутто"
+	}
+	weight := ParseItemStringDecimal(weightText)
+	if weight == nil || !weight.IsPositive() {
+		message := fmt.Sprintf("СИР: для ТС по индикатору нужен вес %s", label)
+		if !slices.Contains(*warnings, message) {
+			*warnings = append(*warnings, message)
+		}
+		return decimal.Zero, false
+	}
+	hundred := decimal.NewFromInt(100)
+	perKg := sir.PriceUSD.Mul(hundred.Sub(sir.DiscountPercent)).Div(hundred)
+	valueUSD := service.RoundMoney(weight.Mul(perKg))
+	customs := valueUSD.Mul(usd)
+	if out.extraDecimal != nil {
+		currency := out.costCurrencyValue
+		if currency == "" {
+			currency = "USD"
+		}
+		rate, ok := currencyRate(currency, usd, euro, warnings)
+		if !ok {
+			return decimal.Zero, false
+		}
+		customs = customs.Add(service.RoundMoney(*out.extraDecimal).Mul(rate))
+	}
+	if out.deliveryShareExact != nil {
+		customs = customs.Add(out.deliveryShareExact.Mul(usd))
+	}
+	out.CustomsBasis = "sir"
+	out.SIRResult = &SIRResult{
+		Profile: sir.Profile, Country: sir.Country, PriceUSD: sir.PriceUSD.String(), DiscountPercent: sir.DiscountPercent.String(),
+		PricePerKgUSD: perKg.Round(4).String(), Weight: sir.Weight, WeightKg: weight.String(), ValueUSD: valueUSD.StringFixed(2),
+	}
+	return customs.Round(2), true
+}
+
+// HasIndicator — ТС строки считается по СИР (режим сметы и индикатор для кода есть).
+func (b *SIRBasis) HasIndicator() bool { return b != nil && b.PriceUSD != nil }
 
 func percentageDuty(snapshot map[string]any, customs decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
 	duty, _ := snapshot["duty"].(map[string]any)

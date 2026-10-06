@@ -7,7 +7,7 @@ const amount = (value?: string) => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-// Цена единицы строки на экране результата: цена текущего результата (после правки, вычета или
+// Цена единицы строки на экране результата: цена текущего результата (после правки или
 // подбора под бюджет), иначе цена строки сметы.
 export function shownPrice(items: GoodsItemInput[], result: GoodsCalculationResult | null, index: number) {
   const item = result?.items[index]

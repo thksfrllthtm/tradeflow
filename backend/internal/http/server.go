@@ -16,6 +16,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/employees"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/goods"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/riskindicators"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +30,7 @@ type Server struct {
 	tnvedNomenclature *directory.TNVEDNomenclatureService
 	kzRates           *directory.TNVEDKZRateService
 	antiDumping       *antidumping.Service
+	riskIndicators    *riskindicators.Service
 	productDirectory  *directory.ProductDirectoryService
 	goods             *goods.GoodsService
 	goodsEstimates    *goods.GoodsEstimateService
@@ -50,6 +52,7 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		tnvedNomenclature: directory.NewTNVEDNomenclatureService(database),
 		kzRates:           directory.NewTNVEDKZRateService(database),
 		antiDumping:       antidumping.NewService(database),
+		riskIndicators:    riskindicators.NewService(database),
 		productDirectory:  directory.NewProductDirectoryService(database),
 		goods:             goods.NewGoodsService(database),
 		goodsEstimates:    goods.NewGoodsEstimateService(database),
@@ -130,6 +133,13 @@ func (s *Server) Router() *gin.Engine {
 	antiDumping.Use(s.requireUser)
 	antiDumping.GET("", s.listAntiDumping)
 	antiDumping.POST("/refresh", s.requireAdmin, s.refreshAntiDumping)
+
+	// Стоимостные индикаторы риска КГД (профили риска): список — всем, загрузка и удаление — администратор.
+	riskIndicators := router.Group("/api/risk-indicators")
+	riskIndicators.Use(s.requireUser)
+	riskIndicators.GET("", s.listRiskIndicators)
+	riskIndicators.POST("/import", s.requireAdmin, s.importRiskIndicators)
+	riskIndicators.DELETE("/:id", s.requireAdmin, s.deleteRiskIndicators)
 
 	kzRates := router.Group("/api/tnved-kz-rates")
 	kzRates.Use(s.requireUser, s.requireAdmin)

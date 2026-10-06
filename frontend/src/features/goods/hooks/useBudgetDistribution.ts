@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
+import { BudgetExplanation, BudgetSaved, BudgetSummary, GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
 import { pricingApi, PriceGroupInput, SuggestedPrice } from '../pricingApi'
 import { BUDGET_MAX_GAP, BUDGET_MIN_GAP, BudgetGroup, budgetGroups, BudgetRowAccess, distributeBudget } from '../lib/distributeBudget'
 import { GroupFacts, resolveWeights } from '../lib/budgetWeights'
+import { useSavedSnapshot } from './useSavedSnapshot'
 
 type BudgetMode = 'math' | 'ai'
-type BudgetSummary = { status: 'ok' | 'closest'; budget: number; total: number; gap: number; fixedRows: number; evaluations: number }
-// Пояснение ИИ по одному коду ТН ВЭД: товары группы, итоговая цена единицы после подбора и причина.
-type AiExplanation = { code: string; names: string; price: string; reason: string; rows: number[] }
+// Пояснение подбора «По товарам» по одному товару: код, название, итоговая цена единицы и причина.
+type AiExplanation = BudgetExplanation
 
 type ResultItem = GoodsCalculationResult['items'][number]
 
@@ -137,7 +137,9 @@ function aiProducts(rows: Row[], groups: BudgetGroup[], unit: string) {
 
 // Распределение бюджета на этапе результата. apply получает строки с новыми ценами:
 // калькулятор запоминает прежний результат для отката и пересчитывает без сохранения черновика.
-export function useBudgetDistribution({ estimateId, unit, result, items, preview, apply }: {
+// Бюджет, разница и итог последнего подбора с пояснениями хранятся в смете (saved / onSave):
+// после выхода и входа видно то же, что было.
+export function useBudgetDistribution({ estimateId, unit, result, items, preview, apply, saved, onSave }: {
   estimateId: number
   unit: string
   result: GoodsCalculationResult | null
@@ -145,11 +147,13 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
   // Пробный расчёт строк без показа и сохранения — по нему подбираются цены.
   preview: (nextItems: GoodsItemInput[]) => Promise<GoodsCalculationResult>
   apply: (nextItems: GoodsItemInput[]) => void
+  saved?: BudgetSaved
+  onSave: (value: BudgetSaved | undefined) => void
 }) {
-  const [budget, setBudget] = useState('')
-  const [gapMin, setGapMinState] = useState(() => storedGap().min)
-  const [gapMax, setGapMaxState] = useState(() => storedGap().max)
-  const [gapMode, setGapModeState] = useState<GapMode>(() => storedGap().mode)
+  const [budget, setBudget] = useState(() => saved?.amount ?? '')
+  const [gapMin, setGapMinState] = useState(() => saved?.gapMin ?? storedGap().min)
+  const [gapMax, setGapMaxState] = useState(() => saved?.gapMax ?? storedGap().max)
+  const [gapMode, setGapModeState] = useState<GapMode>(() => saved?.gapMode ?? storedGap().mode)
   const saveGap = (min: string, max: string, mode: GapMode) => {
     try { localStorage.setItem(gapStorageKey, JSON.stringify({ min, max, mode })) } catch { /* не запомнится — не страшно */ }
   }
@@ -159,11 +163,11 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
   const resetGap = () => { setGapMinState(String(BUDGET_MIN_GAP)); setGapMaxState(String(BUDGET_MAX_GAP)); setGapModeState('under'); saveGap(String(BUDGET_MIN_GAP), String(BUDGET_MAX_GAP), 'under') }
   const gap = parseGap(gapMin, gapMax)
   const [running, setRunning] = useState<BudgetMode | null>(null)
-  const [summary, setSummary] = useState<BudgetSummary | null>(null)
-  const [warning, setWarning] = useState('')
-  const [notice, setNotice] = useState('')
-  const [notes, setNotes] = useState<Record<number, string>>({})
-  const [explanations, setExplanations] = useState<AiExplanation[]>([])
+  const [summary, setSummary] = useState<BudgetSummary | null>(() => saved?.summary ?? null)
+  const [warning, setWarning] = useState(() => saved?.warning ?? '')
+  const [notice, setNotice] = useState(() => saved?.notice ?? '')
+  const [notes, setNotes] = useState<Record<number, string>>(() => saved?.notes ?? {})
+  const [explanations, setExplanations] = useState<AiExplanation[]>(() => saved?.explanations ?? [])
   const [evaluations, setEvaluations] = useState(0)
   // Ответы ИИ по набору товаров: бюджет в ИИ не отправляется, поэтому при другом бюджете
   // и тех же товарах ответ берётся из памяти мгновенно.
@@ -172,6 +176,19 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
   function reset() {
     setSummary(null); setWarning(''); setNotice(''); setNotes({}); setExplanations([])
   }
+
+  // В смете — только когда есть что показать: пустой бюджет без подбора не сохраняется.
+  const hasNotes = Object.keys(notes).length > 0
+  const current: BudgetSaved | undefined = budget.trim() || summary || warning || notice || hasNotes || explanations.length > 0
+    ? { amount: budget, gapMin, gapMax, gapMode, summary: summary ?? undefined, warning: warning || undefined, notice: notice || undefined, notes: hasNotes ? notes : undefined, explanations: explanations.length > 0 ? explanations : undefined }
+    : undefined
+  useSavedSnapshot(saved, current, onSave, (value) => {
+    const gapDefaults = storedGap()
+    setBudget(value?.amount ?? '')
+    setGapMinState(value?.gapMin ?? gapDefaults.min); setGapMaxState(value?.gapMax ?? gapDefaults.max); setGapModeState(value?.gapMode ?? gapDefaults.mode)
+    setSummary(value?.summary ?? null); setWarning(value?.warning ?? ''); setNotice(value?.notice ?? '')
+    setNotes(value?.notes ?? {}); setExplanations(value?.explanations ?? [])
+  })
 
   async function run(mode: BudgetMode) {
     if (!result || running || !gap) return
@@ -242,7 +259,7 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
             if (fact && quantity > 0) fact.price = value / quantity
           })
         } catch (reason) {
-          setNotice(`ИИ недоступен (${errorMessage(reason)}), использовано математическое распределение`)
+          setNotice(`Подбор по товарам недоступен (${errorMessage(reason)}), цены подобраны обычным способом`)
         }
       }
       const byProduct = answered.length > 0

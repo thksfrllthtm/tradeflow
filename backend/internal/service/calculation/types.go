@@ -38,6 +38,33 @@ type CalculationItemInput struct {
 	Excluded              bool           `json:"excluded"`
 	ExclusionReason       string         `json:"exclusionReason"`
 	GenericItems          bool           `json:"-"`
+	// SIR — смета в режиме «ТС по СИР»; nil — ТС по инвойсу. Задаёт только сервер.
+	SIR *SIRBasis `json:"-"`
+}
+
+// SIRBasis — условия расчёта ТС строки по стоимостному индикатору риска:
+// ТС = вес × индикатор × (1 − снижение %) × курс USD; доставка и доп. расходы — сверху.
+type SIRBasis struct {
+	// PriceUSD — индикатор кода для страны, USD за 1 кг; nil — индикатора нет (Missing объясняет),
+	// тогда ТС строки считается по инвойсу.
+	PriceUSD        *decimal.Decimal
+	Missing         string
+	Profile         string
+	Country         string
+	Weight          string // "net" или "gross"
+	DiscountPercent decimal.Decimal
+}
+
+// SIRResult — как посчитана ТС строки по СИР (для показа в смете и выгрузке).
+type SIRResult struct {
+	Profile         string `json:"profile"`
+	Country         string `json:"country"`
+	PriceUSD        string `json:"priceUsd"`
+	DiscountPercent string `json:"discountPercent"`
+	PricePerKgUSD   string `json:"pricePerKgUsd"`
+	Weight          string `json:"weight"`
+	WeightKg        string `json:"weightKg"`
+	ValueUSD        string `json:"valueUsd"`
 }
 
 type CalculationItem struct {
@@ -57,6 +84,9 @@ type CalculationItem struct {
 	Status            string   `json:"status"`
 	Errors            []string `json:"errors"`
 	Warnings          []string `json:"warnings"`
+	// CustomsBasis — "sir", когда ТС строки посчитана по СИР (SIRResult — как); иначе пусто (по инвойсу).
+	CustomsBasis string     `json:"customsBasis,omitempty"`
+	SIRResult    *SIRResult `json:"sir,omitempty"`
 
 	// Derived working values for the current recalculation. They are never
 	// persisted and keep the exact decimal inputs until the customs value is

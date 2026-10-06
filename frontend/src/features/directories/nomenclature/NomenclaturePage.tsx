@@ -13,6 +13,7 @@ import { TNVEDEntryPanel } from '../tnved/TNVEDEntryPanel'
 import { TNVEDDirectoryInput } from '../tnved/types'
 import { useKzListPanel } from '../kzList/KzListPanel'
 import { KzImport } from '../kzList/kzListApi'
+import { useRiskIndicatorsPanel } from '../riskIndicators/RiskIndicatorsPanel'
 import { nomenclatureApi } from './nomenclatureApi'
 import { directoryDraft } from './nomenclatureDraft'
 import { AntiDumpingPanel } from './AntiDumpingPanel'
@@ -83,6 +84,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
 
   // Проверка по номенклатуре: есть ли код в ТН ВЭД ЕАЭС, со ставками; справочник — на своей странице.
   const codeCheck = useTNVEDCodeCheck({ mode: 'nomenclature', canAdd, refreshKey, onAdd: setDraft })
+  const riskIndicators = useRiskIndicatorsPanel({ admin })
   const kzList = useKzListPanel({ current: kzSource, onImported: () => setRefreshKey((value) => value + 1) })
   const empty = !loading && total === 0
   return <main className="app-shell directory-shell">
@@ -96,6 +98,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
         <div className="dir-head-actions dir-transfer">
           {codeCheck.button}
           <button type="button" className={antiDumpingOpen ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setAntiDumpingOpen((value) => !value)} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
+          {riskIndicators.button}
           {admin && kzList.button}
           {admin && <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
             {uploading ? 'Загружаем…' : source ? 'Обновить из файла TWS' : 'Загрузить файл TWS'}
@@ -107,6 +110,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
       {codeCheck.panel}
       {antiDumpingOpen && <AntiDumpingPanel admin={admin} onLoaded={setAntiDumpingCount} onRefreshed={() => setRefreshKey((value) => value + 1)}
         onPickCode={(code) => { setQuery(formatMeasureCode(code)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
+      {riskIndicators.panel}
       {admin && kzList.panel}
       {uploaded && <p className="dir-transfer-ok nom-note" role="status">
         Загружено {formatDisplayNumber(uploaded.codeCount)} {plural(uploaded.codeCount, 'код', 'кода', 'кодов')}: новых {formatDisplayNumber(uploaded.addedCount)}, удалено {formatDisplayNumber(uploaded.removedCount)}, изменились наименование или ставка — {formatDisplayNumber(uploaded.changedCount)}.

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from '@/shared/router/Link'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { formatRuDate } from '@/shared/lib/dates'
@@ -15,26 +15,37 @@ type Props = {
   onRemove: (estimate: GoodsEstimateSummary) => void
 }
 
-// Список смет слева: создание, поиск (когда смет много), выбор по ссылке, удаление, сворачивание.
+// Список смет. Смета открыта — слева узкая полоса («Сметы», «+»), смета на всю ширину, а список
+// выезжает поверх неё и закрывается сам: выбор сметы, клик мимо, Esc. Смета не выбрана — список
+// стоит слева открытым: больше на странице ничего нет.
 export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf, hrefOf, onCreate, onRemove }: Props) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const railRef = useRef<HTMLElement>(null)
+  const docked = selectedId === null
   const needle = query.trim().toLowerCase()
   const visible = needle ? estimates.filter((estimate) => [nameOf(estimate), estimate.client, estimate.ownerName, formatRuDate(estimate.assessmentDate)].join(' ').toLowerCase().includes(needle)) : estimates
 
-  if (collapsed) return <aside className="es-sidebar collapsed" aria-label={title}>
-    <button type="button" className="es-icon" onClick={() => setCollapsed(false)} title="Показать список смет" aria-label="Показать список смет">›</button>
-    <button type="button" className="es-icon es-icon-primary" onClick={onCreate} title="Новая смета" aria-label="Новая смета">+</button>
-  </aside>
+  // Другая смета открылась — список больше не нужен.
+  useEffect(() => setOpen(false), [selectedId])
 
-  return <aside className="es-sidebar" aria-label={title}>
+  useEffect(() => {
+    if (!open) return
+    const outside = (event: MouseEvent) => { if (!railRef.current?.contains(event.target as Node)) setOpen(false) }
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', outside)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('mousedown', outside); document.removeEventListener('keydown', escape) }
+  }, [open])
+
+  const list = <>
     <div className="es-head">
       <h2>{title}{estimates.length > 0 && <span>{estimates.length}</span>}</h2>
-      <button type="button" className="es-icon" onClick={() => setCollapsed(true)} title="Свернуть список" aria-label="Свернуть список смет">‹</button>
+      {!docked && <button type="button" className="es-icon" onClick={() => setOpen(false)} title="Закрыть список (Esc)" aria-label="Закрыть список смет">×</button>}
     </div>
     <div className="es-tools">
-      <button type="button" className="es-create" onClick={onCreate}>+ Новая смета</button>
-      {estimates.length > 5 && <input className="es-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск: название, клиент, дата" aria-label="Поиск сметы" />}
+      <button type="button" className="es-create" onClick={() => { setOpen(false); onCreate() }}>+ Новая смета</button>
+      {estimates.length > 5 && <input className="es-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск: название, клиент, дата" aria-label="Поиск сметы" autoFocus={!docked} />}
     </div>
     {loading ? <p className="es-note">Загрузка…</p>
       : estimates.length === 0 ? <p className="es-note">Смет пока нет. Создайте первую.</p>
@@ -44,7 +55,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf
           const name = nameOf(estimate)
           const calculated = estimate.status === 'Рассчитано'
           return <div className={estimate.id === selectedId ? 'es-item active' : 'es-item'} key={estimate.id}>
-            <Link href={hrefOf(estimate.id)} aria-current={estimate.id === selectedId ? 'page' : undefined} title={name}>
+            <Link href={hrefOf(estimate.id)} onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey) setOpen(false) }} aria-current={estimate.id === selectedId ? 'page' : undefined} title={name}>
               <span className="es-item-top">
                 <strong>{name}</strong>
                 <i className={calculated ? 'es-status done' : 'es-status'}>{estimate.status}</i>
@@ -58,5 +69,17 @@ export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf
           </div>
         })}
       </nav>}
+  </>
+
+  if (docked) return <aside className="es-sidebar" aria-label={title}>{list}</aside>
+
+  return <aside className={open ? 'es-sidebar es-rail open' : 'es-sidebar es-rail'} aria-label={title} ref={railRef}>
+    <button type="button" className="es-rail-button" onClick={() => setOpen(!open)} aria-expanded={open} title={open ? 'Закрыть список смет' : 'Открыть список смет'}>
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M3 4.5h12M3 9h12M3 13.5h12" /></svg>
+      <span>Сметы</span>
+      {estimates.length > 0 && <b>{estimates.length}</b>}
+    </button>
+    <button type="button" className="es-icon es-icon-primary" onClick={onCreate} title="Новая смета" aria-label="Новая смета">+</button>
+    {open && <div className="es-panel" role="dialog" aria-label={title}>{list}</div>}
   </aside>
 }
