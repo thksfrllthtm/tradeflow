@@ -1,6 +1,6 @@
 import { GoodsCalculationResult, SirWeight } from '@/shared/types/goods'
 
-// Сравнение двух расчётов одной сметы: по инвойсу и по СИР. Строки сопоставляются по номеру —
+// Сравнение двух расчётов одной сметы: по инвойсу и по СУР. Строки сопоставляются по номеру —
 // оба расчёта сделаны из одних и тех же строк сметы.
 
 const number = (value: unknown) => {
@@ -69,7 +69,7 @@ export function compareTotals(invoice: GoodsCalculationResult, sir: GoodsCalcula
   return [...lines, { ...line('Растаможка к оплате, USD', usd, true) }]
 }
 
-// Сколько строк сравнения посчитано по СИР и сколько из них дешевле индикатора по инвойсу.
+// Сколько строк сравнения посчитано по СУР и сколько из них дешевле индикатора по инвойсу.
 export function compareCounts(rows: SirCompareRow[]) {
   return { sir: rows.filter((row) => row.sirPerKg !== null).length, below: rows.filter((row) => row.belowSir).length, total: rows.length }
 }

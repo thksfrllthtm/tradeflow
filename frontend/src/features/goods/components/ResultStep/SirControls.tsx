@@ -4,12 +4,12 @@ import './SirControls.css'
 
 const QUICK_DISCOUNTS = ['0', '50', '60', '70']
 
-// «−60» и «60 %» — одно и то же: снижение индикатора на 60 %, то есть 40 % от СИР.
+// «−60» и «60 %» — одно и то же: снижение индикатора на 60 %, то есть 40 % от СУР.
 const discountValue = (text: string) => text.replace(',', '.').replace(/[−-]/g, '').replace('%', '').trim()
 const validDiscount = (text: string) => text === '' || (/^\d+(\.\d+)?$/.test(text) && Number(text) < 100)
 const sameDiscount = (a: string, b: string) => Number(a || 0) === Number(b || 0)
 
-// Вес и снижение СИР: в полосе сметы и в окне сравнения.
+// Вес и снижение СУР: в полосе сметы и в окне сравнения.
 export function SirOptions({ weight, discount, disabled, onChange }: { weight: SirWeight; discount: string; disabled: boolean; onChange: (patch: SirParams) => void }) {
   // Своё снижение — в поле рядом с кнопками; пока выбрана кнопка, поле пустое.
   const custom = !QUICK_DISCOUNTS.some((value) => sameDiscount(value, discount))
@@ -25,7 +25,7 @@ export function SirOptions({ weight, discount, disabled, onChange }: { weight: S
   }
 
   return <>
-    <div className="rs-seg" role="radiogroup" aria-label="Вес для СИР">
+    <div className="rs-seg" role="radiogroup" aria-label="Вес для СУР">
       <button type="button" role="radio" aria-checked={weight !== 'gross'} className={weight !== 'gross' ? 'active' : undefined} onClick={() => onChange({ sirWeight: 'net' })} disabled={disabled}>Нетто</button>
       <button type="button" role="radio" aria-checked={weight === 'gross'} className={weight === 'gross' ? 'active' : undefined} onClick={() => onChange({ sirWeight: 'gross' })} disabled={disabled}>Брутто</button>
     </div>
@@ -49,19 +49,19 @@ export function SirOptions({ weight, discount, disabled, onChange }: { weight: S
 
 type Props = {
   sir: SirParams
-  // Строки, посчитанные по СИР, и включённые строки сметы.
+  // Строки, посчитанные по СУР, и включённые строки сметы.
   sirRows: number
   totalRows: number
   disabled: boolean
   onChange: (patch: SirParams) => void
   onCompare: () => void
-  // По инвойсу: подбор под бюджет — после переключателя, откат цен — справа. По СИР они не нужны.
+  // По инвойсу: подбор под бюджет — после переключателя, откат цен — справа. По СУР они не нужны.
   invoiceTools: ReactNode
   priceTools: ReactNode
 }
 
 // Полоса инструментов результата. Таможенная стоимость сметы: по инвойсу (обычно) или по стоимостному индикатору риска КГД —
-// вес нетто или брутто × СИР × (1 − снижение %). Строки без индикатора считаются по инвойсу.
+// вес нетто или брутто × СУР × (1 − снижение %). Строки без индикатора считаются по инвойсу.
 export function SirControls({ sir, sirRows, totalRows, disabled, onChange, onCompare, invoiceTools, priceTools }: Props) {
   const mode = sir.customsValueMode === 'sir' ? 'sir' : 'invoice'
   const country = sir.sirCountry || 'CN'
@@ -79,7 +79,7 @@ export function SirControls({ sir, sirRows, totalRows, disabled, onChange, onCom
     <span className="sir-label">Таможенная стоимость</span>
     <div className="rs-seg" role="radiogroup" aria-label="Как считать таможенную стоимость">
       <button type="button" role="radio" aria-checked={mode === 'invoice'} className={mode === 'invoice' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'invoice' })} disabled={disabled} title="ТС = стоимость по инвойсу + доставка">По инвойсу</button>
-      <button type="button" role="radio" aria-checked={mode === 'sir'} className={mode === 'sir' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'sir' })} disabled={disabled} title="ТС = вес × стоимостной индикатор риска КГД (USD за 1 кг) × (1 − снижение) + доставка">По СИР</button>
+      <button type="button" role="radio" aria-checked={mode === 'sir'} className={mode === 'sir' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'sir' })} disabled={disabled} title="ТС = вес × стоимостной индикатор риска КГД (USD за 1 кг) × (1 − снижение) + доставка">По СУР</button>
     </div>
     {mode === 'invoice' && <>
       <span className="sir-sep" aria-hidden="true" />
@@ -93,13 +93,13 @@ export function SirControls({ sir, sirRows, totalRows, disabled, onChange, onCom
         Страна
         <input className={countryOk ? 'sir-country' : 'sir-country invalid'} value={countryText} maxLength={2} onChange={(event) => setCountryText(event.target.value.toUpperCase())} onBlur={applyCountry}
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); applyCountry() } else if (event.key === 'Escape') setCountryText(country) }}
-          disabled={disabled} aria-label="Страна для СИР, двухбуквенный код" aria-invalid={!countryOk} />
+          disabled={disabled} aria-label="Страна для СУР, двухбуквенный код" aria-invalid={!countryOk} />
       </label>
     </>}
     <span className="sir-end">
-      {mode === 'sir' && <span className="sir-count" role="status" title="Цены инвойса на таможенную стоимость не влияют; строки без индикатора — по инвойсу">по СИР <b>{sirRows}</b> из {totalRows}{sirRows < totalRows && <span> · остальные по инвойсу</span>}</span>}
+      {mode === 'sir' && <span className="sir-count" role="status" title="Цены инвойса на таможенную стоимость не влияют; строки без индикатора — по инвойсу">по СУР <b>{sirRows}</b> из {totalRows}{sirRows < totalRows && <span> · остальные по инвойсу</span>}</span>}
       {mode === 'invoice' && priceTools}
-      <button type="button" className="sir-compare" onClick={onCompare} disabled={disabled} title="Сравнить инвойс и СИР: итоги и каждая строка рядом">Сравнить с СИР</button>
+      <button type="button" className="sir-compare" onClick={onCompare} disabled={disabled} title="Сравнить инвойс и СУР: итоги и каждая строка рядом">Сравнить с СУР</button>
     </span>
   </div>
 }

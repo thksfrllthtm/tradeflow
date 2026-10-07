@@ -1,6 +1,6 @@
 package goods
 
-// Режим сметы «ТС по СИР»: параметры из запроса и индикатор каждой строки.
+// Режим сметы «ТС по СУР»: параметры из запроса и индикатор каждой строки.
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ type sirSettings struct {
 	country  string
 }
 
-// parseSIRSettings проверяет параметры СИР; они сохраняются и в режиме «по инвойсу», чтобы
+// parseSIRSettings проверяет параметры СУР; они сохраняются и в режиме «по инвойсу», чтобы
 // переключение режима не сбрасывало вес, снижение и страну.
 func parseSIRSettings(input GoodsCalculationInput) (sirSettings, error) {
 	settings := sirSettings{weight: "net", country: riskindicators.NormalizeCountry(input.SirCountry)}
@@ -28,24 +28,24 @@ func parseSIRSettings(input GoodsCalculationInput) (sirSettings, error) {
 	case "sir":
 		settings.enabled = true
 	default:
-		return settings, &service.ValidationError{Field: "customsValueMode", Message: "Выберите, как считать таможенную стоимость: по инвойсу или по СИР"}
+		return settings, &service.ValidationError{Field: "customsValueMode", Message: "Выберите, как считать таможенную стоимость: по инвойсу или по СУР"}
 	}
 	switch weight := strings.ToLower(strings.TrimSpace(input.SirWeight)); weight {
 	case "", "net":
 	case "gross":
 		settings.weight = "gross"
 	default:
-		return settings, &service.ValidationError{Field: "sirWeight", Message: "Вес для СИР — нетто или брутто"}
+		return settings, &service.ValidationError{Field: "sirWeight", Message: "Вес для СУР — нетто или брутто"}
 	}
 	if text := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(input.SirDiscountPercent), "%")); text != "" {
 		value, err := service.ParseDecimal(strings.TrimPrefix(text, "-"))
 		if err != nil || value.IsNegative() || value.GreaterThanOrEqual(decimal.NewFromInt(100)) {
-			return settings, &service.ValidationError{Field: "sirDiscountPercent", Message: "Снижение СИР — число от 0 до 99,99 %"}
+			return settings, &service.ValidationError{Field: "sirDiscountPercent", Message: "Снижение СУР — число от 0 до 99,99 %"}
 		}
 		settings.discount = value
 	}
 	if !riskindicators.ValidCountry(settings.country) {
-		return settings, &service.ValidationError{Field: "sirCountry", Message: "Страна для СИР — двухбуквенный код, например CN"}
+		return settings, &service.ValidationError{Field: "sirCountry", Message: "Страна для СУР — двухбуквенный код, например CN"}
 	}
 	return settings, nil
 }
@@ -64,9 +64,9 @@ func (s sirSettings) basis(code string, indicators map[string]riskindicators.Ind
 	case code == "":
 		// Строка без кода уже помечена ошибкой «укажите код».
 	case !loaded:
-		basis.Missing = "СИР: индикаторы не загружены (администратор загружает файлы профилей риска на странице «Номенклатура») — ТС по инвойсу"
+		basis.Missing = "СУР: индикаторы не загружены (администратор загружает файлы профилей риска на странице «Номенклатура») — ТС по инвойсу"
 	case !found:
-		basis.Missing = fmt.Sprintf("СИР: для кода %s и страны %s индикатора нет — ТС по инвойсу", code, s.country)
+		basis.Missing = fmt.Sprintf("СУР: для кода %s и страны %s индикатора нет — ТС по инвойсу", code, s.country)
 	default:
 		price := indicator.PriceUSD
 		basis.PriceUSD, basis.Profile = &price, indicator.Profile

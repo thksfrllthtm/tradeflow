@@ -32,7 +32,7 @@
 /* min-content: карточка с overflow:hidden иначе сжалась бы и обрезала таблицу вместе с «Итого». */
 .rs-card { flex: 1 1 auto; min-height: min-content; }
 
-/* Поля с единицей (бюджет, своё снижение СИР). */
+/* Поля с единицей (бюджет, своё снижение СУР). */
 .rs-joined { display: inline-flex; align-items: stretch; height: 32px; border: 1px solid var(--rs-field); border-radius: 8px; background: #fff; overflow: hidden; }
 .rs-joined:focus-within { border-color: var(--rs-focus); box-shadow: 0 0 0 2px #1c6b4340; }
 .rs-joined input { box-sizing: border-box; width: 72px; height: 100%; margin: 0; padding: 0 4px 0 10px; border: 0; background: transparent; color: var(--rs-ink); font-size: .93rem; text-align: right; font-variant-numeric: tabular-nums; }

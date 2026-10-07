@@ -71,7 +71,7 @@ func writeExportRows(book *excelize.File, styles exportStyles, input GoodsCalcul
 		"Доставка, USD", "Доставка, KZT", "Статус", "Ошибки", "Предупреждения"}
 	sir := result.CustomsValueMode == "sir"
 	if sir {
-		headers = append(headers, "ТС по СИР")
+		headers = append(headers, "ТС по СУР")
 	}
 	for col, header := range headers {
 		_ = book.SetCellValue(sheet, exportCell(col+1, 1), header)
@@ -437,13 +437,13 @@ func (s decimalSum) String() string {
 	return s.value.String()
 }
 
-// exportSIRSettings — режим «ТС по СИР» для листа «Итоги».
+// exportSIRSettings — режим «ТС по СУР» для листа «Итоги».
 func exportSIRSettings(result GoodsCalculationResult) string {
 	weight := "нетто"
 	if result.SirWeight == "gross" {
 		weight = "брутто"
 	}
-	text := fmt.Sprintf("По СИР (страна %s): вес %s × индикатор", result.SirCountry, weight)
+	text := fmt.Sprintf("По СУР (страна %s): вес %s × индикатор", result.SirCountry, weight)
 	if discount := exportDecimal(result.SirDiscountPercent); discount != nil && discount.IsPositive() {
 		text += fmt.Sprintf(" − %s %%", formatExportNumber(result.SirDiscountPercent))
 	}

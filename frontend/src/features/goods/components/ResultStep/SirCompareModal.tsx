@@ -13,7 +13,7 @@ type Props = {
   result: GoodsCalculationResult
   items: GoodsItemInput[]
   sir: SirParams
-  // Пробный расчёт сметы с другими параметрами СИР: смета и черновик не меняются.
+  // Пробный расчёт сметы с другими параметрами СУР: смета и черновик не меняются.
   preview: (patch: SirParams) => Promise<GoodsCalculationResult>
   onClose: () => void
 }
@@ -25,12 +25,12 @@ const money = (value: number | null) => value === null ? dash : formatRuNumber(m
 const perKg = (value: number | null) => value === null ? dash : formatRuNumber(decimalText(value, 4))
 const signed = (value: number | null) => value === null ? dash : `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatRuNumber(moneyText(Math.abs(value)))}`
 const percent = (value: number) => formatRuNumber(decimalText(value, 1))
-// По СИР дороже — тёплым, дешевле — зелёным; ноль — без цвета.
+// По СУР дороже — тёплым, дешевле — зелёным; ноль — без цвета.
 const tone = (value: number | null) => value === null || Math.abs(value) < 0.005 ? '' : value > 0 ? 'up' : 'down'
 const discountLabel = (discount: string) => Number(discount) > 0 ? ` −${formatRuNumber(discount)}%` : ''
 
-// Окно «Сравнение: по инвойсу и по СИР»: сверху растаможка к оплате обоими способами и разница,
-// под ней — из чего она складывается, ниже — каждая строка. Вес и снижение СИР пробуются здесь же
+// Окно «Сравнение: по инвойсу и по СУР»: сверху растаможка к оплате обоими способами и разница,
+// под ней — из чего она складывается, ниже — каждая строка. Вес и снижение СУР пробуются здесь же
 // и меняют только окно; режим сметы переключается в полосе «Таможенная стоимость».
 // Окно — в document.body: общий мелкий стиль таблиц страницы сметы на него не действует.
 export function SirCompareModal({ result, items, sir, preview, onClose }: Props) {
@@ -63,7 +63,7 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
     previewRef.current({ customsValueMode: 'invoice' }).then(setInvoice).catch((reason) => setError(errorMessage(reason)))
   }, [currentMode])
 
-  // Расчёт по СИР — заново при каждой смене веса или снижения; устаревший ответ отбрасывается.
+  // Расчёт по СУР — заново при каждой смене веса или снижения; устаревший ответ отбрасывается.
   useEffect(() => {
     if (sameAsSmeta) { requestRef.current++; setLoading(false); setByIndicator(result); return }
     const id = ++requestRef.current
@@ -79,7 +79,7 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
   const lines = ready ? compareTotals(invoice, byIndicator) : []
   const counts = compareCounts(rows)
   const shownRows = order === 'diff' ? [...rows].sort((a, b) => (b.customsDiff ?? -Infinity) - (a.customsDiff ?? -Infinity)) : rows
-  const sirTitle = `По СИР${discountLabel(discount)}`
+  const sirTitle = `По СУР${discountLabel(discount)}`
   const weightLabel = weight === 'gross' ? 'брутто' : 'нетто'
   const hasDiscount = Number(discount) > 0
   const payments = lines.find((line) => line.label === 'Растаможка к оплате')
@@ -96,14 +96,14 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
     <div className="sc-modal" role="dialog" aria-modal="true" aria-labelledby="sc-title" tabIndex={-1} ref={dialogRef}>
       <header className="sc-head">
         <div>
-          <h2 id="sc-title">Сравнение: по инвойсу и по СИР</h2>
-          <p>Смета сейчас считается {currentMode === 'sir' ? `по СИР (${currentWeight === 'gross' ? 'брутто' : 'нетто'}${discountLabel(currentDiscount)})` : 'по инвойсу'}. Вес и снижение здесь — только для сравнения.</p>
+          <h2 id="sc-title">Сравнение: по инвойсу и по СУР</h2>
+          <p>Смета сейчас считается {currentMode === 'sir' ? `по СУР (${currentWeight === 'gross' ? 'брутто' : 'нетто'}${discountLabel(currentDiscount)})` : 'по инвойсу'}. Вес и снижение здесь — только для сравнения.</p>
         </div>
         <button type="button" className="sc-close" onClick={onClose} aria-label="Закрыть">×</button>
       </header>
 
-      <div className="sc-options" role="group" aria-label="Условия СИР для сравнения">
-        <span className="sir-field">По СИР:</span>
+      <div className="sc-options" role="group" aria-label="Условия СУР для сравнения">
+        <span className="sir-field">По СУР:</span>
         <SirOptions weight={weight} discount={discount} disabled={false} onChange={change} />
         <span className="sc-country">страна {sir.sirCountry || 'CN'}</span>
         <span className="sc-status" role="status">{loading ? 'Считаем…' : ''}</span>
@@ -132,8 +132,8 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
 
         <div className="sc-rows-head">
           <p className="sc-note">
-            По СИР — <b>{counts.sir}</b> из {counts.total} строк{counts.sir < counts.total && ', у остальных индикатора нет (по инвойсу)'}.
-            {counts.below > 0 && <> Цена инвойса за 1 кг ниже СИР — <b className="sc-warn">{counts.below === counts.total ? 'у всех строк' : `у ${counts.below}`}</b>: таможня может откорректировать стоимость.</>}
+            По СУР — <b>{counts.sir}</b> из {counts.total} строк{counts.sir < counts.total && ', у остальных индикатора нет (по инвойсу)'}.
+            {counts.below > 0 && <> Цена инвойса за 1 кг ниже СУР — <b className="sc-warn">{counts.below === counts.total ? 'у всех строк' : `у ${counts.below}`}</b>: таможня может откорректировать стоимость.</>}
           </p>
           <div className="rs-seg" role="radiogroup" aria-label="Порядок строк">
             <button type="button" role="radio" aria-checked={order === 'smeta'} className={order === 'smeta' ? 'active' : undefined} onClick={() => setOrder('smeta')}>Как в смете</button>
@@ -154,10 +154,10 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
                 <th className="sc-name">Товар</th>
                 <th>Вес {weightLabel}, кг</th>
                 <th className="sc-start">инвойс</th>
-                <th className="sc-sir" title="Стоимостной индикатор риска из файла профиля">СИР</th>
+                <th className="sc-sir" title="Стоимостной индикатор риска из файла профиля">СУР</th>
                 {hasDiscount && <th className="sc-sir">−{formatRuNumber(discount)}%</th>}
                 <th className="sc-start">по инвойсу</th>
-                <th className="sc-sir">по СИР</th>
+                <th className="sc-sir">по СУР</th>
                 <th>разница</th>
               </tr>
             </thead>

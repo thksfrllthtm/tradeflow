@@ -9,7 +9,7 @@ const result = (items: Item[], totals: Partial<GoodsCalculationResult['totals']>
 
 const sir = (priceUsd: string, pricePerKgUsd: string, weightKg: string) => ({ profile: '50100/190318/00024', country: 'CN', priceUsd, discountPercent: '60', pricePerKgUsd, weight: 'net' as const, weightKg, valueUsd: '' })
 
-describe('сравнение по инвойсу и по СИР', () => {
+describe('сравнение по инвойсу и по СУР', () => {
   const invoice = result([
     item({ netKg: '1580', grossKg: '1680', costUsd: '927.60', customsValueKzt: '422039.45' }),
     item({ netKg: '100', costUsd: '500.00', customsValueKzt: '250000.00' }),
@@ -23,7 +23,7 @@ describe('сравнение по инвойсу и по СИР', () => {
     item({ customsValueKzt: '1000.00' }),
   ], { customsValueKzt: '854849.46', dutyKzt: '76000', vatKzt: '150000', feeKzt: '25950', customsPaymentsKzt: '251950.00' })
 
-  it('строки: цена за кг, метка «ниже СИР», разница ТС; исключённые не показываются', () => {
+  it('строки: цена за кг, метка «ниже СУР», разница ТС; исключённые не показываются', () => {
     const rows = compareRows(invoice, byIndicator, 'net')
     expect(rows.map((row) => row.index)).toEqual([0, 1, 3])
     expect(rows[0].invoicePerKg).toBeCloseTo(0.5871, 4)

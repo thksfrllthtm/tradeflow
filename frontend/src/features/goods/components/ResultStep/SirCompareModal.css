@@ -1,6 +1,6 @@
-/* Окно «Сравнение: по инвойсу и по СИР». Окно — в document.body с классом .rs-step (токены цветов
+/* Окно «Сравнение: по инвойсу и по СУР». Окно — в document.body с классом .rs-step (токены цветов
    и стиль переключателей экрана результата), поэтому общий мелкий стиль таблиц сметы на него не действует.
-   Колонки СИР — светло-жёлтые, как полоса режима СИР; разница: по СИР дороже — тёплым, дешевле — зелёным. */
+   Колонки СУР — светло-жёлтые, как полоса режима СУР; разница: по СУР дороже — тёплым, дешевле — зелёным. */
 
 .sc-backdrop { position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; padding: 16px; background: rgba(20, 38, 27, .35); backdrop-filter: blur(2px); }
 .sc-modal { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; width: min(1240px, 100%); max-height: 94vh; padding: 20px 22px; overflow: hidden; border-radius: 14px; background: #fff; box-shadow: 0 20px 60px #1d332a55; color: var(--rs-ink); outline: none; }

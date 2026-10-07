@@ -40,7 +40,7 @@ func TestSIRBasisForRow(t *testing.T) {
 	}
 }
 
-// Смета по СИР без загруженных индикаторов считается по инвойсу и возвращает параметры СИР.
+// Смета по СУР без загруженных индикаторов считается по инвойсу и возвращает параметры СУР.
 func TestGoodsCalculationSIRModeEchoesSettings(t *testing.T) {
 	result, err := NewGoodsService().Calculate(context.Background(), GoodsCalculationInput{
 		AssessmentDate: "2026-09-17", UsdKzt: "500", PackageWeightKg: "0.3", CustomsValueMode: "sir", SirWeight: "gross", SirDiscountPercent: "60",

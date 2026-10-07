@@ -193,7 +193,7 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 			calculated := coeff.Mul(*net)
 			cost = &calculated
 		} else if !in.SIR.HasIndicator() {
-			// По СИР ТС считается от веса: цена инвойса для неё не нужна.
+			// По СУР ТС считается от веса: цена инвойса для неё не нужна.
 			if in.GenericItems {
 				warnings = append(warnings, "Укажите цену за единицу товара")
 			} else {
@@ -403,7 +403,7 @@ func currencyRate(currency string, usd, euro decimal.Decimal, warnings *[]string
 	return decimal.Zero, false
 }
 
-// sirCustomsValue — ТС строки по СИР: вес (нетто или брутто) × индикатор × (1 − снижение %),
+// sirCustomsValue — ТС строки по СУР: вес (нетто или брутто) × индикатор × (1 − снижение %),
 // до двух знаков в USD, × курс USD. Доставка добавляется всегда — цена инвойса, в которую она
 // могла входить, в ТС не участвует; доп. расходы строки — тоже сверху, в их валюте.
 func sirCustomsValue(out *CalculationItem, usd, euro decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
@@ -414,7 +414,7 @@ func sirCustomsValue(out *CalculationItem, usd, euro decimal.Decimal, warnings *
 	}
 	weight := ParseItemStringDecimal(weightText)
 	if weight == nil || !weight.IsPositive() {
-		message := fmt.Sprintf("СИР: для ТС по индикатору нужен вес %s", label)
+		message := fmt.Sprintf("СУР: для ТС по индикатору нужен вес %s", label)
 		if !slices.Contains(*warnings, message) {
 			*warnings = append(*warnings, message)
 		}
@@ -446,7 +446,7 @@ func sirCustomsValue(out *CalculationItem, usd, euro decimal.Decimal, warnings *
 	return customs.Round(2), true
 }
 
-// HasIndicator — ТС строки считается по СИР (режим сметы и индикатор для кода есть).
+// HasIndicator — ТС строки считается по СУР (режим сметы и индикатор для кода есть).
 func (b *SIRBasis) HasIndicator() bool { return b != nil && b.PriceUSD != nil }
 
 func percentageDuty(snapshot map[string]any, customs decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {

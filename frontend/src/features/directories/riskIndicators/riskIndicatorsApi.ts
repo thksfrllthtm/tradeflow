@@ -1,7 +1,7 @@
 import { request } from '@/shared/api/client'
 import { DirectoryImportResult } from '../common/directoryTransfer'
 
-// Стоимостные индикаторы риска (СИР) КГД: загруженные профили риска, загрузка файла «…_прил CN.xlsx»
+// Стоимостные индикаторы риска (СУР) КГД: загруженные профили риска, загрузка файла «…_прил CN.xlsx»
 // и удаление профиля (администратор).
 
 export type RiskProfile = { id: number; number: string; fileName: string; codeCount: number; groups: string[]; importedAt: string; importedByName: string }

@@ -8,14 +8,14 @@ type CalculationItem = {
   pricePerPair: string; costInput: string; costCurrency: string; extraExpenses: string; customsValueDirectKzt: string
   deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean; exclusionReason: string
   costUsd: string; pairPriceUsd: string; goodsCost: string; goodsCostCurrency: string; pairPrice: string; customsValueKzt: string; dutyKzt: string; antiDumpingKzt: string; vatKzt: string; vatBaseKzt: string; feeKzt: string; deliveryKzt: string; status: string; errors: string[]; warnings: string[]
-  // ТС по СИР: customsBasis = 'sir' и sir — как посчитано; без них — по инвойсу.
+  // ТС по СУР: customsBasis = 'sir' и sir — как посчитано; без них — по инвойсу.
   customsBasis?: 'sir'; sir?: SirResult
 }
-// Как посчитана ТС строки по стоимостному индикатору риска (СИР).
+// Как посчитана ТС строки по стоимостному индикатору риска (СУР).
 export type SirResult = { profile: string; country: string; priceUsd: string; discountPercent: string; pricePerKgUsd: string; weight: SirWeight; weightKg: string; valueUsd: string }
 export type CustomsValueMode = 'invoice' | 'sir'
 export type SirWeight = 'net' | 'gross'
-// Параметры СИР сметы: ТС по инвойсу или по СИР, вес, снижение индикатора, страна (по умолчанию CN).
+// Параметры СУР сметы: ТС по инвойсу или по СУР, вес, снижение индикатора, страна (по умолчанию CN).
 export type SirParams = { customsValueMode?: CustomsValueMode; sirWeight?: SirWeight; sirDiscountPercent?: string; sirCountry?: string }
 type CalculationTotals = { totalCostUsd: string; totalDeliveryUsd: string; deliveryKzt: string; deliveryInCustomsKzt: string; deliveryInExpensesKzt: string; customsValueKzt: string; dutyKzt: string; antiDumpingKzt: string; vatKzt: string; feeKzt: string; customsPaymentsKzt: string; expensesKzt: string; expensesUsd: string; cashBalanceUsd: string; calculatedCount: number; totalCount: number; needsReview: boolean; errorCount: number; warningCount: number; blockingErrors: string[] }
 export type GoodsCalculationResult = { assessmentDate: string; origin: string; usdKzt: string; eurKzt: string; wagons: string; wagonTariffUsd: string; deliveryMode: '' | 'none' | 'wagons' | 'total'; deliveryTotalUsd: string; packageWeightKg: string; customsFeeKzt: string; mrp: string; feeMultiplier: string; feeIncluded: boolean; cashUsd: string; deliveryIncludedDefault?: boolean; items: CalculationItem[]; totals: CalculationTotals; updatedAt: string; formulaVersion: string; roundingPolicy: string; calculatedAt?: string } & SirParams

@@ -29,10 +29,10 @@ type Props = {
   onPriceBlur: (index: number, value: string) => void
   // Вариант антидемпинга строки ('' — как по стране, 'none' — не начислять); строка пересчитывается.
   onAntiDumpingChoice: (index: number, key: string) => void
-  // Таможенная стоимость по инвойсу или по СИР и параметры СИР; смета пересчитывается.
+  // Таможенная стоимость по инвойсу или по СУР и параметры СУР; смета пересчитывается.
   sir: SirParams
   onSirChange: (patch: SirParams) => void
-  // Пробный расчёт с другими параметрами СИР — для окна сравнения; смета не меняется.
+  // Пробный расчёт с другими параметрами СУР — для окна сравнения; смета не меняется.
   previewSir: (patch: SirParams) => Promise<GoodsCalculationResult>
   // «Сверка по ИТП», сохраняемая в смете.
   itp?: ItpSaved
@@ -71,10 +71,10 @@ function StateIcon({ state }: { state: RowState }) {
 
 const WEIGHT_LABEL = { net: 'нетто', gross: 'брутто' }
 
-// Как посчитана ТС строки по СИР — подсказка ячейки ТС.
+// Как посчитана ТС строки по СУР — подсказка ячейки ТС.
 function sirTitle(sir: SirResult) {
   const discount = Number(sir.discountPercent) > 0 ? ` − ${displayNumber(sir.discountPercent)} % = ${displayNumber(sir.pricePerKgUsd)}` : ''
-  return `ТС по СИР (${sir.country}, профиль ${sir.profile}): ${displayNumber(sir.priceUsd)} USD/кг${discount} × ${displayNumber(sir.weightKg)} кг ${WEIGHT_LABEL[sir.weight] ?? sir.weight} = ${displayNumber(sir.valueUsd)} USD, плюс доставка`
+  return `ТС по СУР (${sir.country}, профиль ${sir.profile}): ${displayNumber(sir.priceUsd)} USD/кг${discount} × ${displayNumber(sir.weightKg)} кг ${WEIGHT_LABEL[sir.weight] ?? sir.weight} = ${displayNumber(sir.valueUsd)} USD, плюс доставка`
 }
 
 // Этап 3: полоса итогов, панель цен, фильтр «требуют внимания» и таблица на всю оставшуюся высоту.
@@ -118,11 +118,11 @@ export function ResultStep({
   const antiDumping = hasAntiDumping(result)
   // Колонка доставки нужна, только если доставка есть.
   const delivery = positive(result.totals.totalDeliveryUsd) || result.items.some((item) => positive(item.deliveryUsd))
-  // По СИР цены инвойса на ТС не влияют: подбирать их под бюджет бессмысленно.
+  // По СУР цены инвойса на ТС не влияют: подбирать их под бюджет бессмысленно.
   const sirMode = sir.customsValueMode === 'sir'
   const includedRows = result.items.filter((item) => !item.excluded)
   const sirRows = includedRows.filter((item) => item.customsBasis === 'sir').length
-  // По СИР колонки цены инвойса заменяются колонками, из которых считается ТС: вес, СИР, СИР со снижением, ТС в USD.
+  // По СУР колонки цены инвойса заменяются колонками, из которых считается ТС: вес, СУР, СУР со снижением, ТС в USD.
   const sirGross = sir.sirWeight === 'gross'
   const sirDiscount = Number(sir.sirDiscountPercent || 0)
   const sirValueUsd = includedRows.reduce((total, item) => total + (parseCalculatorNumber(item.sir ? item.sir.valueUsd : item.costUsd) ?? 0), 0)
@@ -243,7 +243,7 @@ export function ResultStep({
       <ResultSummary result={result} loading={loading} activity={activity} storageNotice={storageNotice} delivery={delivery} saveDraft={saveDraft} exportExcel={exportChecked} itp={itp} onItpChange={onItpChange} />
 
       <section className="rv-card rs-card" aria-label="Строки расчёта">
-        {/* Одна полоса: как считать ТС, подбор под бюджет (по инвойсу) или условия СИР, откат цен, сравнение. */}
+        {/* Одна полоса: как считать ТС, подбор под бюджет (по инвойсу) или условия СУР, откат цен, сравнение. */}
         <SirControls sir={sir} sirRows={sirRows} totalRows={includedRows.length} disabled={loading} onChange={onSirChange} onCompare={() => setCompareOpen(true)}
           invoiceTools={<BudgetControls budget={budget} disabled={loading} />}
           priceTools={<>
@@ -284,9 +284,9 @@ export function ResultStep({
                 <th scope="col" title="Количество; под ним — места × штук в месте">Кол-во, шт</th>
                 {sirMode ? <>
                   <th scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС; под ним — нетто' : 'Вес нетто — по нему считается ТС; под ним — брутто'}>{sirGross ? 'Брутто' : 'Нетто'}, кг</th>
-                  <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СИР, $/кг</th>
+                  <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СУР, $/кг</th>
                   {sirDiscount > 0 && <th scope="col" className="rs-sir-col" title={`Индикатор со снижением: берётся ${100 - sirDiscount} %`}>−{displayNumber(sir.sirDiscountPercent)}%, $/кг</th>}
-                  <th scope="col" title="Вес × СИР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD</th>
+                  <th scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD</th>
                 </> : <>
                   <th scope="col" title="Вес нетто; под ним — брутто">Нетто, кг</th>
                   <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD <span className="rs-th-hint">вводится</span></th>
@@ -381,7 +381,7 @@ export function ResultStep({
                     <td>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</td>
                     </>}
                     {delivery && <td>{displayNumber(item.deliveryUsd)}</td>}
-                    <td className="rs-kzt-start" title={item.sir ? sirTitle(item.sir) : undefined}>{displayNumber(item.customsValueKzt)}{item.sir && !sirMode && <small className="rs-sub sir-sub">СИР {displayNumber(item.sir.pricePerKgUsd)} $/кг</small>}</td>
+                    <td className="rs-kzt-start" title={item.sir ? sirTitle(item.sir) : undefined}>{displayNumber(item.customsValueKzt)}{item.sir && !sirMode && <small className="rs-sub sir-sub">СУР {displayNumber(item.sir.pricePerKgUsd)} $/кг</small>}</td>
                     <td>{displayNumber(item.dutyKzt)}{rate && <small className="rs-sub">{rate}</small>}{antiDumpingInfo && <AntiDumpingChooser info={antiDumpingInfo} choice={source?.antiDumpingChoice} disabled={loading || item.excluded} onChoose={(key) => onAntiDumpingChoice(index, key)} />}</td>
                     {antiDumping && <td title={antiDumpingInfo?.text}>{displayNumber(item.antiDumpingKzt)}{(antiDumpingInfo?.status === 'applied' || antiDumpingInfo?.status === 'chosen') && <small className="rs-sub">{antiDumpingInfo.number} · {String(antiDumpingInfo.percent ?? '').replace('.', ',')}%</small>}</td>}
                     <td>{displayNumber(item.vatKzt)}</td>

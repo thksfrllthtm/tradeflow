@@ -10,7 +10,7 @@ import './RiskIndicatorsPanel.css'
 
 const codes = (count: number) => `${formatDisplayNumber(count)} ${plural(count, 'код', 'кода', 'кодов')}`
 
-// «СИР» — стоимостные индикаторы риска КГД (приложения к профилям риска «24_прил CN» и т. п.).
+// «СУР» — стоимостные индикаторы риска КГД (приложения к профилям риска «24_прил CN» и т. п.).
 // Список профилей видят все; загрузка файлов и удаление — администратор. button — в шапку, panel — под шапку.
 export function useRiskIndicatorsPanel({ admin }: { admin: boolean }) {
   const [open, setOpen] = useState(false)
@@ -51,7 +51,7 @@ export function useRiskIndicatorsPanel({ admin }: { admin: boolean }) {
   }
 
   async function remove(profile: RiskProfile) {
-    if (!window.confirm(`Удалить профиль ${profile.number} (${codes(profile.codeCount)})? Сметы по СИР перестанут брать из него индикаторы.`)) return
+    if (!window.confirm(`Удалить профиль ${profile.number} (${codes(profile.codeCount)})? Сметы по СУР перестанут брать из него индикаторы.`)) return
     setBusy('Удаляем…'); setMessage(''); setError(''); setRowErrors([])
     try {
       await riskIndicatorsApi.remove(profile.id)
@@ -62,14 +62,14 @@ export function useRiskIndicatorsPanel({ admin }: { admin: boolean }) {
 
   const total = profiles?.reduce((sum, profile) => sum + profile.codeCount, 0) ?? 0
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setOpen(!open)} aria-expanded={open} title="Стоимостные индикаторы риска КГД: стоимость 1 кг товара в USD по кодам ТН ВЭД">СИР{profiles && profiles.length > 0 && ` · ${formatDisplayNumber(total)}`}</button>
+    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setOpen(!open)} aria-expanded={open} title="Стоимостные индикаторы риска КГД: стоимость 1 кг товара в USD по кодам ТН ВЭД">СУР{profiles && profiles.length > 0 && ` · ${formatDisplayNumber(total)}`}</button>
   </div>
 
   const panel = open && <section className="dir-transfer-panel kz-panel">
     <div className="dir-transfer-row">
       <div>
-        <strong>СИР — стоимостные индикаторы риска</strong>
-        <p>Приложения к профилям риска КГД: стоимость 1 кг товара в USD по коду ТН ВЭД и группам стран. Смета в режиме «ТС по СИР» берёт индикатор кода для страны сметы (обычно CN). Если код есть в нескольких профилях, берётся больший индикатор.</p>
+        <strong>СУР — стоимостные индикаторы риска</strong>
+        <p>Приложения к профилям риска КГД: стоимость 1 кг товара в USD по коду ТН ВЭД и группам стран. Смета в режиме «ТС по СУР» берёт индикатор кода для страны сметы (обычно CN). Если код есть в нескольких профилях, берётся больший индикатор.</p>
       </div>
       <button type="button" className="dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
     </div>

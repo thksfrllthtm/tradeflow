@@ -468,8 +468,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     void calculate(nextItems, false)
   }
 
-  // ТС по инвойсу или по СИР, вес, снижение и страна СИР: хранятся в параметрах сметы, расчёт
-  // повторяется с ценами текущего результата. По СИР цены инвойса на ТС не влияют — подбор под бюджет сбрасывается.
+  // ТС по инвойсу или по СУР, вес, снижение и страна СУР: хранятся в параметрах сметы, расчёт
+  // повторяется с ценами текущего результата. По СУР цены инвойса на ТС не влияют — подбор под бюджет сбрасывается.
   function changeSir(patch: SirParams) {
     const nextParams = { ...params, ...patch }
     setParams(nextParams)
@@ -478,7 +478,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     void calculate(nextItems, false, nextParams)
   }
 
-  // Окно сравнения: та же смета с ценами текущего результата, но с другими параметрами СИР.
+  // Окно сравнения: та же смета с ценами текущего результата, но с другими параметрами СУР.
   function previewSir(patch: SirParams) {
     const nextItems = items.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
     return previewCalculation(nextItems, { ...params, ...patch })

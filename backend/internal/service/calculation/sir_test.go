@@ -23,7 +23,7 @@ func sirBasis(price, discount, weight string) *SIRBasis {
 	return &SIRBasis{PriceUSD: &value, Profile: "50100/190318/00024", Country: "CN", Weight: weight, DiscountPercent: decimal.RequireFromString(discount)}
 }
 
-// ТС по СИР: 100 кг нетто × 27 USD × (1 − 60 %) = 1 080 USD × 500 = 540 000; цена инвойса (20 USD) не участвует.
+// ТС по СУР: 100 кг нетто × 27 USD × (1 − 60 %) = 1 080 USD × 500 = 540 000; цена инвойса (20 USD) не участвует.
 func TestSIRCustomsValueFromNetWeight(t *testing.T) {
 	usd := decimal.RequireFromString("500")
 	out := CalculateItem(sirItem(sirBasis("27", "60", "net"), nil), usd, decimal.Zero, decimal.Zero)
@@ -52,7 +52,7 @@ func TestSIRCustomsValueFromGrossWeightWithDelivery(t *testing.T) {
 	}
 }
 
-// По СИР цена инвойса не обязательна.
+// По СУР цена инвойса не обязательна.
 func TestSIRDoesNotRequireInvoicePrice(t *testing.T) {
 	out := CalculateItem(sirItem(sirBasis("27", "0", "net"), func(input *CalculationItemInput) { input.PricePerPair = "" }), decimal.RequireFromString("500"), decimal.Zero, decimal.Zero)
 	if out.Status != "calculated" || out.CustomsValueKZT != "1350000.00" {
@@ -63,7 +63,7 @@ func TestSIRDoesNotRequireInvoicePrice(t *testing.T) {
 // Индикатора нет — ТС по инвойсу и одно предупреждение, в том числе после повторного расчёта.
 func TestSIRMissingIndicatorFallsBackToInvoice(t *testing.T) {
 	usd := decimal.RequireFromString("500")
-	message := "СИР: для кода 4015190000 и страны CN индикатора нет — ТС по инвойсу"
+	message := "СУР: для кода 4015190000 и страны CN индикатора нет — ТС по инвойсу"
 	out := CalculateItem(sirItem(&SIRBasis{Missing: message, Country: "CN", Weight: "net"}, nil), usd, decimal.Zero, decimal.Zero)
 	out.Warnings = FilterRateWarnings(out.Warnings)
 	CalculateTariff(&out, nil, nil, nil, usd, decimal.Zero, &out.Warnings)
@@ -78,7 +78,7 @@ func TestSIRMissingIndicatorFallsBackToInvoice(t *testing.T) {
 	}
 }
 
-// Без веса посчитать ТС по СИР нельзя — ошибка строки.
+// Без веса посчитать ТС по СУР нельзя — ошибка строки.
 func TestSIRRequiresWeight(t *testing.T) {
 	out := CalculateItem(sirItem(sirBasis("27", "0", "net"), func(input *CalculationItemInput) { input.NetKG, input.GrossKG = "", "" }), decimal.RequireFromString("500"), decimal.Zero, decimal.Zero)
 	if out.CustomsValueKZT != "" || !slices.ContainsFunc(out.Errors, func(issue string) bool { return strings.Contains(issue, "нужен вес нетто") }) {

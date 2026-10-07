@@ -1,5 +1,5 @@
-/* Полоса инструментов результата: «Таможенная стоимость: по инвойсу / по СИР», бюджет или условия СИР,
-   откат цен и сравнение. В режиме СИР — лёгкий
+/* Полоса инструментов результата: «Таможенная стоимость: по инвойсу / по СУР», бюджет или условия СУР,
+   откат цен и сравнение. В режиме СУР — лёгкий
    жёлтый фон: смета считается не от цен инвойса, это должно быть видно сразу. */
 .sir-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 8px 14px; border-bottom: 1px solid var(--rs-line); }
 .sir-bar.on { background: #fffbef; }
@@ -20,7 +20,7 @@
 .rs-step button.sir-compare { height: 32px; padding: 0 12px; border: 1px solid #b8cfc0; border-radius: 8px; background: #fff; color: var(--rs-green-dark); font-size: .86rem; font-weight: 650; white-space: nowrap; }
 .rs-step button.sir-compare:hover:not(:disabled) { border-color: var(--rs-green); background: #eef6f1; }
 .goods-page .rs-table .rs-sub.sir-sub { color: var(--rs-warn); }
-/* Колонки СИР в таблице результата — тем же жёлтым, что полоса режима. */
+/* Колонки СУР в таблице результата — тем же жёлтым, что полоса режима. */
 .goods-page .rs-table .rs-sir-col { background: #fffbef; }
 .goods-page .rs-table thead .rs-sir-col, .goods-page .rs-table tfoot .rs-sir-col { background: #fdf3d6; color: var(--rs-warn); }
 .rs-sir-none { color: var(--rs-ink-3); }

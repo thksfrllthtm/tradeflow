@@ -37,7 +37,7 @@ type CalculationItemInput struct {
 	Excluded              bool           `json:"excluded"`
 	ExclusionReason       string         `json:"exclusionReason"`
 	GenericItems          bool           `json:"-"`
-	// SIR — смета в режиме «ТС по СИР»; nil — ТС по инвойсу. Задаёт только сервер.
+	// SIR — смета в режиме «ТС по СУР»; nil — ТС по инвойсу. Задаёт только сервер.
 	SIR *SIRBasis `json:"-"`
 }
 
@@ -54,7 +54,7 @@ type SIRBasis struct {
 	DiscountPercent decimal.Decimal
 }
 
-// SIRResult — как посчитана ТС строки по СИР (для показа в смете и выгрузке).
+// SIRResult — как посчитана ТС строки по СУР (для показа в смете и выгрузке).
 type SIRResult struct {
 	Profile         string `json:"profile"`
 	Country         string `json:"country"`
@@ -83,7 +83,7 @@ type CalculationItem struct {
 	Status            string   `json:"status"`
 	Errors            []string `json:"errors"`
 	Warnings          []string `json:"warnings"`
-	// CustomsBasis — "sir", когда ТС строки посчитана по СИР (SIRResult — как); иначе пусто (по инвойсу).
+	// CustomsBasis — "sir", когда ТС строки посчитана по СУР (SIRResult — как); иначе пусто (по инвойсу).
 	CustomsBasis string     `json:"customsBasis,omitempty"`
 	SIRResult    *SIRResult `json:"sir,omitempty"`
 

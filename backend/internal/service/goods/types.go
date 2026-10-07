@@ -20,7 +20,7 @@ type GoodsCalculationInput struct {
 	CashUsd          string `json:"cashUsd"`
 	// Таможенная стоимость: "" или "invoice" — по инвойсу, "sir" — по стоимостному индикатору риска.
 	CustomsValueMode string `json:"customsValueMode,omitempty"`
-	// Для режима «по СИР»: вес "net" или "gross", снижение индикатора в процентах и страна (по умолчанию CN).
+	// Для режима «по СУР»: вес "net" или "gross", снижение индикатора в процентах и страна (по умолчанию CN).
 	SirWeight                string               `json:"sirWeight,omitempty"`
 	SirDiscountPercent       string               `json:"sirDiscountPercent,omitempty"`
 	SirCountry               string               `json:"sirCountry,omitempty"`

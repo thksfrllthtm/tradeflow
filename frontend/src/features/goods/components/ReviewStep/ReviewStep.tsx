@@ -175,7 +175,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
 
   return <div className={`goods-step-page rv-step${density === 'compact' ? ' compact' : ''}`}>
     <details className="goods-params goods-params-top" open={paramsOpen} onToggle={(event) => setParamsOpen(event.currentTarget.open)}>
-      <summary>Параметры расчёта <span className="goods-params-summary">курс {params.usdKzt ? formatRuNumber(params.usdKzt) : '—'} · доставка: {deliverySummary} · сбор: {feeSummary}{params.customsValueMode === 'sir' && ` · ТС по СИР${Number(params.sirDiscountPercent) > 0 ? ` −${params.sirDiscountPercent}%` : ''}`}</span></summary>
+      <summary>Параметры расчёта <span className="goods-params-summary">курс {params.usdKzt ? formatRuNumber(params.usdKzt) : '—'} · доставка: {deliverySummary} · сбор: {feeSummary}{params.customsValueMode === 'sir' && ` · ТС по СУР${Number(params.sirDiscountPercent) > 0 ? ` −${params.sirDiscountPercent}%` : ''}`}</span></summary>
       <div className="rv-params">
         <div className="rv-params-group">
           <label className="rv-field">Дата расчёта<input className="rv-w-date" type="date" value={params.assessmentDate} onChange={(event) => setParam('assessmentDate', event.target.value)} required /></label>
