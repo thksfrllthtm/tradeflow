@@ -172,3 +172,22 @@ func parseNBKDate(items []nbkRateItem) string {
 	}
 	return ""
 }
+
+// FetchNBKLatestRates — все валюты текущей ленты НБРК (курс за 1 единицу, дата публикации ленты).
+func FetchNBKLatestRates(ctx context.Context) ([]NBKRate, error) {
+	feed, err := fetchNBKFeed(ctx, &http.Client{Timeout: 12 * time.Second}, nbkLatestRatesURL)
+	if err != nil {
+		return nil, err
+	}
+	date := parseNBKDate(feed.Channel.Items)
+	rates := make([]NBKRate, 0, len(feed.Channel.Items))
+	for _, item := range feed.Channel.Items {
+		if rate, ok, err := parseNBKRate([]nbkRateItem{item}, strings.TrimSpace(item.Title), date, "НБРК"); err == nil && ok {
+			rates = append(rates, rate)
+		}
+	}
+	if len(rates) == 0 {
+		return nil, fmt.Errorf("НБРК не вернул курсы")
+	}
+	return rates, nil
+}

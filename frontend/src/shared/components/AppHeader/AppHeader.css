@@ -57,7 +57,21 @@
 .app-header :focus-visible { outline: 2px solid #cfe8d9; outline-offset: 2px; }
 
 /* Курс НБРК на сегодня — справочно, рядом с пользователем: две валюты и дата курса под ними. */
-.app-header-rates { display: grid; grid-template-columns: auto auto; flex: 0 0 auto; column-gap: 14px; row-gap: 1px; padding-right: 18px; border-right: 1px solid rgba(255, 255, 255, .14); }
+.app-header-rates { position: relative; flex: 0 0 auto; padding-right: 18px; border-right: 1px solid rgba(255, 255, 255, .14); }
+.app-header-rates > summary { display: grid; grid-template-columns: auto auto; column-gap: 14px; row-gap: 1px; padding: 3px 8px; border-radius: 7px; list-style: none; cursor: pointer; }
+.app-header-rates > summary::-webkit-details-marker { display: none; }
+.app-header-rates > summary:hover, .app-header-rates[open] > summary { background: rgba(255, 255, 255, .07); }
+/* Конвертер — белое окошко под курсом, как меню «Ещё». */
+.app-header-converter { position: absolute; top: calc(100% + 8px); right: 18px; z-index: 80; display: grid; gap: 10px; width: 380px; padding: 14px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(15, 46, 28, .22); color: #1f2d24; }
+.app-header-converter strong { font-size: .86rem; }
+.app-header-converter small { color: #68766e; font-size: .74rem; }
+.app-header-converter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
+.app-header-converter-amount { box-sizing: border-box; height: 34px; margin: 0; padding: 0 8px; border: 1px solid #d3ddd6; border-radius: 7px; background: #fff; color: #1f2d24; font-size: .88rem; }
+.app-header-converter-amount { width: 100%; font-size: 1rem !important; text-align: right; font-variant-numeric: tabular-nums; }
+.app-header .app-header-converter-row .cur-swap { width: 34px; height: 38px; padding: 0; border: 1px solid #d3ddd6; border-radius: 7px; background: #f3f7f4; color: #146c43; font-size: 1rem; }
+.app-header .app-header-converter-row .cur-swap:hover:not(:disabled) { background: #e6f3ec; }
+.app-header-converter-result { color: #0f2e1c; font-size: 1.35rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.app-header .app-header-converter :focus-visible { outline-color: #146c43; }
 .app-header-rate { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
 .app-header-rate small { color: #a9c7b4; font-size: .74rem; font-weight: 600; }
 .app-header-rate b { color: #fff; font-size: .86rem; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -101,3 +115,22 @@
   .app-header-nav a, .app-header-measure span, .app-header-more > summary { padding: 6px 8px; font-size: .78rem; }
   .app-header-avatar { display: none; }
 }
+
+/* Выбор валюты в конвертере: плашка «код + название», список с поиском на всю ширину окна. */
+.cur-select { min-width: 0; }
+.app-header .cur-select-button { display: flex; align-items: center; gap: 7px; width: 100%; height: 38px; padding: 0 9px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fff; color: #1f2d24; font-size: .84rem; text-align: left; }
+.app-header .cur-select-button:hover:not(:disabled), .app-header .cur-select-button.open { border-color: #25855a; background: #fff; }
+.cur-select-button b, .cur-list li b { flex: none; padding: 2px 6px; border-radius: 5px; background: #e6f3ec; color: #146c43; font-size: .74rem; font-weight: 750; letter-spacing: .02em; }
+.cur-select-button span { overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
+.cur-select-button svg { flex: none; margin-left: auto; color: #68766e; }
+.cur-list { position: absolute; left: 14px; right: 14px; z-index: 2; margin-top: 6px; padding: 6px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 14px 34px rgba(15, 46, 28, .2); }
+.cur-search { box-sizing: border-box; width: 100%; height: 34px; margin: 0 0 6px; padding: 0 10px; border: 1px solid #d3ddd6; border-radius: 7px; font-size: .86rem; }
+.cur-search:focus { outline: none; border-color: #25855a; box-shadow: 0 0 0 3px #25855a22; }
+.cur-list ul { max-height: 280px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.cur-list li { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 7px; color: #1f2d24; font-size: .86rem; cursor: pointer; }
+.cur-list li span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cur-list li small { flex: none; color: #68766e; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.cur-list li[aria-selected="true"] { background: #eef6f1; }
+.cur-list li.chosen b { background: #146c43; color: #fff; }
+.cur-list li.cur-split { margin-bottom: 4px; box-shadow: 0 5px 0 -4px #e4eae6; }
+.cur-list .cur-empty { color: #68766e; cursor: default; }

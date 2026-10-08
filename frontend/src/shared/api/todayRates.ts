@@ -16,6 +16,9 @@ function loadTodayRates(): Promise<TodayRate[]> {
   return pending
 }
 
+// Курсы, которые видны в шапке и на входе; остальные валюты — только в конвертере.
+export const mainRates = (rates: TodayRate[]) => rates.filter((rate) => rate.currency === 'USD' || rate.currency === 'EUR')
+
 // null — курс ещё загружается; [] — курса нет.
 export function useTodayRates() {
   const [rates, setRates] = useState<TodayRate[] | null>(null)

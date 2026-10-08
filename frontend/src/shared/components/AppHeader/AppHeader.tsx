@@ -3,8 +3,7 @@ import { isAdmin, roleLabels, User } from '@/shared/types/user'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
 import { useTodayRates } from '@/shared/api/todayRates'
-import { formatRuDate } from '@/shared/lib/dates'
-import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
+import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная: ни один раздел меню не подсвечен, на неё ведёт логотип.
@@ -32,7 +31,7 @@ function initials(user: User) {
 const MORE_WIDTH = 76
 const GAP = 4
 
-// Общая шапка всех страниц: логотип, разделы, курс НБРК на сегодня, пользователь и выход. Разделы, которые не
+// Общая шапка всех страниц: логотип, разделы, курс НБРК на сегодня с конвертером валют, пользователь и выход. Разделы, которые не
 // помещаются по ширине (окно рядом с Excel), уходят в меню «Ещё» — ничего не обрезается.
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
   const items = isAdmin(user) ? [...sections, ...adminSections] : sections
@@ -101,10 +100,7 @@ export function AppHeader({ user, section, onLogout }: { user: User; section: Ap
       </details>}
       <div className="app-header-measure" ref={measureRef} aria-hidden="true">{items.map((item) => <span key={item.value}>{item.label}</span>)}</div>
     </nav>
-    {rates && rates.length > 0 && <div className="app-header-rates" title={`Официальный курс Национального банка РК на ${formatRuDate(rates[0].date)}`} aria-label="Курс НБРК">
-      {rates.map((rate) => <span key={rate.currency} className="app-header-rate"><small>1 {rate.currency}</small><b>{formatRuNumber(rate.rate)} ₸</b></span>)}
-      <span className="app-header-rate-date">НБРК · {formatRuDate(rates[0].date)}</span>
-    </div>}
+    {rates && rates.length > 0 && <RatesConverter rates={rates} />}
     <div className="app-header-user">
       <span className="app-header-avatar" aria-hidden="true">{initials(user)}</span>
       <span className="app-header-who" title={user.email}>{user.name || user.email}<small>{roleLabels[user.role] ?? ''}</small></span>
