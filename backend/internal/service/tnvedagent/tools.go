@@ -110,9 +110,14 @@ func agentTools(reference, documents bool) []agentTool {
 			"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
 			"check":   stringProperty("Что уточнить; пусто, если нечего"),
 		}, "code", "verdict", "reason")},
-		"name":  stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
-		"notes": stringProperty("Замечания сотруднику; пусто, если нет"),
-	}, "description", "candidates", "name"))
+		"name":       stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
+		"notes":      stringProperty("Замечания сотруднику; пусто, если нет"),
+		"confidence": map[string]any{"type": "string", "enum": []string{"high", "medium", "low"}, "description": "Уверенность в лучшем коде"},
+		"sources": map[string]any{"type": "array", "description": "Страницы из интернета, на которые опирался (адреса из web_search или web_page); без интернета — пусто", "items": objectSchema(map[string]any{
+			"title": stringProperty("Что это за страница: «карточка товара на 1688», «предварительное решение ФТС»"),
+			"url":   stringProperty("Адрес страницы"),
+		}, "url")},
+	}, "description", "candidates", "name", "confidence"))
 	if reference {
 		finish = tool("finish", "Ответ сотруднику. Вызывается один раз в конце.", objectSchema(map[string]any{
 			"description": stringProperty("Ответ сотруднику. На первый вопрос — что это за товар, какой код и главное отличие от соседних, 2–4 предложения. На уточнение — только прямой ответ на него, без пересказа прежнего ответа"),
@@ -123,8 +128,13 @@ func agentTools(reference, documents bool) []agentTool {
 				"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
 				"check":   stringProperty("Что уточнить; пусто, если нечего"),
 			}, "code", "verdict", "reason")},
-			"notes": stringProperty("Короткое дополнение, которого нет в description; пусто, если нечего добавить. Не повторяй description"),
-		}, "description", "candidates"))
+			"notes":      stringProperty("Короткое дополнение, которого нет в description; пусто, если нечего добавить. Не повторяй description"),
+			"confidence": map[string]any{"type": "string", "enum": []string{"high", "medium", "low"}, "description": "Уверенность в лучшем коде"},
+			"sources": map[string]any{"type": "array", "description": "Страницы из интернета, на которые опирался (адреса из web_search или web_page); без интернета — пусто", "items": objectSchema(map[string]any{
+				"title": stringProperty("Что это за страница: «карточка товара на 1688», «предварительное решение ФТС»"),
+				"url":   stringProperty("Адрес страницы"),
+			}, "url")},
+		}, "description", "candidates", "confidence"))
 	}
 	extra := []agentTool{}
 	if documents {
@@ -189,6 +199,10 @@ type AgentResult struct {
 	Candidates  []AgentCandidate `json:"candidates"`
 	Name        string           `json:"name"`
 	Notes       string           `json:"notes"`
+	// Confidence — уверенность агента в лучшем коде: high, medium, low ("" — не указал).
+	Confidence string `json:"confidence,omitempty"`
+	// Sources — страницы из интернета, на которые опирался агент; только адреса, которые он видел.
+	Sources []AgentSource `json:"sources,omitempty"`
 	// Коды, которых нет в номенклатуре, и сколько цитат не нашлось в источниках.
 	DroppedCodes  []string `json:"droppedCodes"`
 	QuotesRemoved int      `json:"quotesRemoved"`
@@ -196,6 +210,11 @@ type AgentResult struct {
 	DocumentsCode string          `json:"documentsCode,omitempty"`
 	Documents     []AgentDocument `json:"documents,omitempty"`
 	LinksRemoved  int             `json:"linksRemoved,omitempty"`
+}
+
+type AgentSource struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }
 
 // AgentDocument — мера или документ для ввоза. Applies: yes — относится к товару, maybe — зависит от
@@ -293,6 +312,9 @@ type agentToolbox struct {
 	docs  map[string]string
 	// documentsCode — запуск по кнопке «Документы для ввоза» для этого кода ("" — обычный подбор).
 	documentsCode string
+	// search — поиск в интернете (nil — не подключён); webCalls — обращений за этот запуск.
+	search   webSearcher
+	webCalls int
 }
 
 func newAgentToolbox(data agentData) *agentToolbox {
@@ -441,9 +463,13 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		Prefix string   `json:"prefix"`
 		Code   string   `json:"code"`
 		URL    string   `json:"url"`
+		Focus  string   `json:"focus"`
 	}
 	if err := json.Unmarshal([]byte(arguments), &args); err != nil {
 		return `{"error":"Аргументы не JSON"}`, agentToolEvent{Tool: name, Label: "Ошибка вызова инструмента", Failed: true}
+	}
+	if name == "web_search" || name == "web_page" {
+		return t.runWeb(ctx, name, args.Query, args.Focus, args.URL)
 	}
 	// Веб-инструменты — только по кнопке «Документы для ввоза»: в обычном подборе их у модели нет.
 	if t.documentsCode == "" && (name == "open_goods_help" || name == "open_link" || name == "search_in_document") {
@@ -646,8 +672,13 @@ type finishArgs struct {
 		Reason  string `json:"reason"`
 		Check   string `json:"check"`
 	} `json:"candidates"`
-	Name      string `json:"name"`
-	Notes     string `json:"notes"`
+	Name       string `json:"name"`
+	Notes      string `json:"notes"`
+	Confidence string `json:"confidence"`
+	Sources    []struct {
+		Title string `json:"title"`
+		URL   string `json:"url"`
+	} `json:"sources"`
 	Documents []struct {
 		Measure     string `json:"measure"`
 		Act         string `json:"act"`
@@ -727,6 +758,16 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	}
 	if len(result.Candidates) == 0 {
 		return nil, "Ни одного кода из номенклатуры: проверь коды через get_codes или search_nomenclature и вызови finish ещё раз.", nil
+	}
+	if args.Confidence == "high" || args.Confidence == "medium" || args.Confidence == "low" {
+		result.Confidence = args.Confidence
+	}
+	// Источник — только страница, которую агент действительно видел в этом подборе.
+	for _, source := range args.Sources {
+		address := strings.TrimSpace(source.URL)
+		if t.links[address] && len(result.Sources) < 5 {
+			result.Sources = append(result.Sources, AgentSource{Title: service.TruncateRunes(strings.TrimSpace(source.Title), 200), URL: address})
+		}
 	}
 	return result, "", nil
 }

@@ -6,6 +6,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
+import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from '@/features/goods/agent/DocumentsAnswer'
 import './ReferenceChat.css'
 
@@ -13,7 +14,7 @@ const pollInterval = 1500
 const maxPhotos = 3
 const examples = ['Лопата штыковая стальная с черенком', 'Перчатки трикотажные с покрытием ПВХ', 'Чем отличаются 6116 10 200 0 и 6116 10 800 0?']
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
-const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎' }
+const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐' }
 
 const isWorking = (session: AgentSession | null) => session?.status === 'running' || session?.status === 'searching'
 const isImage = (file: File) => file.type === 'image/jpeg' || file.type === 'image/png'
@@ -425,6 +426,7 @@ function Answer({ result, previous, documentsDisabled, onDocuments }: AnswerProp
   }
   return <div className="rc-answer">
     {result.description && <p className="rc-answer-text"><LinkText text={result.description} /></p>}
+    <AgentEvidence result={result} />
     {main.map((candidate) => <Candidate key={candidate.code} candidate={candidate} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     {rejected.length > 0 && <div className="rc-rejected">
       <p>Почему не эти коды</p>

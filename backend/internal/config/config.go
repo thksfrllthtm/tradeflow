@@ -33,6 +33,10 @@ type Config struct {
 	TNVEDAIPriceInput  float64
 	TNVEDAIPriceCached float64
 	TNVEDAIPriceOutput float64
+	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
+	TNVEDAIEffort string
+	// TavilyAPIKey — поиск в интернете для подбора кода ТН ВЭД ("" — без интернета).
+	TavilyAPIKey string
 	// RegistrationDisabled: запретить самостоятельную регистрацию (ALLOW_REGISTRATION=false).
 	// На публичном сервере сотрудников заводит bootstrap-admin.
 	RegistrationDisabled bool
@@ -97,6 +101,8 @@ func Load() (Config, error) {
 		TNVEDAIAPIKey:        stringEnv("TNVED_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
 		TNVEDAIBaseURL:       stringEnv("TNVED_AI_BASE_URL", "https://api.deepseek.com"),
 		TNVEDAIModel:         stringEnv("TNVED_AI_MODEL", "deepseek-flash"),
+		TavilyAPIKey:         strings.TrimSpace(os.Getenv("TAVILY_API_KEY")),
+		TNVEDAIEffort:        strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_EFFORT"))),
 		TNVEDAIVision:        tnvedVision,
 		TNVEDAIDailyLimit:    tnvedDailyLimit,
 		TNVEDAINamingRule:    strings.TrimSpace(os.Getenv("TNVED_AI_NAMING_RULE")),

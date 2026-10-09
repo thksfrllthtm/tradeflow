@@ -41,6 +41,9 @@ export type AgentResult = {
   notes: string
   droppedCodes: string[]
   quotesRemoved: number
+  // Уверенность в лучшем коде и страницы из интернета, на которые опирался агент.
+  confidence?: 'high' | 'medium' | 'low'
+  sources?: { title: string; url: string }[]
   // Ответ по кнопке «Документы для ввоза»: для какого кода, меры и сколько чужих ссылок убрала программа.
   documentsCode?: string
   documents?: AgentDocument[]

@@ -33,6 +33,8 @@ type agentRunner struct {
 	tools []agentTool
 	// documents — запуск по кнопке «Документы для ввоза»: веб-инструменты и больше шагов.
 	documents bool
+	// review — первый итог возвращается агенту на самопроверку («второй взгляд»), окончательный — второй.
+	review bool
 }
 
 // stepLimit — шагов до принудительного итога: maxSteps, иначе по режиму.
@@ -109,6 +111,22 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 				if json.Unmarshal([]byte(content), &page) == nil && page.Code != "" && page.Text != "" {
 					r.toolbox.opened[page.Code] = page.Text
 				}
+			case "web_search":
+				var found struct {
+					Results []webResult `json:"results"`
+				}
+				if json.Unmarshal([]byte(content), &found) == nil {
+					for _, item := range found.Results {
+						r.toolbox.links[item.URL] = true
+					}
+				}
+			case "web_page":
+				var page struct {
+					URL string `json:"url"`
+				}
+				if json.Unmarshal([]byte(content), &page) == nil && page.URL != "" {
+					r.toolbox.links[page.URL] = true
+				}
 			case "open_goods_help", "open_link", "search_in_document":
 				var page struct {
 					URL       string              `json:"url"`
@@ -142,7 +160,11 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	if tools == nil {
 		tools = agentTools(false, r.documents)
 	}
+	if r.toolbox.search != nil && !r.documents {
+		tools = append(append([]agentTool{}, tools...), webTools()...)
+	}
 	nudged, finishRetried, forced := false, false, false
+	reviewed := !r.review
 	for step := 0; ; step++ {
 		if err := ctx.Err(); err != nil {
 			return agentOutcome{err: err}
@@ -209,6 +231,14 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 				finishRetried = true
 				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"error": problem}))
 				r.onStep(r.transcript, reply.Usage)
+				continue
+			}
+			// Самопроверка: итог ещё не принимается, агент проверяет себя и вызывает finish снова.
+			if result != nil && !reviewed && !forced {
+				reviewed = true
+				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"status": "review", "instruction": agentReviewPrompt}))
+				r.onStep(r.transcript, reply.Usage)
+				r.emit("tool", agentToolEvent{Tool: "review", Label: "Самопроверка вывода"})
 				continue
 			}
 			if result == nil {

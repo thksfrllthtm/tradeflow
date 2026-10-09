@@ -22,23 +22,32 @@ import (
 
 func main() {
 	limit := flag.Int("limit", 20, "сколько последних проверенных записей проверить")
+	baseline := flag.Bool("baseline", false, "как раньше: без интернета и без самопроверки — для сравнения")
+	effort := flag.String("effort", "", "уровень размышлений модели: low, high, max (пусто — из TNVED_AI_EFFORT)")
 	flag.Parse()
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
+	}
+	if *effort != "" {
+		cfg.TNVEDAIEffort = *effort
 	}
 	database, err := repository.Open(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
 	model := tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
-		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision,
+		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision, Effort: cfg.TNVEDAIEffort,
 		PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
 	})
-	agent := tnvedagent.NewTNVEDAgentService(database, model, decisions.NewCodeDecisionService(database), tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule})
+	settings := tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true}
+	if *baseline {
+		settings.WebSearchKey, settings.SelfCheck = "", false
+	}
+	agent := tnvedagent.NewTNVEDAgentService(database, model, decisions.NewCodeDecisionService(database), settings)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 	defer cancel()
-	fmt.Printf("Модель %s, записей до %d\n", cfg.TNVEDAIModel, *limit)
+	fmt.Printf("Модель %s, записей до %d, интернет: %v, самопроверка: %v, размышления: %q\n", cfg.TNVEDAIModel, *limit, settings.WebSearchKey != "", settings.SelfCheck, cfg.TNVEDAIEffort)
 	summary, err := agent.Evaluate(ctx, *limit, func(line string) { fmt.Println(line) })
 	if err != nil {
 		log.Fatal(ai.AIErrorMessage(err))

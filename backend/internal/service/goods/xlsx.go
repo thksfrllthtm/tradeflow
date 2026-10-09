@@ -461,6 +461,8 @@ func (s *GoodsService) parseXlsx(ctx context.Context, file io.ReaderAt, size int
 		}
 	}
 
+	markMergedRows(workbook, targetSheet, canonicalHeaders, result.Rows)
+
 	result.Images = []GoodsParseImage{}
 	result.ImageFiles = [][]byte{}
 	if shareSpanningImages {
@@ -537,4 +539,34 @@ func gloveTotalRow(values map[string]string) bool {
 		}
 	}
 	return false
+}
+
+// markMergedRows отмечает строки, чьи ячейки входят в объединённую по вертикали ячейку («E4:E6»):
+// значение Excel хранит только в первой строке, остальные строки ссылаются на неё.
+func markMergedRows(workbook *excelize.File, sheet string, headers []string, rows []GoodsParseRow) {
+	merges, err := workbook.GetMergeCells(sheet)
+	if err != nil || len(merges) == 0 {
+		return
+	}
+	bySource := make(map[int]*GoodsParseRow, len(rows))
+	for index := range rows {
+		bySource[rows[index].SourceRow] = &rows[index]
+	}
+	for _, merge := range merges {
+		startCol, startRow, err1 := excelize.CellNameToCoordinates(merge.GetStartAxis())
+		endCol, endRow, err2 := excelize.CellNameToCoordinates(merge.GetEndAxis())
+		if err1 != nil || err2 != nil || endRow <= startRow {
+			continue
+		}
+		for col := startCol; col <= endCol && col <= len(headers); col++ {
+			for line := startRow + 1; line <= endRow; line++ {
+				if row := bySource[line]; row != nil {
+					if row.Merged == nil {
+						row.Merged = map[string]int{}
+					}
+					row.Merged[headers[col-1]] = startRow
+				}
+			}
+		}
+	}
 }

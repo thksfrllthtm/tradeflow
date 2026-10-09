@@ -22,6 +22,8 @@ type AgentModelConfig struct {
 	BaseURL string
 	Model   string
 	Vision  bool
+	// Effort — уровень размышлений модели (reasoning_effort: low, high, max …); "" — по умолчанию модели.
+	Effort string
 	// Цены: обычный ввод, ввод из кэша, вывод.
 	PriceInput  float64
 	PriceCached float64
@@ -82,7 +84,8 @@ type AgentModelClient struct {
 	httpClient *http.Client
 }
 
-const agentModelTimeout = 90 * time.Second
+// С уровнем размышлений max ответ модели может идти дольше минуты.
+const agentModelTimeout = 3 * time.Minute
 
 func NewAgentModelClient(config AgentModelConfig) *AgentModelClient {
 	config.APIKey = strings.TrimSpace(config.APIKey)
@@ -121,6 +124,11 @@ func (c *AgentModelClient) Complete(ctx context.Context, messages []agentMessage
 		"tools":       tools,
 		"max_tokens":  4096,
 		"temperature": 0.2,
+	}
+	if c.config.Effort != "" {
+		// Размышления входят в лимит ответа: на высоком уровне 4096 токенов обрезали бы итог.
+		request["reasoning_effort"] = c.config.Effort
+		request["max_tokens"] = 32768
 	}
 	if forceTool != "" {
 		request["tool_choice"] = map[string]any{"type": "function", "function": map[string]string{"name": forceTool}}

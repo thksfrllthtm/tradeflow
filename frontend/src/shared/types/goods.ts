@@ -20,7 +20,8 @@ export type SirParams = { customsValueMode?: CustomsValueMode; sirWeight?: SirWe
 type CalculationTotals = { totalCostUsd: string; totalDeliveryUsd: string; deliveryKzt: string; deliveryInCustomsKzt: string; deliveryInExpensesKzt: string; customsValueKzt: string; dutyKzt: string; antiDumpingKzt: string; vatKzt: string; feeKzt: string; customsPaymentsKzt: string; expensesKzt: string; expensesUsd: string; cashBalanceUsd: string; calculatedCount: number; totalCount: number; needsReview: boolean; errorCount: number; warningCount: number; blockingErrors: string[] }
 export type GoodsCalculationResult = { assessmentDate: string; origin: string; usdKzt: string; eurKzt: string; wagons: string; wagonTariffUsd: string; deliveryMode: '' | 'none' | 'wagons' | 'total'; deliveryTotalUsd: string; packageWeightKg: string; customsFeeKzt: string; mrp: string; feeMultiplier: string; feeIncluded: boolean; cashUsd: string; deliveryIncludedDefault?: boolean; items: CalculationItem[]; totals: CalculationTotals; updatedAt: string; formulaVersion: string; roundingPolicy: string; calculatedAt?: string } & SirParams
 
-export type GoodsParseRow = { sourceRow: number; values: Record<string, string>; included: boolean; warnings?: string[] }
+// merged — колонки, где ячейка строки входит в объединённую ячейку Excel, начатую в строке N (заголовок → N).
+export type GoodsParseRow = { sourceRow: number; values: Record<string, string>; included: boolean; warnings?: string[]; merged?: Record<string, number> }
 export type GoodsParseResult = { sheets: SheetInfo[]; headers: string[]; rows: GoodsParseRow[]; images: { sourceRow: number; mimeType: string; data: string }[]; warnings?: string[] }
 export type GoodsSourceSnapshot = { filename: string; signature: string; sheet: string; headerRow: number; dataStartRow: number; headers: string[]; rows: GoodsParseRow[]; mapping: Record<string, string> }
 export type GoodsItemInput = {

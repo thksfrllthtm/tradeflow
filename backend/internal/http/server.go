@@ -61,9 +61,9 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		})),
 		decisions: decisions,
 		agent: tnvedagent.NewTNVEDAgentService(database, tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
-			APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision,
+			APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision, Effort: cfg.TNVEDAIEffort,
 			PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
-		}), decisions, tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule}),
+		}), decisions, tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true}),
 	}
 }
 

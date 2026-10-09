@@ -26,7 +26,7 @@ import (
 
 const (
 	agentMaxSteps   = 12
-	agentRunTimeout = 4 * time.Minute
+	agentRunTimeout = 8 * time.Minute
 	// «Документы для ввоза»: справка и акты на медленных сайтах — больше шагов и времени.
 	agentDocumentsMaxSteps = 16
 	agentDocumentsTimeout  = 6 * time.Minute
@@ -48,6 +48,10 @@ var almaty = time.FixedZone("UTC+5", 5*60*60)
 type AgentSettings struct {
 	DailyLimit int
 	NamingRule string
+	// WebSearchKey — ключ Tavily: поиск в интернете для подбора ("" — без интернета).
+	WebSearchKey string
+	// SelfCheck — первый итог агента возвращается ему на самопроверку.
+	SelfCheck bool
 }
 
 // AgentItemInput — строка сметы, для которой подбирается код.
@@ -127,6 +131,7 @@ type TNVEDAgentService struct {
 	decisions  *decisions.CodeDecisionService
 	data       agentData
 	settings   AgentSettings
+	search     webSearcher
 	slots      chan struct{}
 	mu         sync.Mutex
 	cancels    map[int64]context.CancelFunc
@@ -137,7 +142,7 @@ func NewTNVEDAgentService(r *repository.Repository, model *AgentModelClient, dec
 		settings.DailyLimit = 100
 	}
 	return &TNVEDAgentService{
-		repository: r, model: model, decisions: decisions, settings: settings,
+		repository: r, model: model, decisions: decisions, settings: settings, search: newTavilySearcher(settings.WebSearchKey),
 		data:    repositoryAgentData{repository: r, nomenclature: directory.NewTNVEDNomenclatureService(r), details: directory.NewDetailsFetcher(r), web: directory.NewWebPageFetcher(r)},
 		slots:   make(chan struct{}, agentParallelRuns),
 		cancels: map[int64]context.CancelFunc{},
@@ -471,12 +476,14 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	documents := session.DocumentsCode != ""
 	toolbox := newAgentToolbox(s.data)
 	toolbox.documentsCode = session.DocumentsCode
+	toolbox.search = s.search
 	runner := &agentRunner{
 		model:      s.model,
 		toolbox:    toolbox,
 		system:     tnvedAgentPrompt(s.settings.NamingRule),
 		tools:      agentTools(session.Mode == modeReference, documents),
 		documents:  documents,
+		review:     s.settings.SelfCheck && !documents,
 		transcript: transcript,
 		photos:     photos,
 		vision:     s.model.Vision(),
@@ -499,6 +506,8 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	}
 	if documents {
 		runner.system += "\n\n" + tnvedDocumentsPrompt
+	} else if s.search != nil {
+		runner.system += "\n\n" + tnvedWebPrompt
 	}
 	runner.restoreOpened(store)
 	outcome := runner.execute(ctx)

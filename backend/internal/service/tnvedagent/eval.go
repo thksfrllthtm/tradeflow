@@ -77,8 +77,14 @@ func (s *TNVEDAgentService) Evaluate(ctx context.Context, limit int, report func
 		var transcript []map[string]any
 		_ = json.Unmarshal(initial, &transcript)
 		var cost float64
+		toolbox := newAgentToolbox(evalData{agentData: s.data, hiddenID: decision.ID})
+		toolbox.search = s.search
+		system := tnvedAgentPrompt(s.settings.NamingRule)
+		if s.search != nil {
+			system += "\n\n" + tnvedWebPrompt
+		}
 		runner := &agentRunner{
-			model: s.model, toolbox: newAgentToolbox(evalData{agentData: s.data, hiddenID: decision.ID}), system: tnvedAgentPrompt(s.settings.NamingRule),
+			model: s.model, toolbox: toolbox, system: system, review: s.settings.SelfCheck,
 			transcript: transcript, photos: photos, vision: s.model.Vision(),
 			emit:   func(string, any) {},
 			onStep: func(_ []map[string]any, usage agentUsage) { cost += s.model.Cost(usage) },

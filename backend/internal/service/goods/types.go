@@ -190,6 +190,9 @@ type GoodsParseRow struct {
 	Values    map[string]string `json:"values"`
 	Included  bool              `json:"included"`
 	Warnings  []string          `json:"warnings,omitempty"`
+	// Merged — колонки, где ячейка строки входит в объединённую ячейку, начатую выше: заголовок →
+	// номер первой строки. Объединены количество или цена — строки одного набора (склеивает браузер).
+	Merged map[string]int `json:"merged,omitempty"`
 }
 
 // GoodsParseImage links a sheet row to a picture in GoodsParseResult.ImageData.

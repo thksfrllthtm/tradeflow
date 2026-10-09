@@ -37,3 +37,6 @@ services:
       # ИИ-агент подбора кода ТН ВЭД: без своих TNVED_AI_* берёт DEEPSEEK_API_KEY и deepseek-flash.
       - key: TNVED_AI_DAILY_LIMIT
         value: "100"
+      # Поиск в интернете для агента подбора кода (Tavily); без ключа агент работает без интернета.
+      - key: TAVILY_API_KEY
+        sync: false

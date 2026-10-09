@@ -1,0 +1,11 @@
+/* Уверенность и источники итога агента (чат строки и справочник на главной). */
+.ag-evidence { display: grid; gap: 6px; margin: 8px 0; }
+.ag-confidence { justify-self: start; padding: 2px 9px; border-radius: 999px; font-size: .78rem; font-weight: 650; }
+.ag-confidence.high { background: #e3f1e8; color: #154f32; }
+.ag-confidence.medium { background: #fdf3d6; color: #75520a; }
+.ag-confidence.low { background: #fdecec; color: #a12a2a; }
+.ag-sources { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: .82rem; }
+.ag-sources li { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.ag-sources li::before { content: '↗'; color: #68766e; }
+.ag-sources a { overflow: hidden; color: #146c43; text-overflow: ellipsis; white-space: nowrap; }
+.ag-sources small { flex: none; color: #68766e; font-size: .74rem; }

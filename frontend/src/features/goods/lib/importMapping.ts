@@ -33,7 +33,8 @@ export const mappingFieldOptions: Array<{ value: keyof GoodsMapping; label: stri
 ]
 
 export function buildGloveItems(rows: GoodsParseRow[], images: { sourceRow: number; data: string; mimeType: string }[], mapping: GoodsMapping, packageWeightKg: string, offset: number): GoodsItemInput[] {
-  return rows.filter((row) => row.included).map((row, index) => {
+  const included = rows.filter((row) => row.included)
+  const items = included.map((row, index): GoodsItemInput => {
     // Несколько колонок наименования: первое непустое — наименование строки, остальные (если
     // отличаются) — дополнительные: по ним ИИ подбирает код и ищется тот же товар в базе.
     const names = [...new Set([mapping.name, mapping.name2, mapping.name3].filter(Boolean).map((header) => (row.values[header] ?? '').trim()).filter(Boolean))]
@@ -55,6 +56,26 @@ export function buildGloveItems(rows: GoodsParseRow[], images: { sourceRow: numb
       pricePerPair: price, sourcePricePerPair: price, costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '',
       photoUrl: imageDataUrl(rowImages[0]), photoUrls: rowImages.map(imageDataUrl),
     }
+  })
+  return foldSetRows(included, items, mapping)
+}
+
+// Набор: количество или цена объединены в Excel на несколько строк («E4:E6») — это один товар.
+// Строки набора склеиваются в первую: наименования через «+», фото — все; количество, вес и цена —
+// из объединённых ячеек первой строки.
+function foldSetRows(rows: GoodsParseRow[], items: GoodsItemInput[], mapping: GoodsMapping) {
+  const bySource = new Map(items.map((item) => [item.sourceRow, item]))
+  return items.filter((item, index) => {
+    const merged = rows[index].merged
+    const first = merged?.[mapping.pairs] ?? merged?.[mapping.pricePerPair]
+    const parent = first ? bySource.get(first) : undefined
+    if (!parent || parent === item) return true
+    const name = [...new Set([parent.name, item.name].filter(Boolean))].join(' + ')
+    parent.name = name
+    parent.supplierName = name
+    parent.photoUrls = [...new Set([...(parent.photoUrls ?? []), ...(item.photoUrls ?? [])])]
+    parent.photoUrl ||= item.photoUrl
+    return false
   })
 }
 

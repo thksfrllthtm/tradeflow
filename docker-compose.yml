@@ -46,6 +46,8 @@ services:
       TNVED_AI_VISION: ${TNVED_AI_VISION:-true}
       TNVED_AI_DAILY_LIMIT: ${TNVED_AI_DAILY_LIMIT:-100}
       TNVED_AI_NAMING_RULE: ${TNVED_AI_NAMING_RULE:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      TNVED_AI_EFFORT: ${TNVED_AI_EFFORT:-}
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -12,6 +12,7 @@ import { photosOf } from '@/shared/lib/itemPhotos'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { saveRowDecision } from '../hooks/useRowDecisions'
 import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
+import { AgentEvidence } from './AgentEvidence'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
 import '@/shared/styles/drawer.css'
 import './agent.css'
@@ -34,7 +35,7 @@ const pollInterval = 1500
 
 const toolIcons: Record<string, string> = {
   search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚',
-  open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎',
+  open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐',
 }
 
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
@@ -549,6 +550,7 @@ function ResultCard({ result, applied, busy, onApplyCode, onApplyName, documents
   return <section className="ag-card ag-result">
     <header className="ag-card-head"><h3>Итог подбора</h3></header>
     {result.description && <p className="ag-desc"><LinkText text={result.description} /></p>}
+    <AgentEvidence result={result} />
     {main.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     {rejected.length > 0 && <details className="ag-more">
       <summary>Не подходят: {rejected.map((candidate) => formatCode(candidate.code)).join(', ')}</summary>
