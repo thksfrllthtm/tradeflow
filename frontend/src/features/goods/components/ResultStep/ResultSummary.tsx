@@ -61,6 +61,8 @@ export function ResultSummary({ result, loading, activity, storageNotice, delive
           <div><dt title="База для расчёта пошлины и НДС">Таможенная стоимость</dt><dd>{displayNumber(result.totals.customsValueKzt)} ₸</dd></div>
           {delivery && <div title="Стоимость товара и доставка — отдельные расходы, в растаможку не входят"><dt>Доставка</dt><dd>{displayNumber(result.totals.totalDeliveryUsd)} USD <small className="rs-wide">· не входит в растаможку</small></dd></div>}
           {result.usdKzt && <div><dt>Курс USD</dt><dd>{displayNumber(result.usdKzt)} ₸{result.assessmentDate && <small> на {formatRuDate(result.assessmentDate)}</small>}</dd></div>}
+          {/* Курс EUR — когда он нужен смете (пошлина или стоимость в евро): введённый или НБРК на дату сметы. */}
+          {result.eurKzt && <div><dt>Курс EUR</dt><dd>{displayNumber(result.eurKzt)} ₸</dd></div>}
         </dl>
       </div>
       <div className="rs-sum-actions">

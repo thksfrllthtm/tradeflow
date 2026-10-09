@@ -143,6 +143,7 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 			snapshots[index] = calculation.ApplyNomenclatureRates(snapshots[index], inItem.Code, rates, inItem.AntiDumpingChoice)
 		}
 	}
+	euro = resolveEUR(ctx, euro, assessmentDate.Format("2006-01-02"), input.Items, snapshots)
 	indicators, indicatorsLoaded := map[string]riskindicators.Indicator{}, false
 	if sir.enabled && s.repository != nil {
 		if indicators, indicatorsLoaded, err = riskindicators.NewService(s.repository).Lookup(ctx, riskindicators.SortedCodes(codes), sir.country); err != nil {

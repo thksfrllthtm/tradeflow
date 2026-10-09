@@ -7,7 +7,7 @@ import (
 )
 
 func UnsupportedSchemeIssue(issue string) bool {
-	return strings.HasPrefix(issue, "Пошлина поддерживается только процентная") ||
+	return strings.HasPrefix(issue, unsupportedDutyPrefix) ||
 		strings.HasPrefix(issue, "НДС поддерживается только процентный")
 }
 
@@ -53,7 +53,7 @@ func isBlockingCalculationIssue(value string) bool {
 		"Не выбрана карточка ТН ВЭД", "СУР: для ТС по индикатору нужен вес",
 		"Таможенная стоимость в тенге не может", "Для таможенной стоимости нужна",
 		"Валюта стоимости не поддерживается", "Для стоимости в EUR укажите",
-		"Пошлина поддерживается только процентная", "НДС поддерживается только процентный",
+		unsupportedDutyPrefix, "Пошлина за ", "Пошлина в EUR:", "НДС поддерживается только процентный",
 		RateErrorPrefix,
 	} {
 		if strings.HasPrefix(value, prefix) {

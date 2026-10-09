@@ -249,8 +249,6 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 }
 
 func CalculateTariff(out *CalculationItem, net, pairs, places *decimal.Decimal, usd, euro decimal.Decimal, warnings *[]string) {
-	_ = net
-	_ = pairs
 	_ = places
 	snap := out.DirectorySnapshot
 	if snap == nil {
@@ -269,7 +267,7 @@ func CalculateTariff(out *CalculationItem, net, pairs, places *decimal.Decimal, 
 		out.DutyKZT, out.AntiDumpingKZT, out.VATKZT = "", "", ""
 		return
 	}
-	duty, dutyKnown := percentageDuty(snap, customs.Round(2), warnings)
+	duty, dutyKnown := dutyAmount(snap, customs.Round(2), net, pairs, usd, euro, warnings)
 	if !dutyKnown {
 		out.DutyKZT = ""
 		out.AntiDumpingKZT = ""
@@ -448,20 +446,6 @@ func sirCustomsValue(out *CalculationItem, usd, euro decimal.Decimal, warnings *
 
 // HasIndicator — ТС строки считается по СУР (режим сметы и индикатор для кода есть).
 func (b *SIRBasis) HasIndicator() bool { return b != nil && b.PriceUSD != nil }
-
-func percentageDuty(snapshot map[string]any, customs decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
-	duty, _ := snapshot["duty"].(map[string]any)
-	if service.StringValue(duty, "type") != "percentage" {
-		*warnings = append(*warnings, "Пошлина поддерживается только процентная; выбранная схема не поддерживается")
-		return decimal.Zero, false
-	}
-	percent, ok := service.DecimalValue(duty, "percent")
-	if !ok || percent.IsNegative() {
-		*warnings = append(*warnings, "Ставка пошлины требует проверки")
-		return decimal.Zero, false
-	}
-	return customs.Mul(percent).Div(decimal.NewFromInt(100)), true
-}
 
 func percentageVAT(snapshot map[string]any, customs, duty decimal.Decimal, warnings *[]string) (decimal.Decimal, bool) {
 	vat, _ := snapshot["vat"].(map[string]any)

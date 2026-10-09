@@ -45,10 +45,10 @@ func RowTNVEDCode(snapshot map[string]any, cell string) string {
 	return ""
 }
 
-// nomenclatureDutyType — схема пошлины для расчёта; «процент плюс сумма» и пустая — неизвестна.
+// nomenclatureDutyType — схема пошлины для расчёта; пустая и нераспознанная — неизвестна.
 func nomenclatureDutyType(value string) string {
 	switch value {
-	case "percentage", "specific", "combined_minimum":
+	case "percentage", "specific", "combined_minimum", "combined_plus":
 		return value
 	}
 	return "unknown"
