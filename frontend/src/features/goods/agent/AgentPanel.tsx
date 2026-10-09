@@ -10,6 +10,7 @@ import { paths } from '@/shared/router/router'
 import { GoodsItemInput } from '@/shared/types/goods'
 import { photosOf } from '@/shared/lib/itemPhotos'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
+import { saveRowDecision } from '../hooks/useRowDecisions'
 import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
 import '@/shared/styles/drawer.css'
@@ -200,10 +201,9 @@ export function AgentPanel({ estimateId, item, rowNumber, onClose, onApplyCode, 
   async function saveRowCode() {
     setBusy(true); setError('')
     try {
-      const photos = await agentPhotosFrom(item)
-      const thumb = photosOf(item)[0] ? await resizePhoto(photosOf(item)[0], 160, 0.7) : ''
-      await decisionsApi.create({ invoiceName: item.name ?? '', supplierName: item.supplierName !== item.name ? item.supplierName : (item.otherNames ?? []).join(' / '), finalName: item.standardName || '', code: item.code, photos, thumb, estimateId, itemId })
+      await saveRowDecision(item, estimateId)
       setSavedRowCode(item.code)
+      changedRef.current()
     } catch (reason) {
       setError(errorMessage(reason))
     } finally {

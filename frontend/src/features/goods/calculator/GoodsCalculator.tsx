@@ -30,6 +30,7 @@ import { rowActions } from '../lib/rowActions'
 import { checkFromResult, loadReviewCheck, ReviewCheck, saveReviewCheck } from '../lib/reviewCheck'
 import './calculatorPage.css'
 import { AgentPanel, agentItemFrom, agentPhotosFrom } from '../agent/AgentPanel'
+import { useRowDecisions } from '../hooks/useRowDecisions'
 import { agentApi } from '../agent/agentApi'
 import { useAgentRows } from '../agent/useAgentRows'
 
@@ -126,6 +127,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   })
   const directorySearch = useDirectorySearch(setError)
   const agentRows = useAgentRows(estimateId, step === 2)
+  // Кнопка «В базу» в строках: что уже в базе решений и сохранение строк.
+  const rowDecisions = useRowDecisions(estimateId, items, serverReady && step === 2)
 
   useEffect(() => {
     let active = true
@@ -620,6 +623,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         saveDraft={saveDraft}
         clearAll={clearAll}
         agentStatuses={agentRows.statuses}
+        rowDecisions={rowDecisions}
         agentBatch={agentBatch}
         openAgent={setAgentRowId}
         startAgentBatch={() => void startAgentBatch()}
@@ -651,7 +655,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
       const index = items.findIndex((item) => item.id === agentRowId)
       if (index < 0) return null
       return <AgentPanel estimateId={estimateId} item={items[index]} rowNumber={index + 1} onClose={() => setAgentRowId(null)}
-        onApplyCode={(code) => applyAgentCode(agentRowId, code)} onApplyName={(name) => applyAgentName(agentRowId, name)} onChanged={agentRows.refresh} />
+        onApplyCode={(code) => applyAgentCode(agentRowId, code)} onApplyName={(name) => applyAgentName(agentRowId, name)} onChanged={() => { agentRows.refresh(); void rowDecisions.refresh() }} />
     })()}
     {rowPhotos && <RowPhotos items={items} itemId={rowPhotos.itemId} startIndex={rowPhotos.index} onClose={closeRowPhotos}
       onRemove={(itemId, index) => setItems((current) => removeRowPhoto(current, itemId, index))}

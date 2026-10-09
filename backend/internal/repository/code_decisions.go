@@ -319,3 +319,12 @@ func (r *Repository) SaveDecisionPhotoFeatures(ctx context.Context, id int64, fe
 	return r.db.WithContext(ctx).Model(&CodeDecision{}).Where("id = ?", id).
 		Updates(map[string]any{"photo_features": features, "photo_features_at": time.Now().UTC()}).Error
 }
+
+// CodeDecisionsByEstimate — записи, сохранённые из строк сметы (кроме отклонённых): для проверки,
+// не сохранён ли уже тот же товар этой сметы.
+func (r *Repository) CodeDecisionsByEstimate(ctx context.Context, estimateID int64) ([]CodeDecision, error) {
+	var rows []CodeDecision
+	err := r.db.WithContext(ctx).Select("id", "status", "code", "invoice_name", "final_name", "photo_hashes", "item_id").
+		Where("estimate_id = ? AND status <> 'rejected'", estimateID).Order("id").Find(&rows).Error
+	return rows, err
+}

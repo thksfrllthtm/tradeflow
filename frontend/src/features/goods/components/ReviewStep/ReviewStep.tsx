@@ -9,6 +9,7 @@ import { reviewTotals } from './reviewTotals'
 import { useStableCallback } from '@/shared/hooks/useStableCallback'
 import { AgentRowStatus } from '../../agent/agentApi'
 import { storageFailed } from '../../lib/storageNotice'
+import { RowDecisionState } from '../../hooks/useRowDecisions'
 import '../../goods.css'
 import './ReviewStep.css'
 
@@ -53,6 +54,8 @@ type Props = {
   clearAll: () => void
   // Подбор кода ИИ: состояние по строкам, открыть чат строки, подобрать для всех строк без кода.
   agentStatuses: Record<string, AgentRowStatus>
+  // База решений: состояние кнопки «В базу» строки и сохранение строк.
+  rowDecisions: { stateOf: (item: GoodsItemInput) => RowDecisionState; save: (ids: string[]) => Promise<{ created: number; duplicates: number; skipped: number; failed: number }> }
   agentBatch: { done: number; total: number } | null
   openAgent: (id: string) => void
   startAgentBatch: () => void
@@ -75,7 +78,7 @@ const checkTime = (value: string) => {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, tableWrapRef, topScrollRef, includedCount, allDirectorySelected, setItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, syncHorizontalScroll, openDirectoryPicker, clearRowDirectory, setItem, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, resetAutomaticNet, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, agentBatch, openAgent, startAgentBatch }: Props) {
+export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, tableWrapRef, topScrollRef, includedCount, allDirectorySelected, setItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, syncHorizontalScroll, openDirectoryPicker, clearRowDirectory, setItem, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, resetAutomaticNet, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [density, setDensity] = useState<Density>(storedDensity)
   const lastCheckedRef = useRef<string | null>(null)
@@ -125,6 +128,19 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   const onUpload = useStableCallback(addManualPhoto)
   const onResetNet = useStableCallback(resetAutomaticNet)
   const onAgent = useStableCallback(openAgent)
+  const onSaveDecision = useStableCallback((id: string) => { void rowDecisions.save([id]) })
+  // Итог сохранения отмеченных строк в базу решений.
+  const [decisionNote, setDecisionNote] = useState('')
+  async function saveSelectedDecisions() {
+    setDecisionNote('Сохраняем в базу решений…')
+    const counts = await rowDecisions.save(selectedForDirectory)
+    setDecisionNote([
+      `В базу решений: сохранено ${counts.created}`,
+      counts.duplicates > 0 && `уже были в этой смете ${counts.duplicates}`,
+      counts.skipped > 0 && `без кода или уже в базе ${counts.skipped}`,
+      counts.failed > 0 && `ошибка ${counts.failed}`,
+    ].filter(Boolean).join(', '))
+  }
   const agentPending = items.filter((item) => item.id && !item.excluded && !item.code && (!agentStatuses[item.id] || agentStatuses[item.id].status === 'ready')).length
   const agentStarted = counts.noCode - agentPending
   const ownPackageCount = items.filter((item) => item.packageWeightKg !== params.packageWeightKg).length
@@ -213,9 +229,11 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
         {selectedForDirectory.length > 0 ? <>
           <strong>Выбрано: {selectedForDirectory.length}</strong>
           <button type="button" className="rv-bar-button primary" onClick={() => openDirectoryPicker(selectedForDirectory)}>Товар или код ТН ВЭД</button>
+          <button type="button" className="rv-bar-button" onClick={() => void saveSelectedDecisions()} title="Записать отмеченные строки с кодом в базу решений; тот же товар этой сметы записывается один раз">В базу решений</button>
           <button type="button" className="rv-bar-button" onClick={() => setSelectedExcluded(true)}>Исключить из расчёта</button>
           <button type="button" className="rv-bar-button" onClick={() => setSelectedExcluded(false)}>Включить</button>
-          <button type="button" className="button-link" onClick={() => setSelectedForDirectory([])}>Снять выбор</button>
+          <button type="button" className="button-link" onClick={() => { setSelectedForDirectory([]); setDecisionNote('') }}>Снять выбор</button>
+          {decisionNote && <span className="rv-bar-note" role="status">{decisionNote}</span>}
         </> : <>
           <span>Строк: <b>{items.length}</b> · в расчёте: <b>{includedCount}</b>{excludedCount > 0 && <> · исключено: <b>{excludedCount}</b></>}</span>
           {agentBatch ? <span className="rv-bar-note">Запуск подбора: {agentBatch.done} из {agentBatch.total}</span>
@@ -268,7 +286,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
             <th className="rv-remove-col" scope="col"><span className="rv-sr">Удалить</span></th>
           </tr></thead>
           <tbody>
-            {visible.map(({ item, index, id }) => <ReviewRow key={id || index} item={item} rowNumber={index + 1} resultItem={result?.items[index]} pastCheck={result ? undefined : reviewCheck?.rows[id]} selected={selectedIds.has(id)} onSelect={onSelect} onOpenPicker={onOpenPicker} onClearDirectory={onClearDirectory} onChange={onChange} onRemove={onRemove} onPhotos={onPhotos} onUpload={onUpload} onResetNet={onResetNet} defaultPackageWeight={params.packageWeightKg} agentStatus={agentStatuses[id]} onAgent={onAgent} />)}
+            {visible.map(({ item, index, id }) => <ReviewRow key={id || index} item={item} rowNumber={index + 1} resultItem={result?.items[index]} pastCheck={result ? undefined : reviewCheck?.rows[id]} selected={selectedIds.has(id)} onSelect={onSelect} onOpenPicker={onOpenPicker} onClearDirectory={onClearDirectory} onChange={onChange} onRemove={onRemove} onPhotos={onPhotos} onUpload={onUpload} onResetNet={onResetNet} defaultPackageWeight={params.packageWeightKg} agentStatus={agentStatuses[id]} onAgent={onAgent} decisionState={rowDecisions.stateOf(item)} onSaveDecision={onSaveDecision} />)}
             {items.length === 0 && <tr><td colSpan={10} className="goods-empty"><h3>Строк пока нет</h3><p>Загрузите XLSX или добавьте строку вручную.</p></td></tr>}
             {items.length > 0 && visible.length === 0 && <tr className="rv-empty-filter"><td colSpan={10}>В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => setFilter('all')}>Показать все строки</button></td></tr>}
           </tbody>

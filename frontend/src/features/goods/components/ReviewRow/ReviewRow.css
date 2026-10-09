@@ -83,6 +83,10 @@
 /* Кнопка чата подбора кода ИИ: подпись и цвет — состояние подбора; без подбора — тихая кнопка «Подбор». */
 .rv-code-line button.rv-agent { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; height: 22px; padding: 0 8px; border: 1px solid #c3d3c8; border-radius: 999px; background: #fff; color: var(--rv-ink-2); font-size: .78rem; font-weight: 700; white-space: nowrap; }
 .rv-code-line button.rv-agent:hover:not(:disabled) { border-color: var(--rv-green); background: #e8f3ec; color: var(--rv-green-dark); }
+/* «В базу» — запись строки в базу решений; после записи — тихая отметка. */
+.rv-code-line button.rv-db { flex: 0 0 auto; height: 22px; padding: 0 9px; border: 1px solid #c3d3c8; border-radius: 999px; background: #fff; color: var(--rv-green-dark); font-size: .76rem; font-weight: 650; white-space: nowrap; }
+.rv-code-line button.rv-db:hover:not(:disabled) { border-color: var(--rv-green); background: #e8f3ec; }
+.rv-code-line .rv-db.saved { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: #e8f3ec; color: var(--rv-green-dark); font-size: .74rem; font-weight: 650; white-space: nowrap; }
 .rv-code-line button.rv-agent.idle { padding: 0 6px; border-color: transparent; background: transparent; color: var(--rv-ink-3); font-weight: 650; }
 .rv-code-line button.rv-agent.idle:hover:not(:disabled) { border-color: #c3d3c8; }
 .rv-code-line button.rv-agent.running { border-color: #9cc7ab; background: #eef6f1; color: var(--rv-green-dark); }

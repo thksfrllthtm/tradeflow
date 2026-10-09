@@ -174,6 +174,7 @@ func (s *Server) Router() *gin.Engine {
 	decisions.Use(s.requireUser)
 	decisions.GET("", s.listCodeDecisions)
 	decisions.GET("/stats", s.codeDecisionStats)
+	decisions.GET("/estimate/:id", s.estimateDecisionStatus)
 	decisions.GET("/:id", s.getCodeDecision)
 	decisions.POST("", s.createCodeDecision)
 	decisions.POST("/import", s.requireAdmin, s.importCodeDecisions)

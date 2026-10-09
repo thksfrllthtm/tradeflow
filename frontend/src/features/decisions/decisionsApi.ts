@@ -39,7 +39,10 @@ export const decisionsApi = {
   },
   stats: () => request<DecisionStats>('/api/code-decisions/stats'),
   get: (id: number) => request<CodeDecision>(`/api/code-decisions/${id}`),
-  create: (input: DecisionInput) => request<CodeDecision>('/api/code-decisions', { method: 'POST', body: JSON.stringify(input) }),
+  // duplicate — этот товар сметы уже был в базе: вернулась прежняя запись, новая не создана.
+  create: (input: DecisionInput) => request<CodeDecision & { duplicate?: boolean }>('/api/code-decisions', { method: 'POST', body: JSON.stringify(input) }),
+  // Строки сметы, чей товар уже в базе решений: id строки → запись и строка, из которой её сохранили.
+  estimateStatus: (estimateId: number) => request<{ items: Record<string, { decisionId: number; itemId: string; status: string }> }>(`/api/code-decisions/estimate/${estimateId}`).then((body) => body.items ?? {}),
   update: (id: number, edit: DecisionEdit) => request<CodeDecision>(`/api/code-decisions/${id}`, { method: 'PATCH', body: JSON.stringify(edit) }),
   verify: (id: number, edit: DecisionEdit = {}) => request<CodeDecision>(`/api/code-decisions/${id}/verify`, { method: 'POST', body: JSON.stringify(edit) }),
   reject: (id: number, note = '') => request<CodeDecision>(`/api/code-decisions/${id}/reject`, { method: 'POST', body: JSON.stringify({ note }) }),

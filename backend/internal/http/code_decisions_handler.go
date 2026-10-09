@@ -92,7 +92,26 @@ func (s *Server) createCodeDecision(c *gin.Context) {
 		decisionError(c, err)
 		return
 	}
+	if view.Duplicate {
+		c.JSON(http.StatusOK, view)
+		return
+	}
 	c.JSON(http.StatusCreated, view)
+}
+
+// estimateDecisionStatus — какие строки сметы уже в базе решений (кнопка «В базу» в строке).
+func (s *Server) estimateDecisionStatus(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id < 1 {
+		notFound(c)
+		return
+	}
+	status, err := s.decisions.EstimateStatus(c.Request.Context(), id, estimateScope(c))
+	if err != nil {
+		decisionError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": status})
 }
 
 func (s *Server) bindDecisionEdit(c *gin.Context) (decisions.CodeDecisionEdit, bool) {

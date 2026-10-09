@@ -9,6 +9,7 @@ import { AgentRowStatus } from '../../agent/agentApi'
 import '../../goods.css'
 import './ReviewRow.css'
 import { formatCode } from '@/shared/tnved/codes'
+import { canSaveRowDecision, RowDecisionState } from '../../hooks/useRowDecisions'
 
 // Обработчики получают id строки и должны быть стабильными (не пересоздаваться
 // на каждый рендер) — тогда memo перерисовывает только изменённую строку.
@@ -33,6 +34,9 @@ type ReviewRowProps = {
   // Последний подбор кода ИИ для строки и открытие его чата.
   agentStatus?: AgentRowStatus
   onAgent: (id: string) => void
+  // Кнопка «В базу»: saving — идёт запись, saved — строка в базе решений, число — тот же товар из строки N.
+  decisionState?: RowDecisionState
+  onSaveDecision: (id: string) => void
 }
 
 // Числа в тексте вне полей — через запятую; в полях — как вводятся (точка), значения не меняются.
@@ -63,7 +67,7 @@ function StateIcon({ tone }: { tone: ReviewTone }) {
   </svg>
 }
 
-export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, pastCheck, selected, onSelect, onOpenPicker, onClearDirectory, onChange, onRemove, onPhotos, onUpload, onResetNet, defaultPackageWeight, agentStatus, onAgent }: ReviewRowProps) {
+export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, pastCheck, selected, onSelect, onOpenPicker, onClearDirectory, onChange, onRemove, onPhotos, onUpload, onResetNet, defaultPackageWeight, agentStatus, onAgent, decisionState, onSaveDecision }: ReviewRowProps) {
   const [expanded, setExpanded] = useState(false)
   const id = item.id ?? ''
   const value = (field: keyof GoodsItemInput) => String(item[field] ?? '')
@@ -110,6 +114,9 @@ export const ReviewRow = memo(function ReviewRow({ item, rowNumber, resultItem, 
             {item.code && !verified && <span className="rv-code-note">нет в номенклатуре</span>}
             {item.code && <button type="button" className="rv-code-clear" onClick={() => onClearDirectory(id)} title="Снять товар и код">снять</button>}
             <AgentButton status={agentStatus} code={item.code} rowNumber={rowNumber} onClick={() => onAgent(id)} />
+            {canSaveRowDecision(item) && (decisionState === 'saved' || typeof decisionState === 'number'
+              ? <span className="rv-db saved" title={typeof decisionState === 'number' ? `Этот товар уже сохранён в базу решений из строки ${decisionState}` : 'Строка сохранена в базу решений (ждёт проверки администратором)'}>✓ в базе{typeof decisionState === 'number' && ` · стр. ${decisionState}`}</span>
+              : <button type="button" className="rv-db" onClick={() => onSaveDecision(id)} disabled={decisionState === 'saving'} title="Записать код, наименование и фото строки в базу решений (ждёт проверки администратором)" aria-label={`В базу решений, строка ${rowNumber}`}>{decisionState === 'saving' ? 'Сохраняем…' : 'В базу'}</button>)}
             {item.otherNames?.length ? <span className="rv-other-names" title={`Другие наименования из файла: ${item.otherNames.join(' · ')}`}>{item.otherNames.join(' · ')}</span> : null}
           </div>
         </div>

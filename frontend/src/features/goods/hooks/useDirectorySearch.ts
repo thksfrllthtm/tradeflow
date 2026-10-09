@@ -19,7 +19,7 @@ export function useDirectorySearch(onError: (message: string) => void) {
   const [codeTotal, setCodeTotal] = useState(0)
   const [source, setSource] = useState<NomenclatureImport | null>(null)
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState<DirectoryPickerMode>('products')
+  const [mode, setMode] = useState<DirectoryPickerMode>('tnved')
   const timer = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   const requestRef = useRef(0)
   const cancelPending = () => { if (timer.current) window.clearTimeout(timer.current) }

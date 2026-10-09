@@ -73,6 +73,8 @@ type CodeDecisionView struct {
 	Nomenclature       *directory.NomenclatureCode `json:"nomenclature"`
 	// Описание фото от ИИ одной строкой; пусто — ещё не составлено.
 	PhotoDescription string `json:"photoDescription"`
+	// Duplicate — этот товар сметы уже был в базе: возвращена прежняя запись, новая не создана.
+	Duplicate bool `json:"duplicate,omitempty"`
 }
 
 type CodeDecisionInput struct {
@@ -297,6 +299,21 @@ func (s *CodeDecisionService) Create(ctx context.Context, userID int64, input Co
 	row, err := decisionRow(input, source)
 	if err != nil {
 		return CodeDecisionView{}, err
+	}
+	// Тот же товар этой сметы уже сохранён (из этой или другой строки) — вторая запись не нужна.
+	// ponytail: проверка без блокировки — два одновременных нажатия в одной смете могут дать две записи.
+	if row.EstimateID != nil {
+		saved, err := s.repository.CodeDecisionsByEstimate(ctx, *row.EstimateID)
+		if err != nil {
+			return CodeDecisionView{}, err
+		}
+		var hashes []string
+		_ = json.Unmarshal(row.PhotoHashes, &hashes)
+		if match := findSame(saved, row.Code, decisionNameKey(row.FinalName, row.InvoiceName), hashes); match != nil {
+			view, err := s.Get(ctx, match.ID)
+			view.Duplicate = true
+			return view, err
+		}
 	}
 	row.CreatedBy = &userID
 	created, err := s.repository.CreateCodeDecisions(ctx, []repository.CodeDecision{row})
