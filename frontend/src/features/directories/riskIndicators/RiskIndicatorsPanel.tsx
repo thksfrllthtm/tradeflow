@@ -12,7 +12,8 @@ const codes = (count: number) => `${formatDisplayNumber(count)} ${plural(count, 
 
 // «СУР» — стоимостные индикаторы риска КГД (приложения к профилям риска «24_прил CN» и т. п.).
 // Список профилей видят все; загрузка файлов и удаление — администратор. button — в шапку, panel — под шапку.
-export function useRiskIndicatorsPanel({ admin }: { admin: boolean }) {
+// onOpen — чтобы страница закрыла соседнюю панель (антидемпинг): открыта только одна.
+export function useRiskIndicatorsPanel({ admin, onOpen }: { admin: boolean; onOpen?: () => void }) {
   const [open, setOpen] = useState(false)
   const [profiles, setProfiles] = useState<RiskProfile[] | null>(null)
   const [busy, setBusy] = useState('')
@@ -62,7 +63,7 @@ export function useRiskIndicatorsPanel({ admin }: { admin: boolean }) {
 
   const total = profiles?.reduce((sum, profile) => sum + profile.codeCount, 0) ?? 0
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setOpen(!open)} aria-expanded={open} title="Стоимостные индикаторы риска КГД: стоимость 1 кг товара в USD по кодам ТН ВЭД">СУР{profiles && profiles.length > 0 && ` · ${formatDisplayNumber(total)}`}</button>
+    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Стоимостные индикаторы риска КГД: стоимость 1 кг товара в USD по кодам ТН ВЭД">СУР{profiles && profiles.length > 0 && ` · ${formatDisplayNumber(total)}`}</button>
   </div>
 
   const panel = open && <section className="dir-transfer-panel kz-panel">
@@ -98,5 +99,5 @@ export function useRiskIndicatorsPanel({ admin }: { admin: boolean }) {
     {rowErrors.length > 0 && <ul className="dir-transfer-errors">{rowErrors.map((item) => <li key={`${item.row}-${item.message}`}><b>Строка {item.row}</b> {item.message}</li>)}</ul>}
   </section>
 
-  return { button, panel }
+  return { button, panel, close: () => setOpen(false) }
 }

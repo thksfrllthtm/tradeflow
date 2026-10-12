@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -90,10 +91,22 @@ type NomenclatureImportInfo struct {
 	ImportedByName string `json:"importedByName"`
 }
 
+// NomenclatureChange — код, который появился (added), пропал (removed) или сменил
+// наименование или ставку (changed) при загрузке.
+type NomenclatureChange struct {
+	Code          string `json:"code"`
+	Kind          string `json:"kind"`
+	Name          string `json:"name,omitempty"`
+	OldName       string `json:"oldName,omitempty"`
+	TariffText    string `json:"tariffText,omitempty"`
+	OldTariffText string `json:"oldTariffText,omitempty"`
+}
+
 // NomenclatureImportResult: with Errors nothing was saved.
 type NomenclatureImportResult struct {
-	Import *NomenclatureImportInfo `json:"import,omitempty"`
-	Errors []DirectoryImportError  `json:"errors"`
+	Import  *NomenclatureImportInfo `json:"import,omitempty"`
+	Changes []NomenclatureChange    `json:"changes,omitempty"`
+	Errors  []DirectoryImportError  `json:"errors"`
 }
 
 // ── Tariff text ──
@@ -293,28 +306,49 @@ func (s *TNVEDNomenclatureService) Import(ctx context.Context, userID int64, fil
 		return result, err
 	}
 	record := repository.TNVEDNomenclatureImport{Source: nomenclatureSource, FileName: service.TruncateRunes(fileName, 255), ActualDate: parsed.actualDate, CodeCount: len(parsed.codes), ImportedBy: &userID}
-	old := make(map[string]repository.TNVEDNomenclatureCode, len(previous))
-	for _, code := range previous {
-		old[code.Code] = code
-	}
-	for _, code := range parsed.codes {
-		before, ok := old[code.Code]
-		switch {
-		case !ok:
-			record.AddedCount++
-		case before.Name != code.Name || before.TariffText != code.TariffText:
-			record.ChangedCount++
-		}
-		delete(old, code.Code)
-	}
-	record.RemovedCount = len(old)
+	changes := diffNomenclature(previous, parsed.codes, &record)
 	saved, err := s.repository.ReplaceTNVEDNomenclature(ctx, parsed.codes, record)
 	if err != nil {
 		return result, err
 	}
 	info := nomenclatureImportInfo(saved)
 	result.Import = &info
+	if len(changes) > maxNomenclatureChanges {
+		changes = changes[:maxNomenclatureChanges]
+	}
+	result.Changes = changes
 	return result, nil
+}
+
+// Список изменений в ответе на загрузку ограничен: при первой загрузке «новые» — все коды.
+const maxNomenclatureChanges = 500
+
+// diffNomenclature считает новые, удалённые и изменённые коды в record и возвращает их
+// списком по порядку кодов.
+func diffNomenclature(previous, current []repository.TNVEDNomenclatureCode, record *repository.TNVEDNomenclatureImport) []NomenclatureChange {
+	old := make(map[string]repository.TNVEDNomenclatureCode, len(previous))
+	for _, code := range previous {
+		old[code.Code] = code
+	}
+	changes := []NomenclatureChange{}
+	for _, code := range current {
+		before, ok := old[code.Code]
+		switch {
+		case !ok:
+			record.AddedCount++
+			changes = append(changes, NomenclatureChange{Code: code.Code, Kind: "added", Name: code.Name, TariffText: code.TariffText})
+		case before.Name != code.Name || before.TariffText != code.TariffText:
+			record.ChangedCount++
+			changes = append(changes, NomenclatureChange{Code: code.Code, Kind: "changed", Name: code.Name, OldName: before.Name, TariffText: code.TariffText, OldTariffText: before.TariffText})
+		}
+		delete(old, code.Code)
+	}
+	record.RemovedCount = len(old)
+	for _, code := range old {
+		changes = append(changes, NomenclatureChange{Code: code.Code, Kind: "removed", OldName: code.Name, OldTariffText: code.TariffText})
+	}
+	sort.Slice(changes, func(i, j int) bool { return changes[i].Code < changes[j].Code })
+	return changes
 }
 
 func (s *TNVEDNomenclatureService) List(ctx context.Context, query string, limit, offset int) ([]NomenclatureCode, int64, error) {

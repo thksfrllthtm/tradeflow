@@ -11,7 +11,7 @@ import { DirectoryImportResult } from '../common/directoryTransfer'
 import { useKzListPanel } from '../kzList/KzListPanel'
 import { KzImport } from '../kzList/kzListApi'
 import { useRiskIndicatorsPanel } from '../riskIndicators/RiskIndicatorsPanel'
-import { nomenclatureApi } from './nomenclatureApi'
+import { NomenclatureChange, NomenclatureUpload, nomenclatureApi } from './nomenclatureApi'
 import { useCodeCheck } from './CodeCheck'
 import { AntiDumpingPanel } from './AntiDumpingPanel'
 import { countryNames, formatMeasureCode, percentText } from './antiDumping'
@@ -19,9 +19,25 @@ import '@/shared/styles/list-page.css'
 import '../components/DirectoryTransfer.css'
 import './nomenclature.css'
 import { AntiDumpingRef, NomenclatureCode, NomenclatureImport } from '@/shared/tnved/nomenclature'
-import { nameParts } from '@/shared/tnved/codes'
+import { formatCode, nameParts } from '@/shared/tnved/codes'
 
 const pageSize = 100
+const changeLabels: Record<NomenclatureChange['kind'], string> = { added: 'Новый', removed: 'Удалён', changed: 'Изменён' }
+
+// Строка изменения: у изменённого кода — что было и что стало (только то, что поменялось).
+function ChangeRow({ change }: { change: NomenclatureChange }) {
+  const nameChanged = change.kind === 'changed' && change.oldName !== change.name
+  const rateChanged = change.kind === 'changed' && change.oldTariffText !== change.tariffText
+  return <li className={`nom-change ${change.kind}`}>
+    <span className="nom-change-kind">{changeLabels[change.kind]}</span>
+    <b>{formatCode(change.code)}</b>
+    <span className="nom-change-text">
+      {change.kind === 'changed'
+        ? <>{nameChanged ? <><s>{change.oldName}</s> → {change.name}</> : change.name}{rateChanged && <small>Ставка: <s>{change.oldTariffText || '—'}</s> → {change.tariffText || '—'}</small>}</>
+        : <>{change.kind === 'added' ? change.name : change.oldName}<small>Ставка: {(change.kind === 'added' ? change.tariffText : change.oldTariffText) || '—'}</small></>}
+    </span>
+  </li>
+}
 
 // Полная номенклатура ТН ВЭД ЕАЭС: поиск по коду или словам, пошлина ЕТТ, ставка РК, НДС и
 // антидемпинг. Список заменяет администратор выгрузкой TWS.BY, ставки ниже ЕТТ — загрузкой
@@ -39,7 +55,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
   const [error, setError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
   const [uploading, setUploading] = useState(false)
-  const [uploaded, setUploaded] = useState<NomenclatureImport | null>(null)
+  const [uploaded, setUploaded] = useState<NomenclatureUpload | null>(null)
   const [rowErrors, setRowErrors] = useState<DirectoryImportResult['errors']>([])
   const [antiDumpingOpen, setAntiDumpingOpen] = useState(false)
   const [antiDumpingCount, setAntiDumpingCount] = useState<number | null>(null)
@@ -77,9 +93,11 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
   }
 
   // Проверка вставленной колонки кодов; с главной открывается сразу (?check=1).
-  const codeCheck = useCodeCheck({ initialOpen: new URLSearchParams(window.location.search).has('check') })
-  const riskIndicators = useRiskIndicatorsPanel({ admin })
-  const kzList = useKzListPanel({ current: kzSource, onImported: () => setRefreshKey((value) => value + 1) })
+  // Панели в шапке переключаются: открыта только одна.
+  function closePanels() { codeCheck.close(); setAntiDumpingOpen(false); riskIndicators.close(); kzList.close() }
+  const codeCheck = useCodeCheck({ initialOpen: new URLSearchParams(window.location.search).has('check'), onOpen: closePanels })
+  const riskIndicators = useRiskIndicatorsPanel({ admin, onOpen: closePanels })
+  const kzList = useKzListPanel({ current: kzSource, onImported: () => setRefreshKey((value) => value + 1), onOpen: closePanels })
   const empty = !loading && total === 0
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="nomenclature" onLogout={onLogout} />
@@ -91,7 +109,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
         </div>
         <div className="dir-head-actions dir-transfer">
           {codeCheck.button}
-          <button type="button" className={antiDumpingOpen ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setAntiDumpingOpen((value) => !value)} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
+          <button type="button" className={antiDumpingOpen ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!antiDumpingOpen) closePanels(); setAntiDumpingOpen(!antiDumpingOpen) }} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
           {riskIndicators.button}
           {admin && kzList.button}
           {admin && <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
@@ -110,6 +128,10 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
         Загружено {formatDisplayNumber(uploaded.codeCount)} {plural(uploaded.codeCount, 'код', 'кода', 'кодов')}: новых {formatDisplayNumber(uploaded.addedCount)}, удалено {formatDisplayNumber(uploaded.removedCount)}, изменились наименование или ставка — {formatDisplayNumber(uploaded.changedCount)}.
         <button type="button" onClick={() => setUploaded(null)} aria-label="Закрыть">×</button>
       </p>}
+      {uploaded && uploaded.changes.length > 0 && <ul className="nom-changes">
+        {uploaded.changes.map((change) => <ChangeRow key={change.code} change={change} />)}
+        {uploaded.changes.length < uploaded.addedCount + uploaded.removedCount + uploaded.changedCount && <li className="nom-change-more">Показаны первые {formatDisplayNumber(uploaded.changes.length)} из {formatDisplayNumber(uploaded.addedCount + uploaded.removedCount + uploaded.changedCount)}</li>}
+      </ul>}
       {error && <p className="dir-transfer-error nom-note" role="alert">{error}<button type="button" onClick={() => { setError(''); setRowErrors([]) }} aria-label="Закрыть">×</button></p>}
       {rowErrors.length > 0 && <ul className="dir-transfer-errors">{rowErrors.map((item) => <li key={`${item.row}-${item.message}`}><b>Строка {item.row}</b> {item.message}</li>)}</ul>}
 

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -119,5 +120,31 @@ func TestReadNomenclatureFileRejectsOtherWorkbooks(t *testing.T) {
 	_ = book.Write(&buffer)
 	if _, err := readNomenclatureFile(bytes.NewReader(buffer.Bytes())); err == nil {
 		t.Fatal("a workbook without «Код» and «Наименование» must be rejected")
+	}
+}
+
+func TestDiffNomenclatureListsChangedCodes(t *testing.T) {
+	previous := []repository.TNVEDNomenclatureCode{
+		{Code: "0101210000", Name: "Лошади", TariffText: "0"},
+		{Code: "0101290000", Name: "Прочие", TariffText: "5"},
+		{Code: "0102210000", Name: "Коровы", TariffText: "0"},
+	}
+	current := []repository.TNVEDNomenclatureCode{
+		{Code: "0101210000", Name: "Лошади", TariffText: "0"},
+		{Code: "0101290000", Name: "Прочие лошади", TariffText: "10"},
+		{Code: "0103100000", Name: "Свиньи", TariffText: "0"},
+	}
+	record := repository.TNVEDNomenclatureImport{}
+	changes := diffNomenclature(previous, current, &record)
+	want := []NomenclatureChange{
+		{Code: "0101290000", Kind: "changed", Name: "Прочие лошади", OldName: "Прочие", TariffText: "10", OldTariffText: "5"},
+		{Code: "0102210000", Kind: "removed", OldName: "Коровы", OldTariffText: "0"},
+		{Code: "0103100000", Kind: "added", Name: "Свиньи", TariffText: "0"},
+	}
+	if !reflect.DeepEqual(changes, want) {
+		t.Fatalf("changes = %+v, want %+v", changes, want)
+	}
+	if record.AddedCount != 1 || record.RemovedCount != 1 || record.ChangedCount != 1 {
+		t.Fatalf("counts = %d/%d/%d", record.AddedCount, record.RemovedCount, record.ChangedCount)
 	}
 }

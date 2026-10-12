@@ -12,7 +12,7 @@ type Busy = { action: 'excel' | 'pdf' | 'import'; text: string } | null
 
 // «Перечень РК» (администратор): 1) Excel из PDF ЕЭК — проверить и при нужде поправить;
 // 2) загрузить этот Excel; или сразу загрузить PDF. button — в шапку, panel — под шапку.
-export function useKzListPanel({ current, onImported }: { current: KzImport | null; onImported: () => void }) {
+export function useKzListPanel({ current, onImported, onOpen }: { current: KzImport | null; onImported: () => void; onOpen?: () => void }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<Busy>(null)
   const [message, setMessage] = useState('')
@@ -68,7 +68,7 @@ export function useKzListPanel({ current, onImported }: { current: KzImport | nu
     </label>
 
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setOpen(!open)} aria-expanded={open} title="Ставки ниже ЕТТ по обязательствам Казахстана в ВТО">Перечень РК</button>
+    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Ставки ниже ЕТТ по обязательствам Казахстана в ВТО">Перечень РК</button>
   </div>
 
   const panel = open && <section className="dir-transfer-panel kz-panel">
@@ -101,5 +101,5 @@ export function useKzListPanel({ current, onImported }: { current: KzImport | nu
     {rowErrors.length > 0 && <ul className="dir-transfer-errors">{rowErrors.map((item) => <li key={`${item.row}-${item.message}`}><b>Строка {item.row}</b> {item.message}</li>)}</ul>}
   </section>
 
-  return { button, panel }
+  return { button, panel, close: () => setOpen(false) }
 }

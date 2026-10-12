@@ -10,6 +10,7 @@ import { SearchIcon } from '@/shared/components/icons'
 import { DecisionStats, decisionSourceLabels, decisionsApi } from './decisionsApi'
 import { DecisionDrawer } from './DecisionDrawer'
 import { DecisionImport } from './DecisionImport'
+import { DecisionManual } from './DecisionManual'
 import '@/shared/styles/list-page.css'
 import './decisions.css'
 import { formatCode } from '@/shared/tnved/codes'
@@ -44,6 +45,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
   const [refreshKey, setRefreshKey] = useState(0)
   const [openId, setOpenId] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get('id')) || null)
   const [importOpen, setImportOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
 
   const params = () => ({ q: search, status: filter === 'agentWrong' ? '' : filter, agentWrong: filter === 'agentWrong' })
   useEffect(() => {
@@ -81,7 +83,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
           <h1>База решений{stats && <span className="dir-count">{stats.pending + stats.verified}</span>}</h1>
           <p>Проверенные примеры «товар из инвойса → код ТН ВЭД» с фото и обоснованием. На них опирается ИИ при подборе кода.</p>
         </div>
-        {admin && <div className="dir-head-actions"><button type="button" className="dir-add" onClick={() => setImportOpen(true)}>Импорт старого инвойса</button></div>}
+        {admin && <div className="dir-head-actions"><button type="button" className="dir-add" onClick={() => setManualOpen(true)}>+ Добавить вручную</button><button type="button" className="dir-add" onClick={() => setImportOpen(true)}>Импорт старого инвойса</button></div>}
       </div>
       {stats && <div className="dc-stats">
         <button type="button" className={stats.pending > 0 ? 'dc-stat warn' : 'dc-stat'} onClick={() => setFilter('pending')}><b>{stats.pending}</b> {plural(stats.pending, 'ждёт', 'ждут', 'ждут')} проверки</button>
@@ -119,6 +121,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
       <p className="dir-foot">«Проверено» ставит администратор. Если при проверке код исправлен, запись отмечается «ИИ ошибся» — из этих отметок считается точность ИИ. Проверенное решение агент считает сильным доводом, а тот же товар (по фото или наименованию) находится сразу, без ИИ.</p>
     </section>
     {openId && <DecisionDrawer id={openId} admin={admin} onClose={() => setOpenId(null)} onChanged={() => setRefreshKey((key) => key + 1)} />}
+    {manualOpen && <DecisionManual onClose={() => setManualOpen(false)} onAdded={() => { setNotice('Решение добавлено в базу'); setRefreshKey((key) => key + 1) }} />}
     {importOpen && <DecisionImport onClose={() => setImportOpen(false)} onImported={(created, skipped) => { setNotice(`В базу добавлено ${created} ${plural(created, 'решение', 'решения', 'решений')}${skipped ? `, уже были в базе: ${skipped}` : ''}`); setRefreshKey((key) => key + 1) }} />}
   </main>
 }

@@ -341,10 +341,14 @@ func (s *CodeDecisionService) Import(ctx context.Context, adminID int64, rows []
 	if err != nil {
 		return 0, 0, nil, err
 	}
-	// Тот же код с тем же наименованием уже есть (или повторяется в файле) — строка пропускается.
-	known := map[string]bool{}
+	// Тот же код с тем же наименованием и похожим фото уже есть (или повторяется в файле) — строка
+	// пропускается. По ключу хранятся отпечатки фото каждой такой записи.
+	known := map[string][][]string{}
 	for _, key := range keys {
-		known[decisionImportKey(key.Code, key.FinalName, key.InvoiceName, key.SupplierName)] = true
+		var hashes []string
+		_ = json.Unmarshal(key.PhotoHashes, &hashes)
+		id := decisionImportKey(key.Code, key.FinalName, key.InvoiceName, key.SupplierName)
+		known[id] = append(known[id], hashes)
 	}
 	skipped := 0
 	now := time.Now().UTC()
@@ -361,11 +365,13 @@ func (s *CodeDecisionService) Import(ctx context.Context, adminID int64, rows []
 			continue
 		}
 		key := decisionImportKey(row.Code, row.FinalName, row.InvoiceName, row.SupplierName)
-		if known[key] {
+		var hashes []string
+		_ = json.Unmarshal(row.PhotoHashes, &hashes)
+		if importDuplicate(known[key], hashes) {
 			skipped++
 			continue
 		}
-		known[key] = true
+		known[key] = append(known[key], hashes)
 		row.Status, row.CreatedBy, row.VerifiedBy, row.VerifiedAt = "verified", &adminID, &adminID, &now
 		valid = append(valid, row)
 	}
@@ -375,6 +381,17 @@ func (s *CodeDecisionService) Import(ctx context.Context, adminID int64, rows []
 
 func decisionImportKey(code, finalName, invoiceName, supplierName string) string {
 	return code + "|" + NormalizeDecisionName(finalName) + "|" + NormalizeDecisionName(invoiceName) + "|" + NormalizeDecisionName(supplierName)
+}
+
+// importDuplicate — среди записей с тем же ключом есть тот же товар: как sameProduct, фото
+// сравниваются, только если они есть у обеих сторон.
+func importDuplicate(saved [][]string, hashes []string) bool {
+	for _, other := range saved {
+		if len(hashes) == 0 || len(other) == 0 || samePhoto(hashes, other) {
+			return true
+		}
+	}
+	return false
 }
 
 // Verify — «Проверено» с необязательной правкой. Если у записи есть код агента, отмечается,

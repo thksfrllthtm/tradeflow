@@ -89,6 +89,7 @@ export function DecisionImport({ onClose, onImported }: { onClose: () => void; o
   }
 
   // Строки к импорту: с 10-значным кодом и наименованием; повторы внутри файла склеиваются.
+  // Повтор — то же наименование, код и то же фото: у 16 «Отвертка / 螺丝刀» с разными фото — 16 записей.
   const { rows, duplicates } = useMemo(() => {
     if (!parsed || !mapping.code || !(mapping.invoiceName || mapping.finalName)) return { rows: [], duplicates: 0 }
     const source = noHeader ? [{ sourceRow: headerRow, values: Object.fromEntries(parsed.headers.map((header) => [header, header])) as Record<string, string>, included: true }, ...parsed.rows] : parsed.rows
@@ -100,7 +101,8 @@ export function DecisionImport({ onClose, onImported }: { onClose: () => void; o
       const finalName = value('finalName')
       const item = { sourceRow: row.sourceRow, invoiceName: value('invoiceName'), finalName, supplierName: value('supplierName') || chinesePart(finalName), code: normalizeCode(String(row.values[mapping.code] ?? '')) }
       if (!tenDigits.test(item.code) || !(item.invoiceName || item.finalName || item.supplierName)) continue
-      const key = [item.code, normalizeName(item.finalName), normalizeName(item.invoiceName), normalizeName(item.supplierName)].join('|')
+      const photo = parsed.images.find((image) => image.sourceRow === row.sourceRow)?.data ?? ''
+      const key = [item.code, normalizeName(item.finalName), normalizeName(item.invoiceName), normalizeName(item.supplierName), photo].join('|')
       if (seen.has(key)) { repeated++; continue }
       seen.add(key)
       result.push(item)

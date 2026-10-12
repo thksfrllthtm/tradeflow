@@ -85,3 +85,18 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 @media (max-width: 760px) {
   .ad-head { flex-direction: column; }
 }
+
+/* Список изменений после загрузки файла TWS. */
+.nom-changes { flex: 0 0 auto; max-height: 240px; margin: 0; padding: 4px 0; overflow-y: auto; border: 1px solid #dfe7e1; border-radius: 8px; background: #fff; list-style: none; font-size: .8rem; }
+.nom-change { display: grid; grid-template-columns: 70px 110px 1fr; gap: 10px; align-items: baseline; padding: 6px 12px; border-bottom: 1px solid #f0f3f1; }
+.nom-change:last-child { border-bottom: 0; }
+.nom-change b { font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; }
+.nom-change-kind { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: .7rem; font-weight: 700; }
+.nom-change.added .nom-change-kind { background: #d9f0df; color: #1c5c38; }
+.nom-change.removed .nom-change-kind { background: #fde4e0; color: #9a3024; }
+.nom-change.changed .nom-change-kind { background: #fff1cf; color: #7a5810; }
+.nom-change-text { color: #1f2d24; line-height: 1.4; }
+.nom-change-text s { color: #8a968f; }
+.nom-change-text small { display: block; color: #56665c; }
+.nom-change-more { padding: 6px 12px; color: #8a968f; }
+@media (max-width: 640px) { .nom-change { grid-template-columns: auto 1fr; } .nom-change-text { grid-column: 1 / -1; } }

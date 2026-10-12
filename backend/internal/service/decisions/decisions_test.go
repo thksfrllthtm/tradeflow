@@ -88,6 +88,25 @@ func TestDecisionImportKeyIgnoresSpacesAndCase(t *testing.T) {
 	}
 }
 
+// Тот же код и наименование, но другое фото (16 разных отвёрток «Отвертка / 螺丝刀») — разные записи.
+func TestImportDuplicateComparesPhotos(t *testing.T) {
+	first := []string{PhotoHash(encodeTestImage(t, 200, 150, true, false))}
+	other := []string{PhotoHash(encodeTestImage(t, 200, 150, true, true))}
+	saved := [][]string{first}
+	if !importDuplicate(saved, first) {
+		t.Fatal("same photo must be a duplicate")
+	}
+	if importDuplicate(saved, other) {
+		t.Fatal("another photo must not be a duplicate")
+	}
+	if !importDuplicate(saved, nil) || !importDuplicate([][]string{nil}, other) {
+		t.Fatal("without a photo on one side the name decides")
+	}
+	if importDuplicate(nil, first) {
+		t.Fatal("nothing saved yet")
+	}
+}
+
 // Фото главнее наименования: запись с тем же наименованием, но другим фото, не даёт обойтись без ИИ.
 func TestAgreedVerifiedCodeIgnoresNameMatchWithOtherPhoto(t *testing.T) {
 	verified := SameProductMatch{Decision: CodeDecisionView{Status: "verified", Code: "8205200000"}, ByName: true, PhotoDiffers: true}

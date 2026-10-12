@@ -7,9 +7,14 @@ type ParseXlsxResponse = Omit<GoodsParseResult, 'images'> & {
   imageData?: string[]
 }
 
+// Как goods.MaxGoodsXLSXBytes на сервере. Больший файл сервер обрывает на середине загрузки,
+// и браузер показывает «Failed to fetch» вместо понятной ошибки — поэтому проверяем до отправки.
+const maxXlsxMB = 100
+
 // Разбор Excel, расчёт и экспорт смет товаров (/api/goods/*).
 export const goodsApi = {
   parseXlsx: async (file: File, options?: { sheet?: string; headerRow?: number; dataStartRow?: number; shareImages?: boolean }): Promise<GoodsParseResult> => {
+    if (file.size > maxXlsxMB << 20) throw new Error(`Файл ${Math.round(file.size / (1 << 20))} МБ, а можно до ${maxXlsxMB} МБ. Пересохраните Excel со сжатыми фото (Файл → Сжать рисунки) или разбейте на части.`)
     const form = new FormData(); form.append('file', file)
     const query = new URLSearchParams()
     if (options?.sheet) query.set('sheet', options.sheet)

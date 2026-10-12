@@ -12,7 +12,7 @@ const statusText = { unknown: 'Нет в ТН ВЭД ЕАЭС', official: 'Ес�
 // Вставить колонку кодов из Excel и сразу увидеть по всем кодам, есть ли они в номенклатуре ТН ВЭД
 // ЕАЭС, — с наименованием, ставками и ссылкой. initialOpen — переход с главной по «Проверить коды».
 // button — в шапку страницы, panel — под шапку.
-export function useCodeCheck({ initialOpen = false }: { initialOpen?: boolean }) {
+export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: boolean; onOpen?: () => void }) {
   const [open, setOpen] = useState(initialOpen)
   const [text, setText] = useState('')
   const [pasted, setPasted] = useState<PastedCodes | null>(null)
@@ -57,7 +57,7 @@ export function useCodeCheck({ initialOpen = false }: { initialOpen?: boolean })
   }
 
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => setOpen(!open)} aria-expanded={open} title="Вставить колонку кодов из Excel и проверить по номенклатуре ТН ВЭД ЕАЭС">Проверить коды</button>
+    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Вставить колонку кодов из Excel и проверить по номенклатуре ТН ВЭД ЕАЭС">Проверить коды</button>
   </div>
   const panel = open && <section className="dir-transfer-panel code-check">
     <div className="dir-transfer-row">
@@ -104,5 +104,5 @@ export function useCodeCheck({ initialOpen = false }: { initialOpen?: boolean })
     </>}
     {pasted && pasted.invalid.length > 0 && <p className="dir-transfer-error">Не похоже на код из 10 цифр: {pasted.invalid.join(', ')}</p>}
   </section>
-  return { button, panel }
+  return { button, panel, close: () => setOpen(false) }
 }
