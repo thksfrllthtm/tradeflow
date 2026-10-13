@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 //   /decisions               — база решений «товар из инвойса → код ТН ВЭД»
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
+//   /util-fee                — калькулятор утильсбора
 //   /login, /register        — вход и регистрация
 type Route =
   | { page: 'home' }
@@ -18,6 +19,7 @@ type Route =
   | { page: 'decisions' }
   | { page: 'employees' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
+  | { page: 'utilFee' }
   | { page: 'login' }
   | { page: 'register' }
 
@@ -30,6 +32,7 @@ export const paths = {
   employees: '/employees',
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
+  utilFee: '/util-fee',
   login: '/login',
   register: '/register',
 }
@@ -46,6 +49,7 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.employees) return { page: 'employees' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }
+  if (path === paths.utilFee) return { page: 'utilFee' }
   if (path === paths.login) return { page: 'login' }
   if (path === paths.register) return { page: 'register' }
   return null

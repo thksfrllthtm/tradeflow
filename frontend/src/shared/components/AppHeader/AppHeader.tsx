@@ -7,7 +7,7 @@ import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная: ни один раздел меню не подсвечен, на неё ведёт логотип.
-type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'employees'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'utilFee' | 'employees'
 
 const sections: { value: AppSection; label: string; href: string }[] = [
   { value: 'estimates', label: 'Сметы', href: paths.goods() },
@@ -15,6 +15,7 @@ const sections: { value: AppSection; label: string; href: string }[] = [
   { value: 'nomenclature', label: 'Номенклатура', href: paths.nomenclature },
   { value: 'decisions', label: 'База решений', href: paths.decisions },
   { value: 'ceramics', label: 'Керамика', href: paths.ceramics },
+  { value: 'utilFee', label: 'Утильсбор', href: paths.utilFee },
 ]
 
 const adminSections: typeof sections = [

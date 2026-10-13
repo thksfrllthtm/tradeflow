@@ -10,6 +10,7 @@ import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
+import { UtilFeePage } from '@/features/utilFee/UtilFeePage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
 export function App() {
@@ -81,5 +82,6 @@ export function App() {
     case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
+    case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />
   }
 }
