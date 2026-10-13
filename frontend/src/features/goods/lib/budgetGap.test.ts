@@ -17,7 +17,7 @@ const customs = async (rows: Row[]) => 60 + rows.reduce((sum, row) => {
 const rows: Row[] = [{ code: 'A', quantity: 800 }, { code: 'B', quantity: 1200 }]
 
 describe('budget gap', () => {
-  it('lands inside a smaller and a bigger gap than the default 20–30', async () => {
+  it('lands inside a smaller and a bigger gap than the default 35–45', async () => {
     for (const [minGap, maxGap] of [[5, 10], [100, 150], [0, 2]]) {
       const result = await distributeBudget(rows, 11000, access, { evaluate: customs, minGap, maxGap })
       expect(result.status).toBe('ok')

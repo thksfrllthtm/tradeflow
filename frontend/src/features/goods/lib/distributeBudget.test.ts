@@ -29,20 +29,20 @@ describe('distributeBudget', () => {
       { code: '6116', quantity: 300 },
     ], 11000, access, { evaluate: cost })
     expect(result.status).toBe('ok')
-    // Цель 11000 − 25: цена второй группы (10975 − 3200) / 1200 ≈ 6.4792, недостача ≈ 25.
+    // Цель 11000 − 40: цена второй группы (10960 − 3200) / 1200 ≈ 6.4667, недостача ≈ 40.
     expect([result.items[0].price, result.items[2].price]).toEqual(['4', '4'])
-    expect(Number(result.items[1].price)).toBeCloseTo(6.479, 3)
-    expect(result.gap).toBeGreaterThanOrEqual(20)
-    expect(result.gap).toBeLessThanOrEqual(30)
+    expect(Number(result.items[1].price)).toBeCloseTo(6.467, 3)
+    expect(result.gap).toBeGreaterThanOrEqual(35)
+    expect(result.gap).toBeLessThanOrEqual(45)
     expect(result.total).toBe(Math.round((3200 + Number(result.items[1].price) * 1200) * 100) / 100)
   })
 
-  it('brings the customs payment 20–30 below the budget in a few calculations', async () => {
+  it('brings the customs payment 35–45 below the budget in a few calculations', async () => {
     const rows: Row[] = [{ code: 'A', quantity: 800 }, { code: 'B', quantity: 1200 }, { code: 'C', quantity: 75, price: '12' }]
     const result = await distributeBudget(rows, 11000, access, { evaluate: customs, weights: { [budgetGroupKey('A', 0)]: 7.5, [budgetGroupKey('B', 1)]: 0.4 } })
     expect(result.status).toBe('ok')
-    expect(result.gap).toBeGreaterThanOrEqual(20)
-    expect(result.gap).toBeLessThanOrEqual(30)
+    expect(result.gap).toBeGreaterThanOrEqual(35)
+    expect(result.gap).toBeLessThanOrEqual(45)
     expect(await customs(result.items)).toBeCloseTo(result.total, 2)
     expect(result.items[2].price).toBe('12')
     expect(result.evaluations).toBeLessThanOrEqual(8)
@@ -72,7 +72,7 @@ describe('distributeBudget', () => {
 
   it('reports the closest variant when the window cannot be reached', async () => {
     // One step of 0.0001 on a million units moves the total by 100 USD — more than the 10 USD wide window.
-    const result = await distributeBudget([{ code: 'A', quantity: 1_000_000 }], 12_345, access, { evaluate: cost })
+    const result = await distributeBudget([{ code: 'A', quantity: 1_000_000 }], 12_375, access, { evaluate: cost })
     expect(result.status).toBe('closest')
     expect(result.message).toMatch(/Не удалось точно попасть в бюджет/)
   })

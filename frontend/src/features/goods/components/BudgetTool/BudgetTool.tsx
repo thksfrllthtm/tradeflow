@@ -3,16 +3,17 @@ import { useEffect, useRef, useState } from 'react'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { decimalText, moneyText } from '@/shared/lib/rounding'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
+import { BUDGET_MAX_GAP, BUDGET_MIN_GAP } from '../../lib/distributeBudget'
 import './BudgetTool.css'
 
 const money = (value: number) => formatRuNumber(moneyText(value))
 
-const hint = (min: string, max: string, over: boolean) => `Цены подбираются так, чтобы «Растаможка к оплате» была на ${min}–${max} USD ${over ? 'больше бюджета (перерасход)' : 'меньше бюджета (недостача)'}. По умолчанию — недостача 20–30 USD. `
+const hint = (min: string, max: string, over: boolean) => `Цены подбираются так, чтобы «Растаможка к оплате» была на ${min}–${max} USD ${over ? 'больше бюджета (перерасход)' : 'меньше бюджета (недостача)'}. По умолчанию — недостача ${BUDGET_MIN_GAP}–${BUDGET_MAX_GAP} USD. `
   + 'Строки с ценой (из Excel, по ИТП, вручную) не меняются; строки без цены с тем же кодом ТН ВЭД получают ту же цену. '
   + 'Откат — «Отменить».'
 
 // Бюджет растаможки и две кнопки подбора цен — компактно, для панели инструментов таблицы.
-// Разница с бюджетом (недостача или перерасход, по умолчанию недостача 20–30) нужна редко — она
+// Разница с бюджетом (недостача или перерасход, по умолчанию недостача 35–45) нужна редко — она
 // в окошке за значком рядом с бюджетом. Цены проставляются сразу; откат — «Отменить».
 export function BudgetControls({ budget, disabled }: { budget: BudgetDistributionState; disabled: boolean }) {
   const amount = Number(budget.budget.replace(',', '.'))
@@ -34,7 +35,7 @@ export function BudgetControls({ budget, disabled }: { budget: BudgetDistributio
 
 const usd = (value: number) => formatRuNumber(decimalText(value, 2))
 
-// Значок «недостача 20–30 ▾» и окошко настройки разницы с бюджетом.
+// Значок «недостача 35–45 ▾» и окошко настройки разницы с бюджетом.
 function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount: number | null }) {
   // Окошко — поверх страницы (position: fixed) под значком: карточка таблицы обрезает всё, что
   // выходит за её край. Прокрутка или изменение окна закрывают его.
@@ -48,7 +49,7 @@ function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount
   }
   const over = budget.gapMode === 'over'
   const gap = budget.gap
-  const isDefault = budget.gapMin === '20' && budget.gapMax === '30' && !over
+  const isDefault = budget.gapMin === String(BUDGET_MIN_GAP) && budget.gapMax === String(BUDGET_MAX_GAP) && !over
 
   useEffect(() => {
     if (!open) return
@@ -90,7 +91,7 @@ function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount
         {gap && range ? <>{amount ? 'Бюджет' : 'Например, бюджет'} {usd(example)} → итог {usd(range[0])}–{usd(range[1])}</> : 'Числа не меньше нуля, «от» не больше «до»'}
       </p>
       <div className="budget-gap-foot">
-        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}>По умолчанию: меньше на 20–30</button>
+        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}>По умолчанию: меньше на {BUDGET_MIN_GAP}–{BUDGET_MAX_GAP}</button>
         <button type="button" className="budget-gap-done" onClick={() => setOpen(null)}>Готово</button>
       </div>
     </div>}

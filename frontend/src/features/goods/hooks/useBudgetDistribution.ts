@@ -13,9 +13,10 @@ type AiExplanation = BudgetExplanation
 type ResultItem = GoodsCalculationResult['items'][number]
 
 // Разница с бюджетом «от … до …» USD и её направление: недостача (итог меньше бюджета, по умолчанию)
-// или перерасход (итог больше). По умолчанию недостача 20–30; браузер запоминает выбор.
+// или перерасход (итог больше). По умолчанию недостача 35–45; браузер запоминает выбор.
 type GapMode = 'under' | 'over'
-const gapStorageKey = 'tradeflow.budgetGap'
+// v2: умолчание сменилось на 35–45 — старые сохранённые 20–30 сбрасываются.
+const gapStorageKey = 'tradeflow.budgetGap.v2'
 function storedGap(): { min: string; max: string; mode: GapMode } {
   try {
     const saved = JSON.parse(localStorage.getItem(gapStorageKey) ?? 'null') as { min?: unknown; max?: unknown; mode?: unknown } | null

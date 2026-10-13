@@ -2,7 +2,7 @@ import { moneyText, roundHalfUp } from '@/shared/lib/rounding'
 import { priceText as formatPrice } from './priceText'
 // Распределение бюджета по ценам единицы товаров: цены подбираются так, чтобы итог
 // «Растаможка к оплате» (пошлина + антидемпинг + НДС + сбор) не доходил до бюджета на
-// minGap…maxGap USD (по умолчанию 20–30, сотрудник меняет), а в режиме over — превышал бюджет
+// minGap…maxGap USD (по умолчанию 35–45, сотрудник меняет), а в режиме over — превышал бюджет
 // на столько же (перерасход). Итог считает сервер (ставки бывают за кг, пару, комбинированные),
 // поэтому функция получает evaluate — пробный расчёт строк с ценами, — и подбирает общий
 // масштаб цен, не зная формул. Строки — через аксессоры.
@@ -20,8 +20,8 @@ import { priceText as formatPrice } from './priceText'
 //    в пропорции их цен, сумма кода (цена × количество) не меняется. Одинаковый товар — одна цена.
 //    Без этих опций у всех строк кода одна цена.
 
-export const BUDGET_MIN_GAP = 20
-export const BUDGET_MAX_GAP = 30
+export const BUDGET_MIN_GAP = 35
+export const BUDGET_MAX_GAP = 45
 const BUDGET_PRICE_DECIMALS = 4
 const BUDGET_MAX_EVALUATIONS = 14
 
