@@ -1,0 +1,118 @@
+/* Лист этапа 2 «как в Excel» (Jspreadsheet CE): сетка Excel (токены --xl-* из base.css), серая
+   шапка и номера строк, зелёная рамка выделения. Селекторы через .xs-host — чтобы перебить стили
+   библиотеки и общие стили таблиц, кнопок и полей страницы сметы. */
+
+.xs-wrap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+/* Ширина листа берётся только от родителя: широкий лист прокручивается внутри, а не раздвигает страницу. */
+.xs-host { min-width: 0; min-height: 300px; contain: inline-size; font-size: .84rem; }
+.xs-host .jss_container { width: 100%; }
+.xs-host .jss_content { border: 0; border-top: 1px solid var(--xl-head-line); box-shadow: none; }
+.xs-host table.jss_worksheet { width: 100%; table-layout: fixed; border-collapse: separate; font-family: inherit; font-size: .84rem; line-height: 1.25; color: #1f2d24; }
+.xs-host table.jss_worksheet td { padding: 0 6px !important; height: 30px; border-color: var(--xl-grid); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+/* Закреплённая шапка — выше значков и фото в строках, которые прокручиваются под ней. */
+.xs-host table.jss_worksheet > thead > tr > td { z-index: 5; height: 30px; background: var(--xl-head); border-bottom-color: var(--xl-head-line); color: var(--xl-head-ink); font-size: .82rem; font-weight: 600; white-space: nowrap; }
+/* Значок состояния и фото — без отступов и многоточия. */
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="1"],
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="2"] { padding: 0 2px !important; text-overflow: clip; }
+.xs-host table.jss_worksheet > tbody > tr > td:first-child { background: var(--xl-head); color: #767676; font-size: .74rem; font-variant-numeric: tabular-nums; }
+.xs-host table.jss_worksheet td.readonly { color: inherit; }
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="5"],
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="6"],
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="7"],
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="8"],
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="9"],
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="10"] { font-variant-numeric: tabular-nums; }
+.xs-host input[type="checkbox"] { display: inline-block; width: 15px; height: 15px; margin: 0; accent-color: var(--xl-active); vertical-align: middle; }
+.xs-host table.jss_worksheet td[data-x="0"], .xs-host table.jss_worksheet td[data-x="11"] { text-align: center !important; }
+/* «В расчёте» — переключатель: зелёный — строка считается, серый — исключена. */
+.xs-host table.jss_worksheet > tbody td[data-x="11"] input[type="checkbox"] {
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: radial-gradient(circle at 8px 50%, #fff 5px, transparent 5.5px) #c3ccc6;
+  cursor: pointer;
+  appearance: none;
+  transition: background-color .15s;
+}
+.xs-host table.jss_worksheet > tbody td[data-x="11"] input[type="checkbox"]:checked { background: radial-gradient(circle at 20px 50%, #fff 5px, transparent 5.5px) var(--xl-active); }
+.xs-host table.jss_worksheet > tbody td[data-x="11"] input[type="checkbox"]:hover { filter: brightness(.95); }
+.xs-host .jss_contextmenu { font-size: .82rem; }
+
+/* Подробный вид: выше строки и крупнее фото. Компактный — одна строка Excel. */
+.xs-wrap:not(.compact) .xs-host table.jss_worksheet > tbody > tr > td { height: 44px; }
+.xs-wrap:not(.compact) .xs-thumb { width: 36px; height: 36px; }
+
+/* Выделение — как в Excel: заливка диапазона, рамка, активная ячейка белая. */
+.xs-host table.jss_worksheet > tbody > tr > td.highlight { background-color: #e3f1e8; }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-selected { background-color: #fff; }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-top { border-top: 2px solid var(--xl-active); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-bottom { border-bottom: 2px solid var(--xl-active); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-left { border-left: 2px solid var(--xl-active); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-right { border-right: 2px solid var(--xl-active); }
+.xs-host table.jss_worksheet > thead > tr > td.selected,
+.xs-host table.jss_worksheet > tbody > tr.selected > td:first-child { background: #d2e7da; color: #1a4d33; }
+.xs-host .jss_corner { background: var(--xl-active); border-color: #fff; }
+.xs-host table.jss_worksheet > tbody > tr > td.editor { padding: 0 !important; }
+.xs-host table.jss_worksheet > tbody > tr > td.editor input { font: inherit; }
+
+/* Строки: отмеченные, исключённые из расчёта, требующие внимания. */
+.xs-host tr.xs-selected > td:not(:first-child) { background-color: #f1f8f3; }
+.xs-host tr.xs-excluded > td:not(:first-child):not([data-x="0"]):not([data-x="11"]) { color: #a3aea7 !important; text-decoration: line-through; text-decoration-color: #c5cdc8; }
+.xs-host tr.xs-excluded img { opacity: .5; }
+
+/* Ячейки: авто-значения бледным курсивом, подсветка того, что нужно исправить. */
+.xs-auto { color: #8a968f; font-style: italic; }
+.xs-host td.xs-missing { background-color: #fffaf0; }
+.xs-host td.xs-missing .xs-auto { color: #75520a; font-style: normal; }
+.xs-host td.xs-code { color: #1c6b43; font-weight: 700; letter-spacing: .01em; }
+.xs-host td.xs-code.xs-warn { background-color: #fdf6e3; color: #6b4d0c; }
+.xs-host td.xs-need { box-shadow: inset 0 0 0 1px #d9a441; background-color: #fffaf0; }
+.xs-host td.xs-bad { background-color: #fff1ee; color: #8f2a1f; }
+.xs-host td.xs-own { color: #1a4d33; font-weight: 650; }
+.xs-host td.xs-muted { color: #a3aea7; }
+
+/* Состояние строки: значок, форма отличается, а не только цвет. */
+.xs-state { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; }
+/* Всё в порядке — просто зелёная галочка; заметны только строки, где что-то не так. */
+.xs-state.ok { background: transparent; color: #1c6b43; }
+.xs-state.bad { background: #fde8e6; color: #a12a2a; }
+.xs-state.warn, .xs-state.todo { background: #fdf2d6; color: #75520a; }
+.xs-state.changed { background: #e7eefa; color: #2c4f86; }
+.xs-state.off { background: #eef1ef; color: #7a877f; }
+/* По прошлому расчёту — тот же значок, бледнее (пояснение — в подсказке и над таблицей). */
+.xs-state.past { opacity: .6; }
+
+/* Фото: миниатюра и «+» для добавления. */
+.xs-thumb { position: relative; display: inline-block; width: 24px; height: 24px; padding: 0; overflow: hidden; border: 1px solid #ccd7cf; border-radius: 4px; background: #fff; cursor: zoom-in; vertical-align: middle; }
+.xs-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.xs-thumb b { position: absolute; bottom: 0; left: 0; padding: 0 3px; border-radius: 0 3px 0 0; background: #24382c; color: #fff; font-size: .66rem; line-height: 12px; }
+.xs-photo-add { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: 1px solid #8fb39c; border-radius: 50%; background: #fff; color: #1c6b43; font-size: .78rem; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; vertical-align: middle; }
+.xs-host tr:hover .xs-photo-add, .xs-photo-add:focus-visible { opacity: 1; }
+/* Без фото ячейка пустая; «+ фото» — на строке под мышью и в выделенной ячейке. */
+.xs-photo-add.empty { width: 24px; height: 24px; border: 1px dashed #a9b8ae; border-radius: 4px; color: #5a6960; font-weight: 500; }
+.xs-host td.highlight-selected .xs-photo-add { opacity: 1; }
+.xs-photo-add:hover { border-color: #1c6b43; color: #1c6b43; }
+
+/* Ячейка кода: код слева, значки справа — справочник, подбор ИИ (цвет и отметка — состояние), база решений. */
+.xs-code-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.xs-code-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.xs-tools { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 1px; }
+.xs-host .xs-tool { --tone: #7a877f; position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--tone); font-weight: 400; letter-spacing: 0; cursor: pointer; }
+.xs-host .xs-tool:hover:not(:disabled) { border-color: #c3d3c8; background: #eef6f1; color: #154f32; }
+.xs-host .xs-tool:disabled { opacity: .5; cursor: progress; }
+.xs-host .xs-tool i { position: absolute; top: -3px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 6px; background: var(--tone); color: #fff; font-size: .62rem; font-style: normal; font-weight: 800; line-height: 12px; text-align: center; }
+.xs-host .xs-tool.agent.running { --tone: #1c6b43; }
+.xs-host .xs-tool.agent.running svg { animation: xs-pulse 1.2s infinite ease-in-out; }
+.xs-host .xs-tool.agent.waiting, .xs-host .xs-tool.agent.suggest { --tone: #a0700c; }
+.xs-host .xs-tool.agent.error { --tone: #b3392b; }
+.xs-host .xs-tool.agent.same, .xs-host .xs-tool.saved { --tone: #1c6b43; }
+.xs-host .xs-tool.saved { cursor: default; }
+/* Значки не мешают читать: бледные, ярче — на строке под мышью и в выделенной ячейке. */
+.xs-host tr:not(:hover) td:not(.highlight-selected) .xs-tool.agent.idle,
+.xs-host tr:not(:hover) td:not(.highlight-selected) .xs-tool[data-act="picker"],
+.xs-host tr:not(:hover) td:not(.highlight-selected) .xs-tool[data-act="decision"] { opacity: .55; }
+@keyframes xs-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .xs-host .xs-tool.agent.running svg { animation: none; } }
+
+/* Строка состояния под листом: сумма выделенного, как в Excel. */
+.xs-selection { margin: 0; padding: 4px 14px; border-top: 1px solid var(--xl-grid); background: #fbfcfb; color: var(--xl-head-ink); font-size: .78rem; font-variant-numeric: tabular-nums; text-align: right; }

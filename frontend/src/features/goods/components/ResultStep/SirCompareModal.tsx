@@ -1,3 +1,4 @@
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -111,7 +112,7 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
 
       {error && <p className="sc-error" role="alert">{error}</p>}
       {!ready ? <p className="sc-wait">{error ? '' : 'Считаем оба варианта…'}</p> : <div className={loading ? 'sc-body sc-stale' : 'sc-body'}>
-        <table className="sc-totals">
+        <table className="sheet sc-totals">
           <colgroup><col className="sc-col-label" /><col /><col /><col /></colgroup>
           <thead><tr><th /><th scope="col">По инвойсу</th><th scope="col" className="sc-sir">{sirTitle}</th><th scope="col">Разница</th></tr></thead>
           <tbody>
@@ -142,7 +143,7 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
         </div>
 
         <div className="sc-rows-wrap">
-          <table className="sc-rows">
+          <table className="sheet sc-rows">
             <thead>
               <tr className="sc-group">
                 <th colSpan={3} />
@@ -182,7 +183,7 @@ function CompareRow({ row, name, code, hasDiscount }: { row: SirCompareRow; name
   const below = row.belowSir && row.invoicePerKg !== null && row.sirPerKg ? Math.round((1 - row.invoicePerKg / row.sirPerKg) * 100) : null
   return <tr>
     <td className="sc-num">{row.index + 1}</td>
-    <td className="sc-name"><span className="sc-name-text" title={name}>{name}</span><code>{code || dash}</code></td>
+    <td className="sc-name"><span className="sc-name-text" title={name}>{name}</span>{code ? <CopyCode code={code} /> : <code>{dash}</code>}</td>
     <td>{row.weightKg === null ? dash : formatRuNumber(weightText(row.weightKg, true))}</td>
     <td className={below !== null ? 'sc-start sc-warn' : 'sc-start'} title={below !== null ? 'Цена инвойса за 1 кг ниже индикатора' : undefined}>
       {perKg(row.invoicePerKg)}{below !== null && <small>ниже на {below}%</small>}

@@ -141,8 +141,6 @@
 .rv-bar-button { padding: 5px 12px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #34443a; font-size: .78rem; font-weight: 600; cursor: pointer; }
 .rv-bar-button:hover { border-color: #24704a; color: #24704a; }
 
-.rv-grid-wrap { overflow: auto; max-height: max(320px, calc(100vh - 350px)); }
-
 /* Статус строки (этапы 2 и 3): ✓ / ! в кружке, причина — в подсказке. */
 .rs-dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .66rem; font-weight: 800; cursor: default; }
 .rs-dot.ok { background: #e3f3e8; color: #1d6a3f; }

@@ -18,6 +18,13 @@
   --c-text-label: #34443b;
   --c-error: #a32626;
   --c-error-bg: #fff4f4;
+  /* Таблицы в стиле Excel (shared/styles/sheet.css) */
+  --xl-grid: #d9d9d9;
+  --xl-head: #f3f3f3;
+  --xl-head-line: #bfbfbf;
+  --xl-head-ink: #3b3b3b;
+  --xl-hover: #e9f4ee;
+  --xl-active: #217346;
   --radius: 6px;
   --radius-lg: 10px;
   --shadow-card: 0 1px 4px rgba(20,47,31,.08), 0 4px 16px rgba(20,47,31,.05);

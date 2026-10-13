@@ -19,6 +19,13 @@
   --rv-changed: #2c4f86;
   --rv-changed-row: #f4f7fd;
   --rv-field: #8a968f;
+  /* Лист «как в Excel» — в тех же зеленоватых серых, что карточки и панели этапа, а не в серых Excel. */
+  --xl-grid: #e3e9e5;
+  --xl-head: #f4f7f5;
+  --xl-head-line: #cfd9d2;
+  --xl-head-ink: #46564c;
+  --xl-hover: #eef5f0;
+  --xl-active: var(--rv-green);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -33,10 +40,8 @@
 .goods-calculator-embedded.is-review .goods-page > * { flex: 0 0 auto; }
 .goods-calculator-embedded.is-review .goods-page > .rv-step { flex: 1 1 auto; min-height: min-content; }
 .rv-step > .rv-card { flex: 1 1 auto; min-height: min-content; }
-.rv-step .rv-grid-wrap { flex: 1 0 auto; height: 300px; max-height: none; overscroll-behavior: contain; }
 @media (max-width: 760px) {
   .goods-calculator-embedded.is-review, .goods-calculator-embedded.is-review .goods-page { height: auto; min-height: 0; }
-  .rv-step .rv-grid-wrap { height: 70vh; }
 }
 
 /* ── Параметры расчёта: одна строка, связанные значения — в одном поле ── */
@@ -89,7 +94,7 @@
 .rv-step button.rv-next:hover:not(:disabled) { border-color: var(--rv-green); background: #f0f7f2; }
 .rv-step button.rv-next:disabled { opacity: 1; color: #7d8a82; }
 .rv-next kbd { padding: 0 4px; border: 1px solid var(--rv-line-strong); border-radius: 4px; background: #f5f8f6; color: var(--rv-ink-3); font: inherit; font-size: .78rem; }
-.rv-check-source { flex: 1 1 140px; min-width: 0; margin: 0; overflow: hidden; color: var(--rv-ink-3); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.rv-check-source { flex: 0 1 auto; min-width: 0; margin: 0; overflow: hidden; color: var(--rv-ink-3); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
 .rv-check-source.past { padding: 2px 8px; border-radius: 6px; background: #eef2fa; color: var(--rv-changed); font-weight: 600; }
 .rv-check-source b { color: inherit; }
 .rv-seg { flex: 0 0 auto; }
@@ -100,60 +105,6 @@
 .rv-step .rv-undo .button-link { color: #154f32; font-size: .86rem; font-weight: 700; }
 .rv-step .rv-undo button.rv-undo-close { margin-left: auto; padding: 0 6px; border: 0; background: transparent; color: #5c4105; font-size: 1.1rem; line-height: 1; }
 
-.rv-step .rv-card .goods-table-top-scroll { margin: 0; border: 0; border-bottom: 1px solid var(--rv-line); border-radius: 0; }
-
-/* ── Таблица ── */
-.goods-page .rv-grid { width: 100%; min-width: 1000px !important; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: .93rem; line-height: 1.3; }
-.goods-page .rv-grid th, .goods-page .rv-grid td { padding: 5px 6px !important; overflow: visible; border-bottom: 1px solid var(--rv-line); background: #fff; color: var(--rv-ink); font-size: .93rem; font-variant-numeric: tabular-nums; text-align: right; text-overflow: clip; vertical-align: middle; }
-.goods-page .rv-grid tbody tr:nth-child(even) td { background: #fff; }
-.goods-page .rv-grid tbody tr:last-child td { border-bottom: 0; }
-.goods-page .rv-grid th { position: sticky; top: 0; z-index: 3; padding: 8px 6px !important; border-bottom: 1px solid var(--rv-line-strong); background: var(--rv-head); color: var(--rv-ink-2); font-size: .82rem !important; font-weight: 650; line-height: 1.25; white-space: nowrap; }
-.goods-page .rv-grid tfoot small { color: var(--rv-ink-3); font-size: .82rem; font-weight: 500; }
-.goods-page .rv-grid .rv-product { text-align: left; }
-.goods-page .rv-grid th.rv-product, .goods-page .rv-grid tfoot td.rv-product { padding-left: 50px !important; }
-.goods-page .rv-grid .rv-product-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.goods-page .rv-grid .rv-th-hint { color: var(--rv-ink-3); font-size: .78rem; font-weight: 500; }
-.goods-page .rv-grid th.rv-qty, .goods-page .rv-grid th.rv-net, .goods-page .rv-grid tfoot .rv-qty, .goods-page .rv-grid tfoot .rv-net { padding-right: 15px !important; }
-.rv-grid .rv-check { width: 36px; text-align: center !important; }
-.rv-grid .rv-num { width: 58px; color: var(--rv-ink-3); text-align: left !important; }
-.rv-grid .rv-qty { width: 96px; }
-.rv-grid .rv-net { width: 168px; }
-.rv-grid .rv-include { width: 76px; text-align: center !important; }
-.rv-grid .rv-remove-col { width: 40px; text-align: center !important; }
-
-/* Закреплены при горизонтальной прокрутке: галочка, № с состоянием и товар. */
-.goods-page .rv-grid .rv-check { position: sticky; left: 0; z-index: 2; }
-.goods-page .rv-grid .rv-num { position: sticky; left: 36px; z-index: 2; }
-.goods-page .rv-grid .rv-product { position: sticky; left: 94px; z-index: 2; box-shadow: inset -1px 0 0 var(--rv-line-strong); }
-.goods-page .rv-grid th.rv-check, .goods-page .rv-grid th.rv-num, .goods-page .rv-grid th.rv-product { z-index: 4; }
-.goods-page .rv-grid input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--rv-green); cursor: pointer; }
-
-.rv-num-cell { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding-left: 2px; }
-.rv-state { display: inline-grid; flex: 0 0 auto; place-items: center; width: 18px; height: 18px; border-radius: 50%; }
-.rv-state.ok { background: #e2f2e8; color: #1a6a3e; }
-.rv-state.bad { background: var(--rv-bad); color: #fff; }
-.rv-state.warn { background: #f3c548; color: #3d2c00; }
-.rv-state.todo { border: 1.5px dashed #b88a1e; color: #75520a; }
-.rv-state.changed { background: #dfe8f8; color: var(--rv-changed); }
-.rv-state.off { background: #e9edea; color: var(--rv-ink-3); }
-/* Ошибка прошлого расчёта — тот же цвет, но значок обведён: не актуальная проверка. */
-.rv-state.past { box-shadow: 0 0 0 2px #fff, 0 0 0 3px currentColor; }
-.rv-state.bad.past { box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--rv-bad); }
-
-/* Подсветка строк: ошибка, предупреждение, изменена, выбрана, исключена. */
-.goods-page .rv-grid tbody tr:hover td { background: #eef5f0; }
-.goods-page .rv-grid tbody tr.rv-row-bad td { background: var(--rv-bad-row); }
-.goods-page .rv-grid tbody tr.rv-row-warn td, .goods-page .rv-grid tbody tr.rv-row-todo td { background: var(--rv-warn-row); }
-.goods-page .rv-grid tbody tr.rv-row-changed.attention td { background: var(--rv-changed-row); }
-.goods-page .rv-grid tbody tr.rv-row-bad:hover td { background: #fcebeb; }
-.goods-page .rv-grid tbody tr.rv-row-warn:hover td, .goods-page .rv-grid tbody tr.rv-row-todo:hover td { background: #fdf4dc; }
-.goods-page .rv-grid tbody tr.rv-selected td { background: #e3f1e8; }
-.goods-page .rv-grid tbody tr.rv-excluded td:not(.rv-check):not(.rv-include):not(.rv-remove-col) > * { opacity: .55; }
-.goods-page .rv-grid .rv-empty-filter td { padding: 28px 16px !important; color: var(--rv-ink-2); text-align: center; }
-
-/* Итого — закреплено внизу. */
-.goods-page .rv-grid tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid var(--rv-line-strong); border-bottom: 0; background: var(--rv-head); color: #17331f; font-weight: 700; }
-.goods-page .rv-grid tfoot td.rv-check, .goods-page .rv-grid tfoot td.rv-num, .goods-page .rv-grid tfoot td.rv-product { z-index: 4; }
 
 /* ── Нижняя строка: статус сохранения, «…» (очистить), сохранить, рассчитать ── */
 .rv-step .rv-actions { flex: 0 0 auto; }
@@ -168,21 +119,17 @@
 .rv-step .rv-actions .rv-more-menu button.rv-clear:hover:not(:disabled) { background: #fdecec; color: var(--rv-bad); }
 .rv-step .rv-actions .btn-save-draft { border-color: #b8cfc0; color: var(--rv-green-dark); }
 
-/* Компактно: одна строка на товар — фото меньше, код в строку с названием, причина остаётся. */
-.rv-step.compact .rv-product-grid { grid-template-columns: 24px minmax(120px, 1fr) minmax(0, max-content); }
-.rv-step.compact .rv-photo { grid-row: auto; width: 24px; height: 24px; }
-.goods-page .rv-step.compact .rv-grid .rv-thumb, .rv-step.compact .rv-photo-add.rv-photo-empty { width: 24px; height: 24px; }
-.goods-page .rv-step.compact .rv-grid td { padding-block: 3px !important; }
-.goods-page .rv-step.compact .rv-grid .rv-code-line { max-width: 300px; }
-.goods-page .rv-step.compact .rv-grid .rv-other-names { display: none; }
-
-@media (max-width: 1500px) {
-  .rv-grid .rv-net { width: 150px; }
-}
-@media (max-width: 1280px) {
-  .goods-page .rv-grid th.rv-product .rv-th-hint { display: none; }
-}
 @media (max-width: 900px) {
   .rv-filterbar { flex-wrap: wrap; }
   .rv-density { margin-left: 0; }
 }
+
+/* Под листом: пустой фильтр и «Итого» по строкам в расчёте. */
+.rv-step .rv-empty-filter { margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--rv-line); color: var(--rv-ink-2); font-size: .86rem; }
+/* Лист забирает свободную высоту карточки: при малом числе строк подвал остаётся внизу. */
+.rv-step .rv-card > .xs-wrap { flex: 1 1 auto; align-content: start; }
+/* «Итого» и кнопки — один подвал карточки: общий фон, без линии между ними. */
+.rv-totals { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; margin: 0; padding: 10px 14px 0; border-top: 1px solid var(--xl-head-line); background: #fbfcfb; color: var(--rv-ink-2); font-size: .86rem; font-variant-numeric: tabular-nums; }
+.rv-step .rv-totals + .rv-actions { border-top: 0; }
+.rv-totals b { color: #17331f; }
+.rv-totals small { margin-left: -12px; color: var(--rv-ink-3); font-size: .8rem; }

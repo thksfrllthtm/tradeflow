@@ -76,7 +76,7 @@ export function useRiskIndicatorsPanel({ admin, onOpen }: { admin: boolean; onOp
     </div>
     {profiles === null ? <p className="sir-empty">{error ? '' : 'Загрузка…'}</p>
       : profiles.length === 0 ? <p className="sir-empty">{admin ? 'Профили ещё не загружены. Загрузите файлы «24_прил CN.xlsx», «25_прил CN.xlsx», «26_прил CN.xlsx».' : 'Профили ещё не загружены администратором.'}</p>
-      : <table className="sir-profiles">
+      : <table className="sheet sir-profiles">
         <thead><tr><th>Профиль риска</th><th className="sir-num">Кодов</th><th>Группы стран (колонки файла)</th><th>Загружен</th>{admin && <th aria-label="Действия" />}</tr></thead>
         <tbody>{profiles.map((profile) => <tr key={profile.id}>
           <td><b>{profile.number}</b>{profile.fileName && <small>{profile.fileName}</small>}</td>

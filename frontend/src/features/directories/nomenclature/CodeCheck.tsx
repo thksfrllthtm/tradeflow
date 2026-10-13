@@ -1,3 +1,4 @@
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuDate } from '@/shared/lib/dates'
@@ -87,7 +88,7 @@ export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: bo
         {rows.map((row) => {
           const item = row.nomenclature
           return <li key={row.code} className={row.status}>
-            <code>{row.code}</code>
+            <CopyCode code={row.code} />
             <span className={`code-check-status ${row.status}`}>{statusText[row.status]}</span>
             <span className="code-check-name">
               {item ? <>{nameParts(item.name).slice(-1)[0]}<em> · ЕТТ {item.tariffText || 'не указана'}{item.kz && ` · РК ${item.kz.rateText}${item.kz.active ? '' : ` (${item.kz.status})`}`}{item.vatPercent && ` · НДС ${item.vatPercent}%`}</em></>

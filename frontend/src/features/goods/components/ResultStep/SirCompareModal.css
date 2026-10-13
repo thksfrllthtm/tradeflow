@@ -45,7 +45,7 @@
 .sc-note { margin: 0; color: var(--rs-ink-2); font-size: .88rem; }
 
 /* Строки: группы колонок «Цена за 1 кг» и «Таможенная стоимость», название и код — в две строки. */
-.sc-rows-wrap { flex: 1 1 auto; min-height: 160px; overflow: auto; border: 1px solid var(--rs-line); border-radius: 10px; }
+.sc-rows-wrap { flex: 1 1 auto; min-height: 160px; overflow: auto; border: 1px solid var(--xl-head-line); border-radius: 2px; }
 .sc-rows { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .88rem; font-variant-numeric: tabular-nums; }
 .sc-rows th, .sc-rows td { padding: 7px 12px; border-bottom: 1px solid var(--rs-line); text-align: right; white-space: nowrap; }
 .sc-rows thead { position: sticky; top: 0; z-index: 1; }
@@ -64,7 +64,7 @@
 .sc-rows .sc-name { width: 40%; max-width: 380px; text-align: left; }
 .sc-rows td.sc-name { white-space: normal; }
 .sc-name-text { display: block; overflow: hidden; color: var(--rs-ink); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.sc-rows td.sc-name code { display: block; margin-top: 1px; color: var(--rs-ink-3); font-size: .78rem; }
+.sc-rows td.sc-name code, .sc-rows td.sc-name .copy-code { display: block; margin-top: 1px; color: var(--rs-ink-3); font-size: .78rem; }
 .sc-none { color: var(--rs-ink-3); }
 
 @media (max-width: 760px) {

@@ -102,14 +102,13 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
         </div>
       </div>
       <div className={loading ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-        <table className="dir-table dc-table">
-          <thead><tr><th className="dc-photo-col">Фото</th><th>Как в инвойсе</th><th>Итог</th><th className="dc-code-col">Код</th><th className="dc-status-col">Статус</th><th className="dc-from-col">Откуда</th></tr></thead>
+        <table className="sheet sheet-rownum dir-table dc-table">
+          <thead><tr><th className="dc-photo-col">Фото</th><th>Итог</th><th className="dc-code-col">Код</th><th className="dc-status-col">Статус</th><th className="dc-from-col">Откуда</th></tr></thead>
           <tbody>
-            {items.length === 0 ? <tr><td colSpan={6} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
+            {items.length === 0 ? <tr><td colSpan={5} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
               : items.map((item) => <tr key={item.id} onClick={() => setOpenId(item.id)}>
                 <td className="dc-photo-col">{item.thumb ? <img src={item.thumb} alt="" /> : <span className="dc-nophoto" aria-hidden="true" />}</td>
-                <td className="dc-names"><span>{item.invoiceName || item.supplierName || '—'}</span>{item.supplierName && item.supplierName !== item.invoiceName && <small>{item.supplierName}</small>}</td>
-                <td className="dc-names"><span>{item.finalName || <span className="dir-none">—</span>}</span></td>
+                <td className="dc-names"><span>{item.finalName || item.invoiceName || item.supplierName || <span className="dir-none">—</span>}</span></td>
                 <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <small className="dc-warn">нет в номенклатуре</small>}</td>
                 <td className="dc-status-col"><span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>{item.agentCorrect === false && <small className="dc-warn" title={`ИИ предлагал ${formatCode(item.agentCode)}`}>ИИ ошибся</small>}{item.agentCorrect === true && <small className="dc-ok">ИИ верно</small>}</td>
                 <td className="dc-from-col"><span>{decisionSourceLabels[item.source]}</span><small>{item.createdByName || '—'} · {formatRuDate(item.createdAt.slice(0, 10))}</small></td>

@@ -1,3 +1,4 @@
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { GoodsCalculationResult, GoodsItemInput, ItpSaved, SirParams, SirResult } from '@/shared/types/goods'
 import { moneyText, weightText } from '@/shared/lib/rounding'
@@ -12,7 +13,7 @@ import { ResultSummary } from './ResultSummary'
 import { SirControls } from './SirControls'
 import { SirCompareModal } from './SirCompareModal'
 import { plural } from './errorGroups'
-import { display, displayNumber, dutyRateText, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
+import { displayNumber, dutyRateText, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
 import '../../goods.css'
 import './ResultStep.css'
 
@@ -275,7 +276,7 @@ export function ResultStep({
 
         <div className="goods-table-top-scroll rs-top-scroll" ref={topScrollRef} onScroll={() => syncHorizontalScroll('top')} aria-hidden="true"><div /></div>
         <div className="rs-table-wrap" ref={tableWrapRef} onScroll={() => syncHorizontalScroll('body')}>
-          <table className="rs-table" ref={tableRef} style={{ ['--rs-num-w' as string]: numWidth }}>
+          <table className="sheet rs-table" ref={tableRef} style={{ ['--rs-num-w' as string]: numWidth }}>
             <caption className="rs-sr">Строки расчёта: цену единицы можно менять; Enter — следующая строка, Esc — вернуть цену</caption>
             <thead>
               <tr>
@@ -289,7 +290,7 @@ export function ResultStep({
                   <th scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD</th>
                 </> : <>
                   <th scope="col" title="Вес нетто; под ним — брутто">Нетто, кг</th>
-                  <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD <span className="rs-th-hint">вводится</span></th>
+                  <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD</th>
                   <th scope="col">Стоимость, USD</th>
                 </>}
                 {delivery && <th scope="col">Доставка, USD</th>}
@@ -337,7 +338,7 @@ export function ResultStep({
                     <td className={isExpanded ? 'rs-name open' : 'rs-name'}>
                       <span className="rs-name-line">
                         <span className="rs-name-text" title={name}>{name}</span>
-                        <code>{display(item.code || source?.code)}</code>
+                        {item.code || source?.code ? <CopyCode code={item.code || source?.code || ""} /> : <code>—</code>}
                       </span>
                       {issues.length > 0 && <button type="button" id={reasonId} className={`rs-reason ${state}`} aria-expanded={isExpanded} onClick={() => toggleExpanded(index)} title={isExpanded ? 'Свернуть' : issues.join('\n')}>
                         {isExpanded

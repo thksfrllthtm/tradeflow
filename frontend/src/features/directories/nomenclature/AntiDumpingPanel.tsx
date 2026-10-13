@@ -49,7 +49,7 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
     </header>
     {notice && <p className="dir-transfer-ok" role="status">{notice}</p>}
     {error && <p className="dir-transfer-error" role="alert">{error}</p>}
-    {loading ? <p className="ad-empty">Загрузка…</p> : measures.length === 0 ? <p className="ad-empty">Мер нет.</p> : <div className="ad-table-wrap"><table className="ad-table">
+    {loading ? <p className="ad-empty">Загрузка…</p> : measures.length === 0 ? <p className="ad-empty">Мер нет.</p> : <div className="ad-table-wrap"><table className="sheet ad-table">
       <thead><tr><th>Мера</th><th>Товар</th><th>Страна → ставка для прочих производителей</th><th>Коды ТН ВЭД</th><th>Действует</th><th aria-label="Решение" /></tr></thead>
       <tbody>{measures.map((measure) => {
         const expanded = open === measure.number

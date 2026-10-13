@@ -1,4 +1,5 @@
-import { ChangeEvent, useEffect, useState } from 'react'
+import { ChangeEvent, Fragment, useEffect, useState } from 'react'
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -144,16 +145,21 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
       </div>
 
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-        <table className="dir-table nom-table">
+        <table className="sheet sheet-rownum dir-table nom-table">
           <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Наименование</th><th className="nom-rate">Пошлина ЕТТ</th><th className="nom-kz" title="Ставка ниже ЕТТ по обязательствам Казахстана в ВТО">Ставка РК</th><th className="nom-vat">НДС</th><th className="nom-ad" title="Антидемпинговая пошлина ЕАЭС сверх ЕТТ, % для прочих производителей">Антидемпинг</th><th className="nom-link" aria-label="Подробнее" /></tr></thead>
           <tbody>
             {items.length === 0 ? <tr><td colSpan={7} className="dir-empty">{loading ? 'Загрузка…'
               : !source ? admin ? <>Номенклатура ещё не загружена. Скачайте Excel на <a href="https://www.tws.by/tws/tnved/download" target="_blank" rel="noreferrer">tws.by</a> и нажмите «Загрузить файл TWS».</> : 'Номенклатура ещё не загружена администратором.'
               : empty ? 'Ничего не найдено. Проверьте код или попробуйте другие слова.' : ''}</td></tr>
-              : items.map((item) => {
+              : items.map((item, index) => {
                 const parts = nameParts(item.name)
-                return <tr key={item.code}>
-                  <td className="c-code"><code>{item.code}</code></td>
+                // Список отсортирован по коду: перед первым кодом товарной позиции — строка-заголовок.
+                const heading = item.code.slice(0, 4)
+                const headingRow = heading !== items[index - 1]?.code.slice(0, 4) && <tr className="nom-heading sheet-section">
+                  <td colSpan={7}>Товарная позиция <b>{heading}</b></td>
+                </tr>
+                return <Fragment key={item.code}>{headingRow}<tr>
+                  <td className="c-code"><CopyCode code={item.code} /></td>
                   <td className="nom-name" title={parts.join(' ')}>
                     {parts.length > 1 && <small>{parts.slice(0, -1).join(' ')}</small>}
                     <span>{parts[parts.length - 1]}</span>
@@ -163,7 +169,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
                   <td className="nom-vat">{item.vatPercent ? `${item.vatPercent}%` : <span className="dir-none">—</span>}</td>
                   <td className="nom-ad">{item.antiDumping?.length ? item.antiDumping.map((ref) => <AntiDumpingCell key={ref.number} measure={ref} />) : <span className="dir-none">—</span>}</td>
                   <td className="nom-link">{item.detailsUrl && <a href={item.detailsUrl} target="_blank" rel="noreferrer" title={`Код ${item.code} на ${source?.source ?? 'сайте источника'}: примечания, документы, меры`}>Подробнее</a>}</td>
-                </tr>
+                </tr></Fragment>
               })}
           </tbody>
         </table>

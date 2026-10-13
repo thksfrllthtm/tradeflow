@@ -35,14 +35,14 @@
 .dir-archive input { width: 16px; height: 16px; margin: 0; accent-color: #24704a; }
 
 /* Таблица: шапка закреплена, прокручивается только список */
-.dir-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; transition: opacity .15s; }
+.dir-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid var(--xl-head-line); border-radius: 2px; background: #fff; transition: opacity .15s; }
 .dir-table-wrap.dir-loading { opacity: .6; }
 .dir-table { width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
 .dir-table th {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 9px 12px;
+  padding: 6px 10px;
   border-bottom: 1px solid #e3eae5;
   background: #f7faf8;
   color: #6b7a71;
@@ -51,7 +51,7 @@
   text-align: left;
   white-space: nowrap;
 }
-.dir-table td { padding: 9px 12px; border-bottom: 1px solid #eef2ef; color: #34443b; vertical-align: middle; }
+.dir-table td { padding: 4px 10px; border-bottom: 1px solid #eef2ef; color: #34443b; vertical-align: middle; }
 .dir-table tbody tr { cursor: pointer; }
 .dir-table tbody tr:hover td { background: #f6faf7; }
 .dir-table tbody tr:last-child td { border-bottom: 0; }
@@ -66,7 +66,7 @@
 .dir-table .c-status { width: 170px; }
 .dir-table .c-actions { width: 104px; }
 
-.dir-table code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 700; white-space: nowrap; }
+.dir-table code, .dir-table .copy-code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 700; white-space: nowrap; }
 .dir-table .dir-name {
   display: -webkit-box;
   max-width: 100%;

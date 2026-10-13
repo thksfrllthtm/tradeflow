@@ -56,7 +56,7 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .ad-head p a { color: #1b6b43; }
 .ad-head .dir-transfer-button { flex: 0 0 auto; }
 .ad-empty { margin: 0; color: #8a968f; font-size: .82rem; }
-.ad-table-wrap { max-height: 520px; overflow: auto; border: 1px solid #edf1ee; border-radius: 9px; }
+.ad-table-wrap { max-height: 520px; overflow: auto; border: 1px solid var(--xl-head-line); border-radius: 2px; }
 .ad-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
 .ad-table th { position: sticky; top: 0; z-index: 1; padding: 7px 10px; border-bottom: 1px solid #dfe7e1; background: #f5f8f6; color: #5d6d63; font-size: .72rem; font-weight: 650; text-align: left; white-space: nowrap; }
 .ad-table td { padding: 8px 10px; border-bottom: 1px solid #f0f3f1; color: #1f2d24; vertical-align: top; }
@@ -100,3 +100,8 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .nom-change-text small { display: block; color: #56665c; }
 .nom-change-more { padding: 6px 12px; color: #8a968f; }
 @media (max-width: 640px) { .nom-change { grid-template-columns: auto 1fr; } .nom-change-text { grid-column: 1 / -1; } }
+
+/* Строка-заголовок товарной позиции (первые 4 цифры) и приглушённый префикс позиции в коде. */
+.nom-table tr.nom-heading td { padding: 4px 12px; background: var(--xl-head); color: #595959; font-size: .72rem; font-weight: 600; }
+.nom-table tr.nom-heading b { margin-left: 4px; color: #1b6b43; font-size: .8rem; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+.nom-table tbody tr.nom-heading:hover td { background: var(--xl-head); box-shadow: none; }

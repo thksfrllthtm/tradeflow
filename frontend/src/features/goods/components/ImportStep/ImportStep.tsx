@@ -96,7 +96,7 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
         <p className="im-xp-hint">Нажмите на заголовок колонки, чтобы выбрать, что в ней. Выделяйте ячейки мышью (с Shift — диапазон), Ctrl+C — скопировать в Excel. Флажок в первой колонке — импортировать строку.</p>
         <ExcelPreview headers={headers} rows={rawRows} fields={fields} fieldForHeader={(header) => mappedFieldForHeader(header, mapping)} onFieldChange={(header, field) => setMappingForHeader(header, field as keyof GoodsMapping | '')} onIncludedChange={setRawRowIncluded} />
       </> : <div className="im-table-wrap">
-        <table className="im-table">
+        <table className="sheet im-table">
           <thead><tr>
             <th className="im-check"><input type="checkbox" checked={rawRows.length > 0 && includedCount === rawRows.length} onChange={(event) => rawRows.forEach((row) => setRawRowIncluded(row.sourceRow, event.target.checked))} aria-label="Импортировать все строки" title="Импортировать все строки" /></th>
             <th className="im-row" title="Номер строки в Excel">Стр.</th>

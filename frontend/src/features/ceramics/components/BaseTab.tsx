@@ -91,7 +91,7 @@ export function BaseTab({ user, types, onBaseChanged }: Props) {
     {panel === 'import' && <BaseImport onCancel={() => setPanel('')} onImported={(message) => changed(message)} />}
 
     <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-      <table className="dir-table cer-table">
+      <table className="sheet sheet-rownum dir-table cer-table">
         <thead><tr>
           <th>Наименование</th><th className="c-mark">Марка</th><th className="c-price">Цена</th><th className="c-actions" aria-label="Действия" />
         </tr></thead>

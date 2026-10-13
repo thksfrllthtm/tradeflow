@@ -23,7 +23,7 @@ p.code-check-note { margin: 0; }
 .code-check-list li { display: grid; grid-template-columns: 104px 136px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; padding: 5px 10px; border-top: 1px solid #eef2ef; font-size: .8rem; }
 .code-check-list li:first-child { border-top: 0; }
 .code-check-list li.missing, .code-check-list li.unknown { background: #fff8f6; }
-.code-check-list code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-weight: 700; }
+.code-check-list code, .code-check-list .copy-code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-weight: 700; }
 .code-check-list li.missing code, .code-check-list li.unknown code { color: #9a3024; }
 .code-check-status { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .code-check-status.missing { background: #fde7e3; color: #9a3024; }

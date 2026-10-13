@@ -13,6 +13,6 @@
 @media (max-width: 640px) {
   .sir-profiles thead { display: none; }
   .sir-profiles tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 8px 0; border-bottom: 1px solid #eef2ef; }
-  .sir-profiles td { padding: 0; border: 0; }
+  table.sheet.sir-profiles td { padding: 0; border: 0; }
   .sir-profiles td:nth-child(3) { grid-column: 1 / -1; }
 }

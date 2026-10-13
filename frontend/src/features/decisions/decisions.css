@@ -7,8 +7,8 @@
 .dc-stats .dc-stat b { color: #1f2d24; }
 .dc-stats .dc-stat.warn { border-color: #f0d58a; background: #fff8e3; color: #6b4d0c; }
 
-.dc-table .dc-photo-col { width: 64px; }
-.dc-table .dc-photo-col img, .dc-nophoto { display: block; width: 44px; height: 44px; border: 1px solid #e6ece8; border-radius: 7px; object-fit: cover; background: #f5f8f6; }
+.dc-table .dc-photo-col { width: 52px; }
+.dc-table .dc-photo-col img, .dc-nophoto { display: block; width: 32px; height: 32px; border: 1px solid #e6ece8; border-radius: 3px; object-fit: cover; background: #f5f8f6; }
 .dc-table .dc-names { max-width: 0; line-height: 1.35; }
 .dc-table .dc-names > span { display: -webkit-box; overflow: hidden; color: #1f2d24; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .dc-table .dc-names small { display: block; overflow: hidden; color: #8a968f; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }

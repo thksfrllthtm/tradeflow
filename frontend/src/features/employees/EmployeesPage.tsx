@@ -127,7 +127,7 @@ export function EmployeesPage({ user, onLogout }: { user: User; onLogout: () => 
         </div>
       </form>}
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-        <table className="dir-table emp-table">
+        <table className="sheet sheet-rownum dir-table emp-table">
           <thead><tr><th>Сотрудник</th><th>Роль</th><th className="c-status">Статус</th><th className="emp-count-col">Сметы</th><th>Действия</th></tr></thead>
           <tbody>
             {items.length === 0 ? <tr><td colSpan={5} className="dir-empty">{loading ? 'Загрузка…' : 'Сотрудников пока нет.'}</td></tr>

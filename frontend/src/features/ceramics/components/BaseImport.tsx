@@ -136,7 +136,7 @@ export function BaseImport({ onCancel, onImported }: { onCancel: () => void; onI
       </div>
       {(invalid > 0 || duplicates > 0) && <label className="cer-check"><input type="checkbox" checked={onlyProblems} onChange={(event) => setOnlyProblems(event.target.checked)} />Показать только строки с ошибками и повторы ({invalid + duplicates}) — они всегда вверху таблицы</label>}
       <div className="dir-table-wrap cer-preview">
-        <table className="dir-table cer-table">
+        <table className="sheet dir-table cer-table">
           <thead><tr><th>Строка</th><th>Наименование</th><th className="c-mark">Марка</th><th className="c-price">Цена</th><th>Проверка</th></tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td colSpan={5} className="dir-empty">Выберите колонки наименования, марки и цены.</td></tr>}

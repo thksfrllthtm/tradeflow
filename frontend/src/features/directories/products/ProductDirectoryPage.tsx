@@ -3,6 +3,7 @@ import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 import { nomenclatureApi } from '../nomenclature/nomenclatureApi'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { isAdmin, User } from '@/shared/types/user'
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { verificationStatusLabel } from '../common/directoryLabels'
@@ -78,7 +79,7 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
       <DirectoryToolbar query={query} placeholder="Поиск по названию, коду или синониму" status={status} showArchived={showArchived} onQuery={setQuery} onStatus={setStatus} onShowArchived={setShowArchived} />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-        <table className="dir-table product-table">
+        <table className="sheet sheet-rownum dir-table product-table">
           <thead><tr><th>Товар</th><th className="c-tnved">Код ТН ВЭД и ставки</th><th className="c-num">ИТС, USD/кг</th><th className="c-unit">Ед.</th><th className="c-status">Статус</th><th className="c-actions" aria-label="Действия" /></tr></thead>
           <tbody>
             {items.length === 0 ? <tr><td colSpan={6} className="dir-empty">{loading ? 'Загрузка…' : filtered ? 'Ничего не найдено. Измените поиск или фильтр.' : canEdit ? 'Карточек товаров пока нет. Добавьте первую.' : 'Карточек товаров пока нет.'}</td></tr>
@@ -88,7 +89,7 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
                   {(item.nameZh || item.synonymsRu[0]) && <small>{[item.nameZh, item.synonymsRu[0] && `синоним: ${item.synonymsRu[0]}`].filter(Boolean).join(' · ')}</small>}
                 </td>
                 <td className="c-tnved">
-                  {item.code ? <code>{item.code}</code> : <span className="dir-warn">Код не указан</span>}
+                  {item.code ? <CopyCode code={item.code} /> : <span className="dir-warn">Код не указан</span>}
                   {codes[item.code] && <small>ЕТТ {codes[item.code].tariffText || 'не указана'}{codes[item.code].vatPercent && ` · НДС ${codes[item.code].vatPercent}%`}</small>}
                 </td>
                 <td className="c-num">{item.companyCoefficient || <span className="dir-none">—</span>}</td>

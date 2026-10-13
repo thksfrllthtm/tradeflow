@@ -1,3 +1,4 @@
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useEffect, useRef, useState } from 'react'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { decimalText, moneyText } from '@/shared/lib/rounding'
@@ -114,7 +115,7 @@ export function BudgetStatus({ budget }: { budget: BudgetDistributionState }) {
       <summary>Пояснения к ценам <span>· {explanations.length} {productsLabel}</span></summary>
       <ul>
         {explanations.map((explanation) => <li key={`${explanation.code}-${explanation.rows.join(',')}`}>
-          <code>{explanation.code}</code>
+          <CopyCode code={explanation.code} />
           <span className="ai-names" title={explanation.names}>{explanation.names}</span>
           <b>{explanation.price} USD</b>
           <span className="ai-reason">{explanation.reason}</span>

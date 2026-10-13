@@ -57,7 +57,7 @@ export function FilePreview({ parsed, mapping, disabled, onMapping, onRowsInclud
       </button>}
     </div>
     <div className="dir-table-wrap cer-preview">
-      <table className={showAll ? 'dir-table cer-table cer-raw-table all' : 'dir-table cer-table cer-raw-table'}>
+      <table className={showAll ? 'sheet dir-table cer-table cer-raw-table all' : 'sheet dir-table cer-table cer-raw-table'}>
         <thead><tr>
           <th className="c-check"><input type="checkbox" aria-label="Все строки" disabled={disabled} checked={included === parsed.rows.length && included > 0}
             ref={(input) => { if (input) input.indeterminate = included > 0 && included < parsed.rows.length }}

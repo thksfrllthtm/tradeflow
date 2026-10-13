@@ -32,7 +32,7 @@ export function ResultsTable({ groups, types, running, onDraft, onDraftPrice, on
   })
 
   return <div className="dir-table-wrap cer-results">
-    <table className="dir-table cer-table">
+    <table className="sheet sheet-rownum dir-table cer-table">
       <thead><tr>
         <th className="c-photo" aria-label="Фото" />
         <th className="c-mark">Марка</th>

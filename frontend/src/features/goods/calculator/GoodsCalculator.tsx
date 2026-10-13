@@ -2,7 +2,6 @@ import { ChangeEvent, ReactNode, useCallback, useEffect, useRef, useState } from
 import { mappedFieldForHeader, normalizeStoredMapping } from '../lib/excelColumns'
 import { mergeStoredPhotos, photosOf } from '@/shared/lib/itemPhotos'
 import { storageKey } from '../lib/localDraft'
-import { useSyncedHorizontalScroll } from '../hooks/useSyncedHorizontalScroll'
 import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimateSummary, GoodsItemInput, GoodsParams, GoodsParseRow, GoodsResultTools, GoodsSourceSnapshot, SheetInfo, SirParams } from '@/shared/types/goods'
 import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { CalculatorActivity, GoodsMapping } from '../types'
@@ -95,7 +94,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     savedSnapshotRef.current = draftSnapshot(savedParams, savedItems, savedResult)
     setSavedVersion((version) => version + 1)
   }
-  const { tableWrapRef, topScrollRef, syncHorizontalScroll } = useSyncedHorizontalScroll(step === 2)
   const calculationRequestRef = useRef(0)
 
   const closeRowPhotos = useCallback(() => setRowPhotos(null), [])
@@ -186,7 +184,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     return () => { active = false }
   }, [estimateId, localUpdatedStorageKey])
 
-  const { setItem, addManualPhoto, addEmptyRow, removeRow, resetAutomaticNet } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
+  const { addManualPhoto, addEmptyRow, removeRow } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
   const { setMappingForHeader, setRawRowIncluded } = columnMappingActions(setMapping, setRawRows)
   const { recalculateResultPrice, restoreInitialResult, undoLastPriceChange, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
   // Подбор под бюджет и сверка по ИТП хранятся в смете (параметр resultTools) и сохраняются автосохранением.
@@ -413,12 +411,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     directorySearch.restart()
   }
 
-  function clearRowDirectory(id: string) {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, standardName: '', code: '', coefficient: '', productDirectoryId: undefined, directorySnapshot: undefined } : item))
-    setSelectedForDirectory((current) => current.filter((selected) => selected !== id))
-    setResult(null)
-  }
-
   // Результат сохраняется на сервер автосохранением, как и любая другая правка.
   async function calculate(itemsOverride?: GoodsItemInput[], updateInputItems = true, paramsOverride?: GoodsParams) {
     const itemsToCalculate = itemsOverride ?? items
@@ -533,7 +525,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }
 
   const includedCount = items.filter((item) => !item.excluded).length
-  const allDirectorySelected = items.length > 0 && selectedForDirectory.length === items.length
   const hasSource = headers.length > 0 || items.length > 0
   const pickerRows = items.filter((item) => pickerTargets.includes(item.id ?? ''))
   // № — как в таблице; строка Excel — в скобках, если строка из файла.
@@ -597,19 +588,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
          usdRateNotice={usdRateNotice}
         deliverySummary={deliverySummary}
         feeSummary={feeSummary}
-        tableWrapRef={tableWrapRef}
-        topScrollRef={topScrollRef}
         includedCount={includedCount}
-        allDirectorySelected={allDirectorySelected}
-        setItems={setItems}
+        editItems={(next) => { setItems(next); setResult(null) }}
         setSelectedForDirectory={setSelectedForDirectory}
         setParamsOpen={setParamsOpen}
          setParam={setParam}
          loadUsdRate={loadUsdRate}
-        syncHorizontalScroll={syncHorizontalScroll}
         openDirectoryPicker={openDirectoryPicker}
-        clearRowDirectory={clearRowDirectory}
-        setItem={setItem}
         removeRow={removeRowWithUndo}
         removedRow={removedRow ? { rowNumber: removedRow.index + 1, name: removedRow.item.name } : null}
         restoreRemovedRow={restoreRemovedRow}
@@ -617,7 +602,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         reviewCheck={reviewCheck}
         openRowPhotos={(itemId, index) => setRowPhotos({ itemId, index })}
         addManualPhoto={addManualPhoto}
-        resetAutomaticNet={resetAutomaticNet}
         addEmptyRow={addEmptyRow}
         calculate={calculate}
         saveDraft={saveDraft}

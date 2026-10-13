@@ -38,6 +38,6 @@ export function CopyCode({ code, className }: Props) {
   return <button type="button" className={['copy-code', copied ? 'copied' : '', className].filter(Boolean).join(' ')} onClick={(event) => { event.stopPropagation(); void copy() }} onCopy={onCopy}
     title={copied ? 'Скопировано' : `Скопировать код без пробелов: ${digits}`} aria-label={`Код ${formatCode(code)}, скопировать`}>
     <span>{formatCode(code)}</span>
-    <i aria-hidden="true">{copied ? '✓ скопировано' : '⧉'}</i>
+    <i aria-hidden="true">{copied ? '✓' : '⧉'}</i>
   </button>
 }

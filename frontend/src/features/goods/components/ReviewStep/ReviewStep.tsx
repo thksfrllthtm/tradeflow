@@ -1,7 +1,6 @@
-import { Dispatch, RefObject, SetStateAction, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
 import { GoodsCalculationResult, GoodsItemInput, GoodsParams } from '@/shared/types/goods'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
-import { ReviewRow } from '../ReviewRow/ReviewRow'
 import { reviewStatus, rowMissing } from '../ReviewRow/reviewStatus'
 import { formatWeight } from '../../lib/netWeight'
 import { ReviewCheck } from '../../lib/reviewCheck'
@@ -10,6 +9,11 @@ import { useStableCallback } from '@/shared/hooks/useStableCallback'
 import { AgentRowStatus } from '../../agent/agentApi'
 import { storageFailed } from '../../lib/storageNotice'
 import { RowDecisionState } from '../../hooks/useRowDecisions'
+import { emptyItem } from '../../lib/rowActions'
+import { rowId } from '../../lib/excelColumns'
+import { lookupNomenclature, withNomenclatureRates } from '../../lib/nomenclatureRates'
+import { ReviewSheet, RowAction, SheetApi, SheetRowView } from '../ReviewSheet/ReviewSheet'
+import { applySheetChanges, SheetChange } from '../ReviewSheet/sheetModel'
 import '../../goods.css'
 import './ReviewStep.css'
 
@@ -27,27 +31,21 @@ type Props = {
   storageNotice: string
   deliverySummary: string
   feeSummary: string
-  tableWrapRef: RefObject<HTMLDivElement | null>
-  topScrollRef: RefObject<HTMLDivElement | null>
   includedCount: number
-  allDirectorySelected: boolean
-  setItems: Dispatch<SetStateAction<GoodsItemInput[]>>
+  // Новые строки сметы из таблицы (правка, вставка, отмена); сбрасывает результат расчёта.
+  editItems: (items: GoodsItemInput[]) => void
   setSelectedForDirectory: Dispatch<SetStateAction<string[]>>
   setParamsOpen: (value: boolean) => void
   setParam: (field: keyof GoodsParams, value: string) => void
   loadUsdRate: () => void
-  syncHorizontalScroll: (source: 'top' | 'body') => void
   openDirectoryPicker: (ids: string[]) => void
-  clearRowDirectory: (id: string) => void
-  setItem: (id: string, field: keyof GoodsItemInput, value: string | boolean | undefined) => void
   removeRow: (id: string) => void
   // Последняя удалённая строка: её можно вернуть на место.
   removedRow: { rowNumber: number; name: string } | null
   restoreRemovedRow: () => void
   dismissRemovedRow: () => void
   openRowPhotos: (id: string, index: number) => void
-  addManualPhoto: (id: string, event: React.ChangeEvent<HTMLInputElement>) => void
-  resetAutomaticNet: (id: string) => void
+  addManualPhoto: (id: string, event: ChangeEvent<HTMLInputElement>) => void
   addEmptyRow: () => void
   calculate: () => void
   saveDraft: () => void
@@ -78,13 +76,54 @@ const checkTime = (value: string) => {
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, tableWrapRef, topScrollRef, includedCount, allDirectorySelected, setItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, syncHorizontalScroll, openDirectoryPicker, clearRowDirectory, setItem, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, resetAutomaticNet, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
+// Отмена и повтор по строкам сметы (Ctrl+Z / Ctrl+Y в таблице): запоминается каждое изменение
+// строк — правка ячеек, вставка, выбор кода, фото, удаление. mergeNext — следующее изменение
+// дополняет последний шаг (ставки, подтянутые к введённому коду, не отдельный шаг отмены).
+function useItemsHistory(items: GoodsItemInput[], replace: (items: GoodsItemInput[]) => void) {
+  const state = useRef({ past: [] as GoodsItemInput[][], future: [] as GoodsItemInput[][], last: items, skip: false, merge: false })
+  useEffect(() => {
+    const history = state.current
+    if (items === history.last) return
+    if (!history.skip && !history.merge) {
+      history.past.push(history.last)
+      if (history.past.length > 100) history.past.shift()
+      history.future = []
+    }
+    history.skip = false
+    history.merge = false
+    history.last = items
+  }, [items])
+  return {
+    undo() {
+      const history = state.current
+      const previous = history.past.pop()
+      if (!previous) return
+      history.future.push(history.last)
+      history.skip = true
+      replace(previous)
+    },
+    redo() {
+      const history = state.current
+      const next = history.future.pop()
+      if (!next) return
+      history.past.push(history.last)
+      history.skip = true
+      replace(next)
+    },
+    mergeNext() { state.current.merge = true },
+  }
+}
+
+export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, includedCount, editItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [density, setDensity] = useState<Density>(storedDensity)
-  const lastCheckedRef = useRef<string | null>(null)
+  const sheetApi = useRef<SheetApi | null>(null)
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  const history = useItemsHistory(items, editItems)
   const excludedCount = items.length - includedCount
   const failed = storageFailed(storageNotice)
-  const setSelectedExcluded = (excluded: boolean) => setItems((current) => current.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, excluded } : item))
+  const setSelectedExcluded = (excluded: boolean) => editItems(items.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, excluded } : item))
 
   // Статус каждой строки — для счётчиков и фильтра (строки считают его сами, чтобы memo работал).
   const rows = items.map((item, index) => {
@@ -98,37 +137,82 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
     errors: rows.filter((row) => row.status.withErrors).length,
     changed: rows.filter((row) => row.status.tone === 'changed').length,
   }
-  const visible = rows.filter((row) => filter === 'all' || (filter === 'attention' ? row.status.attention : filter === 'noCode' ? row.status.noCode : row.status.withErrors))
+  const shownInFilter = (status: (typeof rows)[number]['status']) => filter === 'all' || (filter === 'attention' ? status.attention : filter === 'noCode' ? status.noCode : status.withErrors)
+  const visible = rows.filter((row) => shownInFilter(row.status))
   const visibleIds = visible.map((row) => row.id)
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedForDirectory.includes(id))
-  const someVisibleSelected = visibleIds.some((id) => selectedForDirectory.includes(id))
   // Откуда ошибки: актуальный расчёт или прошлый (строки с тех пор менялись).
   const pastCheck = !result && reviewCheck && Object.keys(reviewCheck.rows).length > 0 ? reviewCheck : null
 
-  // Стабильные обработчики для memo-строк: ввод в одной строке не перерисовывает остальные.
+  // В листе все строки сметы по порядку; фильтр их только скрывает.
   const selectedIds = new Set(selectedForDirectory)
-  const onSelect = useStableCallback((id: string, checked: boolean, range: boolean) => {
-    const last = lastCheckedRef.current
-    lastCheckedRef.current = id
-    // Shift+щелчок — диапазон показанных строк от прошлой отмеченной до этой.
-    const from = last ? visibleIds.indexOf(last) : -1
-    const to = visibleIds.indexOf(id)
-    if (range && from >= 0 && to >= 0 && from !== to) {
-      const span = visibleIds.slice(Math.min(from, to), Math.max(from, to) + 1)
-      setSelectedForDirectory((current) => checked ? [...new Set([...current, ...span])] : current.filter((selected) => !span.includes(selected)))
-      return
+  const sheetRows: SheetRowView[] = rows.map(({ item, id, status }) => ({ item, status, visible: shownInFilter(status), selected: selectedIds.has(id), agent: agentStatuses[id], decision: rowDecisions.stateOf(item) }))
+
+  // Правки листа → строки сметы, отметки строк и ставки для введённых кодов.
+  function applyChanges(changes: SheetChange[]) {
+    const current = itemsRef.current
+    const applied = applySheetChanges(current, changes, params.packageWeightKg, (index) => rowId(0, index))
+    if (applied.items) editItems(applied.items)
+    if (applied.selected.size > 0) {
+      setSelectedForDirectory((selected) => {
+        const next = new Set(selected)
+        applied.selected.forEach((checked, id) => { if (checked) next.add(id); else next.delete(id) })
+        return [...next]
+      })
     }
-    setSelectedForDirectory((current) => checked ? [...current, id] : current.filter((selected) => selected !== id))
-  })
-  const onOpenPicker = useStableCallback((id: string) => openDirectoryPicker([id]))
-  const onClearDirectory = useStableCallback(clearRowDirectory)
-  const onChange = useStableCallback(setItem)
-  const onRemove = useStableCallback(removeRow)
-  const onPhotos = useStableCallback(openRowPhotos)
-  const onUpload = useStableCallback(addManualPhoto)
-  const onResetNet = useStableCallback(resetAutomaticNet)
-  const onAgent = useStableCallback(openAgent)
-  const onSaveDecision = useStableCallback((id: string) => { void rowDecisions.save([id]) })
+    if (applied.codes.size > 0) void loadCodeRates(applied.codes)
+  }
+
+  // Ставки введённого кода — пошлина ЕТТ и НДС из номенклатуры, как при выборе кода в справочнике.
+  async function loadCodeRates(codes: Map<string, string>) {
+    const found = await lookupNomenclature([...codes.values()]).catch(() => null)
+    if (!found) return
+    let changed = false
+    const next = itemsRef.current.map((item) => {
+      const code = codes.get(item.id ?? '')
+      const nomenclature = code && item.code === code ? found.byCode.get(code) : undefined
+      if (!nomenclature) return item
+      changed = true
+      const snapshot = withNomenclatureRates(nomenclature, found.source, { code })
+      return { ...item, standardName: String(snapshot.name ?? ''), directorySnapshot: snapshot }
+    })
+    if (!changed) return
+    history.mergeNext()
+    editItems(next)
+  }
+
+  // Фото добавляется скрытым полем выбора файла: кнопка «+» в ячейке открывает его для строки.
+  const photoInput = useRef<HTMLInputElement>(null)
+  const photoTarget = useRef('')
+  function rowAction(action: RowAction, index: number) {
+    const id = items[index]?.id
+    if (!id) return
+    if (action === 'photos') openRowPhotos(id, 0)
+    else if (action === 'upload') { photoTarget.current = id; photoInput.current?.click() }
+    else if (action === 'picker') openDirectoryPicker([id])
+    else if (action === 'agent') openAgent(id)
+    else if (action === 'decision') void rowDecisions.save([id])
+  }
+
+  function insertRow(index: number) {
+    const current = itemsRef.current
+    editItems([...current.slice(0, index), emptyItem(rowId(0, current.length), params.packageWeightKg), ...current.slice(index)])
+  }
+
+  // Одна строка — с сообщением «Вернуть»; несколько — одним шагом, вернуть можно Ctrl+Z.
+  function deleteRows(indexes: number[]) {
+    const ids = indexes.map((index) => items[index]?.id).filter((id): id is string => Boolean(id))
+    if (ids.length === 1) { removeRow(ids[0]); return }
+    if (ids.length === 0 || !window.confirm(`Удалить строки: ${ids.length}? Вернуть можно Ctrl+Z.`)) return
+    dismissRemovedRow()
+    editItems(itemsRef.current.filter((item) => !ids.includes(item.id ?? '')))
+    setSelectedForDirectory((current) => current.filter((id) => !ids.includes(id)))
+  }
+
+  function toggleAllVisible() {
+    setSelectedForDirectory((current) => allVisibleSelected ? current.filter((id) => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])])
+  }
+
   // Итог сохранения отмеченных строк в базу решений.
   const [decisionNote, setDecisionNote] = useState('')
   async function saveSelectedDecisions() {
@@ -155,14 +239,10 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   // Следующая строка, требующая внимания, после строки с курсором (по кругу): прокрутить и
   // поставить курсор в название.
   function nextProblem() {
-    const problems = visible.filter((row) => row.status.attention).map((row) => row.id)
+    const problems = visible.filter((row) => row.status.attention).map((row) => row.index)
     if (problems.length === 0) return
-    const currentId = (document.activeElement?.closest('tr[data-row-id]') as HTMLElement | null)?.dataset.rowId ?? ''
-    const at = visibleIds.indexOf(currentId)
-    const next = problems.find((id) => visibleIds.indexOf(id) > at) ?? problems[0]
-    const row = document.querySelector<HTMLElement>(`tr[data-row-id="${CSS.escape(next)}"]`)
-    row?.scrollIntoView({ block: 'center' })
-    row?.querySelector<HTMLInputElement>('input.rv-name')?.focus({ preventScroll: true })
+    const at = sheetApi.current?.currentRow() ?? -1
+    sheetApi.current?.focusRow(problems.find((index) => index > at) ?? problems[0])
   }
 
   // Ctrl+S — сохранить сейчас, F8 — следующая строка, требующая внимания.
@@ -269,40 +349,19 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
         <button type="button" className="rv-undo-close" onClick={dismissRemovedRow} aria-label="Закрыть сообщение">×</button>
       </div>}
 
-      <div className="goods-table-top-scroll" ref={topScrollRef} onScroll={() => syncHorizontalScroll('top')} aria-hidden="true"><div /></div>
-      <div className="rv-grid-wrap" ref={tableWrapRef} onScroll={() => syncHorizontalScroll('body')}>
-        <table className="rv-grid">
-          <caption className="rv-sr">Строки сметы: Enter, ↑ ↓ — переход по строкам, F8 — следующая проблема</caption>
-          <thead><tr>
-            <th className="rv-check"><input type="checkbox" checked={allVisibleSelected} ref={(input) => { if (input) input.indeterminate = someVisibleSelected && !allVisibleSelected }} onChange={() => setSelectedForDirectory((current) => allVisibleSelected ? current.filter((id) => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])])} aria-label="Выбрать все показанные строки" title={allDirectorySelected ? 'Выбраны все строки' : 'Выбрать все показанные строки'} /></th>
-            <th className="rv-num" scope="col">№</th>
-            <th className="rv-product" scope="col"><span className="rv-product-head">Товар<span className="rv-th-hint">код ТН ВЭД · подбор</span></span></th>
-            <th className="rv-qty" scope="col" title="Количество мест">Места</th>
-            <th className="rv-qty" scope="col" title="Количество товара в одном месте">Шт. в месте</th>
-            <th className="rv-qty" scope="col" title="Количество товара. Пустое из трёх полей рассчитается: места × штук в месте">Кол-во, шт</th>
-            <th className="rv-qty" scope="col">Брутто, кг</th>
-            <th className="rv-net" scope="col" title="Пустое — рассчитается: брутто − места × вес упаковки">Нетто, кг</th>
-            <th className="rv-include" scope="col" title="Учитывать строку в расчёте">В расчёте</th>
-            <th className="rv-remove-col" scope="col"><span className="rv-sr">Удалить</span></th>
-          </tr></thead>
-          <tbody>
-            {visible.map(({ item, index, id }) => <ReviewRow key={id || index} item={item} rowNumber={index + 1} resultItem={result?.items[index]} pastCheck={result ? undefined : reviewCheck?.rows[id]} selected={selectedIds.has(id)} onSelect={onSelect} onOpenPicker={onOpenPicker} onClearDirectory={onClearDirectory} onChange={onChange} onRemove={onRemove} onPhotos={onPhotos} onUpload={onUpload} onResetNet={onResetNet} defaultPackageWeight={params.packageWeightKg} agentStatus={agentStatuses[id]} onAgent={onAgent} decisionState={rowDecisions.stateOf(item)} onSaveDecision={onSaveDecision} />)}
-            {items.length === 0 && <tr><td colSpan={10} className="goods-empty"><h3>Строк пока нет</h3><p>Загрузите XLSX или добавьте строку вручную.</p></td></tr>}
-            {items.length > 0 && visible.length === 0 && <tr className="rv-empty-filter"><td colSpan={10}>В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => setFilter('all')}>Показать все строки</button></td></tr>}
-          </tbody>
-          {items.length > 0 && <tfoot><tr>
-            <td className="rv-check" />
-            <td className="rv-num" />
-            <td className="rv-product">Итого <small>по строкам в расчёте{filter !== 'all' ? ', не только показанным' : ''}</small></td>
-            <td className="rv-qty">{total(totals.places)}</td>
-            <td />
-            <td className="rv-qty">{total(totals.quantity)}</td>
-            <td className="rv-qty">{total(totals.grossKg)}</td>
-            <td className="rv-net">{total(totals.netKg)}</td>
-            <td colSpan={2} />
-          </tr></tfoot>}
-        </table>
-      </div>
+      {items.length === 0 && <p className="rv-empty-filter">Строк пока нет. Загрузите XLSX или нажмите «+ Строка» — в неё можно вставить строки из Excel (Ctrl+V).</p>}
+      {items.length > 0 && visible.length === 0 && <p className="rv-empty-filter">В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => setFilter('all')}>Показать все строки</button></p>}
+      <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} compact={density === 'compact'} apiRef={sheetApi}
+        onChanges={applyChanges} onAction={rowAction} onSelectAll={toggleAllVisible} onInsertRow={insertRow} onDeleteRows={deleteRows}
+        onPickRows={(indexes) => openDirectoryPicker(indexes.map((index) => items[index]?.id ?? '').filter(Boolean))} onUndo={history.undo} onRedo={history.redo} />
+      <input ref={photoInput} type="file" accept="image/jpeg,image/png" style={{ display: 'none' }} onChange={(event) => { if (photoTarget.current) addManualPhoto(photoTarget.current, event) }} />
+      {items.length > 0 && <p className="rv-totals">
+        <b>Итого</b> <small>по строкам в расчёте{filter !== 'all' ? ', не только показанным' : ''}:</small>
+        <span>места <b>{total(totals.places)}</b></span>
+        <span>кол-во <b>{total(totals.quantity)}</b> шт</span>
+        <span>брутто <b>{total(totals.grossKg)}</b> кг</span>
+        <span>нетто <b>{total(totals.netKg)}</b> кг</span>
+      </p>}
       <div className="rv-actions">
         <span className={failed ? 'goods-storage-error' : 'rv-actions-note'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>
         <details className="rv-more">
