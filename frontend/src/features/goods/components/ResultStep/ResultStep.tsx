@@ -13,7 +13,7 @@ import { ResultSummary } from './ResultSummary'
 import { SirControls } from './SirControls'
 import { SirCompareModal } from './SirCompareModal'
 import { plural } from './errorGroups'
-import { displayNumber, dutyRateText, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
+import { displayNumber, dutyRateText, excelColumn, textColumn, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
 import '../../goods.css'
 import './ResultStep.css'
 
@@ -68,6 +68,31 @@ function StateIcon({ state }: { state: RowState }) {
     {state === 'warn' && <><path d="M4.4 4.4a1.7 1.7 0 1 1 2.4 1.5c-.5.3-.8.6-.8 1.2v.2" /><circle cx="6" cy="9.4" r=".5" fill="currentColor" /></>}
     {state === 'off' && <path d="M3.4 6h5.2" />}
   </svg>
+}
+
+// Кнопка в заголовке: колонка в буфер по всем строкам по порядку, чтобы вставить в Excel столбцом.
+function CopyColumn({ label, text }: { label: string; text: () => string }) {
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), 1400)
+    return () => window.clearTimeout(timer)
+  }, [copied])
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text())
+      setCopied(true)
+    } catch {
+      // Буфер обмена недоступен (нет разрешения) — ничего не делаем.
+    }
+  }
+
+  return <button type="button" className={copied ? 'rs-copy-col copied' : 'rs-copy-col'} onClick={() => void copy()}
+    title={copied ? 'Скопировано' : `Скопировать колонку «${label}» для вставки в Excel`} aria-label={`Скопировать колонку ${label}`}>
+    {copied ? '✓' : '⧉'}
+  </button>
 }
 
 const WEIGHT_LABEL = { net: 'нетто', gross: 'брутто' }
@@ -143,6 +168,12 @@ export function ResultStep({
     attention: rows.filter((row) => row.attention).length,
   }
   const visible = filter === 'attention' ? rows.filter((row) => row.attention) : rows
+  // Копируются все строки, даже при фильтре «требуют внимания»: иначе в Excel значения съедут.
+  const copyCol = (label: string, get: (item: GoodsCalculationResult['items'][number], index: number) => string | undefined) =>
+    <CopyColumn label={label} text={() => excelColumn(result.items.map(get))} />
+  // Код — только цифры, как у CopyCode.
+  const copyNames = <CopyColumn label="Товар" text={() => textColumn(result.items.map((item, index) => itemDisplayName(item, items[index])))} />
+  const copyCodes = <CopyColumn label="Код ТН ВЭД" text={() => textColumn(result.items.map((item, index) => (item.code || items[index]?.code || '').replace(/\D/g, '')))} />
   const changed = changedFromExcel(items, result)
   // Ширина колонки № — по числу цифр: от неё зависит отступ закреплённой колонки «Товар».
   const numWidth = `${String(result.items.length).length * 8 + 46}px`
@@ -281,24 +312,24 @@ export function ResultStep({
             <thead>
               <tr>
                 <th className="rs-num" scope="col">№</th>
-                <th className="rs-name" scope="col"><span className="rs-name-head">Товар<span className="rs-th-hint">код ТН ВЭД</span></span></th>
-                <th scope="col" title="Количество; под ним — места × штук в месте">Кол-во, шт</th>
+                <th className="rs-name" scope="col"><span className="rs-name-head"><span>Товар{copyNames}</span><span className="rs-th-hint">код ТН ВЭД{copyCodes}</span></span></th>
+                <th scope="col" title="Количество; под ним — места × штук в месте">Кол-во, шт{copyCol('Кол-во', (item) => item.pairs)}</th>
                 {sirMode ? <>
-                  <th scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС; под ним — нетто' : 'Вес нетто — по нему считается ТС; под ним — брутто'}>{sirGross ? 'Брутто' : 'Нетто'}, кг</th>
-                  <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СУР, $/кг</th>
-                  {sirDiscount > 0 && <th scope="col" className="rs-sir-col" title={`Индикатор со снижением: берётся ${100 - sirDiscount} %`}>−{displayNumber(sir.sirDiscountPercent)}%, $/кг</th>}
-                  <th scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD</th>
+                  <th scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС; под ним — нетто' : 'Вес нетто — по нему считается ТС; под ним — брутто'}>{sirGross ? 'Брутто' : 'Нетто'}, кг{copyCol(sirGross ? 'Брутто' : 'Нетто', (item) => sirGross ? item.grossKg : item.netKg)}</th>
+                  <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СУР, $/кг{copyCol('СУР', (item) => item.sir?.priceUsd)}</th>
+                  {sirDiscount > 0 && <th scope="col" className="rs-sir-col" title={`Индикатор со снижением: берётся ${100 - sirDiscount} %`}>−{displayNumber(sir.sirDiscountPercent)}%, $/кг{copyCol('СУР со снижением', (item) => item.sir?.pricePerKgUsd)}</th>}
+                  <th scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD{copyCol('ТС, USD', (item) => item.sir ? item.sir.valueUsd : item.goodsCost || item.costInput)}</th>
                 </> : <>
-                  <th scope="col" title="Вес нетто; под ним — брутто">Нетто, кг</th>
-                  <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD</th>
-                  <th scope="col">Стоимость, USD</th>
+                  <th scope="col" title="Вес нетто; под ним — брутто">Нетто, кг{copyCol('Нетто', (item) => item.netKg)}</th>
+                  <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена ед., USD{copyCol('Цена ед.', (item, index) => draftPrices[index] ?? (item.pricePerPair || item.pairPrice || items[index]?.pricePerPair))}</th>
+                  <th scope="col">Стоимость, USD{copyCol('Стоимость', (item) => item.goodsCost || item.costInput)}</th>
                 </>}
-                {delivery && <th scope="col">Доставка, USD</th>}
-                <th scope="col" className="rs-kzt-start" title="Таможенная стоимость">ТС, ₸</th>
-                <th scope="col">Пошлина, ₸</th>
-                {antiDumping && <th scope="col">Антидемпинг, ₸</th>}
-                <th scope="col">НДС, ₸</th>
-                <th scope="col">Сбор, ₸</th>
+                {delivery && <th scope="col">Доставка, USD{copyCol('Доставка', (item) => item.deliveryUsd)}</th>}
+                <th scope="col" className="rs-kzt-start" title="Таможенная стоимость">ТС, ₸{copyCol('ТС, ₸', (item) => item.customsValueKzt)}</th>
+                <th scope="col">Пошлина, ₸{copyCol('Пошлина', (item) => item.dutyKzt)}</th>
+                {antiDumping && <th scope="col">Антидемпинг, ₸{copyCol('Антидемпинг', (item) => item.antiDumpingKzt)}</th>}
+                <th scope="col">НДС, ₸{copyCol('НДС', (item) => item.vatKzt)}</th>
+                <th scope="col">Сбор, ₸{copyCol('Сбор', (item) => item.feeKzt)}</th>
               </tr>
             </thead>
             <tbody>

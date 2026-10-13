@@ -88,3 +88,11 @@ export function dutyRateText(snapshot?: Record<string, unknown>) {
   if (duty.type === 'combined_minimum') return percent && specific ? `ЕТТ ${percent}, не менее ${specific}` : ''
   return ''
 }
+
+// Колонка для вставки в Excel столбцом: по числу на строку, пустая строка — пустая ячейка.
+// Без пробелов-разрядов, дробная часть через точку — так ждут формулы в Excel сотрудников.
+export const excelColumn = (values: Value[]) =>
+  values.map((value) => String(value ?? '').replace(/\s/g, '')).join('\n')
+
+// Текстовая колонка для Excel: перенос строки или табуляция внутри названия разбили бы его на несколько ячеек.
+export const textColumn = (values: string[]) => values.map((value) => value.replace(/\s+/g, ' ').trim()).join('\n')
