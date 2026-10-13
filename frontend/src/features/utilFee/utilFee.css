@@ -32,6 +32,10 @@
 .uf-positions button, .uf-positions button:hover:not(:disabled) { height: 28px; padding: 0 10px; border: 1px solid #d3ddd6; border-radius: 6px; background: #fff; color: #1f2d24; font-family: ui-monospace, monospace; font-size: .78rem; }
 .uf-positions button:hover:not(:disabled) { border-color: #24704a; background: #f3f7f4; }
 
+.uf-section { flex-basis: 100%; }
+.uf-section summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; cursor: pointer; }
+.uf-section[open] summary { margin-bottom: 8px; }
+
 .uf-formula { margin: -4px 0 0; color: #7a877f; font-size: .78rem; }
 .uf-row { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
 .uf-row label { min-width: 180px; }

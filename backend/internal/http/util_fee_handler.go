@@ -9,6 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// listUtilFee — весь перечень утильсбора, чтобы смотреть без ввода кода.
+func (s *Server) listUtilFee(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"edition": utilfee.Edition, "sections": utilfee.List()})
+}
+
 // calculateUtilFee — калькулятор утильсбора: позиции перечня для кода и суммы по заполненным полям.
 func (s *Server) calculateUtilFee(c *gin.Context) {
 	var input utilfee.Input

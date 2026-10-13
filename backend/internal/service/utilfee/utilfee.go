@@ -199,6 +199,28 @@ func Lookup(code string) (matches, possible []Match) {
 	return matches, possible
 }
 
+// Section — раздел перечня целиком, для просмотра без поиска.
+type Section struct {
+	Number int     `json:"number"`
+	Title  string  `json:"title"`
+	Kind   Kind    `json:"kind"`
+	Items  []Match `json:"items"`
+}
+
+// List — весь перечень по разделам.
+func List() []Section {
+	sections := make([]Section, 0, len(list))
+	for _, sec := range list {
+		prefixes := strings.Fields(sec.codes)
+		items := make([]Match, len(prefixes))
+		for index, prefix := range prefixes {
+			items[index] = newMatch(sec, index, prefix)
+		}
+		sections = append(sections, Section{Number: sec.number, Title: sec.title, Kind: sec.kind, Items: items})
+	}
+	return sections
+}
+
 func newMatch(sec section, index int, prefix string) Match {
 	match := Match{Section: sec.number, Item: fmt.Sprintf("%d.%d", sec.number, index+1), Prefix: prefix, Title: sec.title, Kind: sec.kind, Note: noteFor(sec.number, prefix)}
 	switch sec.kind {

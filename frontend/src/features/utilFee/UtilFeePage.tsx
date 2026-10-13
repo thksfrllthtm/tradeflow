@@ -5,7 +5,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { formatCode } from '@/shared/tnved/codes'
 import { User } from '@/shared/types/user'
-import { UtilFeeInput, UtilFeeMatch, UtilFeeResult, utilFeeApi } from './utilFeeApi'
+import { UtilFeeInput, UtilFeeMatch, UtilFeeResult, UtilFeeSection, utilFeeApi } from './utilFeeApi'
 import '@/shared/styles/list-page.css'
 import './utilFee.css'
 
@@ -42,6 +42,9 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
     return () => { current = false }
   }, [debounced, codeReady])
 
+  const [sections, setSections] = useState<UtilFeeSection[]>([])
+  useEffect(() => { utilFeeApi.list().then((list) => setSections(list.sections)).catch((reason) => setError(errorMessage(reason))) }, [])
+
   const set = (change: Partial<UtilFeeInput>) => setInput((value) => ({ ...value, ...change }))
   const setRow = (index: number, change: Partial<UtilFeeInput['packaging'][number]>) =>
     set({ packaging: input.packaging.map((row, rowIndex) => rowIndex === index ? { ...row, ...change } : row) })
@@ -71,6 +74,30 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
       </div>
 
       {!codeReady && digits(input.code) !== '' && <p className="uf-hint">Введите не меньше 4 цифр кода (не больше 10).</p>}
+
+      {digits(input.code) === '' && sections.length > 0 && <div className="uf-card">
+        <h2>Перечень продукции</h2>
+        <p className="uf-formula">Нажмите на раздел, чтобы увидеть коды, или на код — чтобы посчитать.</p>
+        <ul className="uf-matches">
+          {sections.map((section) => {
+            const ks = new Set(section.items.map((match) => match.k))
+            const k = ks.size === 1 ? section.items[0].k : undefined
+            return <li key={section.number}>
+              <details className="uf-section">
+                <summary>
+                  <strong>Раздел {section.number}</strong> <span className={`uf-kind uf-kind-${section.kind}`}>{kindLabels[section.kind]}</span>
+                  {k !== undefined ? <span className="uf-k">k = {formatRuNumber(k)}</span> : ks.size > 1 && <span className="uf-k">k по пункту</span>}
+                  <span className="uf-hint">{section.items.length} поз.</span>
+                  <span className="uf-title">{section.title}</span>
+                </summary>
+                <div className="uf-positions">
+                  {section.items.map((match) => <button type="button" key={match.item} title={`п. ${match.item}${match.k !== undefined ? ` · k = ${formatRuNumber(match.k)}` : ''}`} onClick={() => setCode(match.prefix)}>{formatCode(match.prefix)}</button>)}
+                </div>
+              </details>
+            </li>
+          })}
+        </ul>
+      </div>}
       {codeReady && !result && loading && <p className="uf-hint">Ищем код в перечне…</p>}
 
       {result && result.code === digits(debounced.code) && <>

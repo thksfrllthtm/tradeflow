@@ -28,6 +28,9 @@ export type UtilFeeResult = {
   total: string
 }
 
+export type UtilFeeSection = { number: number; title: string; kind: UtilFeeKind; items: UtilFeeMatch[] }
+
 export const utilFeeApi = {
+  list: () => request<{ edition: string; sections: UtilFeeSection[] }>('/api/util-fee'),
   calculate: (input: UtilFeeInput) => request<UtilFeeResult>('/api/util-fee', { method: 'POST', body: JSON.stringify(input) }),
 }

@@ -129,6 +129,7 @@ func (s *Server) Router() *gin.Engine {
 	riskIndicators.DELETE("/:id", s.requireAdmin, s.deleteRiskIndicators)
 
 	// Калькулятор утильсбора (перечень № 689, Методика № 448) — справочник в коде, без БД.
+	router.GET("/api/util-fee", s.requireUser, s.listUtilFee)
 	router.POST("/api/util-fee", s.requireUser, s.calculateUtilFee)
 
 	kzRates := router.Group("/api/tnved-kz-rates")

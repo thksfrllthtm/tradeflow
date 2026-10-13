@@ -44,6 +44,21 @@ func TestListHasEveryItem(t *testing.T) {
 	}
 }
 
+// Весь перечень для просмотра: все пункты на месте, k у пунктов разд. 6 — по материалу.
+func TestListSections(t *testing.T) {
+	sections := List()
+	if len(sections) != len(list) {
+		t.Fatalf("разделов %d, ожидалось %d", len(sections), len(list))
+	}
+	sec6 := sections[5]
+	if sec6.Number != 6 || len(sec6.Items) != 12 || sec6.Items[0].K != "1.40" || sec6.Items[7].K != "1.14" || sec6.Items[7].Item != "6.8" {
+		t.Errorf("разд. 6: %+v", sec6)
+	}
+	if len(sections[17].Items) != 404 {
+		t.Errorf("разд. 18: %d позиций", len(sections[17].Items))
+	}
+}
+
 // Микроволновка: товар (разд. 16, k = 2,00) и её упаковка (разд. 18).
 func TestProductAndPackaging(t *testing.T) {
 	result := calc(t, Input{Code: "8516 50 000 0", Mrp: "4325", MassKg: "500",
