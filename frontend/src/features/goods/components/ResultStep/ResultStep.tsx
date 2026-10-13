@@ -264,7 +264,7 @@ export function ResultStep({
           {counts.attention > 0 && <p className="rs-counts">
             {counts.bad > 0 && <span className="bad"><StateIcon state="bad" /> ошибки {counts.bad}</span>}
             {counts.warn > 0 && <span className="warn"><StateIcon state="warn" /> предупреждения {counts.warn}</span>}
-            {counts.ad > 0 && <span className="ad">АД: выбрать {counts.ad}</span>}
+            {counts.ad > 0 && <span className="dump">АД: выбрать {counts.ad}</span>}
           </p>}
           {changed.length > 0 && <p className="rs-changed" title="Цена единицы отличается от цены в Excel: правка или подбор под бюджет">изменено цен: <b>{changed.length}</b></p>}
           <div className="rs-seg rs-density" role="radiogroup" aria-label="Плотность таблицы">

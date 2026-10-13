@@ -94,20 +94,20 @@ export function AntiDumpingChooser({ info, choice, disabled, onChoose }: Props) 
   const left = anchor ? Math.max(8, Math.min(anchor.left, window.innerWidth - width - 8)) : 0
   const below = anchor ? window.innerHeight - anchor.bottom > 320 : true
   return <>
-    <button ref={buttonRef} type="button" className={`ad-choose ${tone}`} disabled={disabled} title={info.text || fullLabel} aria-label={fullLabel} aria-haspopup="dialog" aria-expanded={Boolean(anchor)}
+    <button ref={buttonRef} type="button" className={`dump-choose ${tone}`} disabled={disabled} title={info.text || fullLabel} aria-label={fullLabel} aria-haspopup="dialog" aria-expanded={Boolean(anchor)}
       onClick={(event) => setAnchor(anchor ? null : event.currentTarget.getBoundingClientRect())}>{label}<svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4l2.5 2.5L7.5 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
-    {anchor && <div ref={menuRef} className="ad-menu" role="dialog" aria-label="Варианты антидемпинга" onKeyDown={moveFocus}
+    {anchor && <div ref={menuRef} className="dump-menu" role="dialog" aria-label="Варианты антидемпинга" onKeyDown={moveFocus}
       style={{ left, width, ...(below ? { top: anchor.bottom + 4 } : { bottom: window.innerHeight - anchor.top + 4 }) }}>
-      {info.text && <p className="ad-menu-text">{info.text}</p>}
-      {options.length > 8 && <input className="ad-menu-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Страна или производитель" aria-label="Найти вариант" autoFocus />}
-      <div className="ad-menu-list">
+      {info.text && <p className="dump-menu-text">{info.text}</p>}
+      {options.length > 8 && <input className="dump-menu-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Страна или производитель" aria-label="Найти вариант" autoFocus />}
+      <div className="dump-menu-list">
         {groups.map((group) => <section key={group[0].measure}>
           <h4>{group[0].measure} «{group[0].shortName}»</h4>
           {group.map((option) => <button key={option.key} type="button" aria-pressed={selected === option.key} className={selected === option.key ? 'active' : undefined} onClick={() => pick(option.key)} title={option.label}>
             <span><em>{option.countryName}</em>{option.label}</span><b>{percent(option.percent)}</b>
           </button>)}
         </section>)}
-        {groups.length === 0 && <p className="ad-menu-empty">Ничего не найдено</p>}
+        {groups.length === 0 && <p className="dump-menu-empty">Ничего не найдено</p>}
       </div>
       <footer>
         <button type="button" aria-pressed={selected === NO_ANTIDUMPING} className={selected === NO_ANTIDUMPING ? 'active' : undefined} onClick={() => pick(NO_ANTIDUMPING)}>Не начислять</button>

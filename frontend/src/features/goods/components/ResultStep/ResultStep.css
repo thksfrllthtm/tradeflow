@@ -55,7 +55,7 @@
 .rs-counts span { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
 .rs-counts .bad { color: var(--rs-bad); }
 .rs-counts .warn { color: var(--rs-warn); }
-.rs-counts .ad { color: var(--rs-warn); }
+.rs-counts .dump { color: var(--rs-warn); }
 .rs-changed b { color: var(--rs-green-dark); }
 .rs-density { margin-left: auto; }
 
@@ -141,7 +141,7 @@
 .goods-page .rs-step.compact .rs-table tbody .rs-sub { display: none; }
 .goods-page .rs-step.compact .rs-table td { padding-block: 3px !important; vertical-align: middle; }
 .goods-page .rs-step.compact .rs-table .rs-price { height: 26px; }
-.goods-page .rs-step.compact .rs-table button.ad-choose { display: inline-flex; margin: 0 0 0 6px; }
+.goods-page .rs-step.compact .rs-table button.dump-choose { display: inline-flex; margin: 0 0 0 6px; }
 
 @media (max-width: 1280px) {
   .goods-page .rs-table .rs-name { min-width: 220px; }

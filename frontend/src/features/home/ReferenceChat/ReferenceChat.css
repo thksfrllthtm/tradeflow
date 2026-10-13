@@ -88,8 +88,8 @@
 .rc-cand-name { margin: 0; overflow: hidden; color: #46564c; font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
 .rc-rates { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
 .rc-rates span { padding: 2px 9px; border-radius: 999px; background: #eef3f0; color: #26382e; font-size: .82rem; font-weight: 650; font-variant-numeric: tabular-nums; }
-.rc-rates span.ad { background: #fdecec; color: #8a2626; }
-.rc-rates span.ad.maybe { background: #fff6dd; color: #7a5810; }
+.rc-rates span.dump { background: #fdecec; color: #8a2626; }
+.rc-rates span.dump.maybe { background: #fff6dd; color: #7a5810; }
 .rc-cand blockquote { margin: 0; padding: 7px 11px; border-left: 3px solid #9cc7ab; border-radius: 0 8px 8px 0; background: #eef6f1; color: #26352c; font-size: .86rem; font-style: italic; line-height: 1.45; }
 .rc-cand blockquote cite { display: block; margin-top: 3px; color: #46564c; font-size: .82rem; font-style: normal; }
 .rc-reason { margin: 0; color: #26352c; font-size: .82rem; line-height: 1.5; }

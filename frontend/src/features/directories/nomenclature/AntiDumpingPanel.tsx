@@ -36,8 +36,8 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
     } catch (reason) { setError(errorMessage(reason)) } finally { setBusy(false) }
   }
 
-  return <section className="ad-panel" aria-label="Антидемпинговые меры ЕАЭС">
-    <header className="ad-head">
+  return <section className="dump-panel" aria-label="Антидемпинговые меры ЕАЭС">
+    <header className="dump-head">
       <div>
         <h2>Антидемпинговые меры ЕАЭС <span>{measures.length}</span></h2>
         <p>
@@ -49,25 +49,25 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
     </header>
     {notice && <p className="dir-transfer-ok" role="status">{notice}</p>}
     {error && <p className="dir-transfer-error" role="alert">{error}</p>}
-    {loading ? <p className="ad-empty">Загрузка…</p> : measures.length === 0 ? <p className="ad-empty">Мер нет.</p> : <div className="ad-table-wrap"><table className="sheet ad-table">
+    {loading ? <p className="dump-empty">Загрузка…</p> : measures.length === 0 ? <p className="dump-empty">Мер нет.</p> : <div className="dump-table-wrap"><table className="sheet dump-table">
       <thead><tr><th>Мера</th><th>Товар</th><th>Страна → ставка для прочих производителей</th><th>Коды ТН ВЭД</th><th>Действует</th><th aria-label="Решение" /></tr></thead>
       <tbody>{measures.map((measure) => {
         const expanded = open === measure.number
         const codes = measure.codes.filter((code) => code.length === 10 || !measure.codes.some((other) => other.length > code.length && other.startsWith(code)))
-        return <tr key={measure.number} className={measure.suspended ? 'ad-suspended' : undefined}>
-          <td className="ad-num">{measure.number}</td>
-          <td className="ad-name">
+        return <tr key={measure.number} className={measure.suspended ? 'dump-suspended' : undefined}>
+          <td className="dump-num">{measure.number}</td>
+          <td className="dump-name">
             <b>{measure.shortName}</b>
-            {measure.suspended && <i className="ad-flag">временно не применяется</i>}
-            {measure.needsCheck && <small className="ad-check">{measure.needsCheck}</small>}
-            <button type="button" className="ad-more" onClick={() => setOpen(expanded ? null : measure.number)} aria-expanded={expanded}>{expanded ? 'Скрыть ставки по производителям' : 'Ставки по производителям'}</button>
-            {expanded && <pre className="ad-rate-text">{measure.rateText}</pre>}
+            {measure.suspended && <i className="dump-flag">временно не применяется</i>}
+            {measure.needsCheck && <small className="dump-check">{measure.needsCheck}</small>}
+            <button type="button" className="dump-more" onClick={() => setOpen(expanded ? null : measure.number)} aria-expanded={expanded}>{expanded ? 'Скрыть ставки по производителям' : 'Ставки по производителям'}</button>
+            {expanded && <pre className="dump-rate-text">{measure.rateText}</pre>}
           </td>
-          <td className="ad-rates">{measure.countries.map((country) => <span key={country}><em>{countryNames[country] ?? country}</em><b>{percentText(measure.rates[country] ?? '')}</b></span>)}</td>
-          <td className="ad-codes">{codes.slice(0, expanded ? codes.length : 6).map((code) => <button key={code} type="button" onClick={() => onPickCode(code)} title={code.length === 10 ? 'Найти код в номенклатуре' : 'Товарная позиция: мера на часть её товаров — найти коды позиции'} className={code.length === 10 ? '' : 'heading'}>{formatMeasureCode(code)}</button>)}
-            {!expanded && codes.length > 6 && <button type="button" className="ad-codes-more" onClick={() => setOpen(measure.number)}>ещё {codes.length - 6}</button>}</td>
-          <td className="ad-dates">{measure.startDate && formatRuDate(measure.startDate)}<br />по {measure.endDate && formatRuDate(measure.endDate)}</td>
-          <td className="ad-doc">{measure.documentUrl && <a href={measure.documentUrl} target="_blank" rel="noreferrer">Решение ЕЭК</a>}</td>
+          <td className="dump-rates">{measure.countries.map((country) => <span key={country}><em>{countryNames[country] ?? country}</em><b>{percentText(measure.rates[country] ?? '')}</b></span>)}</td>
+          <td className="dump-codes">{codes.slice(0, expanded ? codes.length : 6).map((code) => <button key={code} type="button" onClick={() => onPickCode(code)} title={code.length === 10 ? 'Найти код в номенклатуре' : 'Товарная позиция: мера на часть её товаров — найти коды позиции'} className={code.length === 10 ? '' : 'heading'}>{formatMeasureCode(code)}</button>)}
+            {!expanded && codes.length > 6 && <button type="button" className="dump-codes-more" onClick={() => setOpen(measure.number)}>ещё {codes.length - 6}</button>}</td>
+          <td className="dump-dates">{measure.startDate && formatRuDate(measure.startDate)}<br />по {measure.endDate && formatRuDate(measure.endDate)}</td>
+          <td className="dump-doc">{measure.documentUrl && <a href={measure.documentUrl} target="_blank" rel="noreferrer">Решение ЕЭК</a>}</td>
         </tr>
       })}</tbody>
     </table></div>}

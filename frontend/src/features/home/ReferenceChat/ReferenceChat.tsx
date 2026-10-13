@@ -451,7 +451,7 @@ function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: A
     {nomenclature && <p className="rc-rates">
       <span>Пошлина {nomenclature.tariffText || 'не указана'}</span>
       <span>НДС {nomenclature.vatPercent || '16'}%</span>
-      {nomenclature.antiDumping?.map((measure) => <span key={measure.number} className={measure.exact && !measure.suspended ? 'ad' : 'ad maybe'} title={`${measure.number} «${measure.shortName}»`}>
+      {nomenclature.antiDumping?.map((measure) => <span key={measure.number} className={measure.exact && !measure.suspended ? 'dump' : 'dump maybe'} title={`${measure.number} «${measure.shortName}»`}>
         {measure.suspended ? 'антидемпинг не применяется' : `${measure.exact ? 'антидемпинг' : 'возможен антидемпинг'} ${measure.countries.map((country) => `${(measure.rates[country] ?? '').replace('.', ',')}%`).join(' / ')} (${measure.countryNames})`}
       </span>)}
     </p>}
