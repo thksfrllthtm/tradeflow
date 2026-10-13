@@ -28,6 +28,9 @@
 .uf-kind-packaging { background: #eef0fb; color: #2f3b8a; }
 .uf-kind-vehicle { background: #fbf1e3; color: #7a4b00; }
 .uf-k { color: #34443b; font-weight: 650; }
+.uf-positions { display: flex; flex-basis: 100%; flex-wrap: wrap; gap: 6px; }
+.uf-positions button, .uf-positions button:hover:not(:disabled) { height: 28px; padding: 0 10px; border: 1px solid #d3ddd6; border-radius: 6px; background: #fff; color: #1f2d24; font-family: ui-monospace, monospace; font-size: .78rem; }
+.uf-positions button:hover:not(:disabled) { border-color: #24704a; background: #f3f7f4; }
 
 .uf-formula { margin: -4px 0 0; color: #7a877f; font-size: .78rem; }
 .uf-row { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }

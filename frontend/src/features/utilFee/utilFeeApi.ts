@@ -19,6 +19,7 @@ export type UtilFeeResult = {
   code: string
   edition: string
   matches: UtilFeeMatch[]
+  possible: UtilFeeMatch[]
   materials: UtilFeeMaterial[]
   vehicleCategories: UtilFeeVehicleCategory[] | null
   product: { massKg: string; k: string; amount: string } | null

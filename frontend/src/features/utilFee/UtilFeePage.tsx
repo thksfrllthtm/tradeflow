@@ -3,6 +3,7 @@ import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
+import { formatCode } from '@/shared/tnved/codes'
 import { User } from '@/shared/types/user'
 import { UtilFeeInput, UtilFeeMatch, UtilFeeResult, utilFeeApi } from './utilFeeApi'
 import '@/shared/styles/list-page.css'
@@ -28,7 +29,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const debounced = useDebouncedValue(input, 350)
-  const codeReady = /^\d{10}$/.test(digits(debounced.code))
+  const codeReady = /^\d{4,10}$/.test(digits(debounced.code))
 
   useEffect(() => {
     if (!codeReady) { setResult(null); setError(''); return }
@@ -65,27 +66,44 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
 
       <div className="uf-card uf-inputs">
-        <label>Код ТН ВЭД<input value={input.code} onChange={(event) => setCode(event.target.value)} placeholder="10 цифр, например 8516500000" inputMode="numeric" autoFocus /></label>
+        <label>Код ТН ВЭД<input value={input.code} onChange={(event) => setCode(event.target.value)} placeholder="От 4 цифр, например 8516 или 8516500000" inputMode="numeric" autoFocus /></label>
         <label>МРП, ₸<input value={input.mrp} onChange={(event) => set({ mrp: event.target.value })} inputMode="decimal" /></label>
       </div>
 
-      {!codeReady && digits(input.code) !== '' && <p className="uf-hint">Код должен состоять из 10 цифр.</p>}
+      {!codeReady && digits(input.code) !== '' && <p className="uf-hint">Введите не меньше 4 цифр кода (не больше 10).</p>}
       {codeReady && !result && loading && <p className="uf-hint">Ищем код в перечне…</p>}
 
       {result && result.code === digits(debounced.code) && <>
-        {result.matches.length === 0
-          ? <div className="uf-card uf-empty">Код <code>{result.code}</code> не входит в перечень — утильсбор не платится.</div>
-          : <div className="uf-card">
-            <h2>Код {result.code} в перечне</h2>
-            <ul className="uf-matches">
-              {result.matches.map((match) => <li key={match.section}>
-                <strong>Раздел {match.section}, п. {match.item}</strong> <span className={`uf-kind uf-kind-${match.kind}`}>{kindLabels[match.kind]}</span>
-                {match.k !== undefined && <span className="uf-k">k = {formatRuNumber(match.k)}</span>}
-                <div className="uf-title">{match.title} · позиция <code>{match.prefix}</code></div>
-                {match.note && <div className="uf-note">⚠ {match.note}</div>}
-              </li>)}
-            </ul>
-          </div>}
+        {result.matches.length === 0 && result.possible.length === 0 &&
+          <div className="uf-card uf-empty">Код <code>{formatCode(result.code)}</code> не входит в перечень — утильсбор не платится.</div>}
+        {result.matches.length > 0 && <div className="uf-card">
+          <h2>Код {formatCode(result.code)} в перечне</h2>
+          <ul className="uf-matches">
+            {result.matches.map((match) => <li key={match.section}>
+              <strong>Раздел {match.section}, п. {match.item}</strong> <span className={`uf-kind uf-kind-${match.kind}`}>{kindLabels[match.kind]}</span>
+              {match.k !== undefined && <span className="uf-k">k = {formatRuNumber(match.k)}</span>}
+              <div className="uf-title">{match.title} · позиция <code>{formatCode(match.prefix)}</code></div>
+              {match.note && <div className="uf-note">⚠ {match.note}</div>}
+            </li>)}
+          </ul>
+        </div>}
+        {result.possible.length > 0 && <div className="uf-card">
+          <h2>Зависит от полного кода</h2>
+          <p className="uf-formula">Эти позиции перечня начинаются с {result.code}. Введите код полностью или выберите позицию.</p>
+          <ul className="uf-matches">
+            {[...new Set(result.possible.map((match) => match.section))].map((sectionNumber) => {
+              const items = result.possible.filter((match) => match.section === sectionNumber)
+              return <li key={sectionNumber}>
+                <strong>Раздел {sectionNumber}</strong> <span className={`uf-kind uf-kind-${items[0].kind}`}>{kindLabels[items[0].kind]}</span>
+                {items[0].k !== undefined && <span className="uf-k">k = {formatRuNumber(items[0].k)}</span>}
+                <div className="uf-title">{items[0].title}</div>
+                <div className="uf-positions">
+                  {items.map((match) => <button type="button" key={match.item} title={`п. ${match.item}`} onClick={() => setCode(match.prefix)}>{formatCode(match.prefix)}</button>)}
+                </div>
+              </li>
+            })}
+          </ul>
+        </div>}
 
         {has('product') && <div className="uf-card">
           <h2>За товар</h2>

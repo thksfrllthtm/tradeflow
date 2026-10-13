@@ -65,6 +65,7 @@ type Result struct {
 	Code              string            `json:"code"`
 	Edition           string            `json:"edition"`
 	Matches           []Match           `json:"matches"`
+	Possible          []Match           `json:"possible"` // для неполного кода: позиции длиннее кода — зависят от полного кода, не считаются
 	Materials         []Material        `json:"materials"`
 	VehicleCategories []VehicleCategory `json:"vehicleCategories"` // категории группы найденного транспорта
 	Product           *ProductAmount    `json:"product"`
@@ -79,10 +80,11 @@ var thousand = decimal.NewFromInt(1000)
 // только сведения из перечня.
 func Calculate(input Input) (Result, error) {
 	code := strings.Join(strings.Fields(input.Code), "")
-	if len(code) != 10 || strings.Trim(code, "0123456789") != "" {
-		return Result{}, &service.ValidationError{Field: "code", Message: "Введите код ТН ВЭД из 10 цифр"}
+	if len(code) < 4 || len(code) > 10 || strings.Trim(code, "0123456789") != "" {
+		return Result{}, &service.ValidationError{Field: "code", Message: "Введите код ТН ВЭД: от 4 до 10 цифр"}
 	}
-	result := Result{Code: code, Edition: Edition, Matches: Lookup(code), Materials: Materials, Packaging: []PackagingAmount{}}
+	matches, possible := Lookup(code)
+	result := Result{Code: code, Edition: Edition, Matches: matches, Possible: possible, Materials: Materials, Packaging: []PackagingAmount{}}
 
 	var mrp *decimal.Decimal
 	needMRP := func() (decimal.Decimal, error) {
@@ -171,32 +173,44 @@ func Calculate(input Input) (Result, error) {
 	return result, nil
 }
 
-// Lookup — позиции перечня для 10-значного кода: в каждом разделе самая длинная подходящая.
-func Lookup(code string) []Match {
-	matches := []Match{}
+// Lookup — позиции перечня для кода из 4–10 цифр. matches — в каждом разделе самая длинная позиция,
+// которой код начинается (по ним считается платёж). possible — для неполного кода в разделах без
+// такой позиции: позиции, которые начинаются с кода, то есть зависят от его продолжения.
+func Lookup(code string) (matches, possible []Match) {
+	matches, possible = []Match{}, []Match{}
 	for _, sec := range list {
+		prefixes := strings.Fields(sec.codes)
 		best, bestIndex := "", -1
-		for index, prefix := range strings.Fields(sec.codes) {
+		for index, prefix := range prefixes {
 			if hasPrefix(code, prefix) && len(prefix) > len(best) && !isExcluded(code, prefix) {
 				best, bestIndex = prefix, index
 			}
 		}
-		if bestIndex < 0 {
+		if bestIndex >= 0 {
+			matches = append(matches, newMatch(sec, bestIndex, best))
 			continue
 		}
-		match := Match{Section: sec.number, Item: fmt.Sprintf("%d.%d", sec.number, bestIndex+1), Prefix: best, Title: sec.title, Kind: sec.kind, Note: noteFor(sec.number, best)}
-		switch sec.kind {
-		case KindProduct:
-			match.K = sec.k
-			if k, ok := itemK[best]; ok {
-				match.K = k
+		for index, prefix := range prefixes {
+			if len(prefix) > len(code) && hasPrefix(prefix, code) {
+				possible = append(possible, newMatch(sec, index, prefix))
 			}
-		case KindVehicle:
-			match.VehicleGroup = vehicleGroup(best)
 		}
-		matches = append(matches, match)
 	}
-	return matches
+	return matches, possible
+}
+
+func newMatch(sec section, index int, prefix string) Match {
+	match := Match{Section: sec.number, Item: fmt.Sprintf("%d.%d", sec.number, index+1), Prefix: prefix, Title: sec.title, Kind: sec.kind, Note: noteFor(sec.number, prefix)}
+	switch sec.kind {
+	case KindProduct:
+		match.K = sec.k
+		if k, ok := itemK[prefix]; ok {
+			match.K = k
+		}
+	case KindVehicle:
+		match.VehicleGroup = vehicleGroup(prefix)
+	}
+	return match
 }
 
 func hasPrefix(code, prefix string) bool { return strings.HasPrefix(code, prefix) }

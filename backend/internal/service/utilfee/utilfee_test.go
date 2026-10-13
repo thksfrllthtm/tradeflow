@@ -153,12 +153,50 @@ func TestLongestPrefixAndExclusions(t *testing.T) {
 	}
 }
 
+// С 4 цифр: позиция перечня не длиннее кода — ответ сразу; длиннее — «возможно», без расчёта.
+func TestPartialCode(t *testing.T) {
+	tiles := calc(t, Input{Code: "6907", Mrp: "4325", Packaging: []PackagingInput{{Material: "paper", MassKg: "120"}}})
+	if got := sections(tiles); len(got) != 1 || got[0] != 18 || tiles.Total != "913.44" || len(tiles.Possible) != 0 {
+		t.Fatalf("плитка: %v, итого %s, возможно %+v", got, tiles.Total, tiles.Possible)
+	}
+
+	cars := calc(t, Input{Code: "8703", Mrp: "4325", VehicleCategory: "m1-2000"})
+	if cars.Vehicle == nil || cars.Total != "756875.00" {
+		t.Fatalf("легковые: %+v", cars.Vehicle)
+	}
+
+	ovens := calc(t, Input{Code: "8516", Mrp: "4325", MassKg: "500"})
+	if len(ovens.Matches) != 0 || ovens.Total != "" || ovens.Product != nil {
+		t.Fatalf("8516 не должен считаться: %+v", ovens)
+	}
+	possible := map[int]int{}
+	for _, match := range ovens.Possible {
+		possible[match.Section]++
+		if !strings.HasPrefix(match.Prefix, "8516") || match.Prefix == "8516" {
+			t.Fatalf("лишняя позиция %+v", match)
+		}
+	}
+	if possible[13] != 3 || possible[14] != 3 || possible[16] != 8 || possible[18] != 14 || len(possible) != 4 {
+		t.Fatalf("возможные разделы: %v", possible)
+	}
+
+	// 9504: в разд. 18 есть сама позиция 9504 — она и считается; в разд. 17 только 9504 50 000 — «возможно».
+	games := calc(t, Input{Code: "9504"})
+	if got := sections(games); len(got) != 1 || got[0] != 18 || games.Matches[0].Item != "18.392" {
+		t.Fatalf("9504: %+v", games.Matches)
+	}
+	if len(games.Possible) != 1 || games.Possible[0].Item != "17.14" {
+		t.Fatalf("9504 возможно: %+v", games.Possible)
+	}
+}
+
 func TestValidation(t *testing.T) {
 	for _, tc := range []struct {
 		input Input
 		field string
 	}{
-		{Input{Code: "8516"}, "code"},
+		{Input{Code: "851"}, "code"},
+		{Input{Code: "85a6"}, "code"},
 		{Input{Code: "85165000001"}, "code"},
 		{Input{Code: "8516500000", MassKg: "500"}, "mrp"},
 		{Input{Code: "8516500000", Mrp: "0", MassKg: "500"}, "mrp"},
