@@ -392,7 +392,7 @@ export function ResultStep({
                         <input
                           className={edited || aiNote ? 'rs-price changed' : 'rs-price'}
                           inputMode="decimal"
-                          value={price}
+                          value={price.replace('.', ',')}
                           disabled={item.excluded}
                           onFocus={() => { editStartRef.current = { index, value: price } }}
                           onChange={(event) => { const value = event.target.value.replace(',', '.'); setDraftPrices((current) => ({ ...current, [index]: value })); onPriceChange(index, value) }}
