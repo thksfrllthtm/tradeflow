@@ -2,7 +2,7 @@ import { ChangeEvent, Dispatch, SetStateAction, useEffect, useRef, useState } fr
 import { GoodsCalculationResult, GoodsItemInput, GoodsParams } from '@/shared/types/goods'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { reviewStatus, rowMissing } from '../ReviewRow/reviewStatus'
-import { formatWeight } from '../../lib/netWeight'
+import { DEFAULT_PACKAGE_WEIGHT, formatWeight } from '../../lib/netWeight'
 import { ReviewCheck } from '../../lib/reviewCheck'
 import { reviewTotals } from './reviewTotals'
 import { useStableCallback } from '@/shared/hooks/useStableCallback'
@@ -228,6 +228,11 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   const agentPending = items.filter((item) => item.id && !item.excluded && !item.code && (!agentStatuses[item.id] || agentStatuses[item.id].status === 'ready')).length
   const agentStarted = counts.noCode - agentPending
   const ownPackageCount = items.filter((item) => item.packageWeightKg !== params.packageWeightKg).length
+  // Колонку упаковки прячем, пока она ни на что не влияет: нетто есть во всех строках расчёта,
+  // а общую упаковку не меняли и своей у строк нет. Ввели свою упаковку — колонка появляется.
+  const packageUnused = items.every((item) => item.excluded || item.netKg.trim() !== '')
+    && params.packageWeightKg === DEFAULT_PACKAGE_WEIGHT && ownPackageCount === 0
+  const noFee = params.feeMultiplier.trim() !== '' && Number(params.feeMultiplier) === 0
   const totals = reviewTotals(items, params.packageWeightKg)
   const total = (value: number) => formatRuNumber(formatWeight(value).replace(/\s/g, ''))
 
@@ -295,10 +300,11 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
           <label className="rv-field" title="Вес одной упаковки (на одно место) — для автоматического расчёта нетто. Меняет все строки, кроме тех, где указана своя упаковка"><span>Упаковка, кг{ownPackageCount > 0 && <small title="Строки со своей упаковкой не меняются вместе с общим значением">своя: {ownPackageCount}</small>}</span><input className="rv-w-sm" inputMode="decimal" value={params.packageWeightKg} onChange={(event) => setParam('packageWeightKg', event.target.value.replace(',', '.'))} /></label>
         </div>
         <div className="rv-params-group">
-          <div className="rv-field" title="Сбор = МРП × множитель, делится поровну между строками"><span>Сбор: МРП × множитель</span><span className="rv-joined">
-            <input className="rv-w-md" inputMode="decimal" value={params.mrp} onChange={(event) => setParam('mrp', event.target.value.replace(',', '.'))} placeholder="МРП" aria-label="МРП, KZT" />
+          {/* «Без сбора» — это множитель 0: сбор не считается и не входит в базу НДС. Снятие галочки возвращает множитель 6. */}
+          <div className="rv-field" title="Сбор = МРП × множитель, делится поровну между строками"><span>Сбор: МРП × множитель<label className="rv-nofee"><input type="checkbox" checked={noFee} onChange={(event) => setParam('feeMultiplier', event.target.checked ? '0' : '6')} /> без сбора</label></span><span className={noFee ? 'rv-joined off' : 'rv-joined'}>
+            <input className="rv-w-md" inputMode="decimal" value={params.mrp} onChange={(event) => setParam('mrp', event.target.value.replace(',', '.'))} placeholder="МРП" aria-label="МРП, KZT" disabled={noFee} />
             <span className="rv-joined-sep">×</span>
-            <input className="rv-w-sm" inputMode="decimal" value={params.feeMultiplier} onChange={(event) => setParam('feeMultiplier', event.target.value.replace(',', '.'))} placeholder="6" aria-label="Множитель сбора" />
+            <input className="rv-w-sm" inputMode="decimal" value={params.feeMultiplier} onChange={(event) => setParam('feeMultiplier', event.target.value.replace(',', '.'))} placeholder="6" aria-label="Множитель сбора" disabled={noFee} />
             <span className="rv-joined-unit">₸</span>
           </span></div>
         </div>
@@ -351,7 +357,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
 
       {items.length === 0 && <p className="rv-empty-filter">Строк пока нет. Загрузите XLSX или нажмите «+ Строка» — в неё можно вставить строки из Excel (Ctrl+V).</p>}
       {items.length > 0 && visible.length === 0 && <p className="rv-empty-filter">В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => setFilter('all')}>Показать все строки</button></p>}
-      <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} compact={density === 'compact'} apiRef={sheetApi}
+      <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} hidePackage={packageUnused} compact={density === 'compact'} apiRef={sheetApi}
         onChanges={applyChanges} onAction={rowAction} onSelectAll={toggleAllVisible} onInsertRow={insertRow} onDeleteRows={deleteRows}
         onPickRows={(indexes) => openDirectoryPicker(indexes.map((index) => items[index]?.id ?? '').filter(Boolean))} onUndo={history.undo} onRedo={history.redo} />
       <input ref={photoInput} type="file" accept="image/jpeg,image/png" style={{ display: 'none' }} onChange={(event) => { if (photoTarget.current) addManualPhoto(photoTarget.current, event) }} />

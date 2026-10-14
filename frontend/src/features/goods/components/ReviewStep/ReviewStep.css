@@ -67,6 +67,9 @@
 .rv-params .rv-joined select { width: auto; padding-right: 4px; border-right: 1px solid var(--rv-line); background: #f8faf8; font-size: .86rem; }
 .rv-joined-sep { display: flex; align-items: center; color: var(--rv-ink-3); font-size: .86rem; }
 .rv-joined-unit { display: flex; align-items: center; padding: 0 8px; border-left: 1px solid var(--rv-line); background: #f5f8f6; color: var(--rv-ink-3); font-size: .82rem; font-weight: 600; }
+.rv-joined.off { opacity: .5; }
+.rv-params .rv-nofee { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; color: var(--rv-ink-2); font-weight: 500; cursor: pointer; }
+.rv-params .rv-nofee input { width: auto; height: auto; margin: 0; padding: 0; accent-color: var(--rv-green); }
 .rv-params .rv-rate-button { min-width: 56px; margin: 0; padding: 0 10px; border: 0; border-left: 1px solid var(--rv-line); border-radius: 0; background: #eef7f1; color: var(--rv-green-dark); font-size: .82rem; font-weight: 700; }
 .rv-params .rv-rate-button:hover:not(:disabled) { background: var(--rv-green); color: #fff; }
 

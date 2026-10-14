@@ -295,6 +295,31 @@ func TestGoodsCalculationWithoutDelivery(t *testing.T) {
 	}
 }
 
+func TestGoodsCalculationZeroFeeMultiplierDropsFee(t *testing.T) {
+	row := GoodsItemInput{Name: "supplier", StandardName: "Резиновые перчатки", DirectorySnapshot: testGoodsSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65"}
+	input := GoodsCalculationInput{AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "none", PackageWeightKg: "0.3", Mrp: "4325", FeeMultiplier: "0", Items: []GoodsItemInput{row, row}}
+	result, err := NewGoodsService().Calculate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("multiplier 0 must be allowed: %v", err)
+	}
+	if result.Totals.FeeKZT != "0.00" {
+		t.Fatalf("fee must be zero with multiplier 0, got %s", result.Totals.FeeKZT)
+	}
+	withFee := input
+	withFee.FeeMultiplier = "6"
+	expected, err := NewGoodsService().Calculate(context.Background(), withFee)
+	if err != nil {
+		t.Fatalf("calculate with fee: %v", err)
+	}
+	// Сбор входит в базу НДС: без сбора растаможка меньше на сбор и на НДС с него.
+	if result.Totals.CustomsPaymentsKZT == expected.Totals.CustomsPaymentsKZT {
+		t.Fatalf("zero fee must lower customs payments, both %s", result.Totals.CustomsPaymentsKZT)
+	}
+	if expected.Totals.FeeKZT != "25950.00" {
+		t.Fatalf("fee with multiplier 6 must be 4325 × 6 = 25950.00, got %s", expected.Totals.FeeKZT)
+	}
+}
+
 func TestGoodsCalculationUsesExcelPriceOnlyWhereGiven(t *testing.T) {
 	withPrice := GoodsItemInput{Name: "with price", StandardName: "Резиновые перчатки", DirectorySnapshot: testGoodsSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65", PricePerPair: "1.5", SourcePricePerPair: "1.5"}
 	withoutPrice := GoodsItemInput{Name: "without price", StandardName: "Резиновые перчатки", DirectorySnapshot: testGoodsSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65"}

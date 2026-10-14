@@ -8,6 +8,8 @@ type Props = {
   title: string
   estimates: GoodsEstimateSummary[]
   selectedId: number | null
+  // docked — список стоит слева открытым (на странице больше ничего нет), иначе — узкая полоса.
+  docked: boolean
   loading: boolean
   nameOf: (estimate: GoodsEstimateSummary) => string
   hrefOf: (id: number) => string
@@ -15,19 +17,15 @@ type Props = {
   onRemove: (estimate: GoodsEstimateSummary) => void
 }
 
-// Список смет. Смета открыта — слева узкая полоса («Сметы», «+»), смета на всю ширину, а список
-// выезжает поверх неё и закрывается сам: выбор сметы, клик мимо, Esc. Смета не выбрана — список
-// стоит слева открытым: больше на странице ничего нет.
-export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf, hrefOf, onCreate, onRemove }: Props) {
+// Список смет. Смета открыта (или начальный экран новой) — слева узкая полоса («Сметы», «+»), а список
+// выезжает поверх и остаётся открытым при выборе сметы; закрывается кликом мимо или Esc. Иначе (docked)
+// список стоит слева открытым: больше на странице ничего нет.
+export function EstimatesSidebar({ title, estimates, selectedId, docked, loading, nameOf, hrefOf, onCreate, onRemove }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const railRef = useRef<HTMLElement>(null)
-  const docked = selectedId === null
   const needle = query.trim().toLowerCase()
   const visible = needle ? estimates.filter((estimate) => [nameOf(estimate), estimate.client, estimate.ownerName, formatRuDate(estimate.assessmentDate)].join(' ').toLowerCase().includes(needle)) : estimates
-
-  // Другая смета открылась — список больше не нужен.
-  useEffect(() => setOpen(false), [selectedId])
 
   useEffect(() => {
     if (!open) return
@@ -55,7 +53,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, loading, nameOf
           const name = nameOf(estimate)
           const calculated = estimate.status === 'Рассчитано'
           return <div className={estimate.id === selectedId ? 'es-item active' : 'es-item'} key={estimate.id}>
-            <Link href={hrefOf(estimate.id)} onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey) setOpen(false) }} aria-current={estimate.id === selectedId ? 'page' : undefined} title={name}>
+            <Link href={hrefOf(estimate.id)} aria-current={estimate.id === selectedId ? 'page' : undefined} title={name}>
               <span className="es-item-top">
                 <strong>{name}</strong>
                 <i className={calculated ? 'es-status done' : 'es-status'}>{estimate.status}</i>

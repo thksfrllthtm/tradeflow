@@ -29,6 +29,7 @@ export type SheetApi = { focusRow: (index: number) => void; currentRow: () => nu
 type Props = {
   rows: SheetRowView[]
   defaultPackageWeight: string
+  hidePackage: boolean
   compact: boolean
   apiRef: MutableRefObject<SheetApi | null>
   onChanges: (changes: SheetChange[]) => void
@@ -193,7 +194,7 @@ export function ReviewSheet(props: Props) {
 function fitNameColumn(ws: Worksheet) {
   const cols = [...ws.colgroupContainer.children]
   const name = cols[columnIndex('name') + 1]
-  const width = (col: Element) => Number(col.getAttribute('width')) || 0
+  const width = (col: Element) => (col as HTMLElement).style.display === 'none' ? 0 : Number(col.getAttribute('width')) || 0
   const others = cols.reduce((sum, col) => col === name ? sum : sum + width(col), 0)
   // min-width таблица с table-layout: fixed не соблюдает — поэтому width: max(…).
   ws.table.style.width = `max(100%, ${others + Math.max(width(name), SHEET_COLUMNS[columnIndex('name')].width)}px)`
@@ -246,6 +247,15 @@ function decorate(ws: Worksheet, props: Props) {
   const all = visibleRows.length > 0 && visibleRows.every((row) => row.selected)
   const selectAll = ws.headers[columnIndex('select')]?.querySelector('input')
   if (selectAll) { selectAll.checked = all; selectAll.indeterminate = !all && visibleRows.some((row) => row.selected) }
+  // Колонка упаковки, когда нетто есть везде. Своё скрытие, а не ws.hideColumn: та сбрасывает
+  // выделение и не прячет ячейки строк, добавленных позже.
+  const packageColumn = columnIndex('packageWeightKg')
+  const packageDisplay = props.hidePackage ? 'none' : ''
+  const toggled = ws.headers[packageColumn].style.display !== packageDisplay
+  ws.headers[packageColumn].style.display = packageDisplay
+  ws.cols[packageColumn].colElement.style.display = packageDisplay
+  ws.records.forEach((record) => { if (record[packageColumn]) record[packageColumn].element.style.display = packageDisplay })
+  if (toggled) fitNameColumn(ws)
   props.rows.forEach((row, y) => {
     const tr = ws.rows[y]?.element
     if (!tr) return

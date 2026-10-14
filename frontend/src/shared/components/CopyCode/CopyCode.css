@@ -5,3 +5,4 @@ button.copy-code:focus-visible { outline: 2px solid #24704a; outline-offset: 1px
 button.copy-code i { color: #9aa59e; font-family: inherit; font-size: .7em; font-style: normal; display: inline-block; width: 1.2em; text-align: center; font-weight: 600; letter-spacing: 0; opacity: 0; transition: opacity .12s; }
 button.copy-code:hover i, button.copy-code.copied i { opacity: 1; }
 button.copy-code.copied i { color: #1c6b43; }
+button.copy-code.number { letter-spacing: inherit; }

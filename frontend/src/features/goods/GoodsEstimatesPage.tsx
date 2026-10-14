@@ -12,10 +12,12 @@ import { navigate, paths } from '@/shared/router/router'
 import { EstimatesSidebar } from './components/EstimatesSidebar/EstimatesSidebar'
 import './GoodsEstimatesPage.css'
 
-// estimateId — номер сметы из адреса /estimates/goods/:id (null — адрес без номера).
+// estimateId — номер сметы из адреса /estimates/goods/:id (null — адрес без номера: начальный
+// экран, смета создаётся кнопкой на нём).
 type Props = { user: User; estimateId: number | null; onLogout: () => void }
 
 export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
+  const fresh = estimateId === null
   const [estimates, setEstimates] = useState<GoodsEstimateSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [savingMeta, setSavingMeta] = useState(false)
@@ -40,19 +42,19 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     return () => { active = false }
   }, [])
 
-  // Адрес без номера или с номером удалённой/недоступной сметы — открываем первую из списка.
-  // Администратор сначала пробует открыть смету сотрудника по номеру.
+  // Номер удалённой/недоступной сметы — на начальный экран. Администратор сначала пробует
+  // открыть смету сотрудника по номеру.
   useEffect(() => {
-    if (loading || selected) return
-    if (estimateId && isAdmin(user) && foreignFailed !== estimateId) {
+    if (loading || selected || estimateId === null) return
+    if (isAdmin(user) && foreignFailed !== estimateId) {
       let active = true
       goodsEstimatesApi.get(estimateId)
         .then((estimate) => { if (active) setForeign({ id: estimate.id, name: estimate.name, client: estimate.client, assessmentDate: estimate.assessmentDate, status: estimate.status, createdAt: estimate.createdAt, updatedAt: estimate.updatedAt, ownerId: estimate.ownerId, ownerName: estimate.ownerName }) })
         .catch(() => { if (active) setForeignFailed(estimateId) })
       return () => { active = false }
     }
-    navigate(paths.goods(estimates[0]?.id), { replace: true })
-  }, [loading, selected, estimates, estimateId, user, foreignFailed])
+    navigate(paths.goods(), { replace: true })
+  }, [loading, selected, estimateId, user, foreignFailed])
   const employeeEstimate = selected !== null && selected === foreign && foreign.ownerId !== undefined && foreign.ownerId !== user.id
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     try {
       const estimate = await goodsEstimatesApi.create({ name: `Смета товаров · ${todayIso()}`, client: '', assessmentDate: todayIso() })
       setEstimates((current) => [estimate, ...current])
-      navigate(paths.goods(estimate.id))
+      navigate(paths.goods(estimate.id), { replace: fresh })
     } catch (reason) {
       setError(errorMessage(reason))
     }
@@ -130,7 +132,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     <AppHeader user={user} section="estimates" onLogout={onLogout} />
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
     <div className="estimates-workspace">
-      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} loading={loading} nameOf={(estimate) => estimateTitle(estimate.name)} hrefOf={paths.goods} onCreate={() => void create()} onRemove={(estimate) => void remove(estimate)} />
+      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={(estimate) => estimateTitle(estimate.name)} hrefOf={paths.goods} onCreate={() => navigate(paths.goods())} onRemove={(estimate) => void remove(estimate)} />
       <section className="estimates-content">
         {selected ? <GoodsCalculator
           key={selected.id}
@@ -141,9 +143,9 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
             <h1 title={estimateTitle(selected.name)}>{estimateTitle(selected.name)}</h1>
             <span className="estimate-bar-sub">{selected.client || 'Клиент не указан'} · {formatRuDate(selected.assessmentDate)}</span>
             {employeeEstimate && <span className="estimate-owner" title="Изменения и расчёт сохраняются в смете сотрудника">Смета сотрудника: {foreign?.ownerName || 'сотрудник'} · <Link href={paths.employees}>к сотрудникам</Link></span>}
-            <details className="estimate-bar-editor"><summary>Изменить</summary><div className="estimate-bar-fields"><label>Название<input value={estimateTitle(meta.name)} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta || !meta.name.trim()}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
+            <details className="estimate-bar-editor"><summary>Изменить</summary><div className="estimate-bar-fields"><label>Название<input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta || !meta.name.trim()}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
           </div>}
-        /> : !loading && estimates.length === 0 && <div className="estimates-empty"><div><h1>Начните с новой сметы</h1><p>Загрузите инвойс в Excel, проверьте строки и получите расчёт растаможки. Все сметы сохраняются в списке слева.</p><button type="button" onClick={() => void create()}>+ Создать смету</button></div></div>}
+        /> : !loading && fresh && <div className="estimates-empty"><div><h1>Начните с новой сметы</h1><p>Загрузите инвойс в Excel, проверьте строки и получите расчёт растаможки. Все сметы сохраняются в списке слева.</p><button type="button" onClick={() => void create()}>+ Создать смету</button></div></div>}
       </section>
     </div>
   </main>

@@ -4,6 +4,7 @@ import { moneyText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult, ItpSaved } from '@/shared/types/goods'
 import { CalculatorActivity } from '../../types'
 import { storageFailed } from '../../lib/storageNotice'
+import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { ItpCalculator } from './ItpCalculator'
 import { displayNumber, hasAntiDumping, parseCalculatorNumber } from './resultValues'
 import './ResultSummary.css'
@@ -37,6 +38,11 @@ export function ResultSummary({ result, loading, activity, storageNotice, delive
     { label: 'НДС', value: result.totals.vatKzt },
     { label: 'Сбор', value: result.totals.feeKzt },
   ]
+  // Сумма по нажатию копируется без пробелов — для вставки в Excel.
+  const copyable = (value: Parameters<typeof displayNumber>[0]) => {
+    const shown = displayNumber(value)
+    return shown === '—' ? shown : <CopyCode code={shown} number />
+  }
   const partial = result.totals.calculatedCount < result.totals.totalCount
   const calculating = activity === 'calculate'
   const failed = storageFailed(storageNotice)
@@ -45,7 +51,7 @@ export function ResultSummary({ result, loading, activity, storageNotice, delive
     <section className={calculating ? 'rs-summary calculating' : 'rs-summary'} aria-label="Итоги расчёта" aria-busy={calculating}>
       <div className="rs-sum-total">
         <span className="rs-sum-label">Растаможка к оплате</span>
-        <strong aria-live="polite">{displayNumber(result.totals.customsPaymentsKzt)} ₸</strong>
+        <strong aria-live="polite">{copyable(result.totals.customsPaymentsKzt)} ₸</strong>
         <span className="rs-sum-sub">≈ {customsPaymentsUsd}{calculating && <em> · пересчёт…</em>}</span>
         {partial && <span className="rs-partial" title="Остальные строки с ошибками: они в итог не вошли">Итог неполный: рассчитано {result.totals.calculatedCount} из {result.totals.totalCount} строк</span>}
       </div>
@@ -54,7 +60,7 @@ export function ResultSummary({ result, loading, activity, storageNotice, delive
           {parts.map((part, index) => <div className="rs-part" key={part.label}>
             <span className="rs-op" aria-hidden="true">{index === 0 ? '=' : '+'}</span>
             <dt>{part.label}</dt>
-            <dd>{displayNumber(part.value)} <small>₸</small></dd>
+            <dd>{copyable(part.value)} <small>₸</small></dd>
           </div>)}
         </dl>
         <dl className="rs-sum-ref">
