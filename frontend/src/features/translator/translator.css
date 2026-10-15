@@ -102,3 +102,4 @@
 .tr-toast { position: fixed; right: 20px; bottom: 20px; z-index: 60; max-width: min(420px, calc(100vw - 32px)); padding: 9px 14px; border-radius: 8px; background: #0f2e1c; color: #fff; font-size: .82rem; box-shadow: 0 6px 20px rgba(13,31,21,.25); animation: tr-toast-in .15s ease-out; }
 .tr-toast.error { background: var(--c-error); }
 @keyframes tr-toast-in { from { transform: translateY(6px); opacity: 0; } }
+.tr-ext { display: inline; margin-left: 1px; color: #9aa59e; font-size: .74rem; font-weight: 500; }

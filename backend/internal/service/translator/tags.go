@@ -63,3 +63,26 @@ func normalizeTagged(text string) string {
 	escape(text[last:])
 	return result.String()
 }
+
+// walkTagged обходит текст перевода: onText — кусок текста и тег, внутри которого он стоит ("" —
+// без тега), onInline — <xN/>. Сломанные теги не мешают: закрывающий без пары и вложенный
+// открывающий пропускаются, незакрытый тег действует до конца текста.
+func walkTagged(text string, onText func(tag, part string), onInline func(id string)) {
+	open, position := "", 0
+	for _, bounds := range tagToken.FindAllStringIndex(text, -1) {
+		onText(open, text[position:bounds[0]])
+		token := text[bounds[0]:bounds[1]]
+		switch {
+		case strings.HasPrefix(token, "<x"):
+			onInline(token[1 : len(token)-2])
+		case strings.HasPrefix(token, "</"):
+			if token[2:len(token)-1] == open {
+				open = ""
+			}
+		case open == "":
+			open = token[1 : len(token)-1]
+		}
+		position = bounds[1]
+	}
+	onText(open, text[position:])
+}

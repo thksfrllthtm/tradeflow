@@ -192,7 +192,7 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
     if (unconfirmed > 0 && !window.confirm(`Не подтверждено ${unconfirmed} ${plural(unconfirmed, 'сегмент', 'сегмента', 'сегментов')} из ${segments.length}. Скачать перевод как есть?`)) return
     setBusy(true)
     try {
-      await downloadFile(translatorApi.exportPath(doc.id, mode), `${doc.name}_${mode === 'bilingual' ? `${doc.sourceLang}-` : ''}${doc.targetLang}.docx`, 'Не удалось собрать документ')
+      await downloadFile(translatorApi.exportPath(doc.id, mode), `${doc.name}_${mode === 'bilingual' ? `${doc.sourceLang}-` : ''}${doc.targetLang}.${doc.format}`, 'Не удалось собрать документ')
     } catch (reason) {
       showToast(errorMessage(reason), true)
     } finally {
@@ -256,7 +256,7 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
         <div className="tr-doc-actions">
           {!translating && done < segments.length && <button type="button" onClick={() => void translate()} disabled={busy}>{done === 0 ? 'Перевести' : 'Перевести оставшиеся'}</button>}
           <button type="button" className="secondary" onClick={() => void download('target')} disabled={busy || done === 0} title="Исходный документ, где текст заменён переводом">Скачать перевод</button>
-          <button type="button" className="secondary" onClick={() => void download('bilingual')} disabled={busy || done === 0} title="Под каждым абзацем оригинала — перевод серым курсивом">Скачать двуязычный</button>
+          {doc.format === 'docx' && <button type="button" className="secondary" onClick={() => void download('bilingual')} disabled={busy || done === 0} title="Под каждым абзацем оригинала — перевод серым курсивом">Скачать двуязычный</button>}
         </div>
       </div>}
       {doc && segments.length > 0 && <div className="dir-toolbar tr-toolbar">
@@ -276,7 +276,7 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
           const active = segment.id === activeId
           const target = segment.targetText || segment.mtText
           return <div id={`tr-seg-${segment.id}`} className={`tr-seg st-${segment.status}${active ? ' active' : ''}`} key={segment.id}>
-            <span className="tr-seg-num" title={segmentStatusLabels[segment.status]}>{number.get(segment.id)}{segment.kind === 'table_cell' && <small title="Абзац в ячейке таблицы">табл.</small>}</span>
+            <span className="tr-seg-num" title={segmentStatusLabels[segment.status]}>{number.get(segment.id)}{segment.kind === 'table_cell' && doc.format === 'docx' && <small title="Абзац в ячейке таблицы">табл.</small>}</span>
             <div className="tr-seg-source"><TaggedText text={segment.sourceText} tags={segment.tags} /></div>
             {active
               ? <div className="tr-seg-target">

@@ -1,6 +1,6 @@
 import { DragEvent, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { languages, maxFileBytes, translatorApi } from './translatorApi'
+import { languages, maxFileMb, translatorApi } from './translatorApi'
 import '@/shared/styles/drawer.css'
 
 const pairKey = 'tradeflow.translator.langs'
@@ -16,13 +16,16 @@ function savedPair() {
 }
 
 function checkFile(file: File) {
-  if (/\.doc$/i.test(file.name)) return 'Файлы .doc не поддерживаются: откройте документ в Word и сохраните его как .docx'
-  if (!/\.docx$/i.test(file.name)) return 'Выберите документ Word в формате .docx'
-  if (file.size > maxFileBytes) return 'Файл больше 20 МБ. Уменьшите его (например, сожмите картинки в Word) или разделите на части'
+  const extension = /\.(\w+)$/.exec(file.name)?.[1].toLowerCase()
+  if (extension === 'doc') return 'Файлы .doc не поддерживаются: откройте документ в Word и сохраните его как .docx'
+  if (extension === 'xls') return 'Файлы .xls не поддерживаются: откройте книгу в Excel и сохраните её как .xlsx'
+  if (extension !== 'docx' && extension !== 'xlsx') return 'Выберите документ Word (.docx) или книгу Excel (.xlsx)'
+  const limit = maxFileMb[extension]
+  if (file.size > limit << 20) return `Файл больше ${limit} МБ. Уменьшите его (например, сожмите картинки) или разделите на части`
   return ''
 }
 
-// Загрузка .docx: перетащить файл или выбрать, указать языки. После загрузки открывается документ.
+// Загрузка .docx или .xlsx: перетащить файл или выбрать, указать языки. После загрузки открывается документ.
 export function UploadDrawer({ onClose, onUploaded }: { onClose: () => void; onUploaded: (id: number) => void }) {
   const [file, setFile] = useState<File | null>(null)
   const [pair, setPair] = useState(savedPair)
@@ -70,7 +73,7 @@ export function UploadDrawer({ onClose, onUploaded }: { onClose: () => void; onU
   return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose() }}>
     <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="tr-upload-title">
       <header className="drawer-head">
-        <div><h2 id="tr-upload-title">Загрузить документ</h2><p>Word (.docx) до 20 МБ и до 3 000 абзацев с текстом</p></div>
+        <div><h2 id="tr-upload-title">Загрузить документ</h2><p>Word (.docx) до 20 МБ или Excel (.xlsx) до 100 МБ, до 3 000 абзацев или строк с текстом</p></div>
         <button type="button" className="drawer-close" onClick={onClose} disabled={busy} aria-label="Закрыть">×</button>
       </header>
       <div className="drawer-body">
@@ -78,9 +81,9 @@ export function UploadDrawer({ onClose, onUploaded }: { onClose: () => void; onU
           <label className={dragging ? 'tr-drop dragging' : 'tr-drop'}
             onDragOver={(event) => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true) } }}
             onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false) }} onDrop={onDrop}>
-            <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={busy} onChange={(event) => { pick(event.target.files?.[0]); event.target.value = '' }} />
+            <input type="file" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={(event) => { pick(event.target.files?.[0]); event.target.value = '' }} />
             {file ? <><b>{file.name}</b><small>{(file.size / 1024 / 1024).toFixed(1)} МБ · выбрать другой</small></>
-              : <><b>Перетащите .docx сюда</b><small>или нажмите, чтобы выбрать файл</small></>}
+              : <><b>Перетащите .docx или .xlsx сюда</b><small>или нажмите, чтобы выбрать файл</small></>}
           </label>
         </section>
         <section className="drawer-section">

@@ -172,6 +172,15 @@ func (s *Server) requireAdmin(c *gin.Context) {
 	c.Next()
 }
 
+// requireTranslator follows requireUser on the «Переводчик» section: translators and administrators only.
+func (s *Server) requireTranslator(c *gin.Context) {
+	if role := currentUser(c).Role; role != repository.RoleAdmin && role != repository.RoleTranslator {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "Раздел «Переводчик» доступен переводчикам и администратору", "code": "forbidden"}})
+		return
+	}
+	c.Next()
+}
+
 // estimateScope is the owner filter for estimates: an administrator works with
 // every employee's estimates, everyone else only with their own.
 func estimateScope(c *gin.Context) int64 {

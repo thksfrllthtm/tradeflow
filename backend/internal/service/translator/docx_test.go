@@ -225,8 +225,8 @@ func TestUploadValidation(t *testing.T) {
 		{"unknown language", "a.docx", "de", "ru", nil, "Выберите язык оригинала"},
 		{"old word", "a.doc", "zh", "ru", nil, "Файлы .doc не поддерживаются: откройте документ в Word и сохраните его как .docx"},
 		{"not docx", "a.docx", "zh", "ru", []byte("zip?"), "Не удалось прочитать файл: это не документ Word (.docx) или он повреждён"},
-		{"empty", "a.docx", "zh", "ru", testDocx(t, `<w:p/>`, nil), "В документе нет текста для перевода"},
-		{"too many", "a.docx", "zh", "ru", testDocx(t, many, nil), "Абзацев с текстом в документе: 3001, а можно не больше 3 000. Разделите его на части и загрузите по очереди"},
+		{"empty", "a.docx", "zh", "ru", testDocx(t, `<w:p/>`, nil), "В файле нет текста для перевода"},
+		{"too many", "a.docx", "zh", "ru", testDocx(t, many, nil), "Абзацев с текстом в документе: 3001, а можно не больше 3 000. Разделите файл на части и загрузите по очереди"},
 		{"tracked", "a.docx", "zh", "ru", testDocx(t, `<w:p><w:del><w:r><w:delText>x</w:delText></w:r></w:del></w:p>`, nil), "В документе есть исправления в режиме рецензирования. Примите или отклоните их в Word и загрузите файл снова"},
 	} {
 		_, err := s.Upload(context.Background(), 1, test.file, test.data, test.source, test.target)
@@ -234,8 +234,21 @@ func TestUploadValidation(t *testing.T) {
 			t.Errorf("%s: got %v", test.name, err)
 		}
 	}
-	if err := checkFile("big.DOCX", MaxFileBytes+1); err == nil || !strings.Contains(err.Error(), "больше 20 МБ") {
-		t.Errorf("size: got %v", err)
+	for _, test := range []struct {
+		name, format, message string
+		size                  int
+	}{
+		{"big.DOCX", "", "больше 20 МБ", maxDocxBytes + 1},
+		{"book.xlsx", "xlsx", "", maxDocxBytes + 1}, // Excel — до 100 МБ
+		{"big.xlsx", "", "больше 100 МБ", MaxFileBytes + 1},
+		{"old.xls", "", "сохраните её как .xlsx", 1},
+		{"scan.pdf", "", "Выберите документ Word (.docx) или книгу Excel (.xlsx)", 1},
+	} {
+		format, err := checkFile(test.name, test.size)
+		failed := err != nil
+		if format != test.format || failed != (test.message != "") || failed && !strings.Contains(err.Error(), test.message) {
+			t.Errorf("%s: format %q, err %v", test.name, format, err)
+		}
 	}
 	if name := documentName("  Контракт №5.docx"); name != "Контракт №5" {
 		t.Errorf("name %q", name)

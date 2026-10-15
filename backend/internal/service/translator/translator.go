@@ -20,7 +20,9 @@ import (
 )
 
 const (
-	MaxFileBytes = 20 << 20
+	maxDocxBytes = 20 << 20
+	// MaxFileBytes — самый большой файл: книга Excel с фото поставщика, как в сметах.
+	MaxFileBytes = 100 << 20
 	maxSegments  = 3000
 )
 
@@ -63,19 +65,24 @@ func (s *Service) Upload(ctx context.Context, userID int64, fileName string, dat
 	if sourceLang == targetLang {
 		return 0, &service.ValidationError{Field: "targetLang", Message: "Язык перевода должен отличаться от языка оригинала"}
 	}
-	if err := checkFile(fileName, len(data)); err != nil {
+	format, err := checkFile(fileName, len(data))
+	if err != nil {
 		return 0, err
 	}
-	parsed, skipped, err := ParseSegments(data)
+	parse, unit, kind := ParseSegments, "Абзацев с текстом в документе", "документ Word (.docx)"
+	if format == "xlsx" {
+		parse, unit, kind = ParseXlsxSegments, "Строк с текстом в книге", "книга Excel (.xlsx)"
+	}
+	parsed, skipped, err := parse(data)
 	switch {
 	case errors.Is(err, errTrackedChanges):
 		return 0, &service.ValidationError{Field: "file", Message: "В документе есть исправления в режиме рецензирования. Примите или отклоните их в Word и загрузите файл снова"}
 	case err != nil:
-		return 0, &service.ValidationError{Field: "file", Message: "Не удалось прочитать файл: это не документ Word (.docx) или он повреждён"}
+		return 0, &service.ValidationError{Field: "file", Message: "Не удалось прочитать файл: это не " + kind + " или он повреждён"}
 	case len(parsed) == 0:
-		return 0, &service.ValidationError{Field: "file", Message: "В документе нет текста для перевода"}
+		return 0, &service.ValidationError{Field: "file", Message: "В файле нет текста для перевода"}
 	case len(parsed) > maxSegments:
-		return 0, &service.ValidationError{Field: "file", Message: fmt.Sprintf("Абзацев с текстом в документе: %d, а можно не больше 3 000. Разделите его на части и загрузите по очереди", len(parsed))}
+		return 0, &service.ValidationError{Field: "file", Message: fmt.Sprintf("%s: %d, а можно не больше 3 000. Разделите файл на части и загрузите по очереди", unit, len(parsed))}
 	}
 	skippedJSON, err := json.Marshal(skipped)
 	if err != nil {
@@ -91,7 +98,7 @@ func (s *Service) Upload(ctx context.Context, userID int64, fileName string, dat
 	}
 	document := repository.TranslatorDocument{
 		Name: documentName(fileName), SourceLang: sourceLang, TargetLang: targetLang, OriginalFile: data,
-		Status: "parsed", Skipped: skippedJSON, CreatedBy: &userID,
+		Format: format, Status: "parsed", Skipped: skippedJSON, CreatedBy: &userID,
 	}
 	if err := s.repository.CreateTranslatorDocument(ctx, &document, segments); err != nil {
 		return 0, err
@@ -99,21 +106,29 @@ func (s *Service) Upload(ctx context.Context, userID int64, fileName string, dat
 	return document.ID, nil
 }
 
-func checkFile(fileName string, size int) error {
+// checkFile — формат файла по расширению (docx, xlsx) и его размер: Word до 20 МБ, Excel до 100 МБ.
+func checkFile(fileName string, size int) (string, error) {
 	switch strings.ToLower(filepath.Ext(fileName)) {
 	case ".docx":
+		if size > maxDocxBytes {
+			return "", &service.ValidationError{Field: "file", Message: "Файл больше 20 МБ. Уменьшите его (например, сожмите картинки в Word) или разделите на части"}
+		}
+		return "docx", nil
+	case ".xlsx":
+		if size > MaxFileBytes {
+			return "", &service.ValidationError{Field: "file", Message: "Файл больше 100 МБ. Уменьшите его (например, сожмите картинки в Excel) или разделите на части"}
+		}
+		return "xlsx", nil
 	case ".doc":
-		return &service.ValidationError{Field: "file", Message: "Файлы .doc не поддерживаются: откройте документ в Word и сохраните его как .docx"}
+		return "", &service.ValidationError{Field: "file", Message: "Файлы .doc не поддерживаются: откройте документ в Word и сохраните его как .docx"}
+	case ".xls":
+		return "", &service.ValidationError{Field: "file", Message: "Файлы .xls не поддерживаются: откройте книгу в Excel и сохраните её как .xlsx"}
 	default:
-		return &service.ValidationError{Field: "file", Message: "Выберите документ Word в формате .docx"}
+		return "", &service.ValidationError{Field: "file", Message: "Выберите документ Word (.docx) или книгу Excel (.xlsx)"}
 	}
-	if size > MaxFileBytes {
-		return &service.ValidationError{Field: "file", Message: "Файл больше 20 МБ. Уменьшите его (например, сожмите картинки в Word) или разделите на части"}
-	}
-	return nil
 }
 
-// documentName — имя файла без «.docx»; из него же имя выгрузки.
+// documentName — имя файла без расширения; из него же имя выгрузки.
 func documentName(fileName string) string {
 	name := strings.TrimSpace(strings.TrimSuffix(filepath.Base(fileName), filepath.Ext(fileName)))
 	for utf8.RuneCountInString(name) > 255 {
@@ -199,9 +214,10 @@ func segmentView(item repository.TranslatorSegment) (SegmentView, error) {
 }
 
 var (
-	boldPattern      = regexp.MustCompile(`<w:b(?: w:val="(\w*)")?\s*/>`)
-	italicPattern    = regexp.MustCompile(`<w:i(?: w:val="(\w*)")?\s*/>`)
-	underlinePattern = regexp.MustCompile(`<w:u(?: [^>]*?w:val="(\w*)")?[^>]*/>`)
+	// Word пишет <w:b/>, Excel — <b/>.
+	boldPattern      = regexp.MustCompile(`<(?:w:)?b(?: (?:w:)?val="(\w*)")?\s*/>`)
+	italicPattern    = regexp.MustCompile(`<(?:w:)?i(?: (?:w:)?val="(\w*)")?\s*/>`)
+	underlinePattern = regexp.MustCompile(`<(?:w:)?u(?: [^>]*?val="(\w*)")?[^>]*/>`)
 )
 
 // switchedOn: у w:b / w:i значение «0», «false», «off» выключает форматирование, у w:u — «none».

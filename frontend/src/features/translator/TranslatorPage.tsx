@@ -54,7 +54,7 @@ export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () =>
           <tbody>
             {items.length === 0 ? <tr><td colSpan={5} className="dir-empty">{loading ? 'Загрузка…' : search ? 'Ничего не найдено' : 'Документов пока нет. Загрузите .docx, чтобы перевести его.'}</td></tr>
               : items.map((item) => <tr key={item.id} onClick={() => navigate(paths.translator(item.id))}>
-                <td><Link className="dir-name" href={paths.translator(item.id)} onClick={(event) => event.stopPropagation()}>{item.name}</Link></td>
+                <td><Link className="dir-name" href={paths.translator(item.id)} onClick={(event) => event.stopPropagation()}>{item.name}<small className="tr-ext">.{item.format}</small></Link></td>
                 <td className="tr-langs-col">{languageLabel(item.sourceLang)} → {languageLabel(item.targetLang)}</td>
                 <td className="tr-who-col"><span>{item.createdByName || '—'}</span><small>{formatRuDate(item.createdAt.slice(0, 10))}</small></td>
                 <td className="tr-progress-col">

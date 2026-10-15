@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { isAdmin, roleLabels, User } from '@/shared/types/user'
+import { canTranslate, isAdmin, roleLabels, User } from '@/shared/types/user'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
 import { useTodayRates } from '@/shared/api/todayRates'
@@ -22,7 +22,7 @@ const adminSections: typeof sections = [
   { value: 'employees', label: 'Сотрудники', href: paths.employees },
 ]
 
-// «Переводчик» — последним, после «Сотрудников» (их видит только администратор).
+// «Переводчик» — последним, после «Сотрудников»; только переводчикам и администратору.
 const translatorSection: (typeof sections)[number] = { value: 'translator', label: 'Переводчик', href: paths.translator() }
 
 function initials(user: User) {
@@ -38,7 +38,7 @@ const GAP = 4
 // Общая шапка всех страниц: логотип, разделы, курс НБРК на сегодня с конвертером валют, пользователь и выход. Разделы, которые не
 // помещаются по ширине (окно рядом с Excel), уходят в меню «Ещё» — ничего не обрезается.
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
-  const items = [...sections, ...(isAdmin(user) ? adminSections : []), translatorSection]
+  const items = [...sections, ...(isAdmin(user) ? adminSections : []), ...(canTranslate(user) ? [translatorSection] : [])]
   const navRef = useRef<HTMLElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDetailsElement>(null)

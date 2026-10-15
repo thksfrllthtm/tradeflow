@@ -12,3 +12,6 @@ export const roleLabels: Record<Role, string> = {
 // Остальные работают в калькуляторах, а справочники только просматривают.
 export const isAdmin = (user: User) => user.role === 'admin'
 
+
+// Раздел «Переводчик» — переводчикам и администратору (на сервере — requireTranslator).
+export const canTranslate = (user: User) => user.role === 'admin' || user.role === 'translator'

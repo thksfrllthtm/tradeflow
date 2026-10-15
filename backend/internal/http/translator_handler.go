@@ -9,7 +9,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
@@ -64,10 +66,10 @@ func (s *Server) uploadTranslatorDocument(c *gin.Context) {
 	if err != nil {
 		var sizeErr *http.MaxBytesError
 		if errors.As(err, &sizeErr) {
-			badRequest(c, "Файл больше 20 МБ. Уменьшите его (например, сожмите картинки в Word) или разделите на части", "file")
+			badRequest(c, "Файл больше 100 МБ. Уменьшите его (например, сожмите картинки) или разделите на части", "file")
 			return
 		}
-		badRequest(c, "Выберите документ Word в формате .docx", "file")
+		badRequest(c, "Выберите документ Word (.docx) или книгу Excel (.xlsx)", "file")
 		return
 	}
 	defer file.Close()
@@ -179,7 +181,7 @@ func (s *Server) translatorSegmentHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": versions})
 }
 
-// exportTranslatorDocument — .docx с переводом (mode=target) или двуязычный (mode=bilingual).
+// exportTranslatorDocument — файл с переводом (mode=target) или двуязычный .docx (mode=bilingual).
 func (s *Server) exportTranslatorDocument(c *gin.Context) {
 	id, ok := translatorID(c)
 	if !ok {
@@ -190,6 +192,10 @@ func (s *Server) exportTranslatorDocument(c *gin.Context) {
 		translatorError(c, err)
 		return
 	}
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="translation.docx"; filename*=UTF-8''%s`, url.PathEscape(name)))
-	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", data)
+	contentType := "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	if strings.HasSuffix(name, ".xlsx") {
+		contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	}
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="translation%s"; filename*=UTF-8''%s`, path.Ext(name), url.PathEscape(name)))
+	c.Data(http.StatusOK, contentType, data)
 }

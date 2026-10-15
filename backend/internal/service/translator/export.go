@@ -107,23 +107,7 @@ func renderRuns(text string, fragments map[string]fragment, bilingual bool) stri
 		setWrap(item.wrap)
 		result.WriteString(item.raw)
 	}
-	open, position := "", 0
-	for _, bounds := range tagToken.FindAllStringIndex(text, -1) {
-		writeText(open, text[position:bounds[0]])
-		token := text[bounds[0]:bounds[1]]
-		switch {
-		case strings.HasPrefix(token, "<x"):
-			writeRaw(token[1 : len(token)-2])
-		case strings.HasPrefix(token, "</"):
-			if token[2:len(token)-1] == open {
-				open = ""
-			}
-		case open == "":
-			open = token[1 : len(token)-1]
-		}
-		position = bounds[1]
-	}
-	writeText(open, text[position:])
+	walkTagged(text, writeText, writeRaw)
 	if !bilingual {
 		for id := 1; id <= len(fragments); id++ {
 			writeRaw("x" + strconv.Itoa(id))
@@ -197,12 +181,15 @@ func replacePart(original []byte, name string, data []byte) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
-// Export собирает .docx документа: mode target — перевод вместо оригинала, bilingual — оба.
-// Перевод сегмента — правка сотрудника или машинный; без перевода абзац остаётся как есть.
+// Export собирает файл документа: перевод вместо оригинала или (только Word) двуязычный.
+// Перевод сегмента — правка сотрудника или машинный; без перевода текст остаётся как есть.
 func (s *Service) Export(ctx context.Context, id int64, bilingual bool) (string, []byte, error) {
 	document, err := s.repository.TranslatorDocumentByID(ctx, id)
 	if err != nil {
 		return "", nil, err
+	}
+	if bilingual && document.Format == "xlsx" {
+		return "", nil, &service.ValidationError{Field: "mode", Message: "Двуязычная выгрузка есть только для документов Word"}
 	}
 	original, err := s.repository.TranslatorDocumentFile(ctx, id)
 	if err != nil {
@@ -220,7 +207,12 @@ func (s *Service) Export(ctx context.Context, id int64, bilingual bool) (string,
 		}
 		items[i] = exportSegment{source: segment.SourceText, translation: translation}
 	}
-	data, err := buildDocx(original, items, bilingual)
+	var data []byte
+	if document.Format == "xlsx" {
+		data, err = buildXlsx(original, items)
+	} else {
+		data, err = buildDocx(original, items, bilingual)
+	}
 	if errors.Is(err, errSegmentsChanged) {
 		return "", nil, &service.ValidationError{Field: "file", Message: "Документ разобран старой версией программы и не совпадает с файлом. Загрузите файл заново"}
 	}
@@ -231,5 +223,5 @@ func (s *Service) Export(ctx context.Context, id int64, bilingual bool) (string,
 	if bilingual {
 		suffix = document.SourceLang + "-" + document.TargetLang
 	}
-	return document.Name + "_" + suffix + ".docx", data, nil
+	return document.Name + "_" + suffix + "." + document.Format, data, nil
 }

@@ -17,6 +17,7 @@ type TranslatorDocument struct {
 	SourceLang   string
 	TargetLang   string
 	OriginalFile []byte
+	Format       string // docx | xlsx
 	Status       string
 	Error        string
 	Skipped      JSON `gorm:"type:jsonb"`
@@ -51,6 +52,7 @@ type TranslatorDocumentSummary struct {
 	Name           string    `json:"name"`
 	SourceLang     string    `json:"sourceLang"`
 	TargetLang     string    `json:"targetLang"`
+	Format         string    `json:"format"`
 	Status         string    `json:"status"`
 	Error          string    `json:"error"`
 	Skipped        JSON      `json:"skipped"`
@@ -69,7 +71,7 @@ func translatorDocumentQuery(db *gorm.DB) *gorm.DB {
 	return db.Table("translator_documents AS d").
 		Joins("LEFT JOIN users u ON u.id = d.created_by").
 		Joins("LEFT JOIN translator_segments s ON s.document_id = d.id").
-		Select(`d.id, d.name, d.source_lang, d.target_lang, d.status, d.error, d.skipped, d.created_by, d.created_at, d.updated_at,
+		Select(`d.id, d.name, d.format, d.source_lang, d.target_lang, d.status, d.error, d.skipped, d.created_by, d.created_at, d.updated_at,
 			COALESCE(NULLIF(u.name, ''), u.email, '') AS created_by_name,
 			count(s.id) AS segment_count, count(s.id) FILTER (WHERE s.status = 'confirmed') AS confirmed_count`).
 		Group("d.id, u.id")

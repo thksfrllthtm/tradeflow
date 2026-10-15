@@ -59,7 +59,7 @@ type User struct {
 const (
 	RoleAdmin      = "admin"      // полный доступ, управление сотрудниками и справочниками
 	RoleInvoicer   = "invoicer"   // калькуляторы; справочники для просмотра
-	RoleTranslator = "translator" // пока те же права, что у инвойсера
+	RoleTranslator = "translator" // права инвойсера и раздел «Переводчик»
 )
 
 func ValidRole(role string) bool {

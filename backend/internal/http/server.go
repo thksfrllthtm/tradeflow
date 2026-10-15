@@ -227,9 +227,9 @@ func (s *Server) Router() *gin.Engine {
 	ceramics.POST("/analyze", s.analyzeCeramics)
 	ceramics.POST("/price", s.ceramicsPrice)
 
-	// Перевод Word-документов: все сотрудники видят и правят все документы.
+	// Перевод Word-документов: только переводчики и администратор; документы видят и правят все они.
 	translatorDocs := router.Group("/api/translator")
-	translatorDocs.Use(s.requireUser)
+	translatorDocs.Use(s.requireUser, s.requireTranslator)
 	translatorDocs.GET("/documents", s.listTranslatorDocuments)
 	translatorDocs.POST("/documents", s.uploadTranslatorDocument)
 	translatorDocs.GET("/documents/:id", s.getTranslatorDocument)

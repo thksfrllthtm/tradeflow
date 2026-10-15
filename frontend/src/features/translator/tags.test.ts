@@ -20,6 +20,7 @@ describe('parseTagged', () => {
 describe('skippedSummary', () => {
   it('lists what stays untranslated', () => {
     expect(skippedSummary({ headers: 2, textboxes: 2, formulas: 1, footnotes: 1 })).toBe('2 надписи, колонтитулы, сноски, 1 формула')
+    expect(skippedSummary({ sheets: 2, inline: 1 })).toBe('2 названия листов, текст, записанный прямо в ячейки')
     expect(skippedSummary({})).toBe('')
   })
 })

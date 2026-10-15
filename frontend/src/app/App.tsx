@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { authApi } from '@/features/auth/authApi'
-import { isAdmin, User } from '@/shared/types/user'
+import { canTranslate, isAdmin, User } from '@/shared/types/user'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { NomenclaturePage } from '@/features/directories/nomenclature/NomenclaturePage'
@@ -24,8 +24,8 @@ export function App() {
   // Куда вернуться после входа, если страницу открыли без сессии.
   const returnTo = useRef<string | null>(null)
   const authPage = route?.page === 'login' || route?.page === 'register'
-  // Страница сотрудников есть только у администратора; остальных отправляем на главную.
-  const knownRoute = route !== null && !(route.page === 'employees' && user !== null && !isAdmin(user))
+  // Сотрудники — только администратору, «Переводчик» — переводчику и администратору; остальных на главную.
+  const knownRoute = route !== null && !(user !== null && (route.page === 'employees' && !isAdmin(user) || route.page === 'translator' && !canTranslate(user)))
 
   useEffect(() => {
     const onSessionExpired = () => {
@@ -85,7 +85,7 @@ export function App() {
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
     case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />
-    case 'translator': return route.documentId
+    case 'translator': return !canTranslate(user) ? null : route.documentId
       ? <TranslatorDocumentPage key={route.documentId} user={user} documentId={route.documentId} onLogout={() => void logout()} />
       : <TranslatorPage user={user} onLogout={() => void logout()} />
   }

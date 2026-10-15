@@ -13,7 +13,9 @@ export const languages = [
 
 export const languageLabel = (code: string) => languages.find((item) => item.code === code)?.label ?? code
 
-export const maxFileBytes = 20 << 20
+// Пределы размера файла: Word — 20 МБ, Excel с фото поставщика — 100 МБ (как в сметах).
+export const maxFileMb = { docx: 20, xlsx: 100 }
+export type DocumentFormat = keyof typeof maxFileMb
 
 export type DocumentStatus = 'parsed' | 'translating' | 'translated' | 'failed'
 
@@ -27,6 +29,7 @@ export const documentStatusLabels: Record<DocumentStatus, string> = {
 export type TranslatorDocument = {
   id: number
   name: string
+  format: DocumentFormat
   sourceLang: string
   targetLang: string
   status: DocumentStatus
@@ -75,6 +78,9 @@ const skippedLabels: [string, string | [string, string, string]][] = [
   ['formulas', ['формула', 'формулы', 'формул']],
   ['fields', ['поле формы', 'поля формы', 'полей формы']],
   ['charts', ['диаграмма', 'диаграммы', 'диаграмм']],
+  ['sheets', ['название листа', 'названия листов', 'названий листов']],
+  ['comments', 'примечания'],
+  ['inline', 'текст, записанный прямо в ячейки'],
 ]
 
 // «2 надписи, колонтитулы» — для предупреждения «Не переведено: …»; '' — всё разобрано.
