@@ -10,6 +10,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tiptap/core": "3.31.4",
+    "@tiptap/extension-document": "3.31.4",
+    "@tiptap/extension-paragraph": "3.31.4",
+    "@tiptap/extension-text": "3.31.4",
+    "@tiptap/extensions": "3.31.4",
+    "@tiptap/pm": "3.31.4",
+    "@tiptap/react": "3.31.4",
     "jspreadsheet-ce": "5.0.4",
     "pdfjs-dist": "4.10.38",
     "react": "19.0.0",

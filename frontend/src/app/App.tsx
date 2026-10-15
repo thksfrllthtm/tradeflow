@@ -11,6 +11,8 @@ import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
 import { UtilFeePage } from '@/features/utilFee/UtilFeePage'
+import { TranslatorPage } from '@/features/translator/TranslatorPage'
+import { TranslatorDocumentPage } from '@/features/translator/TranslatorDocumentPage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
 export function App() {
@@ -83,5 +85,8 @@ export function App() {
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
     case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />
+    case 'translator': return route.documentId
+      ? <TranslatorDocumentPage key={route.documentId} user={user} documentId={route.documentId} onLogout={() => void logout()} />
+      : <TranslatorPage user={user} onLogout={() => void logout()} />
   }
 }

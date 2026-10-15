@@ -1,6 +1,7 @@
 import { ChangeEvent, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { DirectoryImportResult, downloadDirectory, uploadDirectory } from '../common/directoryTransfer'
+import { DirectoryImportResult, uploadDirectory } from '../common/directoryTransfer'
+import { downloadFile } from '@/shared/api/download'
 import './DirectoryTransfer.css'
 
 type Props = {
@@ -27,7 +28,7 @@ export function useDirectoryTransfer({ apiPath, title, hint, onImported }: Props
   async function exportFile() {
     setBusy('export'); setError('')
     try {
-      await downloadDirectory(`${apiPath}/export`, `${title}.xlsx`)
+      await downloadFile(`${apiPath}/export`, `${title}.xlsx`, 'Не удалось выгрузить справочник')
     } catch (reason) {
       setError(errorMessage(reason))
       setOpen(true)

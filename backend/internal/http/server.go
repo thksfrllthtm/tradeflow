@@ -18,6 +18,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/goods"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/riskindicators"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/translator"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,6 +39,7 @@ type Server struct {
 	ceramics          *ceramics.CeramicsService
 	decisions         *decisions.CodeDecisionService
 	agent             *tnvedagent.TNVEDAgentService
+	translator        *translator.Service
 	authMu            sync.Mutex
 	authRates         map[string]authRate
 }
@@ -59,7 +61,8 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		ceramics: ceramics.NewCeramicsService(database, ceramics.NewCeramicsAIClient(ceramics.CeramicsAIConfig{
 			APIKey: cfg.CeramicsAIAPIKey, BaseURL: cfg.CeramicsAIBaseURL, Model: cfg.CeramicsAIModel, Vision: cfg.CeramicsAIVision,
 		})),
-		decisions: decisions,
+		decisions:  decisions,
+		translator: translator.NewService(database, translator.NewClient(cfg.TranslatorAIAPIKey, cfg.TranslatorAIBaseURL, cfg.TranslatorAIModel)),
 		agent: tnvedagent.NewTNVEDAgentService(database, tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
 			APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision, Effort: cfg.TNVEDAIEffort,
 			PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
@@ -68,13 +71,17 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 }
 
 // StartBackground запускает фоновые задачи: антидемпинговые меры из файла программы (если их ещё
-// не загружали), миниатюры записей базы решений без неё и описания фото для поиска похожих.
+// не загружали), миниатюры записей базы решений без неё, описания фото для поиска похожих и
+// переводы документов, прерванные перезапуском.
 func (s *Server) StartBackground(ctx context.Context) {
 	if err := s.antiDumping.SeedIfEmpty(ctx); err != nil {
 		log.Printf("anti-dumping measures: initial load failed: %v", err)
 	}
 	go s.decisions.FillMissingThumbs(ctx)
 	s.agent.StartPhotoWorker(ctx)
+	if err := s.translator.ResumeInterrupted(ctx); err != nil {
+		log.Printf("translator: resume interrupted translations: %v", err)
+	}
 }
 
 // RecoverInterrupted помечает ошибкой подборы ИИ, прерванные перезапуском сервера.
@@ -219,6 +226,19 @@ func (s *Server) Router() *gin.Engine {
 	ceramics.POST("/lookup", s.lookupCeramicsMarks)
 	ceramics.POST("/analyze", s.analyzeCeramics)
 	ceramics.POST("/price", s.ceramicsPrice)
+
+	// Перевод Word-документов: все сотрудники видят и правят все документы.
+	translatorDocs := router.Group("/api/translator")
+	translatorDocs.Use(s.requireUser)
+	translatorDocs.GET("/documents", s.listTranslatorDocuments)
+	translatorDocs.POST("/documents", s.uploadTranslatorDocument)
+	translatorDocs.GET("/documents/:id", s.getTranslatorDocument)
+	translatorDocs.DELETE("/documents/:id", s.deleteTranslatorDocument)
+	translatorDocs.POST("/documents/:id/translate", s.translateTranslatorDocument)
+	translatorDocs.GET("/documents/:id/export", s.exportTranslatorDocument)
+	translatorDocs.PATCH("/segments/:id", s.editTranslatorSegment)
+	translatorDocs.POST("/segments/:id/retranslate", s.retranslateTranslatorSegment)
+	translatorDocs.GET("/segments/:id/history", s.translatorSegmentHistory)
 
 	// Сервер отдаёт только API (сайт — на Vercel): любой неизвестный адрес — JSON 404.
 	router.NoRoute(func(c *gin.Context) {

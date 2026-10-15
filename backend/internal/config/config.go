@@ -35,6 +35,10 @@ type Config struct {
 	TNVEDAIPriceOutput float64
 	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
 	TNVEDAIEffort string
+	// «Переводчик» (.docx): OpenAI-совместимый API, по умолчанию DeepSeek с ключом DEEPSEEK_API_KEY.
+	TranslatorAIAPIKey  string
+	TranslatorAIBaseURL string
+	TranslatorAIModel   string
 	// TavilyAPIKey — поиск в интернете для подбора кода ТН ВЭД ("" — без интернета).
 	TavilyAPIKey string
 	// RegistrationDisabled: запретить самостоятельную регистрацию (ALLOW_REGISTRATION=false).
@@ -101,6 +105,9 @@ func Load() (Config, error) {
 		TNVEDAIAPIKey:        stringEnv("TNVED_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
 		TNVEDAIBaseURL:       stringEnv("TNVED_AI_BASE_URL", "https://api.deepseek.com"),
 		TNVEDAIModel:         stringEnv("TNVED_AI_MODEL", "deepseek-flash"),
+		TranslatorAIAPIKey:   stringEnv("TRANSLATOR_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
+		TranslatorAIBaseURL:  stringEnv("TRANSLATOR_AI_BASE_URL", "https://api.deepseek.com"),
+		TranslatorAIModel:    stringEnv("TRANSLATOR_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
 		TavilyAPIKey:         strings.TrimSpace(os.Getenv("TAVILY_API_KEY")),
 		TNVEDAIEffort:        strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_EFFORT"))),
 		TNVEDAIVision:        tnvedVision,

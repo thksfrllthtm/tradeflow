@@ -72,6 +72,13 @@ func TestEmployeesAndDirectoryChangesRequireSession(t *testing.T) {
 		{http.MethodGet, "/api/tnved-agent/sessions/1"},
 		{http.MethodPost, "/api/tnved-agent/sessions/1/apply"},
 		{http.MethodPost, "/api/tnved-agent/sessions/1/documents"},
+		{http.MethodGet, "/api/translator/documents"},
+		{http.MethodPost, "/api/translator/documents"},
+		{http.MethodDelete, "/api/translator/documents/1"},
+		{http.MethodPost, "/api/translator/documents/1/translate"},
+		{http.MethodGet, "/api/translator/documents/1/export"},
+		{http.MethodPatch, "/api/translator/segments/1"},
+		{http.MethodPost, "/api/translator/segments/1/retranslate"},
 	} {
 		response := httptest.NewRecorder()
 		server.Router().ServeHTTP(response, httptest.NewRequest(route.method, route.path, nil))

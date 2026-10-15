@@ -69,8 +69,8 @@ func (r *Repository) EstimateCountsByUser(ctx context.Context) (map[int64]int64,
 	return counts, nil
 }
 
-// DeleteUser удаляет сотрудника в одной транзакции. Его сметы и авторство записей справочников
-// переходят к heirID (администратору, который удаляет): иначе сметы удалились бы вместе с
+// DeleteUser удаляет сотрудника в одной транзакции. Его сметы, документы переводчика и авторство
+// записей справочников переходят к heirID (администратору, который удаляет): иначе сметы удалились бы вместе с
 // сотрудником (ON DELETE CASCADE), а записи справочников не дали бы его удалить. Сессии
 // удаляются каскадом, в керамике и журналах загрузок ссылка обнуляется. Возвращает число
 // переданных смет.
@@ -88,6 +88,9 @@ func (r *Repository) DeleteUser(ctx context.Context, id, heirID int64) (int64, e
 					return err
 				}
 			}
+		}
+		if err := tx.Table("translator_documents").Where("created_by = ?", id).Update("created_by", heirID).Error; err != nil {
+			return err
 		}
 		deleted := tx.Delete(&User{}, id)
 		if deleted.Error != nil {

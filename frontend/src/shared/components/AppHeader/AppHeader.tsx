@@ -7,7 +7,7 @@ import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная: ни один раздел меню не подсвечен, на неё ведёт логотип.
-type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'utilFee' | 'employees'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'utilFee' | 'employees' | 'translator'
 
 const sections: { value: AppSection; label: string; href: string }[] = [
   { value: 'estimates', label: 'Сметы', href: paths.goods() },
@@ -22,6 +22,9 @@ const adminSections: typeof sections = [
   { value: 'employees', label: 'Сотрудники', href: paths.employees },
 ]
 
+// «Переводчик» — последним, после «Сотрудников» (их видит только администратор).
+const translatorSection: (typeof sections)[number] = { value: 'translator', label: 'Переводчик', href: paths.translator() }
+
 function initials(user: User) {
   const source = user.name?.trim() || user.email
   const parts = source.split(/[\s@._-]+/).filter(Boolean)
@@ -35,7 +38,7 @@ const GAP = 4
 // Общая шапка всех страниц: логотип, разделы, курс НБРК на сегодня с конвертером валют, пользователь и выход. Разделы, которые не
 // помещаются по ширине (окно рядом с Excel), уходят в меню «Ещё» — ничего не обрезается.
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
-  const items = isAdmin(user) ? [...sections, ...adminSections] : sections
+  const items = [...sections, ...(isAdmin(user) ? adminSections : []), translatorSection]
   const navRef = useRef<HTMLElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDetailsElement>(null)
