@@ -37,6 +37,7 @@
 
 /* Антидемпинг: колонка таблицы и панель всех мер реестра ЕЭК. */
 .nom-table .nom-ad { width: 130px; }
+.nom-table .nom-sir { width: 84px; color: #1f2d24; font-variant-numeric: tabular-nums; }
 .nom-ad-chip { display: grid; gap: 1px; width: fit-content; max-width: 100%; padding: 3px 8px; border-radius: 7px; background: #fdecec; color: #8a2626; text-decoration: none; line-height: 1.2; }
 .nom-ad-chip + .nom-ad-chip { margin-top: 4px; }
 .nom-ad-chip b { font-size: .8rem; font-variant-numeric: tabular-nums; }

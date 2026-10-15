@@ -20,6 +20,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/antidumping"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/riskindicators"
 	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
 )
@@ -64,6 +65,14 @@ type NomenclatureCode struct {
 	// Антидемпинговые меры ЕАЭС, под которые попадает код (exact — по точному коду, иначе по
 	// товарной позиции: решает описание товара).
 	AntiDumping []AntiDumpingRef `json:"antiDumping"`
+	// Стоимостной индикатор риска (СУР) для CN; nil — индикатора нет.
+	SIR *SIRRef `json:"sir"`
+}
+
+// SIRRef — индикатор СУР кода: USD за 1 кг и профиль риска, как берёт смета по СУР.
+type SIRRef struct {
+	PriceUSD string `json:"priceUsd"`
+	Profile  string `json:"profile"`
 }
 
 // AntiDumpingRef — мера реестра ЕЭК для кода номенклатуры.
@@ -401,9 +410,18 @@ func (s *TNVEDNomenclatureService) withKZRates(ctx context.Context, rows []repos
 	if err != nil {
 		return nil, err
 	}
+	indicators, _, err := riskindicators.NewService(s.repository).Lookup(ctx, codes, riskindicators.DefaultCountry)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]NomenclatureCode, 0, len(rows))
 	for _, row := range rows {
+		var sir *SIRRef
+		if indicator, ok := indicators[row.Code]; ok {
+			sir = &SIRRef{PriceUSD: indicator.PriceUSD.String(), Profile: indicator.Profile}
+		}
 		items = append(items, NomenclatureCode{
+			SIR:  sir,
 			Code: row.Code, Name: row.Name, TariffText: row.TariffText,
 			VATPercent: row.VATPercent.String(), DetailsURL: row.DetailsURL, KZ: kzRates[row.Code], AntiDumping: antiDumpingRefs(measures, row.Code),
 			Duty: NomenclatureDuty{Type: row.DutyType, Percent: service.DecimalText(row.DutyPercent), Amount: service.DecimalText(row.DutyAmount), Currency: row.DutyCurrency, Unit: row.DutyUnit},
