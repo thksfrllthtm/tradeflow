@@ -18,6 +18,9 @@ type fakeAgentData struct {
 	pagesOpened []string
 	webOpened   []string
 	helpLimit   bool
+	// declarations — запросы примеров декларирования; declarationsDown — сайт не отвечает.
+	declarations     []string
+	declarationsDown bool
 }
 
 var fakeCodes = []directory.NomenclatureCode{

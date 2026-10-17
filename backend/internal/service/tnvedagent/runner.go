@@ -44,12 +44,15 @@ func (r *agentRunner) stepLimit() int {
 		return r.maxSteps
 	case r.documents:
 		return agentDocumentsMaxSteps
+	case r.toolbox.search != nil:
+		return agentWebMaxSteps
 	}
 	return agentMaxSteps
 }
 
-// materialize — переписка для модели: системная подсказка, ссылки на фото заменены самими фото.
-// Сообщения transcript всегда прошли через JSON (части — []any из map[string]any).
+// materialize — переписка для модели: системная подсказка, ссылки на фото заменены самими фото
+// (только если модель видит фото — vision; модель рассуждений без зрения фото не получает, у неё
+// описание фото текстом). Сообщения transcript всегда прошли через JSON (части — []any из map[string]any).
 func (r *agentRunner) materialize() []agentMessage {
 	messages := []agentMessage{{Role: "system", Content: r.system}}
 	for _, raw := range r.transcript {
@@ -109,7 +112,16 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 					Text string `json:"text"`
 				}
 				if json.Unmarshal([]byte(content), &page) == nil && page.Code != "" && page.Text != "" {
+					// Пояснения, показанные модели ссылкой на страницу другого кода, — для цитат целиком.
+					if text, other, ok := strings.Cut(page.Text, sameNotesPrefix); ok && len(other) >= 10 {
+						page.Text = text + notesOf(r.toolbox.opened[other[:10]])
+					}
 					r.toolbox.opened[page.Code] = page.Text
+				}
+			case "search_declarations":
+				// Как при вызове: поиск сделан (с результатом или сайт не ответил), а не ошибка в аргументах.
+				if strings.Contains(content, `"groups"`) || strings.Contains(content, "не ответил") {
+					r.toolbox.declarationsChecked = true
 				}
 			case "web_search":
 				var found struct {
@@ -121,11 +133,14 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 					}
 				}
 			case "web_page":
+				// Страница из интернета: её адрес и ссылки с неё (текст — не источник цитат).
 				var page struct {
-					URL string `json:"url"`
+					URL   string              `json:"url"`
+					Links []directory.WebLink `json:"links"`
+					Error string              `json:"error"`
 				}
-				if json.Unmarshal([]byte(content), &page) == nil && page.URL != "" {
-					r.toolbox.links[page.URL] = true
+				if json.Unmarshal([]byte(content), &page) == nil && page.URL != "" && page.Error == "" {
+					r.toolbox.rememberPage(page.URL, "", page.Links)
 				}
 			case "open_goods_help", "open_link", "search_in_document":
 				var page struct {
@@ -134,9 +149,14 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 					Fragments []string            `json:"fragments"`
 					Links     []directory.WebLink `json:"links"`
 					Error     string              `json:"error"`
+					Source    string              `json:"source"`
 				}
 				if json.Unmarshal([]byte(content), &page) == nil && page.URL != "" && page.Error == "" {
-					r.toolbox.rememberPage(page.URL, strings.TrimSpace(page.Text+"\n"+strings.Join(page.Fragments, "\n")), page.Links)
+					text := strings.TrimSpace(page.Text + "\n" + strings.Join(page.Fragments, "\n"))
+					if page.Source == "web" {
+						text = ""
+					}
+					r.toolbox.rememberPage(page.URL, text, page.Links)
 				}
 			}
 		}
@@ -163,6 +183,9 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	if r.toolbox.search != nil && !r.documents {
 		tools = append(append([]agentTool{}, tools...), webTools()...)
 	}
+	if r.toolbox.lookPhoto != nil {
+		tools = append(append([]agentTool{}, tools...), lookPhotoTool())
+	}
 	nudged, finishRetried, forced := false, false, false
 	reviewed := !r.review
 	for step := 0; ; step++ {
@@ -183,7 +206,7 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 		if err != nil {
 			return agentOutcome{err: err}
 		}
-		r.append(agentMessage{Role: "assistant", Content: reply.Content, ToolCalls: reply.ToolCalls})
+		r.append(agentMessage{Role: "assistant", Content: reply.Content, ReasoningContent: reply.Reasoning, ToolCalls: reply.ToolCalls, ClaudeContent: reply.ClaudeContent})
 		if reply.Content != "" {
 			r.emit("text", map[string]string{"text": reply.Content})
 		}
@@ -227,7 +250,8 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 			if askCall != nil {
 				r.toolMessage(askCall.ID, `{"status":"ignored: подбор завершён"}`)
 			}
-			if problem != "" && !finishRetried {
+			// На принудительном итоге (лимит шагов) повторов нет: итог принимается как есть.
+			if problem != "" && !finishRetried && !forced {
 				finishRetried = true
 				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"error": problem}))
 				r.onStep(r.transcript, reply.Usage)

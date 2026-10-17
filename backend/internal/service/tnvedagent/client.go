@@ -1,7 +1,8 @@
 package tnvedagent
 
 // Клиент модели для агента подбора кода: OpenAI-совместимый Chat Completions с инструментами
-// (tools / tool_calls). По умолчанию DeepSeek Flash: он понимает фото и вызывает инструменты.
+// (tools / tool_calls). Две роли: модель рассуждений (DeepSeek Pro — цикл агента, фото не
+// принимает) и модель для фото (DeepSeek Flash). Без отдельной модели для фото — одна модель на всё.
 
 import (
 	"bytes"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
+	"github.com/shopspring/decimal"
 )
 
 // AgentModelConfig — провайдер и цены (USD за 1 млн токенов) для учёта расхода.
@@ -22,12 +24,15 @@ type AgentModelConfig struct {
 	BaseURL string
 	Model   string
 	Vision  bool
-	// Effort — уровень размышлений модели (reasoning_effort: low, high, max …); "" — по умолчанию модели.
+	// Effort — уровень размышлений (reasoning_effort: low, high, max). Задан — режим размышлений DeepSeek
+	// включён, "" — выключен (быстрее, как раньше). У Claude — output_config.effort.
 	Effort string
+	// Provider — "" (OpenAI-совместимый API) или "anthropic" (Claude, только прогон eval, см. claude.go).
+	Provider string
 	// Цены: обычный ввод, ввод из кэша, вывод.
-	PriceInput  float64
-	PriceCached float64
-	PriceOutput float64
+	PriceInput  decimal.Decimal
+	PriceCached decimal.Decimal
+	PriceOutput decimal.Decimal
 }
 
 // agentToolCall — вызов инструмента в ответе модели.
@@ -41,12 +46,16 @@ type agentToolCall struct {
 }
 
 // agentMessage — сообщение переписки с моделью (OpenAI-формат). Content — строка или список
-// частей (текст и картинки) для первого сообщения с фото.
+// частей (текст и картинки) для первого сообщения с фото. ReasoningContent — размышления модели:
+// в режиме размышлений с инструментами DeepSeek требует возвращать их во всех следующих запросах.
 type agentMessage struct {
-	Role       string          `json:"role"`
-	Content    any             `json:"content"`
-	ToolCalls  []agentToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string          `json:"tool_call_id,omitempty"`
+	Role             string          `json:"role"`
+	Content          any             `json:"content"`
+	ReasoningContent string          `json:"reasoning_content,omitempty"`
+	ToolCalls        []agentToolCall `json:"tool_calls,omitempty"`
+	ToolCallID       string          `json:"tool_call_id,omitempty"`
+	// ClaudeContent — ответ Claude целиком (с подписанными размышлениями): уходит ему обратно как есть.
+	ClaudeContent json.RawMessage `json:"claude_content,omitempty"`
 }
 
 type agentTool struct {
@@ -64,12 +73,16 @@ type agentUsage struct {
 	PromptTokens     int64
 	CachedTokens     int64
 	CompletionTokens int64
+	// CacheWriteTokens — записано в кэш (Claude: дороже обычного ввода на 25%); входит в PromptTokens.
+	CacheWriteTokens int64
 }
 
 type agentReply struct {
-	Content   string
-	ToolCalls []agentToolCall
-	Usage     agentUsage
+	Content       string
+	Reasoning     string
+	ToolCalls     []agentToolCall
+	Usage         agentUsage
+	ClaudeContent json.RawMessage
 }
 
 // agentModel — то, что нужно агенту от модели; в тестах подменяется сценарием.
@@ -105,35 +118,48 @@ func (c *AgentModelClient) Name() string { return c.config.Model }
 
 func (c *AgentModelClient) Vision() bool { return c != nil && c.config.Vision }
 
-// Cost — стоимость ответа в USD по ценам из настроек.
-func (c *AgentModelClient) Cost(usage agentUsage) float64 {
-	fresh := usage.PromptTokens - usage.CachedTokens
-	if fresh < 0 {
-		fresh = 0
-	}
-	return (float64(fresh)*c.config.PriceInput + float64(usage.CachedTokens)*c.config.PriceCached + float64(usage.CompletionTokens)*c.config.PriceOutput) / 1e6
+var (
+	million         = decimal.NewFromInt(1_000_000)
+	cacheWriteExtra = decimal.RequireFromString("0.25")
+)
+
+// Cost — стоимость ответа в USD по ценам из настроек; запись в кэш — +25% к цене ввода (Claude).
+func (c *AgentModelClient) Cost(usage agentUsage) decimal.Decimal {
+	fresh := max(usage.PromptTokens-usage.CachedTokens, 0)
+	return decimal.NewFromInt(fresh).Mul(c.config.PriceInput).
+		Add(decimal.NewFromInt(usage.CacheWriteTokens).Mul(c.config.PriceInput).Mul(cacheWriteExtra)).
+		Add(decimal.NewFromInt(usage.CachedTokens).Mul(c.config.PriceCached)).
+		Add(decimal.NewFromInt(usage.CompletionTokens).Mul(c.config.PriceOutput)).
+		Div(million)
 }
 
 func (c *AgentModelClient) Complete(ctx context.Context, messages []agentMessage, tools []agentTool, forceTool string) (agentReply, error) {
 	if !c.Configured() {
 		return agentReply{}, ai.ErrAINotConfigured
 	}
-	request := map[string]any{
-		"model":       c.config.Model,
-		"messages":    messages,
-		"tools":       tools,
-		"max_tokens":  4096,
-		"temperature": 0.2,
+	if c.config.Provider == providerAnthropic {
+		return c.claudeComplete(ctx, messages, tools)
 	}
-	if c.config.Effort != "" {
+	thinking := c.config.Effort != ""
+	request := map[string]any{
+		"model":      c.config.Model,
+		"messages":   messages,
+		"tools":      tools,
+		"max_tokens": 4096,
+	}
+	if thinking {
 		// Размышления входят в лимит ответа: на высоком уровне 4096 токенов обрезали бы итог.
+		// temperature в режиме размышлений не действует; tool_choice в нём документацией DeepSeek не
+		// описан — принудительный finish остаётся указанием в тексте («сразу вызови finish»).
 		request["reasoning_effort"] = c.config.Effort
 		request["max_tokens"] = 32768
+	} else {
+		request["temperature"] = 0.2
+		if forceTool != "" {
+			request["tool_choice"] = map[string]any{"type": "function", "function": map[string]string{"name": forceTool}}
+		}
 	}
-	if forceTool != "" {
-		request["tool_choice"] = map[string]any{"type": "function", "function": map[string]string{"name": forceTool}}
-	}
-	return c.send(ctx, request)
+	return c.send(ctx, request, thinking)
 }
 
 // CompleteJSON — один ответ модели в JSON без инструментов (описание и сверка фото).
@@ -141,19 +167,38 @@ func (c *AgentModelClient) CompleteJSON(ctx context.Context, messages []agentMes
 	if !c.Configured() {
 		return agentReply{}, ai.ErrAINotConfigured
 	}
+	if c.config.Provider == providerAnthropic {
+		return c.claudeComplete(ctx, messages, nil)
+	}
 	return c.send(ctx, map[string]any{
 		"model":           c.config.Model,
 		"messages":        messages,
 		"response_format": map[string]string{"type": "json_object"},
 		"max_tokens":      1024,
 		"temperature":     0.1,
-	})
+	}, false)
 }
 
-func (c *AgentModelClient) send(ctx context.Context, request map[string]any) (agentReply, error) {
+// CompleteText — один текстовый ответ без инструментов (описание фото, ответ на вопрос по фото).
+func (c *AgentModelClient) CompleteText(ctx context.Context, messages []agentMessage, maxTokens int) (agentReply, error) {
+	if !c.Configured() {
+		return agentReply{}, ai.ErrAINotConfigured
+	}
+	if c.config.Provider == providerAnthropic {
+		return c.claudeComplete(ctx, messages, nil)
+	}
+	return c.send(ctx, map[string]any{"model": c.config.Model, "messages": messages, "max_tokens": maxTokens, "temperature": 0.1}, false)
+}
+
+func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thinking bool) (agentReply, error) {
 	if strings.Contains(c.config.BaseURL, "deepseek.com") {
-		// Отдельный режим рассуждений DeepSeek в разы медленнее; шаги рассуждения — в системной подсказке.
-		request["thinking"] = map[string]string{"type": "disabled"}
+		// Режим размышлений DeepSeek включён по умолчанию и в разы медленнее: только для цикла агента
+		// с заданным уровнем размышлений, остальные запросы — без него.
+		mode := "disabled"
+		if thinking {
+			mode = "enabled"
+		}
+		request["thinking"] = map[string]string{"type": mode}
 	}
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -201,8 +246,9 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any) (ag
 	var parsed struct {
 		Choices []struct {
 			Message struct {
-				Content   *string         `json:"content"`
-				ToolCalls []agentToolCall `json:"tool_calls"`
+				Content          *string         `json:"content"`
+				ReasoningContent string          `json:"reasoning_content"`
+				ToolCalls        []agentToolCall `json:"tool_calls"`
 			} `json:"message"`
 		} `json:"choices"`
 		Usage struct {
@@ -218,7 +264,7 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any) (ag
 		return agentReply{}, ai.ErrAIBadResponse
 	}
 	message := parsed.Choices[0].Message
-	reply := agentReply{ToolCalls: message.ToolCalls}
+	reply := agentReply{ToolCalls: message.ToolCalls, Reasoning: message.ReasoningContent}
 	if message.Content != nil {
 		reply.Content = strings.TrimSpace(*message.Content)
 	}

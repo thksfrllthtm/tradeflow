@@ -1,5 +1,6 @@
 import { ChangeEvent, ClipboardEvent, FormEvent, useEffect, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
+import { clipboardImages } from '@/shared/lib/clipboardImages'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { decisionsApi } from './decisionsApi'
 import '@/shared/styles/drawer.css'
@@ -38,10 +39,10 @@ export function DecisionManual({ onClose, onAdded }: { onClose: () => void; onAd
     void addFiles(files)
   }
 
-  // Скриншот из буфера (Ctrl+V) — как файл.
+  // Скриншот из буфера (Ctrl+V) — как файл; ячейки Excel вставляются текстом, а не их картинкой.
   function paste(event: ClipboardEvent) {
-    const files = Array.from(event.clipboardData.files)
-    if (files.some((file) => file.type.startsWith('image/'))) { event.preventDefault(); void addFiles(files) }
+    const files = clipboardImages(event.clipboardData)
+    if (files.length) { event.preventDefault(); void addFiles(files) }
   }
 
   const normalized = code.replace(/\D/g, '')

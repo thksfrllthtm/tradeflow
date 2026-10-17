@@ -67,7 +67,9 @@
 .rc-steps i { font-style: normal; }
 .rc-steps ol { display: grid; gap: 4px; margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: #fff; list-style: none; }
 .rc-steps li { display: flex; align-items: baseline; gap: 8px; min-width: 0; color: #34443b; font-size: .82rem; }
-.rc-steps li small { flex: 0 0 auto; color: #56655c; }
+.rc-steps li small { flex: 0 1 auto; min-width: 0; overflow: hidden; color: #56655c; text-overflow: ellipsis; white-space: nowrap; }
+.rc-steps li.block { flex-wrap: wrap; }
+.rc-steps li.block small { flex: 1 0 100%; padding-left: 24px; white-space: pre-line; }
 .rc-steps li a { color: #1b6b43; font-weight: 700; text-decoration: none; }
 .rc-steps li.failed small { color: #a3452f; }
 .rc-steps li.thought { display: block; padding-left: 24px; color: #56655c; overflow-wrap: anywhere; }
@@ -103,6 +105,18 @@
 .rc-rejected > p { margin: 0; color: #46564c; font-size: .86rem; font-weight: 650; }
 .rc-rejected-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 10px; color: #34443b; font-size: .86rem; line-height: 1.45; }
 .rc-note { margin: 0; color: #5f4f12; font-size: .86rem; line-height: 1.45; }
+.rc-names { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e3e9e5; border-radius: 12px; background: #fff; }
+.rc-names > p { margin: 0; color: #46564c; font-size: .86rem; font-weight: 650; }
+.rc-name-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 4px 10px; color: #1f2a24; font-size: .9rem; line-height: 1.45; }
+.rc-name-label { color: #6b7a71; font-size: .78rem; }
+.rc-name-text { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.rc-name-row:not(:has(.rc-name-label)) { grid-template-columns: minmax(0, 1fr); }
+.rc-name-actions, .rc-name-error { grid-column: -2; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.rc-name-actions button { height: auto; padding: 0; border: 0; background: none; color: #1b6b43; font-size: .82rem; font-weight: 600; cursor: pointer; }
+.rc-name-actions button:hover:not(:disabled) { text-decoration: underline; }
+.rc-name-actions button:focus-visible { outline: 2px solid #1b6b43; outline-offset: 2px; border-radius: 2px; }
+.rc-name-actions button:disabled { color: #8a968f; cursor: default; }
+.rc-name-error { color: #a3452f; font-size: .82rem; }
 .rc-answer-short { gap: 8px; padding: 12px 14px; border-color: #e3eae5; }
 .rc-same-code { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0; padding-top: 8px; border-top: 1px solid #eef2ef; }
 .rc-same-code > span { color: #56655c; font-size: .82rem; }

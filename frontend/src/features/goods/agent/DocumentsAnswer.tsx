@@ -54,6 +54,7 @@ export function DocumentsAnswer({ result }: { result: AgentResult }) {
     </details>}
     {result.notes && <p className="dl-note"><LinkText text={result.notes} /></p>}
     {(result.linksRemoved ?? 0) > 0 && <p className="dl-notice">Программа убрала ссылки, которых не было на открытых страницах: {result.linksRemoved}.</p>}
+    {result.quotesRemoved > 0 && <p className="dl-notice">Программа убрала основания-цитаты, которых нет в справке и актах: {result.quotesRemoved}.</p>}
     <p className="dl-disclaimer">Подсказка ИИ по справке tnved.info и актам — перед оформлением сверьте с актом.</p>
   </section>
 }
@@ -69,5 +70,7 @@ function DocumentRow({ item }: { item: AgentDocument }) {
       : <span className="dl-act">{item.act}</span>)}
     {!item.measure && item.url && <a className="dl-act" href={item.url} target="_blank" rel="noreferrer">Открыть акт ↗</a>}
     {item.requirement && <p className="dl-req"><LinkText text={item.requirement} /></p>}
+    {item.basis && <blockquote className="dl-basis">{item.basis}<cite>основание: {item.basisSource || 'справка или акт'}</cite></blockquote>}
+    {item.nameHint && <p className="dl-name"><b>Наименование:</b> <LinkText text={item.nameHint} /></p>}
   </li>
 }

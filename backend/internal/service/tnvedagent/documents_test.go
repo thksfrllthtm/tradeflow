@@ -51,8 +51,24 @@ func (d *fakeAgentData) WebPage(_ context.Context, url string) (directory.WebPag
 		return directory.WebPage{URL: url, Title: "О применении санитарных мер", Text: testActText(), Links: []directory.WebLink{{URL: "https://adilet.zan.kz/rus/docs/H10T0000317", Text: "Решение №317"}}}, nil
 	case testPDFURL:
 		return directory.WebPage{URL: url}, directory.ErrWebPageFile
+	case testMakerURL:
+		return directory.WebPage{URL: url, Title: "Ножницы садовые", Text: testMakerText(), Links: []directory.WebLink{{URL: testSpecURL, Text: "Характеристики"}}}, nil
+	case testScriptURL:
+		return directory.WebPage{URL: url}, directory.ErrWebPageScript
+	}
+	if strings.HasPrefix(url, "https://ok.example.com/") {
+		return directory.WebPage{URL: url, Text: "Страница " + url}, nil
 	}
 	return directory.WebPage{}, directory.ErrWebPageUnavailable
+}
+
+// ExtractedPage — запасной путь через Tavily: в тестах без базы, extract вызывается всегда.
+func (d *fakeAgentData) ExtractedPage(ctx context.Context, url string, extract func(context.Context, string) (string, error)) (directory.WebPage, error) {
+	text, err := extract(ctx, url)
+	if err != nil {
+		return directory.WebPage{URL: url}, err
+	}
+	return directory.WebPage{URL: url, Text: text}, nil
 }
 
 func toolNames(tools []agentTool) string {
@@ -75,7 +91,7 @@ func TestNormalModeHasNoDocumentsTools(t *testing.T) {
 			}
 		}
 	}
-	for _, prompt := range []string{tnvedAgentPrompt(""), tnvedReferencePrompt()} {
+	for _, prompt := range []string{tnvedAgentPrompt(""), tnvedReferencePrompt("")} {
 		if strings.Contains(prompt, "open_goods_help") || strings.Contains(prompt, "Документы для ввоза") {
 			t.Error("normal prompt mentions documents mode")
 		}
@@ -162,7 +178,7 @@ func TestDocumentsRunReadsHelpAndActs(t *testing.T) {
 			"description": "Нужен санитарно-эпидемиологический надзор, если перчатки контактируют с пищей.",
 			"documents": []map[string]string{
 				{"measure": "Санитарно-эпидемиологический надзор", "act": "Решение КТС №299 от 28.05.2010", "url": testActURL, "requirement": "Только для изделий, контактирующих с пищей.", "applies": "maybe"},
-				{"measure": "Декларация соответствия ТР ТС 019/2011", "act": "Решение Коллегии ЕЭК №79", "url": testPDFURL, "requirement": "Декларация о соответствии.", "applies": "yes"},
+				{"measure": "Декларация соответствия ТР ТС 019/2011", "act": "Решение Коллегии ЕЭК №79", "url": testPDFURL, "requirement": "Декларация о соответствии.", "applies": "yes", "basis": "Требуется декларация соответствия ТР ТС 019/2011"},
 				{"measure": "Выдуманная мера", "act": "Акт", "url": "https://evil.example.com/act", "requirement": "—", "applies": "странно"},
 			},
 		})}},
@@ -253,7 +269,7 @@ func TestDocumentsRestoreAfterAskUser(t *testing.T) {
 		{ToolCalls: []agentToolCall{call("l", "open_link", map[string]string{"url": testActURL})}},
 		{ToolCalls: []agentToolCall{call("f", "finish", map[string]any{
 			"description": "Нужен санэпиднадзор.",
-			"documents":   []map[string]string{{"measure": "Санэпиднадзор", "act": "Решение КТС №299", "url": testPDFURL, "requirement": "Нужно.", "applies": "yes"}},
+			"documents":   []map[string]string{{"measure": "Санэпиднадзор", "act": "Решение КТС №299", "url": testPDFURL, "requirement": "Нужно.", "applies": "yes", "basis": "Входит в перечень продукции, подлежащей государственному санитарно-эпидемиологическому надзору"}},
 		})}},
 	}}
 	runner2, _ := newDocumentsRunner(second, data)
@@ -315,5 +331,29 @@ func TestDocumentsRejectsUnknownCode(t *testing.T) {
 	}
 	if !strings.Contains(documentsRequest("6116102000", fakeCodes[0].Name, "Перчатки трикотажные с покрытием"), "6116 10 200 0") {
 		t.Error("documents request without code")
+	}
+}
+
+// Основание меры — только дословная цитата с открытых страниц: выдуманная убирается; «нужно» без
+// основания возвращается агенту; подсказка по наименованию сохраняется.
+func TestDocumentsBasisAndNameHint(t *testing.T) {
+	toolbox := newAgentToolbox(&fakeAgentData{})
+	toolbox.documentsCode = "6116102000"
+	toolbox.run(context.Background(), "open_goods_help", `{"code":"6116102000"}`)
+	hint := "Если перчатки действительно не контактируют с пищей (паспорт поставщика), наименование: «Перчатки рабочие трикотажные» — санэпиднадзор не нужен."
+	finish := func(basis string) (*AgentResult, string) {
+		args, _ := json.Marshal(map[string]any{"description": "Санэпиднадзор возможен.", "documents": []map[string]string{
+			{"measure": "Санэпиднадзор", "act": "Решение КТС №299", "requirement": "Только изделия для контакта с пищей.", "applies": "yes", "basis": basis, "nameHint": hint},
+		}})
+		result, problem, _ := toolbox.finish(context.Background(), string(args))
+		return result, problem
+	}
+	result, problem := finish("«только изделия, контактирующие с пищевыми продуктами»")
+	if problem != "" || result.Documents[0].Basis != "только изделия, контактирующие с пищевыми продуктами" || result.Documents[0].BasisSource != "справка tnved.info" || result.Documents[0].NameHint != hint || result.QuotesRemoved != 0 {
+		t.Fatalf("основание из справки: %+v %s", result.Documents, problem)
+	}
+	result, problem = finish("мера применяется ко всем перчаткам без исключения")
+	if result.Documents[0].Basis != "" || result.QuotesRemoved != 1 || !strings.Contains(problem, "нет основания") {
+		t.Fatalf("выдуманное основание: %+v %s", result.Documents, problem)
 	}
 }

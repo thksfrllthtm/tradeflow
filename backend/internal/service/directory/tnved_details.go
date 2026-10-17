@@ -23,12 +23,15 @@ const (
 	detailsMaxAge       = 30 * 24 * time.Hour
 	detailsFetchTimeout = 20 * time.Second
 	detailsMaxBytes     = 4 << 20
-	detailsMaxRunes     = 6000
-	detailsPartRunes    = 1400
-	// Пояснения и примечания к ТН ВЭД — лучшее подтверждение, им больше места.
-	detailsNotesRunes   = 2600
-	detailsMeasureRunes = 800
+	// ponytail: страница кода целиком (пояснения к позиции, общие положения группы и раздела,
+	// классификационные решения); предел — только от мусорной страницы, у настоящих текст меньше.
+	detailsMaxRunes = 200_000
 )
+
+// detailsHeadings — заголовки блоков страницы кода TWS.BY: по ним вырезаются блоки не для Казахстана.
+var detailsHeadings = []string{"Полное дерево кодов", "Дополнительная единица измерения", "Дополнительные признаки", "Актуальные ставки сборов",
+	"Единый таможенный тариф", "Меры нетарифного регулирования", "Классификационные решения", "Реестр объектов интеллектуальной собственности",
+	"Дополнительная информация"}
 
 var (
 	ErrDetailsUnavailable = errors.New("details page unavailable")
@@ -132,37 +135,30 @@ func section(text, start string, ends ...string) string {
 	return strings.TrimSpace(part[:cut])
 }
 
+// cleanTWSPage — вся содержательная часть страницы кода: дерево, единица измерения, признаки, ставки
+// ЕТТ, меры, классификационные решения, пояснения к ТН ВЭД (к позиции, общие положения группы и
+// раздела) — от «актуальность информации» до подвала. Без шапки, меню и подвала, без блоков не для
+// Казахстана (признаки, утратившие силу; сборы РБ; белорусские нормы) и шума дерева кодов.
 func cleanTWSPage(page string) string {
-	text := htmlToText(page)
-	stops := []string{"Полное дерево кодов", "Дополнительная единица измерения", "Дополнительные признаки", "Актуальные ставки сборов", "Единый таможенный тариф", "Меры нетарифного регулирования"}
-	tree := section(text, "актуальность информации", stops...)
-	if tree == "" {
+	text := section(htmlToText(page), "актуальность информации", "Footer menu")
+	if text == "" {
 		return ""
 	}
 	// «актуальность информации : 28.09.2026» — дата не нужна модели.
-	if _, rest, ok := strings.Cut(tree, "\n"); ok {
-		tree = rest
+	if _, rest, ok := strings.Cut(text, "\n"); ok {
+		text = rest
 	}
-	tree = treeCounts.ReplaceAllString(tree, "")
-	tree = treeAdValor.ReplaceAllString(tree, "")
-	tree = treeSpecific.ReplaceAllString(tree, "")
-	tree = strings.TrimSpace(blankLines.ReplaceAllString(spaces.ReplaceAllString(tree, " "), "\n"))
-
-	parts := []string{"Дерево кода:\n" + tree}
-	if unit := section(text, "Дополнительная единица измерения", "Дополнительные признаки", "Актуальные ставки сборов", "Единый таможенный тариф", "Меры нетарифного регулирования"); unit != "" {
-		parts = append(parts, service.TruncateRunes(unit, 200))
+	for _, heading := range []string{"Дополнительные признаки, утратившие силу", "Актуальные ставки сборов"} {
+		if block := section(text, heading, detailsHeadings...); block != "" {
+			text = strings.Replace(text, block, "", 1)
+		}
 	}
-	// Признаки, утратившие силу, и белорусские сборы — не для Казахстана.
-	if features := section(text, "Дополнительные признаки", "Дополнительные признаки, утратившие силу", "Актуальные ставки сборов", "Единый таможенный тариф", "Меры нетарифного регулирования"); features != "" {
-		parts = append(parts, service.TruncateRunes(dropBelarus(features), detailsPartRunes))
-	}
-	if notes := section(text, "Дополнительная информация", "ОБЩИЕ ПОЛОЖЕНИЯ", "Footer menu"); notes != "" {
-		parts = append(parts, service.TruncateRunes(dropBelarus(notes), detailsNotesRunes))
-	}
-	if measures := section(text, "Меры нетарифного регулирования", "Дополнительная информация", "ОБЩИЕ ПОЛОЖЕНИЯ", "Footer menu"); measures != "" {
-		parts = append(parts, service.TruncateRunes(dropBelarus(measures), detailsMeasureRunes))
-	}
-	return service.TruncateRunes(strings.Join(parts, "\n\n"), detailsMaxRunes)
+	text = strings.Replace(text, "Полное дерево кодов", "", 1)
+	text = treeCounts.ReplaceAllString(text, "")
+	text = treeAdValor.ReplaceAllString(text, "")
+	text = treeSpecific.ReplaceAllString(text, "")
+	text = strings.TrimSpace(blankLines.ReplaceAllString(spaces.ReplaceAllString(dropBelarus(text), " "), "\n"))
+	return service.TruncateRunes("Дерево кода:\n"+text, detailsMaxRunes)
 }
 
 // dropBelarus убирает строки с белорусскими нормами (BYN, указы и постановления РБ).

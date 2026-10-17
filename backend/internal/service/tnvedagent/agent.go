@@ -25,11 +25,15 @@ import (
 )
 
 const (
-	agentMaxSteps   = 12
-	agentRunTimeout = 8 * time.Minute
-	// «Документы для ввоза»: справка и акты на медленных сайтах — больше шагов и времени.
+	agentMaxSteps = 12
+	// С интернетом агент читает страницы целиком и сравнивает источники — больше шагов.
+	agentWebMaxSteps = 24
+	// Модель рассуждений (Pro, с размышлениями) отвечает медленнее Flash.
+	agentRunTimeout = 15 * time.Minute
+	// «Документы для ввоза»: справка и акты на медленных сайтах — больше шагов; время — с запасом на
+	// размышления модели рассуждений (Pro).
 	agentDocumentsMaxSteps = 16
-	agentDocumentsTimeout  = 6 * time.Minute
+	agentDocumentsTimeout  = 12 * time.Minute
 	agentParallelRuns      = 3
 	agentMaxPhotos         = 3
 	agentMaxPhotoBytes     = 2 << 20
@@ -127,25 +131,80 @@ type AgentStatus struct {
 
 type TNVEDAgentService struct {
 	repository *repository.Repository
-	model      *AgentModelClient
-	decisions  *decisions.CodeDecisionService
-	data       agentData
-	settings   AgentSettings
-	search     webSearcher
-	slots      chan struct{}
-	mu         sync.Mutex
-	cancels    map[int64]context.CancelFunc
+	// model — модель рассуждений (цикл агента, итог, справочник, документы); visionModel — модель для
+	// фото (описание, вопросы по фото, похожие товары, перевод наименования). Без отдельной модели для
+	// фото — один и тот же клиент.
+	model       *AgentModelClient
+	visionModel *AgentModelClient
+	decisions   *decisions.CodeDecisionService
+	data        agentData
+	settings    AgentSettings
+	search      webSearcher
+	slots       chan struct{}
+	mu          sync.Mutex
+	cancels     map[int64]context.CancelFunc
 }
 
-func NewTNVEDAgentService(r *repository.Repository, model *AgentModelClient, decisions *decisions.CodeDecisionService, settings AgentSettings) *TNVEDAgentService {
+// NewTNVEDAgentService — visionModel nil: всё на одной модели model, как раньше.
+func NewTNVEDAgentService(r *repository.Repository, model, visionModel *AgentModelClient, decisions *decisions.CodeDecisionService, settings AgentSettings) *TNVEDAgentService {
 	if settings.DailyLimit <= 0 {
 		settings.DailyLimit = 100
 	}
+	if visionModel == nil {
+		visionModel = model
+	}
 	return &TNVEDAgentService{
-		repository: r, model: model, decisions: decisions, settings: settings, search: newTavilySearcher(settings.WebSearchKey),
+		repository: r, model: model, visionModel: visionModel, decisions: decisions, settings: settings, search: newTavilySearcher(settings.WebSearchKey),
 		data:    repositoryAgentData{repository: r, nomenclature: directory.NewTNVEDNomenclatureService(r), details: directory.NewDetailsFetcher(r), web: directory.NewWebPageFetcher(r)},
 		slots:   make(chan struct{}, agentParallelRuns),
 		cancels: map[int64]context.CancelFunc{},
+	}
+}
+
+// twoModels — фото смотрит отдельная модель, а модель рассуждений фото не получает.
+func (s *TNVEDAgentService) twoModels() bool { return s.visionModel != s.model }
+
+// modelName — модели подбора для сессии и статуса: «deepseek-flash + deepseek-v4-pro».
+func (s *TNVEDAgentService) modelName() string {
+	if s.twoModels() {
+		return s.visionModel.Name() + " + " + s.model.Name()
+	}
+	return s.model.Name()
+}
+
+// sessionUsage — расход подбора: всего (обе модели) и отдельно модели для фото.
+type sessionUsage struct {
+	total, vision    agentUsage
+	cost, visionCost decimal.Decimal
+}
+
+func usageOf(session repository.TNVEDAgentSession) sessionUsage {
+	return sessionUsage{
+		total:  agentUsage{PromptTokens: session.PromptTokens, CachedTokens: session.CachedTokens, CompletionTokens: session.CompletionTokens},
+		vision: agentUsage{PromptTokens: session.VisionPromptTokens, CachedTokens: session.VisionCachedTokens, CompletionTokens: session.VisionCompletionTokens},
+		cost:   session.CostUSD, visionCost: session.VisionCostUSD,
+	}
+}
+
+func (u *sessionUsage) add(step agentUsage, cost decimal.Decimal, vision bool) {
+	add := func(to *agentUsage) {
+		to.PromptTokens += step.PromptTokens
+		to.CachedTokens += step.CachedTokens
+		to.CompletionTokens += step.CompletionTokens
+	}
+	add(&u.total)
+	u.cost = u.cost.Add(cost)
+	if vision {
+		add(&u.vision)
+		u.visionCost = u.visionCost.Add(cost)
+	}
+}
+
+// changes — поля сессии с расходом.
+func (u sessionUsage) changes() map[string]any {
+	return map[string]any{
+		"prompt_tokens": u.total.PromptTokens, "cached_tokens": u.total.CachedTokens, "completion_tokens": u.total.CompletionTokens, "cost_usd": u.cost.Round(6),
+		"vision_prompt_tokens": u.vision.PromptTokens, "vision_cached_tokens": u.vision.CachedTokens, "vision_completion_tokens": u.vision.CompletionTokens, "vision_cost_usd": u.visionCost.Round(6),
 	}
 }
 
@@ -172,7 +231,7 @@ func (s *TNVEDAgentService) Status(ctx context.Context, userID int64) (AgentStat
 	if err != nil {
 		return AgentStatus{}, err
 	}
-	return AgentStatus{Configured: s.model.Configured(), Model: s.model.Name(), Vision: s.model.Vision(), DailyLimit: s.settings.DailyLimit, UsedToday: used}, nil
+	return AgentStatus{Configured: s.model.Configured(), Model: s.modelName(), Vision: s.visionModel.Configured() && s.visionModel.Vision(), DailyLimit: s.settings.DailyLimit, UsedToday: used}, nil
 }
 
 func (s *TNVEDAgentService) checkLimit(ctx context.Context, userID int64) error {
@@ -202,6 +261,20 @@ func (s *TNVEDAgentService) emit(ctx context.Context, sessionID int64, kind stri
 		return
 	}
 	_, _ = s.repository.AddAgentMessage(ctx, sessionID, kind, repository.JSON(data))
+}
+
+// sessionNames — наименования строки подбора (в справочнике — вопрос сотрудника).
+func sessionNames(session repository.TNVEDAgentSession) []string {
+	var item AgentItemInput
+	_ = json.Unmarshal(session.Item, &item)
+	return item.names()
+}
+
+// sessionFileCode — код из файла поставщика у строки подбора ("" — не было; в справочнике — нет).
+func sessionFileCode(session repository.TNVEDAgentSession) string {
+	var item AgentItemInput
+	_ = json.Unmarshal(session.Item, &item)
+	return item.Code
 }
 
 // names — все наименования строки: из инвойса, поставщика и других колонок файла.
@@ -276,7 +349,7 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 	session, err := s.repository.CreateAgentSession(ctx, repository.TNVEDAgentSession{
 		UserID: user.ID, EstimateID: &estimateID, ItemID: itemID, Status: status, Item: repository.JSON(itemJSON),
 		Photos: repository.JSON(photosJSON), Transcript: repository.JSON("[]"), Result: repository.JSON("null"),
-		CostUSD: decimal.Zero, Model: s.model.Name(), CreatedAt: now, UpdatedAt: now,
+		CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero, Model: s.modelName(), CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
 		return AgentSessionView{}, err
@@ -296,35 +369,40 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 	return s.Get(ctx, user, session.ID, 0)
 }
 
-// launchSearch — поиск похожих по фото товаров в базе решений (в чат и подсказкой модели). Потом
-// подбор ждёт сотрудника (ready) или, если просили сразу, запускает агента.
+// launchSearch — описание фото моделью для фото (для модели рассуждений, которая фото не видит) и
+// поиск похожих по фото товаров в базе решений (в чат и подсказкой модели). Потом подбор ждёт
+// сотрудника (ready) или, если просили сразу, запускает агента.
 func (s *TNVEDAgentService) launchSearch(sessionID int64, auto bool) {
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*photoCallTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), 4*photoCallTimeout)
 		defer cancel()
 		store := context.Background()
 		session, err := s.repository.AgentSessionByID(store, sessionID)
 		if err != nil {
 			return
 		}
-		hint, step := s.similarByPhoto(ctx, store, session)
-		changes := map[string]any{}
-		if step.PromptTokens > 0 || step.CompletionTokens > 0 {
-			changes["prompt_tokens"] = session.PromptTokens + step.PromptTokens
-			changes["cached_tokens"] = session.CachedTokens + step.CachedTokens
-			changes["completion_tokens"] = session.CompletionTokens + step.CompletionTokens
-			changes["cost_usd"] = session.CostUSD.Add(decimal.NewFromFloat(s.model.Cost(step))).Round(6)
-		}
-		if hint != "" {
-			var transcript []map[string]any
-			_ = json.Unmarshal(session.Transcript, &transcript)
-			transcript = append(transcript, map[string]any{"role": "user", "content": hint})
+		var transcript []map[string]any
+		var photos []string
+		_ = json.Unmarshal(session.Transcript, &transcript)
+		_ = json.Unmarshal(session.Photos, &photos)
+		usage := usageOf(session)
+		emit := func(kind string, content any) { s.emit(store, sessionID, kind, content) }
+		note, noteUsage := s.photoNote(ctx, photos, sessionNames(session), transcript, emit)
+		hint, similarUsage := s.similarByPhoto(ctx, store, session)
+		usage.add(noteUsage, s.visionModel.Cost(noteUsage), true)
+		usage.add(similarUsage, s.visionModel.Cost(similarUsage), true)
+		changes := usage.changes()
+		if note != nil || hint != "" {
+			if note != nil {
+				transcript = append(transcript, note)
+			}
+			if hint != "" {
+				transcript = append(transcript, map[string]any{"role": "user", "content": hint})
+			}
 			data, _ := json.Marshal(transcript)
 			changes["transcript"] = repository.JSON(data)
 		}
-		if len(changes) > 0 {
-			_ = s.repository.UpdateAgentSession(store, sessionID, changes)
-		}
+		_ = s.repository.UpdateAgentSession(store, sessionID, changes)
 		next := "ready"
 		if auto {
 			next = "running"
@@ -470,44 +548,42 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	var photos []string
 	_ = json.Unmarshal(session.Transcript, &transcript)
 	_ = json.Unmarshal(session.Photos, &photos)
-	usage := agentUsage{PromptTokens: session.PromptTokens, CachedTokens: session.CachedTokens, CompletionTokens: session.CompletionTokens}
-	cost, _ := session.CostUSD.Float64()
+	usage := usageOf(session)
 	steps := session.Steps
 	documents := session.DocumentsCode != ""
+	emit := func(kind string, content any) { s.emit(store, sessionID, kind, content) }
+	// Товар нашёлся в базе без ИИ, а сотрудник подбирает заново: описания фото ещё нет.
+	if note, step := s.photoNote(ctx, photos, sessionNames(session), transcript, emit); note != nil || step != (agentUsage{}) {
+		usage.add(step, s.visionModel.Cost(step), true)
+		if note != nil {
+			transcript = append(transcript, note)
+		}
+	}
 	toolbox := newAgentToolbox(s.data)
 	toolbox.documentsCode = session.DocumentsCode
 	toolbox.search = s.search
+	toolbox.lookPhoto = s.photoQuestions(photos, func(step agentUsage) { usage.add(step, s.visionModel.Cost(step), true) })
+	toolbox.requireDeclarations = !documents
+	toolbox.fileCode = sessionFileCode(session)
 	runner := &agentRunner{
 		model:      s.model,
 		toolbox:    toolbox,
-		system:     tnvedAgentPrompt(s.settings.NamingRule),
+		system:     s.systemPrompt(session.Mode == modeReference, documents, toolbox.lookPhoto != nil),
 		tools:      agentTools(session.Mode == modeReference, documents),
 		documents:  documents,
 		review:     s.settings.SelfCheck && !documents,
 		transcript: transcript,
 		photos:     photos,
 		vision:     s.model.Vision(),
-		emit:       func(kind string, content any) { s.emit(store, sessionID, kind, content) },
+		emit:       emit,
 		onStep: func(transcript []map[string]any, step agentUsage) {
-			usage.PromptTokens += step.PromptTokens
-			usage.CachedTokens += step.CachedTokens
-			usage.CompletionTokens += step.CompletionTokens
-			cost += s.model.Cost(step)
+			usage.add(step, s.model.Cost(step), false)
 			steps++
 			data, _ := json.Marshal(transcript)
-			_ = s.repository.UpdateAgentSession(store, sessionID, map[string]any{
-				"transcript": repository.JSON(data), "steps": steps, "prompt_tokens": usage.PromptTokens,
-				"cached_tokens": usage.CachedTokens, "completion_tokens": usage.CompletionTokens, "cost_usd": decimal.NewFromFloat(cost).Round(6),
-			})
+			changes := usage.changes()
+			changes["transcript"], changes["steps"] = repository.JSON(data), steps
+			_ = s.repository.UpdateAgentSession(store, sessionID, changes)
 		},
-	}
-	if session.Mode == modeReference {
-		runner.system = tnvedReferencePrompt()
-	}
-	if documents {
-		runner.system += "\n\n" + tnvedDocumentsPrompt
-	} else if s.search != nil {
-		runner.system += "\n\n" + tnvedWebPrompt
 	}
 	runner.restoreOpened(store)
 	outcome := runner.execute(ctx)
@@ -535,6 +611,23 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 		}
 	}
 	_ = s.repository.UpdateAgentSession(store, sessionID, changes)
+}
+
+// systemPrompt — подсказка запуска: подбор или справочник, плюс режим «Документы», интернет и вопросы по фото.
+func (s *TNVEDAgentService) systemPrompt(reference, documents, photoQuestions bool) string {
+	prompt := tnvedAgentPrompt(s.settings.NamingRule)
+	if reference {
+		prompt = tnvedReferencePrompt(s.settings.NamingRule)
+	}
+	if documents {
+		prompt += "\n\n" + tnvedDocumentsPrompt
+	} else if s.search != nil {
+		prompt += "\n\n" + tnvedWebPrompt
+	}
+	if photoQuestions {
+		prompt += "\n\n" + tnvedPhotoPrompt
+	}
+	return prompt
 }
 
 func (s *TNVEDAgentService) ownedSession(ctx context.Context, user repository.User, id int64) (repository.TNVEDAgentSession, error) {
@@ -883,14 +976,21 @@ func (s *TNVEDAgentService) Apply(ctx context.Context, user repository.User, id 
 	return view, nil
 }
 
-// Usage — расход агента за 30 дней (для администратора).
+// Usage — расход агента за 30 дней (для администратора): всего и отдельно модель для фото (vision)
+// и модель рассуждений (reasoning). Подборы до раздельного учёта целиком считаются в reasoning.
 func (s *TNVEDAgentService) Usage(ctx context.Context) (map[string]any, error) {
 	usage, err := s.repository.AgentUsageSince(ctx, time.Now().AddDate(0, 0, -30))
 	if err != nil {
 		return nil, err
 	}
+	part := func(model string, prompt, cached, completion int64, cost decimal.Decimal) map[string]any {
+		return map[string]any{"model": model, "promptTokens": prompt, "cachedTokens": cached, "completionTokens": completion, "costUsd": cost.StringFixed(4)}
+	}
 	return map[string]any{
 		"sessions": usage.Sessions, "runs": usage.Runs, "promptTokens": usage.PromptTokens, "cachedTokens": usage.CachedTokens,
 		"completionTokens": usage.CompletionTokens, "costUsd": usage.CostUSD.StringFixed(4),
+		"vision": part(s.visionModel.Name(), usage.VisionPromptTokens, usage.VisionCachedTokens, usage.VisionCompletionTokens, usage.VisionCostUSD),
+		"reasoning": part(s.model.Name(), usage.PromptTokens-usage.VisionPromptTokens, usage.CachedTokens-usage.VisionCachedTokens,
+			usage.CompletionTokens-usage.VisionCompletionTokens, usage.CostUSD.Sub(usage.VisionCostUSD)),
 	}, nil
 }

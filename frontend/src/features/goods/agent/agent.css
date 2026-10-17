@@ -67,7 +67,9 @@
 .ag-step { display: flex; align-items: baseline; gap: 8px; min-width: 0; color: #56665c; font-size: .77rem; }
 .ag-step-icon { flex: 0 0 16px; font-size: .74rem; text-align: center; }
 .ag-step-label { min-width: 0; overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
-.ag-step-detail { flex: 0 0 auto; color: #8a968f; }
+.ag-step-detail { flex: 0 1 auto; min-width: 0; overflow: hidden; color: #8a968f; text-overflow: ellipsis; white-space: nowrap; }
+.ag-step.block { flex-wrap: wrap; }
+.ag-step.block .ag-step-detail { flex: 1 0 100%; padding-left: 24px; white-space: pre-line; }
 .ag-step a { flex: 0 0 auto; color: #1b6b43; font-weight: 700; text-decoration: none; }
 .ag-step.failed .ag-step-detail { color: #a3452f; }
 .ag-thought { min-width: 0; overflow-wrap: anywhere; margin: 2px 0 2px 24px; color: #7a877f; font-size: .76rem; line-height: 1.45; white-space: pre-wrap; }
@@ -90,6 +92,8 @@
 
 /* Итог подбора */
 .ag-desc { margin: 0; color: #34443b; font-size: .82rem; line-height: 1.5; }
+.ag-filecode { margin: 0; padding: 7px 12px; border-radius: 10px; background: #eef2ef; color: #34443b; font-size: .78rem; line-height: 1.45; }
+.ag-filecode.differs { background: #fff4e0; color: #5f4310; }
 .ag-cand { display: grid; gap: 6px; padding: 12px; border: 1px solid #e3e9e5; border-radius: 10px; background: #fff; }
 .ag-cand.fits { border-color: #bfdcc9; background: #f7fbf8; }
 .ag-rates { margin: 0; color: #34443b; font-size: .77rem; font-weight: 600; }

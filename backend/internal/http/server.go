@@ -63,11 +63,27 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		})),
 		decisions:  decisions,
 		translator: translator.NewService(database, translator.NewClient(cfg.TranslatorAIAPIKey, cfg.TranslatorAIBaseURL, cfg.TranslatorAIModel)),
-		agent: tnvedagent.NewTNVEDAgentService(database, tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
-			APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision, Effort: cfg.TNVEDAIEffort,
-			PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
-		}), decisions, tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true}),
+		agent:      newAgentService(database, decisions, cfg),
 	}
+}
+
+// newAgentService — агент ТН ВЭД: модель рассуждений TNVED_AI_MODEL и, если задана, отдельная модель для
+// фото TNVED_AI_VISION_MODEL (тогда модель рассуждений фото не получает).
+func newAgentService(database *repository.Repository, decisions *decisions.CodeDecisionService, cfg config.Config) *tnvedagent.TNVEDAgentService {
+	model := tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
+		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision && cfg.TNVEDAIVisionModel == "", Effort: cfg.TNVEDAIEffort,
+		PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
+	})
+	var vision *tnvedagent.AgentModelClient
+	if cfg.TNVEDAIVisionModel != "" {
+		vision = tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
+			APIKey: cfg.TNVEDAIVisionAPIKey, BaseURL: cfg.TNVEDAIVisionBaseURL, Model: cfg.TNVEDAIVisionModel, Vision: cfg.TNVEDAIVision,
+			PriceInput: cfg.TNVEDAIVisionPriceInput, PriceCached: cfg.TNVEDAIVisionPriceCached, PriceOutput: cfg.TNVEDAIVisionPriceOutput,
+		})
+	}
+	return tnvedagent.NewTNVEDAgentService(database, model, vision, decisions, tnvedagent.AgentSettings{
+		DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true,
+	})
 }
 
 // StartBackground запускает фоновые задачи: антидемпинговые меры из файла программы (если их ещё

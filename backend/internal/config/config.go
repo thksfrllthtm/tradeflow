@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Config struct {
@@ -22,7 +24,7 @@ type Config struct {
 	CeramicsAIBaseURL string
 	CeramicsAIModel   string
 	CeramicsAIVision  bool
-	// ИИ-агент подбора кода ТН ВЭД: OpenAI-совместимый API с инструментами и фото (по умолчанию
+	// ИИ-агент подбора кода ТН ВЭД: OpenAI-совместимый API с инструментами (по умолчанию
 	// DeepSeek Flash). Цены — USD за 1 млн токенов, только для учёта расхода.
 	TNVEDAIAPIKey      string
 	TNVEDAIBaseURL     string
@@ -30,9 +32,17 @@ type Config struct {
 	TNVEDAIVision      bool
 	TNVEDAIDailyLimit  int
 	TNVEDAINamingRule  string
-	TNVEDAIPriceInput  float64
-	TNVEDAIPriceCached float64
-	TNVEDAIPriceOutput float64
+	TNVEDAIPriceInput  decimal.Decimal
+	TNVEDAIPriceCached decimal.Decimal
+	TNVEDAIPriceOutput decimal.Decimal
+	// Модель для фото (TNVED_AI_VISION_MODEL, например deepseek-flash): описание фото, вопросы по фото,
+	// похожие товары, перевод наименования. Пусто — всё делает модель TNVED_AI_MODEL, как раньше.
+	TNVEDAIVisionModel       string
+	TNVEDAIVisionAPIKey      string
+	TNVEDAIVisionBaseURL     string
+	TNVEDAIVisionPriceInput  decimal.Decimal
+	TNVEDAIVisionPriceCached decimal.Decimal
+	TNVEDAIVisionPriceOutput decimal.Decimal
 	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
 	TNVEDAIEffort string
 	// «Переводчик» (.docx): OpenAI-совместимый API, по умолчанию DeepSeek с ключом DEEPSEEK_API_KEY.
@@ -75,14 +85,19 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	prices := map[string]float64{"TNVED_AI_PRICE_INPUT": 0.30, "TNVED_AI_PRICE_CACHED": 0.006, "TNVED_AI_PRICE_OUTPUT": 1.20}
-	for name, fallback := range prices {
-		value, err := nonNegativeFloatEnv(name, fallback)
+	prices := map[string]decimal.Decimal{}
+	for name, fallback := range map[string]string{
+		"TNVED_AI_PRICE_INPUT": "0.30", "TNVED_AI_PRICE_CACHED": "0.006", "TNVED_AI_PRICE_OUTPUT": "1.20",
+		"TNVED_AI_VISION_PRICE_INPUT": "0.30", "TNVED_AI_VISION_PRICE_CACHED": "0.006", "TNVED_AI_VISION_PRICE_OUTPUT": "1.20",
+	} {
+		value, err := nonNegativeDecimalEnv(name, fallback)
 		if err != nil {
 			return Config{}, err
 		}
 		prices[name] = value
 	}
+	tnvedAPIKey := stringEnv("TNVED_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")))
+	tnvedBaseURL := stringEnv("TNVED_AI_BASE_URL", "https://api.deepseek.com")
 
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if databaseURL == "" {
@@ -92,31 +107,37 @@ func Load() (Config, error) {
 	return Config{
 		DatabaseURL: databaseURL,
 		// PORT задают хостинги вроде Render; BACKEND_PORT — docker-compose.
-		Port:                 stringEnv("BACKEND_PORT", stringEnv("PORT", "8080")),
-		SessionCookieName:    stringEnv("SESSION_COOKIE_NAME", "import_calculator_session"),
-		SessionTTL:           time.Duration(ttlHours) * time.Hour,
-		CookieSecure:         cookieSecure,
-		DeepSeekAPIKey:       strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
-		DeepSeekModel:        stringEnv("DEEPSEEK_MODEL", "deepseek-flash"),
-		CeramicsAIAPIKey:     stringEnv("CERAMICS_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
-		CeramicsAIBaseURL:    stringEnv("CERAMICS_AI_BASE_URL", "https://api.deepseek.com"),
-		CeramicsAIModel:      stringEnv("CERAMICS_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
-		CeramicsAIVision:     ceramicsVision,
-		TNVEDAIAPIKey:        stringEnv("TNVED_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
-		TNVEDAIBaseURL:       stringEnv("TNVED_AI_BASE_URL", "https://api.deepseek.com"),
-		TNVEDAIModel:         stringEnv("TNVED_AI_MODEL", "deepseek-flash"),
-		TranslatorAIAPIKey:   stringEnv("TRANSLATOR_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
-		TranslatorAIBaseURL:  stringEnv("TRANSLATOR_AI_BASE_URL", "https://api.deepseek.com"),
-		TranslatorAIModel:    stringEnv("TRANSLATOR_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
-		TavilyAPIKey:         strings.TrimSpace(os.Getenv("TAVILY_API_KEY")),
-		TNVEDAIEffort:        strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_EFFORT"))),
-		TNVEDAIVision:        tnvedVision,
-		TNVEDAIDailyLimit:    tnvedDailyLimit,
-		TNVEDAINamingRule:    strings.TrimSpace(os.Getenv("TNVED_AI_NAMING_RULE")),
-		TNVEDAIPriceInput:    prices["TNVED_AI_PRICE_INPUT"],
-		TNVEDAIPriceCached:   prices["TNVED_AI_PRICE_CACHED"],
-		TNVEDAIPriceOutput:   prices["TNVED_AI_PRICE_OUTPUT"],
-		RegistrationDisabled: !allowRegistration,
+		Port:                     stringEnv("BACKEND_PORT", stringEnv("PORT", "8080")),
+		SessionCookieName:        stringEnv("SESSION_COOKIE_NAME", "import_calculator_session"),
+		SessionTTL:               time.Duration(ttlHours) * time.Hour,
+		CookieSecure:             cookieSecure,
+		DeepSeekAPIKey:           strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
+		DeepSeekModel:            stringEnv("DEEPSEEK_MODEL", "deepseek-flash"),
+		CeramicsAIAPIKey:         stringEnv("CERAMICS_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
+		CeramicsAIBaseURL:        stringEnv("CERAMICS_AI_BASE_URL", "https://api.deepseek.com"),
+		CeramicsAIModel:          stringEnv("CERAMICS_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
+		CeramicsAIVision:         ceramicsVision,
+		TNVEDAIAPIKey:            tnvedAPIKey,
+		TNVEDAIBaseURL:           tnvedBaseURL,
+		TNVEDAIModel:             stringEnv("TNVED_AI_MODEL", "deepseek-flash"),
+		TranslatorAIAPIKey:       stringEnv("TRANSLATOR_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))),
+		TranslatorAIBaseURL:      stringEnv("TRANSLATOR_AI_BASE_URL", "https://api.deepseek.com"),
+		TranslatorAIModel:        stringEnv("TRANSLATOR_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
+		TavilyAPIKey:             strings.TrimSpace(os.Getenv("TAVILY_API_KEY")),
+		TNVEDAIEffort:            strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_EFFORT"))),
+		TNVEDAIVision:            tnvedVision,
+		TNVEDAIDailyLimit:        tnvedDailyLimit,
+		TNVEDAINamingRule:        strings.TrimSpace(os.Getenv("TNVED_AI_NAMING_RULE")),
+		TNVEDAIPriceInput:        prices["TNVED_AI_PRICE_INPUT"],
+		TNVEDAIPriceCached:       prices["TNVED_AI_PRICE_CACHED"],
+		TNVEDAIPriceOutput:       prices["TNVED_AI_PRICE_OUTPUT"],
+		TNVEDAIVisionModel:       strings.TrimSpace(os.Getenv("TNVED_AI_VISION_MODEL")),
+		TNVEDAIVisionAPIKey:      stringEnv("TNVED_AI_VISION_API_KEY", tnvedAPIKey),
+		TNVEDAIVisionBaseURL:     stringEnv("TNVED_AI_VISION_BASE_URL", tnvedBaseURL),
+		TNVEDAIVisionPriceInput:  prices["TNVED_AI_VISION_PRICE_INPUT"],
+		TNVEDAIVisionPriceCached: prices["TNVED_AI_VISION_PRICE_CACHED"],
+		TNVEDAIVisionPriceOutput: prices["TNVED_AI_VISION_PRICE_OUTPUT"],
+		RegistrationDisabled:     !allowRegistration,
 	}, nil
 }
 
@@ -145,11 +166,10 @@ func boolEnv(name string, fallback bool) (bool, error) {
 	return parsed, nil
 }
 
-func nonNegativeFloatEnv(name string, fallback float64) (float64, error) {
-	value := stringEnv(name, strconv.FormatFloat(fallback, 'f', -1, 64))
-	parsed, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", "."), 64)
-	if err != nil || parsed < 0 {
-		return 0, fmt.Errorf("%s must be a non-negative number", name)
+func nonNegativeDecimalEnv(name, fallback string) (decimal.Decimal, error) {
+	parsed, err := decimal.NewFromString(strings.ReplaceAll(stringEnv(name, fallback), ",", "."))
+	if err != nil || parsed.IsNegative() {
+		return decimal.Zero, fmt.Errorf("%s must be a non-negative number", name)
 	}
 	return parsed, nil
 }

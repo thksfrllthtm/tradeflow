@@ -222,6 +222,36 @@ func (f *WebPageFetcher) Page(ctx context.Context, rawURL string) (WebPage, erro
 	return WebPage{URL: pageURL}, err
 }
 
+// webExtractedRunes — сколько текста внешнего сервиса хранить (PDF перечня бывает в мегабайты).
+const webExtractedRunes = 500_000
+
+// Extracted — страница, которую наш сервер не прочитал (текст строится скриптом, сайт не отдаёт
+// страницу серверу, PDF), текстом внешнего сервиса extract (Tavily). Хранится в базе как обычная
+// страница: повторное чтение — из базы, без обращения к сервису.
+func (f *WebPageFetcher) Extracted(ctx context.Context, rawURL string, extract func(context.Context, string) (string, error)) (WebPage, error) {
+	pageURL, ok := CanonicalWebURL(rawURL)
+	if !ok {
+		return WebPage{}, ErrWebPageURL
+	}
+	cached, found, err := f.cached(ctx, pageURL)
+	if err != nil {
+		return WebPage{}, err
+	}
+	if found && time.Since(cached.fetchedAt) < webPageMaxAge {
+		return cached.page, nil
+	}
+	text, err := extract(ctx, pageURL)
+	if err != nil {
+		if found {
+			return cached.page, nil
+		}
+		return WebPage{URL: pageURL}, err
+	}
+	page := WebPage{URL: pageURL, Text: service.TruncateRunes(strings.TrimSpace(text), webExtractedRunes)}
+	f.save(ctx, page)
+	return page, nil
+}
+
 type cachedWebPage struct {
 	page      WebPage
 	fetchedAt time.Time

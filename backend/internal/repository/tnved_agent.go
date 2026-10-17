@@ -34,9 +34,14 @@ type TNVEDAgentSession struct {
 	CachedTokens     int64           `gorm:"not null"`
 	CompletionTokens int64           `gorm:"not null"`
 	CostUSD          decimal.Decimal `gorm:"column:cost_usd;type:numeric(12,6);not null"`
-	Model            string          `gorm:"size:100;not null"`
-	CreatedAt        time.Time       `gorm:"not null"`
-	UpdatedAt        time.Time       `gorm:"not null"`
+	// Доля модели для фото в токенах и стоимости выше (общие поля — сумма обеих моделей).
+	VisionPromptTokens     int64           `gorm:"not null"`
+	VisionCachedTokens     int64           `gorm:"not null"`
+	VisionCompletionTokens int64           `gorm:"not null"`
+	VisionCostUSD          decimal.Decimal `gorm:"column:vision_cost_usd;type:numeric(12,6);not null"`
+	Model                  string          `gorm:"size:100;not null"`
+	CreatedAt              time.Time       `gorm:"not null"`
+	UpdatedAt              time.Time       `gorm:"not null"`
 }
 
 func (TNVEDAgentSession) TableName() string { return "tnved_agent_sessions" }
@@ -112,12 +117,20 @@ func (r *Repository) UpdateAgentSession(ctx context.Context, id int64, changes m
 	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("id = ?", id).Updates(changes).Error
 }
 
-// AddAgentSessionUsage прибавляет к подбору токены и стоимость отдельного запроса (перевод наименования).
-func (r *Repository) AddAgentSessionUsage(ctx context.Context, id, promptTokens, cachedTokens, completionTokens int64, cost decimal.Decimal) error {
-	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("id = ?", id).Updates(map[string]any{
+// AddAgentSessionUsage прибавляет к подбору токены и стоимость отдельного запроса (перевод наименования);
+// vision — запрос к модели для фото: прибавляется и к её доле.
+func (r *Repository) AddAgentSessionUsage(ctx context.Context, id, promptTokens, cachedTokens, completionTokens int64, cost decimal.Decimal, vision bool) error {
+	changes := map[string]any{
 		"prompt_tokens": gorm.Expr("prompt_tokens + ?", promptTokens), "cached_tokens": gorm.Expr("cached_tokens + ?", cachedTokens),
 		"completion_tokens": gorm.Expr("completion_tokens + ?", completionTokens), "cost_usd": gorm.Expr("cost_usd + ?", cost),
-	}).Error
+	}
+	if vision {
+		changes["vision_prompt_tokens"] = gorm.Expr("vision_prompt_tokens + ?", promptTokens)
+		changes["vision_cached_tokens"] = gorm.Expr("vision_cached_tokens + ?", cachedTokens)
+		changes["vision_completion_tokens"] = gorm.Expr("vision_completion_tokens + ?", completionTokens)
+		changes["vision_cost_usd"] = gorm.Expr("vision_cost_usd + ?", cost)
+	}
+	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("id = ?", id).Updates(changes).Error
 }
 
 // SetAgentSessionStatusIf меняет статус, только если он сейчас from: два запуска одной сессии
@@ -180,6 +193,11 @@ type AgentUsage struct {
 	CachedTokens     int64
 	CompletionTokens int64
 	CostUSD          decimal.Decimal
+	// Доля модели для фото в суммах выше.
+	VisionPromptTokens     int64
+	VisionCachedTokens     int64
+	VisionCompletionTokens int64
+	VisionCostUSD          decimal.Decimal
 }
 
 // AgentUsageSince — расход агента за период (для администратора).
@@ -187,7 +205,9 @@ func (r *Repository) AgentUsageSince(ctx context.Context, since time.Time) (Agen
 	var usage AgentUsage
 	err := r.db.WithContext(ctx).Raw(`SELECT COUNT(*) AS sessions, COALESCE(SUM(runs), 0) AS runs,
 		COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens, COALESCE(SUM(cached_tokens), 0) AS cached_tokens,
-		COALESCE(SUM(completion_tokens), 0) AS completion_tokens, COALESCE(SUM(cost_usd), 0) AS cost_usd
+		COALESCE(SUM(completion_tokens), 0) AS completion_tokens, COALESCE(SUM(cost_usd), 0) AS cost_usd,
+		COALESCE(SUM(vision_prompt_tokens), 0) AS vision_prompt_tokens, COALESCE(SUM(vision_cached_tokens), 0) AS vision_cached_tokens,
+		COALESCE(SUM(vision_completion_tokens), 0) AS vision_completion_tokens, COALESCE(SUM(vision_cost_usd), 0) AS vision_cost_usd
 		FROM tnved_agent_sessions WHERE created_at >= ?`, since).Scan(&usage).Error
 	return usage, err
 }

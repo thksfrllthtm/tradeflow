@@ -3,6 +3,7 @@ import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { LinkText } from '@/shared/components/LinkText/LinkText'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { errorMessage } from '@/shared/lib/errorMessage'
+import { clipboardImages, clipboardText } from '@/shared/lib/clipboardImages'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
@@ -14,7 +15,7 @@ const pollInterval = 1500
 const maxPhotos = 3
 const examples = ['Лопата штыковая стальная с черенком', 'Перчатки трикотажные с покрытием ПВХ', 'Чем отличаются 6116 10 200 0 и 6116 10 800 0?']
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
-const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐' }
+const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑' }
 
 const isWorking = (session: AgentSession | null) => session?.status === 'running' || session?.status === 'searching'
 const isImage = (file: File) => file.type === 'image/jpeg' || file.type === 'image/png'
@@ -113,17 +114,24 @@ export function ReferenceChat() {
     inputRef.current?.focus()
   }
 
-  // Фото из буфера, вставленное вне полей ввода, становится вложением вопроса (не отправляется само).
-  // «/» вне полей — перейти к вопросу. В полях, окнах и с модификаторами ничего не перехватываем.
+  // Фото из буфера, вставленное вне полей ввода, становится вложением вопроса (не отправляется само), а
+  // текст (в том числе ячейки Excel) — дописывается в вопрос. «/» вне полей — перейти к вопросу. В полях,
+  // окнах и с модификаторами ничего не перехватываем.
   const addFilesRef = useRef(addFiles)
   addFilesRef.current = addFiles
   useEffect(() => {
     const onWindowPaste = (event: globalThis.ClipboardEvent) => {
       if (event.defaultPrevented || editable(event.target) || dialogOpen()) return
-      const files = [...(event.clipboardData?.files ?? [])].filter(isImage)
-      if (files.length === 0) return
+      const files = clipboardImages(event.clipboardData).filter(isImage)
+      const pasted = clipboardText(event.clipboardData)
+      if (files.length === 0 && !pasted) return
       event.preventDefault()
-      void addFilesRef.current(files)
+      if (files.length > 0) {
+        void addFilesRef.current(files)
+        return
+      }
+      setText((current) => (current.trim() ? current.trimEnd() + ' ' + pasted : pasted))
+      inputRef.current?.focus()
     }
     const onWindowKey = (event: globalThis.KeyboardEvent) => {
       if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented || editable(event.target) || dialogOpen()) return
@@ -142,8 +150,9 @@ export function ReferenceChat() {
     if (visible && (document.activeElement === document.body || document.activeElement === null)) input?.focus({ preventScroll: true })
   }, [])
 
+  // Ячейки Excel вставляются текстом, а не их картинкой-отрисовкой.
   function onPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
-    const files = [...event.clipboardData.files]
+    const files = clipboardImages(event.clipboardData)
     if (files.length) { event.preventDefault(); void addFiles(files) }
   }
 
@@ -277,7 +286,7 @@ export function ReferenceChat() {
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="9" cy="11" r="2" /><path d="m21 16-4.5-4.5L7 19" /></svg>
             </span>
             <h3>Какой код у товара?</h3>
-            <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент найдёт код в номенклатуре и объяснит выбор.</p>
+            <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент сверит примеры декларирования и пояснения к ТН ВЭД, найдёт код в номенклатуре и объяснит выбор.</p>
             <div className="rc-examples">{examples.map((example) => <button key={example} type="button" onClick={() => { setText(example); inputRef.current?.focus() }}>{example}</button>)}</div>
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
             documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />}
@@ -334,7 +343,7 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProp
         case 'match': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.byPhoto ? 'то же фото' : 'то же наименование', verified: match.decision.status === 'verified' }))} title="Этот товар уже оформляли" /> : null
         case 'similar': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.verdict === 'same' ? `тот же товар · ${match.score}%` : `похожий · ${match.score}%`, verified: match.decision.status === 'verified' }))} title="Похожие товары в базе решений" /> : null
         case 'result': return message.content.documentsCode ? <DocumentsAnswer key={message.id} result={message.content} />
-          : <Answer key={message.id} result={message.content} previous={block.previous} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
+          : <Answer key={message.id} sessionId={session?.id ?? 0} result={message.content} previous={block.previous} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
         case 'notice': return <p key={message.id} className="rc-notice">{message.content.text}</p>
         case 'error': return <p key={message.id} className="rc-error">{message.content.message}</p>
         case 'rerun': return <p key={message.id} className="rc-divider"><span>заново</span></p>
@@ -381,7 +390,7 @@ function Steps({ messages, live }: { messages: AgentMessage[]; live: boolean }) 
       Ход поиска · {count} {count === 1 ? 'шаг' : count > 1 && count < 5 ? 'шага' : 'шагов'}{!live && <i aria-hidden="true">{expanded ? '▴' : '▾'}</i>}
     </button>
     {expanded && <ol>{messages.map((message) => message.kind === 'tool'
-      ? <li key={message.id} className={message.content.failed ? 'failed' : undefined}><span aria-hidden="true">{toolIcons[message.content.tool] ?? '•'}</span>{message.content.label}<small>{message.content.detail}</small>{message.content.url && <a href={message.content.url} target="_blank" rel="noreferrer">↗</a>}</li>
+      ? <li key={message.id} className={[message.content.failed && 'failed', (message.content.tool === 'photo' || message.content.tool === 'look_at_photo') && 'block'].filter(Boolean).join(' ') || undefined}><span aria-hidden="true">{toolIcons[message.content.tool] ?? '•'}</span>{message.content.label}<small>{message.content.detail}</small>{message.content.url && <a href={message.content.url} target="_blank" rel="noreferrer">↗</a>}</li>
       : message.kind === 'text' ? <li key={message.id} className="thought">{message.content.text}</li> : null)}</ol>}
   </div>
 }
@@ -409,9 +418,9 @@ function mainCodes(result: AgentResult): string {
 
 // Ответ агента: что за товар, подходящие коды с цитатой и ставками, затем почему не соседние.
 // Ответ на уточнение с теми же кодами — только текст и строка с кодом, без повторных карточек.
-type AnswerProps = { result: AgentResult; previous?: AgentResult; documentsDisabled: boolean; onDocuments: (code: string) => void }
+type AnswerProps = { sessionId: number; result: AgentResult; previous?: AgentResult; documentsDisabled: boolean; onDocuments: (code: string) => void }
 
-function Answer({ result, previous, documentsDisabled, onDocuments }: AnswerProps) {
+function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }: AnswerProps) {
   const main = result.candidates.filter((candidate) => candidate.verdict !== 'no')
   const rejected = result.candidates.filter((candidate) => candidate.verdict === 'no')
   if (previous && main.length > 0 && mainCodes(previous) === mainCodes(result)) {
@@ -435,7 +444,53 @@ function Answer({ result, previous, documentsDisabled, onDocuments }: AnswerProp
         <span><LinkText text={candidate.reason} /></span>
       </div>)}
     </div>}
+    <DeclarationNames sessionId={sessionId} short={result.name} full={result.nameFull ?? ''} />
     {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
+  </div>
+}
+
+// Наименование для декларации — краткое и подробное: копировать или перевести на китайский
+// («русское / 中文», перевод — тем же запросом, что «Применить наименование» в подборе строки).
+function DeclarationNames({ sessionId, short, full }: { sessionId: number; short: string; full: string }) {
+  const variants = [{ label: 'Краткое', name: short.trim() }, { label: 'Подробное', name: full.trim() }]
+    .filter((variant, index, all) => variant.name && all.findIndex((other) => other.name === variant.name) === index)
+  if (variants.length === 0) return null
+  return <div className="rc-names">
+    <p>Наименование для декларации</p>
+    {variants.map((variant) => <NameVariant key={variant.label} sessionId={sessionId} label={variants.length > 1 ? variant.label : ''} name={variant.name} />)}
+  </div>
+}
+
+function NameVariant({ sessionId, label, name }: { sessionId: number; label: string; name: string }) {
+  const [shown, setShown] = useState(name)
+  const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
+  const translated = shown !== name
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(shown)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1400)
+    } catch {
+      // Буфер обмена недоступен — текст можно выделить и скопировать вручную.
+    }
+  }
+
+  async function translate() {
+    setBusy(true); setError('')
+    try { setShown((await agentApi.name(sessionId, name)).name) } catch (reason) { setError(errorMessage(reason)) } finally { setBusy(false) }
+  }
+
+  return <div className="rc-name-row">
+    {label && <span className="rc-name-label">{label}</span>}
+    <span className="rc-name-text">{shown}</span>
+    <span className="rc-name-actions">
+      <button type="button" onClick={() => void copy()}>{copied ? 'Скопировано' : 'Копировать'}</button>
+      {!translated && sessionId > 0 && <button type="button" onClick={() => void translate()} disabled={busy}>{busy ? 'Перевод…' : 'Перевести на китайский'}</button>}
+    </span>
+    {error && <span className="rc-name-error" role="alert">{error}</span>}
   </div>
 }
 

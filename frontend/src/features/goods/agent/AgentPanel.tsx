@@ -35,7 +35,7 @@ const pollInterval = 1500
 
 const toolIcons: Record<string, string> = {
   search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚',
-  open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐',
+  open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑',
 }
 
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
@@ -364,7 +364,9 @@ function StepsGroup({ messages, live }: { messages: AgentMessage[]; live: boolea
         if (message.kind === 'text') return <li key={message.id} className="ag-thought">{message.content.text}</li>
         if (message.kind !== 'tool') return null
         const { tool, label, detail, url, failed } = message.content
-        return <li key={message.id} className={failed ? 'ag-step failed' : 'ag-step'}>
+        // Описание фото и ответы по фото — длинный текст: под подписью шага, с переносами.
+        const block = tool === 'photo' || tool === 'look_at_photo'
+        return <li key={message.id} className={'ag-step' + (failed ? ' failed' : '') + (block ? ' block' : '')}>
           <span className="ag-step-icon" aria-hidden="true">{toolIcons[tool] ?? '•'}</span>
           <span className="ag-step-label">{label}</span>
           <span className="ag-step-detail">{detail}</span>
@@ -550,6 +552,10 @@ function ResultCard({ result, applied, busy, onApplyCode, onApplyName, documents
   return <section className="ag-card ag-result">
     <header className="ag-card-head"><h3>Итог подбора</h3></header>
     {result.description && <p className="ag-desc"><LinkText text={result.description} /></p>}
+    {result.fileCode && <p className={result.fileCode.dutyDiffers ? 'ag-filecode differs' : 'ag-filecode'} role="note">
+      В файле — <b>{formatCode(result.fileCode.code)}</b> ({result.fileCode.found ? `пошлина ${result.fileCode.duty}` : 'кода нет в номенклатуре'}), подобран <b>{formatCode(result.fileCode.bestCode)}</b> (пошлина {result.fileCode.bestDuty}).
+      {result.fileCode.dutyDiffers ? ' Пошлины разные — проверьте, почему код из файла не подходит (в замечаниях агента).' : ' Пошлина та же.'}
+    </p>}
     <AgentEvidence result={result} />
     {main.map((candidate) => <CandidateCard key={candidate.code} candidate={candidate} applied={applied} busy={busy} onApplyCode={onApplyCode} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     {rejected.length > 0 && <details className="ag-more">

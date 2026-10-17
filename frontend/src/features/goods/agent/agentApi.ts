@@ -6,6 +6,10 @@ import { CodeDecision } from '@/shared/tnved/decisions'
 // новые сообщения чата опросом.
 
 export type AgentStatus = { configured: boolean; model: string; vision: boolean; dailyLimit: number; usedToday: number }
+
+// Расход агента за 30 дней: всего и отдельно модель для фото (vision) и модель рассуждений (reasoning).
+type AgentUsageTotals = { promptTokens: number; cachedTokens: number; completionTokens: number; costUsd: string }
+type AgentUsagePart = AgentUsageTotals & { model: string }
 // searching — поиск в базе решений, ready — поиск закончен, агента запускает сотрудник.
 export type AgentSessionStatus = 'searching' | 'ready' | 'running' | 'waiting' | 'done' | 'error' | 'cancelled'
 
@@ -38,12 +42,16 @@ export type AgentResult = {
   description: string
   candidates: AgentCandidate[]
   name: string
+  // Подробный вариант наименования (только в справочнике на главной; name там — краткий).
+  nameFull?: string
   notes: string
   droppedCodes: string[]
   quotesRemoved: number
   // Уверенность в лучшем коде и страницы из интернета, на которые опирался агент.
   confidence?: 'high' | 'medium' | 'low'
   sources?: { title: string; url: string }[]
+  // Код из файла поставщика, если подобран другой: пошлины обоих (считает сервер).
+  fileCode?: { code: string; found: boolean; duty: string; bestCode: string; bestDuty: string; dutyDiffers: boolean }
   // Ответ по кнопке «Документы для ввоза»: для какого кода, меры и сколько чужих ссылок убрала программа.
   documentsCode?: string
   documents?: AgentDocument[]
@@ -51,7 +59,9 @@ export type AgentResult = {
 }
 
 // Мера или документ для ввоза: applies — относится ли мера к товару по пояснению под актом.
-export type AgentDocument = { measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no' }
+// basis — дословная цитата из справки, акта или страницы кода, на которой основан вывод (проверена сервером);
+// nameHint — при каком реальном признаке товара мера не применяется и какое наименование тогда указать.
+export type AgentDocument = { measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no'; basis?: string; basisSource?: string; nameHint?: string }
 
 // photoDiffers — совпало наименование, но фото другое: фото главнее, это может быть другой товар.
 export type SameProductMatch = { decision: CodeDecision; byPhoto: boolean; byName: boolean; photoDiffers?: boolean }
@@ -99,7 +109,7 @@ export type AgentRowStatus = { sessionId: number; itemId: string; status: AgentS
 
 export const agentApi = {
   status: () => request<AgentStatus>('/api/tnved-agent/status'),
-  usage: () => request<{ sessions: number; runs: number; promptTokens: number; cachedTokens: number; completionTokens: number; costUsd: string }>('/api/tnved-agent/usage'),
+  usage: () => request<AgentUsageTotals & { sessions: number; runs: number; vision: AgentUsagePart; reasoning: AgentUsagePart }>('/api/tnved-agent/usage'),
   rows: (estimateId: number) => request<{ items: AgentRowStatus[] }>(`/api/tnved-agent/sessions?estimateId=${estimateId}`),
   // auto — сразу запустить агента после поиска в базе (подбор для всех строк).
   start: (input: { estimateId: number; itemId: string; item: AgentItem; photos: string[]; auto?: boolean }) => request<AgentSession>('/api/tnved-agent/sessions', { method: 'POST', body: JSON.stringify(input) }),

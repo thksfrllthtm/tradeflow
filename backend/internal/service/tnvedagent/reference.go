@@ -73,6 +73,7 @@ func referenceFollowUp(text string) string {
 		"\nОтветь именно на этот вопрос и закончи вызовом finish:" +
 		"\n- description — прямой ответ на вопрос, 1–4 предложения, сразу с сути; не пересказывай, что это за товар и почему такой код;" +
 		"\n- candidates — если код не меняется, повтори прежние коды с теми же вердиктами без повторных проверок; если меняется — новые коды с объяснением;" +
+		"\n- name и nameFull — прежние, если товар тот же; если выяснилось, что товар другой, — новые;" +
 		"\n- notes — оставь пустым: весь ответ — в description." +
 		"\nЕсли для ответа нужны сведения о коде (документы, меры, ставки) — возьми их через open_details или get_codes."
 }
@@ -112,7 +113,7 @@ func (s *TNVEDAgentService) AskReference(ctx context.Context, user repository.Us
 	session, err := s.repository.CreateAgentSession(ctx, repository.TNVEDAgentSession{
 		UserID: user.ID, Mode: modeReference, Title: referenceTitle(text), Status: "searching",
 		Item: repository.JSON(itemJSON), Photos: repository.JSON(photosJSON), Transcript: repository.JSON(transcript),
-		Result: repository.JSON("null"), CostUSD: decimal.Zero, Model: s.model.Name(), CreatedAt: now, UpdatedAt: now,
+		Result: repository.JSON("null"), CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero, Model: s.modelName(), CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
 		return AgentSessionView{}, err
