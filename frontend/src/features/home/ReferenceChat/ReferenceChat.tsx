@@ -8,6 +8,7 @@ import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
+import { DeclarationsLink } from '@/features/goods/agent/DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from '@/features/goods/agent/DocumentsAnswer'
 import './ReferenceChat.css'
 
@@ -441,7 +442,7 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
       <p>Почему не эти коды</p>
       {rejected.map((candidate) => <div key={candidate.code} className="rc-rejected-row">
         <CopyCode code={candidate.code} className="rc-code small" />
-        <span><LinkText text={candidate.reason} /></span>
+        <span><LinkText text={candidate.reason} /> <DeclarationsLink candidate={candidate} className="rc-more" /></span>
       </div>)}
     </div>}
     <DeclarationNames sessionId={sessionId} short={result.name} full={result.nameFull ?? ''} />
@@ -516,6 +517,7 @@ function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: A
     <div className="rc-cand-actions">
       {candidate.verdict !== 'no' && <DocumentsButton code={candidate.code} disabled={documentsDisabled} onClick={onDocuments} />}
       {nomenclature?.detailsUrl && <a className="rc-more" href={nomenclature.detailsUrl} target="_blank" rel="noreferrer">Страница кода ↗</a>}
+      <DeclarationsLink candidate={candidate} className="rc-more" />
     </div>
   </article>
 }

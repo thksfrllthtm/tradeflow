@@ -13,6 +13,7 @@ import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { saveRowDecision } from '../hooks/useRowDecisions'
 import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
 import { AgentEvidence } from './AgentEvidence'
+import { DeclarationsLink } from './DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
 import '@/shared/styles/drawer.css'
 import './agent.css'
@@ -539,6 +540,7 @@ function CandidateCard({ candidate, applied, busy, onApplyCode, documentsDisable
       {candidate.verdict !== 'no' && (applied.code === candidate.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="ag-apply" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>Применить код</button>)}
       {candidate.verdict !== 'no' && <DocumentsButton code={candidate.code} disabled={documentsDisabled} onClick={onDocuments} />}
       {candidate.nomenclature?.detailsUrl && <a href={candidate.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
+      <DeclarationsLink candidate={candidate} />
     </div>
   </article>
 }

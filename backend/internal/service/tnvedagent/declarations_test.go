@@ -127,6 +127,52 @@ func TestDeclarationsRequiredBeforeFinish(t *testing.T) {
 	}
 }
 
+// У кодов итога — ссылка на описания из деклараций под кодом: с числом записей и запросом, которым код
+// найден; код, которого в поиске не было, — по первому запросу без числа; без поиска ссылки нет. После
+// ответа сотрудника — из прежнего запуска.
+func TestCandidateDeclarationsLink(t *testing.T) {
+	both := func(runner *agentRunner) []AgentCandidate {
+		outcome := runner.execute(context.Background())
+		if outcome.result == nil {
+			t.Fatal("нет итога")
+		}
+		return outcome.result.Candidates
+	}
+	finishBoth := call("f", "finish", map[string]any{"description": "Перчатки", "name": "Перчатки", "candidates": []map[string]string{
+		{"code": "6116102000", "verdict": "fits", "reason": "Да."}, {"code": "4015190000", "verdict": "no", "reason": "Нет."}}})
+
+	runner, _ := newTestRunner(&scriptedModel{replies: []agentReply{
+		{ToolCalls: []agentToolCall{call("d1", "search_declarations", map[string]string{"query": "перчатки рабочие"})}},
+		{ToolCalls: []agentToolCall{call("d2", "search_declarations", map[string]string{"query": "перчатки трикотажные", "within": "6116"})}},
+		{ToolCalls: []agentToolCall{finishBoth}},
+	}}, &fakeAgentData{})
+	candidates := both(runner)
+	fits, no := candidates[0].Declarations, candidates[1].Declarations
+	if fits == nil || fits.Count != 120 || fits.Query != "перчатки трикотажные" || fits.URL != directory.DeclarationsURL("перчатки трикотажные", "6116102000") {
+		t.Fatalf("код из поиска: %+v", fits)
+	}
+	if no == nil || no.Count != 0 || no.URL != directory.DeclarationsURL("перчатки рабочие", "4015190000") {
+		t.Fatalf("код вне поиска: %+v", no)
+	}
+
+	runner, _ = newTestRunner(&scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{finishBoth}}}}, &fakeAgentData{})
+	if candidates := both(runner); candidates[0].Declarations != nil {
+		t.Fatalf("без поиска: %+v", candidates[0].Declarations)
+	}
+
+	asking, _ := newTestRunner(&scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
+		call("d", "search_declarations", map[string]string{"query": "перчатки трикотажные"}),
+		call("q", "ask_user", map[string]string{"question": "Покрытие из резины?"}),
+	}}}}, &fakeAgentData{})
+	asking.execute(context.Background())
+	next, _ := newTestRunner(&scriptedModel{}, &fakeAgentData{})
+	next.transcript = asking.transcript
+	next.restoreOpened(context.Background())
+	if link := next.toolbox.declarationsLink("6116102000"); link == nil || link.Count != 77 {
+		t.Fatalf("после ответа сотрудника: %+v", link)
+	}
+}
+
 // На принудительном итоге (лимит шагов) итог без поиска по декларациям не теряется.
 func TestForcedFinishIgnoresDeclarationsRequirement(t *testing.T) {
 	model := &scriptedModel{replies: []agentReply{

@@ -123,6 +123,13 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 				if strings.Contains(content, `"groups"`) || strings.Contains(content, "не ответил") {
 					r.toolbox.declarationsChecked = true
 				}
+				var found struct {
+					Query   string                        `json:"query"`
+					Sources []directory.DeclarationSource `json:"sources"`
+				}
+				if json.Unmarshal([]byte(content), &found) == nil && found.Query != "" {
+					r.toolbox.rememberDeclarations(found.Query, found.Sources)
+				}
 			case "web_search":
 				var found struct {
 					Results []webResult `json:"results"`

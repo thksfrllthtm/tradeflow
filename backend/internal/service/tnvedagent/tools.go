@@ -224,6 +224,16 @@ type AgentCandidate struct {
 	Check        string                      `json:"check"`
 	PageOpened   bool                        `json:"pageOpened"`
 	Nomenclature *directory.NomenclatureCode `json:"nomenclature"`
+	// Declarations — описания из деклараций под кодом (nil — агент примеры декларирования не искал).
+	Declarations *AgentDeclarations `json:"declarations,omitempty"`
+}
+
+// AgentDeclarations — поиск ifcg.ru внутри кода по словам агента; Count — сколько записей под кодом
+// нашлось в его поиске (0 — код в найденном не встретился).
+type AgentDeclarations struct {
+	URL   string `json:"url"`
+	Query string `json:"query"`
+	Count int    `json:"count,omitempty"`
 }
 
 type AgentResult struct {
@@ -378,6 +388,10 @@ type agentToolbox struct {
 	// (declarationsChecked — искал в этом подборе).
 	requireDeclarations bool
 	declarationsChecked bool
+	// declarationQuery — первый запрос search_declarations; declarationCounts — по кодам (10 цифр)
+	// наибольшее число записей и запрос, которым оно найдено: ссылка «Декларации» у кодов итога.
+	declarationQuery  string
+	declarationCounts map[string]declarationCount
 	// fileCode — код из файла поставщика ("" — не было): итог сравнивается с ним.
 	fileCode string
 }
@@ -393,7 +407,39 @@ type AgentFileCode struct {
 }
 
 func newAgentToolbox(data agentData) *agentToolbox {
-	return &agentToolbox{data: data, opened: map[string]string{}, web: map[string]string{}, links: map[string]bool{}, docs: map[string]directory.WebPage{}, pages: map[string]bool{}}
+	return &agentToolbox{data: data, opened: map[string]string{}, web: map[string]string{}, links: map[string]bool{}, docs: map[string]directory.WebPage{}, pages: map[string]bool{}, declarationCounts: map[string]declarationCount{}}
+}
+
+type declarationCount struct {
+	query string
+	count int
+}
+
+// rememberDeclarations — запрос и число записей под каждым кодом из ответа search_declarations.
+func (t *agentToolbox) rememberDeclarations(query string, sources []directory.DeclarationSource) {
+	if t.declarationQuery == "" {
+		t.declarationQuery = query
+	}
+	for _, source := range sources {
+		for _, group := range source.Groups {
+			if len(group.Code) == 10 && group.Count > t.declarationCounts[group.Code].count {
+				t.declarationCounts[group.Code] = declarationCount{query: query, count: group.Count}
+			}
+		}
+	}
+}
+
+// declarationsLink — ссылка на описания из деклараций под кодом: по запросу, которым код найден, иначе
+// по первому запросу агента.
+func (t *agentToolbox) declarationsLink(code string) *AgentDeclarations {
+	found, ok := t.declarationCounts[code]
+	if !ok {
+		if t.declarationQuery == "" {
+			return nil
+		}
+		found.query = t.declarationQuery
+	}
+	return &AgentDeclarations{URL: directory.DeclarationsURL(found.query, code), Query: found.query, Count: found.count}
 }
 
 // rememberPage — агент видел текст страницы и ссылки с неё.
@@ -832,6 +878,7 @@ func (t *agentToolbox) searchDeclarations(ctx context.Context, query, within str
 		return `{"error":"Сайты с примерами декларирования не ответили — опирайся на номенклатуру и базу решений и скажи об этом в notes."}`,
 			agentToolEvent{Tool: name, Label: label, Detail: "сайты не ответили", URL: address, Failed: true}
 	}
+	t.rememberDeclarations(query, sources)
 	examples := agentHeadingExamples
 	switch len(within) {
 	case 4:
@@ -1023,7 +1070,7 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 		_, opened := t.opened[code]
 		copyItem := item
 		result.Candidates = append(result.Candidates, AgentCandidate{
-			Code: code, Verdict: verdict, Quote: quote, QuoteSource: source, PageOpened: opened, Nomenclature: &copyItem,
+			Code: code, Verdict: verdict, Quote: quote, QuoteSource: source, PageOpened: opened, Nomenclature: &copyItem, Declarations: t.declarationsLink(code),
 			Reason: service.TruncateRunes(strings.TrimSpace(candidate.Reason), 600), Check: service.TruncateRunes(strings.TrimSpace(candidate.Check), 400),
 		})
 		if len(result.Candidates) == agentMaxCandidates {
