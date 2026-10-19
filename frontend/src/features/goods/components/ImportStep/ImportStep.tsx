@@ -40,7 +40,7 @@ function storedView(): View {
 }
 
 // Подписи полей — короткие, те же, что в заголовках таблицы на этапе проверки.
-const shortLabel: Record<keyof GoodsMapping, string> = { name: 'Наименование', name2: 'Наименование 2', name3: 'Наименование 3', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт', places: 'Места', pairsPerPlace: 'Шт. в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
+const shortLabel: Record<keyof GoodsMapping, string> = { name: 'Наименование', name2: 'Наименование 2', name3: 'Наименование 3', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт / пар', places: 'Места', pairsPerPlace: 'Шт. / пар в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
 
 export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, headers, rawRows, mapping, fileName, selectedFileAvailable, mappingFieldOptions, upload, addEmptyRow, setSheet, setHeaderRow, setDataStartRow, reparseSelectedSheet, mappedFieldForHeader, setMappingForHeader, setRawRowIncluded, applyMapping }: Props) {
   const fileInput = <input type="file" accept=".xlsx,.xls" onChange={upload} disabled={loading} />
