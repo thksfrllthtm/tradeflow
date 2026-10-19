@@ -46,7 +46,10 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 		places = service.DecPtr(pairs.Div(*ppp))
 	}
 	if ppp == nil && pairs != nil && places != nil && places.IsPositive() {
-		ppp = service.DecPtr(pairs.Div(*places))
+		// Смешанная упаковка (70 пар в 9 местах: коробки по 7 и 8) — не ошибка: пар в месте нет.
+		if perPlace := pairs.Div(*places); perPlace.Truncate(0).Equal(perPlace) {
+			ppp = &perPlace
+		}
 	}
 	// Quantities represent physical counts. In particular, do not silently
 	// round an inferred fractional number of places when pairs and pairs per
