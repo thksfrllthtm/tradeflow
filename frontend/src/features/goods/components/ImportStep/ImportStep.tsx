@@ -43,7 +43,7 @@ function storedView(): View {
 const shortLabel: Record<keyof GoodsMapping, string> = { name: 'Наименование', name2: 'Наименование 2', name3: 'Наименование 3', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт', places: 'Места', pairsPerPlace: 'Шт. в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
 
 export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, headers, rawRows, mapping, fileName, selectedFileAvailable, mappingFieldOptions, upload, addEmptyRow, setSheet, setHeaderRow, setDataStartRow, reparseSelectedSheet, mappedFieldForHeader, setMappingForHeader, setRawRowIncluded, applyMapping }: Props) {
-  const fileInput = <input type="file" accept=".xlsx" onChange={upload} disabled={loading} />
+  const fileInput = <input type="file" accept=".xlsx,.xls" onChange={upload} disabled={loading} />
   const [view, setViewState] = useState<View>(storedView)
   const [menu, setMenu] = useState<ColumnMenuAnchor | null>(null)
   function setView(next: View) {
@@ -54,8 +54,8 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
   if (headers.length === 0 && sheets.length === 0) return <div className="goods-step-page im-step">
     <label className={loading ? 'im-drop busy' : 'im-drop'}>
       {fileInput}
-      <strong>{loading ? 'Читаем файл…' : 'Перетащите XLSX сюда или нажмите, чтобы выбрать файл'}</strong>
-      <span>Обычный XLSX до 100 МБ. Фото из файла сжимаются и сохраняются только в этой смете.</span>
+      <strong>{loading ? 'Читаем файл…' : 'Перетащите Excel (XLSX или XLS) сюда или нажмите, чтобы выбрать файл'}</strong>
+      <span>Файл до 100 МБ. Фото из XLSX сжимаются и сохраняются только в этой смете; из старого XLS фото не читаются.</span>
     </label>
     <p className="im-alt">или <button type="button" className="button-link" onClick={addEmptyRow}>заполните строки вручную</button></p>
   </div>

@@ -5,6 +5,7 @@ package goods
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -324,14 +325,23 @@ func (s *GoodsService) ParseXlsxWithSharedImages(ctx context.Context, file io.Re
 // of every part, which is the biggest cost for workbooks full of photos.
 func (s *GoodsService) parseXlsx(ctx context.Context, file io.ReaderAt, size int64, filename string, sheet string, headerRow, dataStartRow int, shareSpanningImages bool) (GoodsParseResult, error) {
 	_ = ctx
-	if !strings.HasSuffix(strings.ToLower(strings.TrimSpace(filename)), ".xlsx") {
-		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: "Поддерживаются только обычные файлы .xlsx"}
+	name := strings.ToLower(strings.TrimSpace(filename))
+	isXls := strings.HasSuffix(name, ".xls")
+	if !isXls && !strings.HasSuffix(name, ".xlsx") {
+		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: "Поддерживаются только файлы Excel .xlsx и .xls"}
 	}
 	if file == nil || size <= 0 {
-		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: "Выберите XLSX-файл"}
+		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: "Выберите файл Excel"}
 	}
 	if size > MaxGoodsXLSXBytes {
-		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: fmt.Sprintf("XLSX-файл больше %d МБ не поддерживается", MaxGoodsXLSXBytes/(1024*1024))}
+		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: fmt.Sprintf("Файл Excel больше %d МБ не поддерживается", MaxGoodsXLSXBytes/(1024*1024))}
+	}
+	if isXls {
+		converted, err := xlsToXlsx(file, size)
+		if err != nil {
+			return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: "Файл повреждён или не является книгой Excel .xls"}
+		}
+		file, size = bytes.NewReader(converted), int64(len(converted))
 	}
 	workbook, err := excelize.OpenReader(io.NewSectionReader(file, 0, size))
 	if err != nil {

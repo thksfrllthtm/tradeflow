@@ -28,8 +28,8 @@ func (s *Server) parseGoodsXlsx(c *gin.Context) {
 		badRequest(c, fmt.Sprintf("XLSX-файл больше %d МБ не поддерживается", goods.MaxGoodsXLSXBytes>>20), "file")
 		return
 	}
-	if !strings.HasSuffix(strings.ToLower(header.Filename), ".xlsx") {
-		badRequest(c, "Поддерживаются только обычные файлы .xlsx", "file")
+	if name := strings.ToLower(header.Filename); !strings.HasSuffix(name, ".xlsx") && !strings.HasSuffix(name, ".xls") {
+		badRequest(c, "Поддерживаются только файлы Excel .xlsx и .xls", "file")
 		return
 	}
 
