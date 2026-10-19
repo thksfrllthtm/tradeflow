@@ -36,6 +36,14 @@ describe('budget gap', () => {
     expect((await distributeBudget(rows, 25, access, { evaluate: customs, minGap: 20, maxGap: 30, over: true })).message).not.toContain('больше недостачи')
   })
 
+  it('picks prices with two decimals when asked and still lands in 35–45', async () => {
+    const result = await distributeBudget(rows, 11000, access, { evaluate: customs, decimals: 2 })
+    expect(result.status).toBe('ok')
+    expect(result.gap).toBeGreaterThanOrEqual(35)
+    expect(result.gap).toBeLessThanOrEqual(45)
+    result.items.forEach((row) => expect(row.price).toMatch(/^\d+(\.\d{1,2})?$/))
+  })
+
   it('rejects a gap the budget cannot hold or a reversed gap', async () => {
     expect((await distributeBudget(rows, 100, access, { evaluate: customs, minGap: 150, maxGap: 200 })).message).toContain('больше недостачи')
     expect((await distributeBudget(rows, 11000, access, { evaluate: customs, minGap: 30, maxGap: 20 })).status).toBe('nothing')

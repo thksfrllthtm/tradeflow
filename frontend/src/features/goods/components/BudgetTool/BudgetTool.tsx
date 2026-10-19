@@ -49,7 +49,8 @@ function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount
   }
   const over = budget.gapMode === 'over'
   const gap = budget.gap
-  const isDefault = budget.gapMin === String(BUDGET_MIN_GAP) && budget.gapMax === String(BUDGET_MAX_GAP) && !over
+  const twoDecimals = budget.priceDecimals === 2
+  const isDefault = budget.gapMin === String(BUDGET_MIN_GAP) && budget.gapMax === String(BUDGET_MAX_GAP) && !over && !twoDecimals
 
   useEffect(() => {
     if (!open) return
@@ -69,7 +70,7 @@ function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount
   // Пример для понимания: бюджет → итог (или условный бюджет 11 000, пока сумма не введена).
   const example = amount ?? 11000
   const range = gap ? (over ? [example + gap.min, example + gap.max] : [example - gap.max, example - gap.min]) : null
-  const label = gap ? `${over ? 'перерасход' : 'недостача'} ${budget.gapMin}–${budget.gapMax}` : 'разница?'
+  const label = (gap ? `${over ? 'перерасход' : 'недостача'} ${budget.gapMin}–${budget.gapMax}` : 'разница?') + (twoDecimals ? ' · цены 0,00' : '')
   return <div className="budget-gap" ref={box}>
     <button type="button" ref={chip} className={['budget-gap-chip', open ? 'open' : '', gap ? '' : 'invalid', isDefault ? '' : 'changed'].filter(Boolean).join(' ')} onClick={toggle} aria-expanded={Boolean(open)} aria-haspopup="dialog" title="Разница «Растаможки к оплате» с бюджетом">
       {label}<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4l2.5 2.5L7.5 4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -90,8 +91,13 @@ function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount
       <p className={gap ? 'budget-gap-example' : 'budget-gap-example invalid'}>
         {gap && range ? <>{amount ? 'Бюджет' : 'Например, бюджет'} {usd(example)} → итог {usd(range[0])}–{usd(range[1])}</> : 'Числа не меньше нуля, «от» не больше «до»'}
       </p>
+      <p className="budget-gap-title">Знаков в подобранной цене</p>
+      <div className="budget-gap-seg" role="radiogroup" aria-label="Знаков после запятой в подобранной цене">
+        <button type="button" role="radio" aria-checked={twoDecimals} className={twoDecimals ? 'active' : undefined} onClick={() => budget.setPriceDecimals(2)}>2 — 0,62</button>
+        <button type="button" role="radio" aria-checked={!twoDecimals} className={!twoDecimals ? 'active' : undefined} onClick={() => budget.setPriceDecimals(4)}>4 — 0,6194</button>
+      </div>
       <div className="budget-gap-foot">
-        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}>По умолчанию: меньше на {BUDGET_MIN_GAP}–{BUDGET_MAX_GAP}</button>
+        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}>По умолчанию: меньше на {BUDGET_MIN_GAP}–{BUDGET_MAX_GAP}, 4 знака</button>
         <button type="button" className="budget-gap-done" onClick={() => setOpen(null)}>Готово</button>
       </div>
     </div>}

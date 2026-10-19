@@ -25,6 +25,13 @@ function storedGap(): { min: string; max: string; mode: GapMode } {
   return { min: String(BUDGET_MIN_GAP), max: String(BUDGET_MAX_GAP), mode: 'under' }
 }
 
+// Знаков после запятой в подобранных ценах: 4 (по умолчанию) или 2. Браузер запоминает выбор.
+export type PriceDecimals = 2 | 4
+const decimalsStorageKey = 'tradeflow.budgetDecimals'
+function storedDecimals(): PriceDecimals {
+  try { return localStorage.getItem(decimalsStorageKey) === '2' ? 2 : 4 } catch { return 4 }
+}
+
 // Проверка недостачи: числа не меньше нуля, «от» не больше «до». null — ввод неверный.
 export function parseGap(min: string, max: string): { min: number; max: number } | null {
   const valid = (value: string) => /^\d+([.,]\d+)?$/.test(value.trim())
@@ -161,7 +168,12 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
   const setGapMin = (value: string) => { setGapMinState(value); saveGap(value, gapMax, gapMode) }
   const setGapMax = (value: string) => { setGapMaxState(value); saveGap(gapMin, value, gapMode) }
   const setGapMode = (value: GapMode) => { setGapModeState(value); saveGap(gapMin, gapMax, value) }
-  const resetGap = () => { setGapMinState(String(BUDGET_MIN_GAP)); setGapMaxState(String(BUDGET_MAX_GAP)); setGapModeState('under'); saveGap(String(BUDGET_MIN_GAP), String(BUDGET_MAX_GAP), 'under') }
+  const [priceDecimals, setPriceDecimalsState] = useState<PriceDecimals>(storedDecimals)
+  const setPriceDecimals = (value: PriceDecimals) => {
+    setPriceDecimalsState(value)
+    try { localStorage.setItem(decimalsStorageKey, String(value)) } catch { /* не запомнится — не страшно */ }
+  }
+  const resetGap = () => { setGapMinState(String(BUDGET_MIN_GAP)); setGapMaxState(String(BUDGET_MAX_GAP)); setGapModeState('under'); saveGap(String(BUDGET_MIN_GAP), String(BUDGET_MAX_GAP), 'under'); setPriceDecimals(4) }
   const gap = parseGap(gapMin, gapMax)
   const [running, setRunning] = useState<BudgetMode | null>(null)
   const [summary, setSummary] = useState<BudgetSummary | null>(() => saved?.summary ?? null)
@@ -279,6 +291,7 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
         minGap: gap.min,
         maxGap: gap.max,
         over: gapMode === 'over',
+        decimals: priceDecimals,
         onProgress: setEvaluations,
       })
       if (outcome.status === 'nothing') {
@@ -315,7 +328,7 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
     }
   }
 
-  return { budget, setBudget, gapMin, gapMax, gapMode, setGapMin, setGapMax, setGapMode, resetGap, gap, running, evaluations, summary, warning, notice, notes, explanations, run, reset }
+  return { budget, setBudget, gapMin, gapMax, gapMode, setGapMin, setGapMax, setGapMode, priceDecimals, setPriceDecimals, resetGap, gap, running, evaluations, summary, warning, notice, notes, explanations, run, reset }
 }
 
 export type BudgetDistributionState = ReturnType<typeof useBudgetDistribution>
