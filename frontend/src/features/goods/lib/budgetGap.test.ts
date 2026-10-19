@@ -44,6 +44,28 @@ describe('budget gap', () => {
     result.items.forEach((row) => expect(row.price).toMatch(/^\d+(\.\d{1,2})?$/))
   })
 
+  // 20 000 шт: шаг цены 0,01 меняет растаможку на 46,88 USD — в окно 35–45 не попасть
+  // (рядом недостача 17,12 и 64,00). Промах — в бóльшую разницу, не в меньшую.
+  it('misses towards a bigger shortfall when two decimals cannot land in the window', async () => {
+    const result = await distributeBudget([{ code: 'A', quantity: 20000 }], 9500, access, { evaluate: customs, decimals: 2 })
+    expect(result.status).toBe('closest')
+    expect(result.gap).toBeGreaterThan(45)
+    expect(result.gap).toBeLessThan(45 + 46.88)
+  })
+
+  it('misses towards a bigger overspend in the overspend mode', async () => {
+    const result = await distributeBudget([{ code: 'A', quantity: 20000 }], 9500, access, { evaluate: customs, decimals: 2, over: true })
+    expect(result.status).toBe('closest')
+    expect(result.gap).toBeLessThan(-45)
+    expect(result.gap).toBeGreaterThan(-45 - 46.88)
+  })
+
+  it('keeps evaluations for the rounding fix: a small group lands two decimals in the window', async () => {
+    const result = await distributeBudget([{ code: 'A', quantity: 20000 }, { code: 'B', quantity: 300 }], 9500, access, { evaluate: customs, decimals: 2 })
+    expect(result.status).toBe('ok')
+    expect(result.evaluations).toBeLessThanOrEqual(14)
+  })
+
   it('rejects a gap the budget cannot hold or a reversed gap', async () => {
     expect((await distributeBudget(rows, 100, access, { evaluate: customs, minGap: 150, maxGap: 200 })).message).toContain('больше недостачи')
     expect((await distributeBudget(rows, 11000, access, { evaluate: customs, minGap: 30, maxGap: 20 })).status).toBe('nothing')

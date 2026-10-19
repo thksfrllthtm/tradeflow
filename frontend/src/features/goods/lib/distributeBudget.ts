@@ -24,6 +24,8 @@ export const BUDGET_MIN_GAP = 35
 export const BUDGET_MAX_GAP = 45
 const BUDGET_PRICE_DECIMALS = 4
 const BUDGET_MAX_EVALUATIONS = 14
+// Замеры, оставляемые на добор округления: пробный шаг и два соседних варианта.
+const ADJUST_EVALUATIONS = 3
 
 export type BudgetRowAccess<T> = {
   getCode: (row: T) => string
@@ -188,10 +190,12 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     const total = await options.evaluate(rowsFor(steps))
     return total === null || !Number.isFinite(total) ? null : money(total)
   }
-  // В режиме недостачи перерасход штрафуется очень сильно; в режиме перерасхода — просто расстояние до окна.
+  // Не попали в окно — промах только в бóльшую разницу: разница меньше «от» штрафуется сильнее
+  // любой большей. В режиме недостачи перерасход (итог выше бюджета) — ещё сильнее.
   const penalty = (gap: number) => {
-    if (gap < windowLow) return (windowLow - gap) + (!over && gap < 0 ? 1e9 + -gap * 1e3 : 0)
-    if (gap > windowHigh) return gap - windowHigh
+    const difference = over ? -gap : gap
+    if (difference < minGap) return 1e6 + (minGap - difference) + (!over && gap < 0 ? 1e9 + -gap * 1e3 : 0)
+    if (difference > maxGap) return difference - maxGap
     return 0
   }
 
@@ -219,11 +223,18 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
   if (first.total > target) upper = first; else lower = first
   let previous: Trial = first
 
-  // Второй замер — пропорционально (итог ≈ масштаб × коэффициент), дальше секущие.
+  // Второй замер — пропорционально (итог ≈ масштаб × коэффициент), дальше секущие. Последние
+  // ADJUST_EVALUATIONS замеров — на добор округления. Цены повторились (крупный шаг цены,
+  // например 2 знака) — искать масштабом дальше нечего.
+  const stepsKey = (steps: Map<string, number>) => [...steps.values()].join(',')
+  const seen = new Set([stepsKey(first.steps)])
   let next = first.total > 0 ? first.factor * target / first.total : first.factor * 2
-  while (evaluations < maxEvaluations && penalty(budget - (best as Trial | null ?? first).total) > 0) {
+  while (evaluations < maxEvaluations - ADJUST_EVALUATIONS && penalty(budget - (best as Trial | null ?? first).total) > 0) {
     if (lower && upper && !(next > lower.factor && next < upper.factor)) next = (lower.factor + upper.factor) / 2
     if (!Number.isFinite(next) || next < minFactor) next = minFactor
+    const key = stepsKey(stepsFor(next))
+    if (seen.has(key)) break
+    seen.add(key)
     const trial = await tryFactor(next)
     if (!trial) return failed()
     if (trial.total > target) upper = trial; else lower = trial
@@ -252,11 +263,15 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
       consider({ factor: chosen.factor, steps: probe, total: probeTotal })
       const perStep = (probeTotal - chosen.total) / probeSize
       if (perStep > 0) {
-        const gap = budget - chosen.total
-        const shifted = new Map(chosen.steps)
-        shifted.set(adjust.key, Math.max(1, base + Math.round((gap - middle) / perStep)))
-        const shiftedTotal = await measure(shifted)
-        if (shiftedTotal !== null) consider({ factor: chosen.factor, steps: shifted, total: shiftedTotal })
+        // Оба соседних шага: если ни один не в окне, выберется тот, что с большей разницей.
+        const exact = base + (budget - chosen.total - middle) / perStep
+        for (const candidate of new Set([Math.floor(exact), Math.ceil(exact)].map((value) => Math.max(1, value)))) {
+          if (evaluations >= maxEvaluations) break
+          const shifted = new Map(chosen.steps)
+          shifted.set(adjust.key, candidate)
+          const shiftedTotal = await measure(shifted)
+          if (shiftedTotal !== null) consider({ factor: chosen.factor, steps: shifted, total: shiftedTotal })
+        }
       }
     }
     chosen = best as Trial | null ?? chosen

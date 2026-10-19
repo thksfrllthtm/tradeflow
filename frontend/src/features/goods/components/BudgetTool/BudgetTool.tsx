@@ -97,7 +97,7 @@ function GapPicker({ budget, amount }: { budget: BudgetDistributionState; amount
         <button type="button" role="radio" aria-checked={!twoDecimals} className={!twoDecimals ? 'active' : undefined} onClick={() => budget.setPriceDecimals(4)}>4 — 0,6194</button>
       </div>
       <div className="budget-gap-foot">
-        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}>По умолчанию: меньше на {BUDGET_MIN_GAP}–{BUDGET_MAX_GAP}, 4 знака</button>
+        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}>По умолчанию: меньше на {BUDGET_MIN_GAP}–{BUDGET_MAX_GAP}</button>
         <button type="button" className="budget-gap-done" onClick={() => setOpen(null)}>Готово</button>
       </div>
     </div>}
