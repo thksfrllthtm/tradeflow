@@ -293,9 +293,18 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
+    const picked = event.target.files?.[0]
     event.target.value = ''
-    if (!file) return
+    if (!picked) return
+    // Копия в памяти: при смене листа файл отправляется снова, а файл на диске к этому времени
+    // могут открыть в Excel или изменить — тогда браузер обрывает отправку («Failed to fetch»).
+    let file: File
+    try {
+      file = new File([await picked.arrayBuffer()], picked.name, { type: picked.type, lastModified: picked.lastModified })
+    } catch {
+      setError('Не удалось прочитать файл. Закройте его в Excel и выберите снова.')
+      return
+    }
     const signature = `${file.name}:${file.size}:${file.lastModified}`
     let replaceExisting = false
     if (items.length > 0 && fileSignature === signature) {
