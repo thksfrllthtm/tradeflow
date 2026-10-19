@@ -13,7 +13,7 @@ import { ResultSummary } from './ResultSummary'
 import { SirControls } from './SirControls'
 import { SirCompareModal } from './SirCompareModal'
 import { plural } from './errorGroups'
-import { displayNumber, dutyRateText, excelColumn, textColumn, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
+import { displayNumber, dutyRateText, excelColumn, excelColumnHtml, textColumn, hasAntiDumping, itemDisplayName, parseCalculatorNumber, RowState, rowState, rowTotals } from './resultValues'
 import '../../goods.css'
 import './ResultStep.css'
 
@@ -71,7 +71,7 @@ function StateIcon({ state }: { state: RowState }) {
 }
 
 // Кнопка в заголовке: колонка в буфер по всем строкам по порядку, чтобы вставить в Excel столбцом.
-function CopyColumn({ label, text }: { label: string; text: () => string }) {
+function CopyColumn({ label, text, html }: { label: string; text: () => string; html?: () => string }) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -80,16 +80,22 @@ function CopyColumn({ label, text }: { label: string; text: () => string }) {
     return () => window.clearTimeout(timer)
   }, [copied])
 
-  async function copy() {
+  // Через событие copy, а не navigator.clipboard.write: тот очищает HTML и выбрасывает xmlns:x, без которого Excel не читает x:num.
+  function copy() {
+    const onCopy = (event: ClipboardEvent) => {
+      event.preventDefault()
+      event.clipboardData?.setData('text/plain', text())
+      if (html) event.clipboardData?.setData('text/html', html())
+    }
+    document.addEventListener('copy', onCopy)
     try {
-      await navigator.clipboard.writeText(text())
-      setCopied(true)
-    } catch {
-      // Буфер обмена недоступен (нет разрешения) — ничего не делаем.
+      if (document.execCommand('copy')) setCopied(true)
+    } finally {
+      document.removeEventListener('copy', onCopy)
     }
   }
 
-  return <button type="button" className={copied ? 'rs-copy-col copied' : 'rs-copy-col'} onClick={() => void copy()}
+  return <button type="button" className={copied ? 'rs-copy-col copied' : 'rs-copy-col'} onClick={copy}
     title={copied ? 'Скопировано' : `Скопировать колонку «${label}» для вставки в Excel`} aria-label={`Скопировать колонку ${label}`}>
     {copied ? '✓' : '⧉'}
   </button>
@@ -170,7 +176,7 @@ export function ResultStep({
   const visible = filter === 'attention' ? rows.filter((row) => row.attention) : rows
   // Копируются все строки, даже при фильтре «требуют внимания»: иначе в Excel значения съедут.
   const copyCol = (label: string, get: (item: GoodsCalculationResult['items'][number], index: number) => string | undefined) =>
-    <CopyColumn label={label} text={() => excelColumn(result.items.map(get))} />
+    <CopyColumn label={label} text={() => excelColumn(result.items.map(get))} html={() => excelColumnHtml(result.items.map(get))} />
   // Код — только цифры, как у CopyCode.
   const copyNames = <CopyColumn label="Товар" text={() => textColumn(result.items.map((item, index) => itemDisplayName(item, items[index])))} />
   const copyCodes = <CopyColumn label="Код ТН ВЭД" text={() => textColumn(result.items.map((item, index) => (item.code || items[index]?.code || '').replace(/\D/g, '')))} />
