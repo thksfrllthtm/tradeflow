@@ -28,7 +28,7 @@ describe('parseFlag и copyValue', () => {
   it('копирует числа с запятой и не копирует служебные колонки', () => {
     expect(copyValue('grossKg', '1680.5')).toBe('1680,5')
     expect(copyValue('included', true)).toBe('да')
-    expect(copyValue('status', 'x')).toBe('')
+    expect(copyValue('duty', '5%')).toBe('')
     expect(copyValue('name', 'Лопата\tштыковая')).toBe('Лопата штыковая')
   })
 })
@@ -66,18 +66,17 @@ describe('applySheetChanges', () => {
     expect(codes.get('a')).toBe('8201100000')
   })
 
-  it('флажок выбора меняет отметку, а не строку', () => {
-    const { items: next, selected } = applySheetChanges([item('a')], [at('select', 0, true)], '0.3', newId)
-    expect(next).toBeNull()
-    expect(selected.get('a')).toBe(true)
-  })
-
-  it('строка листа совпадает с колонками', () => {
-    const row = sheetRow(item('a', { name: 'Лопата', grossKg: '5', excluded: true }), true)
-    expect(row[columnIndex('select')]).toBe(true)
+  it('строка листа совпадает с колонками; служебные колонки пустые', () => {
+    const row = sheetRow(item('a', { name: 'Лопата', grossKg: '5', excluded: true }))
     expect(row[columnIndex('name')]).toBe('Лопата')
     expect(row[columnIndex('grossKg')]).toBe('5')
     expect(row[columnIndex('included')]).toBe(false)
-    expect(row[columnIndex('status')]).toBe('')
+    expect(row[columnIndex('duty')]).toBe('')
+    expect(row[columnIndex('photo')]).toBe('')
+  })
+
+  it('пошлину из листа не меняют', () => {
+    const items = [item('a', { code: '8201100000' })]
+    expect(applySheetChanges(items, [at('duty', 0, '15%')], '0.3', newId).items).toBeNull()
   })
 })

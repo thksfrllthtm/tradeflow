@@ -23,19 +23,6 @@
 }
 .banner.error button:hover { background: #f7dede; }
 .goods-step-page { display: grid; gap: 10px; }
-.btn-calculate {
-  padding: 9px 18px;
-  border: 1px solid #1c5a3a;
-  border-radius: 6px;
-  background: #24704a;
-  color: #fff;
-  font-weight: 600;
-  font-size: .85rem;
-  cursor: pointer;
-  transition: background .15s;
-}
-.btn-calculate:hover:not(:disabled) { background: #1c5a3a; }
-.btn-calculate:disabled { opacity: .5; cursor: not-allowed; }
 .secondary {
   padding: 7px 14px;
   border: 1px solid #b8d3c1;
@@ -132,14 +119,6 @@
 .goods-storage-error { display: inline-flex; align-items: center; max-width: 420px; padding: 6px 9px; border: 1px solid #efcaca; border-radius: 6px; background: #fff7f7; color: #8d2929; font-size: .76rem; line-height: 1.35; }
 
 .rv-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
-.rv-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-height: 44px; padding: 6px 14px; border-bottom: 1px solid #e6ece8; color: #56665c; font-size: .8rem; }
-.rv-bar:has(> strong) { background: #eef7f1; }
-.rv-bar b { color: #1f2d24; font-weight: 650; }
-.rv-bar > strong { color: #1c5538; }
-.rv-bar-hint { margin-left: auto; color: #9aa59e; font-size: .74rem; }
-.rv-bar .secondary { padding: 5px 12px; font-size: .78rem; }
-.rv-bar-button { padding: 5px 12px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #34443a; font-size: .78rem; font-weight: 600; cursor: pointer; }
-.rv-bar-button:hover { border-color: #24704a; color: #24704a; }
 
 /* Статус строки (этапы 2 и 3): ✓ / ! в кружке, причина — в подсказке. */
 .rs-dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .66rem; font-weight: 800; cursor: default; }
@@ -149,21 +128,4 @@
 .rs-dot.off { background: #eef1ef; color: #9aa59e; }
 .rs-dot.todo { width: 8px; height: 8px; background: #e3e9e5; cursor: help; }
 
-.rv-actions { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid #e6ece8; background: #fbfcfb; }
-.rv-actions > span { margin-right: auto; }
-.rv-actions-note { color: #8a968f; font-size: .76rem; }
-.rv-actions button { min-height: 36px; padding: 7px 16px; border-radius: 7px; font-size: .84rem; font-weight: 600; cursor: pointer; }
-.rv-actions button:disabled { opacity: .5; cursor: not-allowed; }
-.rv-actions .btn-calculate { padding-inline: 22px; }
-.rv-actions .btn-save-draft { border: 1px solid #c8d8cd; background: #fff; color: #1c5538; }
-.rv-actions .btn-save-draft:hover:not(:disabled) { background: #f0f7f2; }
-.rv-actions .rv-clear { border: 0; background: transparent; color: #8a968f; font-weight: 500; }
-.rv-actions .rv-clear:hover:not(:disabled) { background: #fdecec; color: #a33232; }
 
-@media (max-width: 900px) {
-  .rv-bar-hint { display: none; }
-}
-@media (max-width: 640px) {
-  .rv-actions { flex-wrap: wrap; }
-  .rv-actions > span { flex-basis: 100%; }
-}

@@ -1,9 +1,9 @@
-import { ChangeEvent, Dispatch, SetStateAction, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react'
 import { GoodsCalculationResult, GoodsItemInput, GoodsParams } from '@/shared/types/goods'
-import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
+import { photosOf } from '@/shared/lib/itemPhotos'
 import { reviewStatus, rowMissing } from '../ReviewRow/reviewStatus'
-import { DEFAULT_PACKAGE_WEIGHT, formatWeight } from '../../lib/netWeight'
 import { ReviewCheck } from '../../lib/reviewCheck'
+import { problemChips, reviewProblems } from '../../lib/reviewProblems'
 import { reviewTotals } from './reviewTotals'
 import { useStableCallback } from '@/shared/hooks/useStableCallback'
 import { AgentRowStatus } from '../../agent/agentApi'
@@ -12,8 +12,11 @@ import { RowDecisionState } from '../../hooks/useRowDecisions'
 import { emptyItem } from '../../lib/rowActions'
 import { rowId } from '../../lib/excelColumns'
 import { lookupNomenclature, withNomenclatureRates } from '../../lib/nomenclatureRates'
+import { plural } from '../ResultStep/errorGroups'
+import { itemNames } from '../ResultStep/resultValues'
 import { ReviewSheet, RowAction, SheetApi, SheetRowView } from '../ReviewSheet/ReviewSheet'
 import { applySheetChanges, SheetChange } from '../ReviewSheet/sheetModel'
+import { ParamChips } from './ParamChips'
 import '../../goods.css'
 import './ReviewStep.css'
 
@@ -24,18 +27,18 @@ type Props = {
   // Ошибки последнего расчёта по id строк: показываются, пока нет нового расчёта.
   reviewCheck: ReviewCheck | null
   selectedForDirectory: string[]
-  paramsOpen: boolean
   loading: boolean
   usdRateLoading: boolean
   usdRateNotice: string
   storageNotice: string
-  deliverySummary: string
-  feeSummary: string
+  // Есть правки, которых ещё нет на сервере.
+  unsaved: boolean
+  // Название сметы, дата, клиент и этапы — слева в строке заголовка.
+  header: ReactNode
   includedCount: number
   // Новые строки сметы из таблицы (правка, вставка, отмена); сбрасывает результат расчёта.
   editItems: (items: GoodsItemInput[]) => void
   setSelectedForDirectory: Dispatch<SetStateAction<string[]>>
-  setParamsOpen: (value: boolean) => void
   setParam: (field: keyof GoodsParams, value: string) => void
   loadUsdRate: () => void
   openDirectoryPicker: (ids: string[]) => void
@@ -59,7 +62,8 @@ type Props = {
   startAgentBatch: () => void
 }
 
-type Filter = 'all' | 'attention' | 'noCode' | 'errors'
+// Фильтр строк: все, требующие внимания, проблема одного типа (чип), код от ИИ.
+type Filter = 'all' | 'attention' | 'ai' | `type:${string}`
 type Density = 'full' | 'compact'
 const DENSITY_KEY = 'tradeflow.review-density'
 // Выбор сотрудника запоминается; пока его нет — на низком экране (ноутбук) компактно.
@@ -114,31 +118,50 @@ function useItemsHistory(items: GoodsItemInput[], replace: (items: GoodsItemInpu
   }
 }
 
-export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, paramsOpen, loading, usdRateLoading, usdRateNotice, storageNotice, deliverySummary, feeSummary, includedCount, editItems, setSelectedForDirectory, setParamsOpen, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
+// Этап 2 «Проверка строк»: строка заголовка, чипы параметров, панель фильтров, строка значения и
+// лист «как в Excel». Прокручивается страница: шапка листа прилипает к верху, «Итого» — к низу окна.
+export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, loading, usdRateLoading, usdRateNotice, storageNotice, unsaved, header, includedCount, editItems, setSelectedForDirectory, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
+  const [query, setQuery] = useState('')
   const [density, setDensity] = useState<Density>(storedDensity)
+  // Колонки «Упаковка» и «Фото», включённые в меню «⋯» (иначе — только когда нужны).
+  const [forcePackage, setForcePackage] = useState(false)
+  const [forcePhoto, setForcePhoto] = useState(false)
   const sheetApi = useRef<SheetApi | null>(null)
+  const menuRef = useRef<HTMLDetailsElement>(null)
   const itemsRef = useRef(items)
   itemsRef.current = items
   const history = useItemsHistory(items, editItems)
-  const excludedCount = items.length - includedCount
   const failed = storageFailed(storageNotice)
   const setSelectedExcluded = (excluded: boolean) => editItems(items.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, excluded } : item))
 
-  // Статус каждой строки — для счётчиков и фильтра (строки считают его сами, чтобы memo работал).
+  // Статус и проблемы каждой строки — для чипов, фильтра, точки у номера и подсветки ячеек.
+  // Код от ИИ — подбор закончен и предложил ровно этот код (поменяли код — метки нет). Это не проблема.
   const rows = items.map((item, index) => {
     const id = item.id ?? ''
     const status = reviewStatus(item, result?.items[index], result ? undefined : reviewCheck?.rows[id], rowMissing(item, params.packageWeightKg))
-    return { item, index, id, status }
+    const agent = agentStatuses[id]
+    const aiCode = Boolean(item.code) && agent?.status === 'done' && agent.bestCode === item.code
+    return { item, index, id, status, problems: reviewProblems(item, status), aiCode }
   })
   const counts = {
     attention: rows.filter((row) => row.status.attention).length,
     noCode: rows.filter((row) => row.status.noCode).length,
-    errors: rows.filter((row) => row.status.withErrors).length,
     changed: rows.filter((row) => row.status.tone === 'changed').length,
+    ai: rows.filter((row) => row.aiCode).length,
   }
-  const shownInFilter = (status: (typeof rows)[number]['status']) => filter === 'all' || (filter === 'attention' ? status.attention : filter === 'noCode' ? status.noCode : status.withErrors)
-  const visible = rows.filter((row) => shownInFilter(row.status))
+  const chips = problemChips(rows.map((row) => row.problems))
+  const needle = query.trim().toLowerCase()
+  const needleDigits = needle.replace(/\D/g, '')
+  const shownInFilter = (row: (typeof rows)[number]) => {
+    if (filter === 'attention' && !row.status.attention) return false
+    if (filter === 'ai' && !row.aiCode) return false
+    if (filter.startsWith('type:') && !row.problems.some((problem) => `type:${problem.type}` === filter)) return false
+    if (!needle) return true
+    const names = itemNames(row.item, row.item)
+    return `${names.main} ${names.sub} ${row.item.name}`.toLowerCase().includes(needle) || (needleDigits.length > 0 && row.item.code.includes(needleDigits))
+  }
+  const visible = rows.filter(shownInFilter)
   const visibleIds = visible.map((row) => row.id)
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedForDirectory.includes(id))
   // Откуда ошибки: актуальный расчёт или прошлый (строки с тех пор менялись).
@@ -146,20 +169,13 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
 
   // В листе все строки сметы по порядку; фильтр их только скрывает.
   const selectedIds = new Set(selectedForDirectory)
-  const sheetRows: SheetRowView[] = rows.map(({ item, id, status }) => ({ item, status, visible: shownInFilter(status), selected: selectedIds.has(id), agent: agentStatuses[id], decision: rowDecisions.stateOf(item) }))
+  const sheetRows: SheetRowView[] = rows.map((row) => ({ item: row.item, status: row.status, problems: row.problems, aiCode: row.aiCode, visible: shownInFilter(row), selected: selectedIds.has(row.id), agent: agentStatuses[row.id], decision: rowDecisions.stateOf(row.item) }))
 
-  // Правки листа → строки сметы, отметки строк и ставки для введённых кодов.
+  // Правки листа (и строки значения) → строки сметы и ставки для введённых кодов.
   function applyChanges(changes: SheetChange[]) {
     const current = itemsRef.current
     const applied = applySheetChanges(current, changes, params.packageWeightKg, (index) => rowId(0, index))
     if (applied.items) editItems(applied.items)
-    if (applied.selected.size > 0) {
-      setSelectedForDirectory((selected) => {
-        const next = new Set(selected)
-        applied.selected.forEach((checked, id) => { if (checked) next.add(id); else next.delete(id) })
-        return [...next]
-      })
-    }
     if (applied.codes.size > 0) void loadCodeRates(applied.codes)
   }
 
@@ -187,7 +203,8 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   function rowAction(action: RowAction, index: number) {
     const id = items[index]?.id
     if (!id) return
-    if (action === 'photos') openRowPhotos(id, 0)
+    if (action === 'select') setSelectedForDirectory((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id])
+    else if (action === 'photos') openRowPhotos(id, 0)
     else if (action === 'upload') { photoTarget.current = id; photoInput.current?.click() }
     else if (action === 'picker') openDirectoryPicker([id])
     else if (action === 'agent') openAgent(id)
@@ -202,7 +219,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   // Одна строка — с сообщением «Вернуть»; несколько — одним шагом, вернуть можно Ctrl+Z.
   function deleteRows(indexes: number[]) {
     const ids = indexes.map((index) => items[index]?.id).filter((id): id is string => Boolean(id))
-    if (ids.length === 1) { removeRow(ids[0]); return }
+    if (ids.length === 1) { removeRow(ids[0]); setSelectedForDirectory((current) => current.filter((id) => id !== ids[0])); return }
     if (ids.length === 0 || !window.confirm(`Удалить строки: ${ids.length}? Вернуть можно Ctrl+Z.`)) return
     dismissRemovedRow()
     editItems(itemsRef.current.filter((item) => !ids.includes(item.id ?? '')))
@@ -217,24 +234,20 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   const [decisionNote, setDecisionNote] = useState('')
   async function saveSelectedDecisions() {
     setDecisionNote('Сохраняем в базу решений…')
-    const counts = await rowDecisions.save(selectedForDirectory)
+    const saved = await rowDecisions.save(selectedForDirectory)
     setDecisionNote([
-      `В базу решений: сохранено ${counts.created}`,
-      counts.duplicates > 0 && `уже были в этой смете ${counts.duplicates}`,
-      counts.skipped > 0 && `без кода или уже в базе ${counts.skipped}`,
-      counts.failed > 0 && `ошибка ${counts.failed}`,
+      `В базу решений: сохранено ${saved.created}`,
+      saved.duplicates > 0 && `уже были в этой смете ${saved.duplicates}`,
+      saved.skipped > 0 && `без кода или уже в базе ${saved.skipped}`,
+      saved.failed > 0 && `ошибка ${saved.failed}`,
     ].filter(Boolean).join(', '))
   }
   const agentPending = items.filter((item) => item.id && !item.excluded && !item.code && (!agentStatuses[item.id] || agentStatuses[item.id].status === 'ready')).length
   const agentStarted = counts.noCode - agentPending
   const ownPackageCount = items.filter((item) => item.packageWeightKg !== params.packageWeightKg).length
-  // Колонку упаковки прячем, пока она ни на что не влияет: нетто есть во всех строках расчёта,
-  // а общую упаковку не меняли и своей у строк нет. Ввели свою упаковку — колонка появляется.
-  const packageUnused = items.every((item) => item.excluded || item.netKg.trim() !== '')
-    && params.packageWeightKg === DEFAULT_PACKAGE_WEIGHT && ownPackageCount === 0
-  const noFee = params.feeMultiplier.trim() !== '' && Number(params.feeMultiplier) === 0
+  const showPackage = forcePackage || ownPackageCount > 0
+  const showPhoto = forcePhoto || items.some((item) => photosOf(item).length > 0)
   const totals = reviewTotals(items, params.packageWeightKg)
-  const total = (value: number) => formatRuNumber(formatWeight(value).replace(/\s/g, ''))
 
   function chooseDensity(value: Density) {
     setDensity(value)
@@ -242,12 +255,13 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   }
 
   // Следующая строка, требующая внимания, после строки с курсором (по кругу): прокрутить и
-  // поставить курсор в название.
+  // поставить курсор в ячейку с проблемой.
   function nextProblem() {
-    const problems = visible.filter((row) => row.status.attention).map((row) => row.index)
+    const problems = visible.filter((row) => row.status.attention)
     if (problems.length === 0) return
     const at = sheetApi.current?.currentRow() ?? -1
-    sheetApi.current?.focusRow(problems.find((index) => index > at) ?? problems[0])
+    const row = problems.find((entry) => entry.index > at) ?? problems[0]
+    sheetApi.current?.focusCell(row.index, row.problems[0]?.column ?? 'name')
   }
 
   // Ctrl+S — сохранить сейчас, F8 — следующая строка, требующая внимания.
@@ -262,6 +276,20 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Меню «⋯» закрывается щелчком мимо и клавишей Esc.
+  useEffect(() => {
+    const close = (event: Event) => {
+      const menu = menuRef.current
+      if (!menu?.open) return
+      if (event instanceof globalThis.KeyboardEvent) { if (event.key === 'Escape') { menu.open = false; menu.querySelector('summary')?.focus() } }
+      else if (!event.composedPath().includes(menu)) menu.open = false
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', close)
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close) }
+  }, [])
+  const closeMenu = () => { if (menuRef.current) menuRef.current.open = false }
+
   // Сообщение об удалённой строке исчезает само через 12 секунд.
   const onDismissRemoved = useStableCallback(dismissRemovedRow)
   useEffect(() => {
@@ -270,84 +298,87 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
     return () => window.clearTimeout(timer)
   }, [removedRow, onDismissRemoved])
 
-  const segment = (value: Filter, label: string, count: number, hint: string) => (
-    <button type="button" role="radio" aria-checked={filter === value} className={filter === value ? 'active' : undefined} onClick={() => setFilter(value)} disabled={count === 0 && filter !== value} title={hint}>{label} <b>{count}</b></button>
+  const tab = (value: Filter, label: string, count: number, hint: string) => (
+    <button type="button" role="tab" aria-selected={filter === value} className={filter === value ? 'active' : undefined} onClick={() => setFilter(value)} disabled={count === 0 && filter !== value} title={hint}>{label} <b>{count}</b></button>
   )
+  const noCodeText = counts.noCode > 0 ? `${counts.noCode} ${plural(counts.noCode, ['строка', 'строки', 'строк'])} без кода` : ''
+
+  const menu = <details className="rv-more" ref={menuRef}>
+    <summary className="rv-icon" title="Ещё" aria-label="Ещё действия">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
+    </summary>
+    <div className="rv-menu">
+      <button type="button" className="rv-menu-item" onClick={() => { closeMenu(); addEmptyRow() }} disabled={loading}>+ Строка</button>
+      <hr />
+      <p className="rv-menu-label">Колонки</p>
+      <label className="rv-menu-item rv-menu-check" title={ownPackageCount > 0 ? 'У строк есть своя упаковка — колонка видна всегда' : 'Вес упаковки одного места для авто-нетто'}><input type="checkbox" checked={showPackage} disabled={ownPackageCount > 0} onChange={(event) => setForcePackage(event.target.checked)} />Упаковка</label>
+      <label className="rv-menu-item rv-menu-check" title={showPhoto && !forcePhoto ? 'У строк есть фото — колонка видна всегда' : 'Фото строк'}><input type="checkbox" checked={showPhoto} disabled={showPhoto && !forcePhoto} onChange={(event) => setForcePhoto(event.target.checked)} />Фото</label>
+      <hr />
+      <p className="rv-menu-label">Вид</p>
+      <div className="rv-seg" role="radiogroup" aria-label="Плотность таблицы">
+        <button type="button" role="radio" aria-checked={density === 'full'} className={density === 'full' ? 'active' : undefined} onClick={() => chooseDensity('full')} title="Выше строки и крупнее фото">Подробно</button>
+        <button type="button" role="radio" aria-checked={density === 'compact'} className={density === 'compact' ? 'active' : undefined} onClick={() => chooseDensity('compact')} title="Одна строка на товар: больше строк на экране">Компактно</button>
+      </div>
+      <hr />
+      <button type="button" className="rv-menu-item danger" onClick={() => { closeMenu(); clearAll() }} disabled={loading || items.length === 0}>Очистить смету…</button>
+    </div>
+  </details>
 
   return <div className={`goods-step-page rv-step${density === 'compact' ? ' compact' : ''}`}>
-    <details className="goods-params goods-params-top" open={paramsOpen} onToggle={(event) => setParamsOpen(event.currentTarget.open)}>
-      <summary>Параметры расчёта <span className="goods-params-summary">курс {params.usdKzt ? formatRuNumber(params.usdKzt) : '—'} · доставка: {deliverySummary} · сбор: {feeSummary}{params.customsValueMode === 'sir' && ` · ТС по СУР${Number(params.sirDiscountPercent) > 0 ? ` −${params.sirDiscountPercent}%` : ''}`}</span></summary>
-      <div className="rv-params">
-        <div className="rv-params-group">
-          <label className="rv-field">Дата расчёта<input className="rv-w-date" type="date" value={params.assessmentDate} onChange={(event) => setParam('assessmentDate', event.target.value)} required /></label>
-          <label className="rv-field">Страна<input className="rv-w-country" value={params.origin} onChange={(event) => setParam('origin', event.target.value)} placeholder="Например, Китай" /></label>
-        </div>
-        <div className="rv-params-group">
-          <div className="rv-field"><span>Курс USD → KZT{usdRateNotice && <small title={`Источник: ${usdRateNotice}`}>✓ {usdRateNotice}</small>}</span><span className="rv-joined"><input className="rv-w-md" inputMode="decimal" value={params.usdKzt} onChange={(event) => setParam('usdKzt', event.target.value.replace(',', '.'))} placeholder="обязательно" required aria-label="Курс USD → KZT" /><button type="button" className="rv-rate-button" onClick={() => void loadUsdRate()} disabled={usdRateLoading || !params.assessmentDate} title="Взять официальный курс НБРК на дату расчёта">{usdRateLoading ? '…' : 'НБРК'}</button></span></div>
-        </div>
-        <div className="rv-params-group">
-          <div className="rv-field"><span>{params.deliveryMode === 'wagons' ? 'Доставка: вагоны × тариф' : params.deliveryMode === 'none' ? 'Доставка: не учитывается' : 'Доставка: сумма за партию'}</span><span className="rv-joined">
-            <select value={params.deliveryMode} onChange={(event) => setParam('deliveryMode', event.target.value)} aria-label="Режим доставки"><option value="wagons">По вагонам</option><option value="total">Общая сумма</option><option value="none">Без доставки</option></select>
-            {params.deliveryMode === 'wagons' ? <>
-              <input className="rv-w-sm" inputMode="decimal" value={params.wagons} onChange={(event) => setParam('wagons', event.target.value.replace(',', '.'))} placeholder="ваг." aria-label="Количество вагонов" />
-              <span className="rv-joined-sep">×</span>
-              <input className="rv-w-md" inputMode="decimal" value={params.wagonTariffUsd} onChange={(event) => setParam('wagonTariffUsd', event.target.value.replace(',', '.'))} placeholder="тариф" aria-label="Тариф за вагон, USD" />
-            </> : params.deliveryMode === 'none' ? null : <input className="rv-w-md" inputMode="decimal" value={params.deliveryTotalUsd} onChange={(event) => setParam('deliveryTotalUsd', event.target.value.replace(',', '.'))} placeholder="сумма" aria-label="Общая доставка за партию, USD" />}
-            {params.deliveryMode !== 'none' && <span className="rv-joined-unit">USD</span>}
-          </span></div>
-        </div>
-        <div className="rv-params-group">
-          <label className="rv-field" title="Вес одной упаковки (на одно место) — для автоматического расчёта нетто. Меняет все строки, кроме тех, где указана своя упаковка"><span>Упаковка, кг{ownPackageCount > 0 && <small title="Строки со своей упаковкой не меняются вместе с общим значением">своя: {ownPackageCount}</small>}</span><input className="rv-w-sm" inputMode="decimal" value={params.packageWeightKg} onChange={(event) => setParam('packageWeightKg', event.target.value.replace(',', '.'))} /></label>
-        </div>
-        <div className="rv-params-group">
-          {/* «Без сбора» — это множитель 0: сбор не считается и не входит в базу НДС. Снятие галочки возвращает множитель 6. */}
-          <div className="rv-field" title="Сбор = МРП × множитель, делится поровну между строками"><span>Сбор: МРП × множитель<label className="rv-nofee"><input type="checkbox" checked={noFee} onChange={(event) => setParam('feeMultiplier', event.target.checked ? '0' : '6')} /> без сбора</label></span><span className={noFee ? 'rv-joined off' : 'rv-joined'}>
-            <input className="rv-w-md" inputMode="decimal" value={params.mrp} onChange={(event) => setParam('mrp', event.target.value.replace(',', '.'))} placeholder="МРП" aria-label="МРП, KZT" disabled={noFee} />
-            <span className="rv-joined-sep">×</span>
-            <input className="rv-w-sm" inputMode="decimal" value={params.feeMultiplier} onChange={(event) => setParam('feeMultiplier', event.target.value.replace(',', '.'))} placeholder="6" aria-label="Множитель сбора" disabled={noFee} />
-            <span className="rv-joined-unit">₸</span>
-          </span></div>
-        </div>
-      </div>
-    </details>
-    <section className="rv-card" aria-label="Строки сметы">
-      <div className="rv-bar">
-        {selectedForDirectory.length > 0 ? <>
-          <strong>Выбрано: {selectedForDirectory.length}</strong>
-          <button type="button" className="rv-bar-button primary" onClick={() => openDirectoryPicker(selectedForDirectory)}>Товар или код ТН ВЭД</button>
-          <button type="button" className="rv-bar-button" onClick={() => void saveSelectedDecisions()} title="Записать отмеченные строки с кодом в базу решений; тот же товар этой сметы записывается один раз">В базу решений</button>
-          <button type="button" className="rv-bar-button" onClick={() => setSelectedExcluded(true)}>Исключить из расчёта</button>
-          <button type="button" className="rv-bar-button" onClick={() => setSelectedExcluded(false)}>Включить</button>
-          <button type="button" className="button-link" onClick={() => { setSelectedForDirectory([]); setDecisionNote('') }}>Снять выбор</button>
-          {decisionNote && <span className="rv-bar-note" role="status">{decisionNote}</span>}
-        </> : <>
-          <span>Строк: <b>{items.length}</b> · в расчёте: <b>{includedCount}</b>{excludedCount > 0 && <> · исключено: <b>{excludedCount}</b></>}</span>
-          {agentBatch ? <span className="rv-bar-note">Запуск подбора: {agentBatch.done} из {agentBatch.total}</span>
-            : agentPending > 0 && <button type="button" className="rv-bar-button rv-agent-batch" onClick={startAgentBatch} disabled={loading} title={`Подобрать коды для включённых строк без кода, где подбор ещё не запускали${agentStarted > 0 ? ` (ещё ${agentStarted} уже в подборе)` : ''}; результат — в чате строки`}>Подобрать коды ({agentPending}){agentStarted > 0 && <span className="rv-bar-sub"> · ещё {agentStarted} в подборе</span>}</button>}
-          <span className="rv-bar-end">
-            <button type="button" className="rv-bar-button" onClick={addEmptyRow} disabled={loading}>+ Строка</button>
-          </span>
-        </>}
-      </div>
+    <div className="estimate-bar rv-titlebar">{header}</div>
 
-      <div className="rv-filterbar">
-        <div className="rv-seg" role="radiogroup" aria-label="Какие строки показать">
-          {segment('all', 'Все', items.length, 'Все строки сметы')}
-          {segment('attention', 'Требуют внимания', counts.attention, 'Ошибки и предупреждения расчёта, строки без кода, изменённые после расчёта строки с ошибками')}
-          {segment('noCode', 'Без кода', counts.noCode, 'Включённые строки без кода ТН ВЭД')}
-          {segment('errors', 'С ошибками', counts.errors, 'Строки с ошибками расчёта, в том числе изменённые, но ещё не пересчитанные')}
-        </div>
-        <button type="button" className="rv-next" onClick={nextProblem} disabled={counts.attention === 0} title="Следующая строка, требующая внимания (F8)">Следующая проблема <kbd>F8</kbd></button>
-        <p className={pastCheck ? 'rv-check-source past' : 'rv-check-source'} role="status" title={result ? 'Статусы строк — по актуальному расчёту' : pastCheck ? 'Строки менялись после расчёта: ошибки — из прошлого расчёта, нужен пересчёт' : 'Расчёта ещё не было: видны только строки без кода и недостающие данные'}>
-          {result ? 'Актуальный расчёт'
-            : pastCheck ? <>Прошлый расчёт{checkTime(pastCheck.at) && ` ${checkTime(pastCheck.at)}`}{counts.changed > 0 && <> · изменено: <b>{counts.changed}</b></>} · нужен пересчёт</>
-              : 'Расчёта ещё не было'}
-        </p>
-        <div className="rv-seg rv-density" role="radiogroup" aria-label="Плотность таблицы">
-          <button type="button" role="radio" aria-checked={density === 'full'} className={density === 'full' ? 'active' : undefined} onClick={() => chooseDensity('full')} title="Фото, название и код в две строки">Подробно</button>
-          <button type="button" role="radio" aria-checked={density === 'compact'} className={density === 'compact' ? 'active' : undefined} onClick={() => chooseDensity('compact')} title="Одна строка на товар: больше строк на экране">Компактно</button>
-        </div>
+    {/* Панель расчёта: слева параметры, справа сохранение и «Рассчитать». */}
+    <div className="rv-toolbar">
+      <ParamChips params={params} setParam={setParam} loadUsdRate={loadUsdRate} usdRateLoading={usdRateLoading} usdRateNotice={usdRateNotice} ownPackageCount={ownPackageCount} />
+      <div className="rv-title-actions">
+        <span className="rv-save">
+          {unsaved && !failed && !storageNotice.startsWith('Сохраняем')
+            ? <span className="rv-save-state unsaved" role="status">Есть несохранённые изменения</span>
+            : <span className={failed ? 'rv-save-state failed' : 'rv-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>}
+          {noCodeText && <span className="rv-save-nocode">{noCodeText}</span>}
+        </span>
+        <button type="button" className="rv-btn" onClick={() => void saveDraft()} disabled={loading || items.length === 0} title="Сохранить на сервере сейчас (Ctrl+S)">Сохранить</button>
+        <button type="button" className="rv-btn primary" onClick={() => void calculate()} disabled={loading || includedCount === 0}>{loading ? 'Считаем…' : 'Рассчитать'} <span aria-hidden="true">→</span></button>
       </div>
+    </div>
+
+    <section className="rv-card" aria-label="Строки сметы">
+      {selectedForDirectory.length > 0 ? <div className="rv-panel selection">
+        <strong>Выбрано: {selectedForDirectory.length}</strong>
+        <button type="button" className="rv-btn primary" onClick={() => openDirectoryPicker(selectedForDirectory)}>Сменить код</button>
+        <button type="button" className="rv-btn" onClick={() => void saveSelectedDecisions()} title="Записать отмеченные строки с кодом в базу решений; тот же товар этой сметы записывается один раз">В базу решений</button>
+        <button type="button" className="rv-btn" onClick={() => setSelectedExcluded(true)}>Исключить</button>
+        <button type="button" className="rv-btn" onClick={() => setSelectedExcluded(false)}>Включить</button>
+        <button type="button" className="rv-btn danger" onClick={() => deleteRows(items.flatMap((item, index) => selectedIds.has(item.id ?? '') ? [index] : []))}>Удалить</button>
+        <button type="button" className="button-link" onClick={() => { setSelectedForDirectory([]); setDecisionNote('') }}>Снять выбор</button>
+        {decisionNote && <span className="rv-panel-note" role="status">{decisionNote}</span>}
+      </div> : <div className="rv-panel">
+        <div className="rv-tabs" role="tablist" aria-label="Какие строки показать">
+          {tab('all', 'Все', items.length, 'Все строки сметы')}
+          {tab('attention', 'Требуют внимания', counts.attention, 'Ошибки и предупреждения расчёта, строки без кода, изменённые после расчёта строки с ошибками')}
+        </div>
+        {chips.length === 0 && counts.attention === 0
+          ? items.length > 0 && <span className="rv-all-ok">✓ Все коды указаны, количества и вес сходятся</span>
+          : <span className="rv-chips">
+            {chips.map((chip) => <button key={chip.type} type="button" className={[`rv-pchip ${chip.tone}`, filter === `type:${chip.type}` ? 'active' : ''].filter(Boolean).join(' ')} onClick={() => setFilter(filter === `type:${chip.type}` ? 'all' : `type:${chip.type}`)} aria-pressed={filter === `type:${chip.type}`} title={chip.label}>
+              <i aria-hidden="true" />{chip.label} · {chip.rows}
+            </button>)}
+            <button type="button" className="rv-next" onClick={nextProblem} disabled={counts.attention === 0} title="Следующая строка, требующая внимания (F8)">Следующая проблема <kbd>F8</kbd></button>
+          </span>}
+        {counts.ai > 0 && <button type="button" className={filter === 'ai' ? 'rv-pchip neutral active' : 'rv-pchip neutral'} onClick={() => setFilter(filter === 'ai' ? 'all' : 'ai')} aria-pressed={filter === 'ai'} title="Строки, где код предложил подбор ИИ — просмотреть и подтвердить">Код от ИИ · {counts.ai}</button>}
+        {agentBatch ? <span className="rv-panel-note">Запуск подбора: {agentBatch.done} из {agentBatch.total}</span>
+          : agentPending > 0 && <button type="button" className="rv-btn small" onClick={startAgentBatch} disabled={loading} title={`Подобрать коды для включённых строк без кода, где подбор ещё не запускали${agentStarted > 0 ? ` (ещё ${agentStarted} уже в подборе)` : ''}; результат — в чате строки`}>Подобрать коды ИИ ({agentPending})</button>}
+        <span className="rv-panel-end">
+          {(result || pastCheck) && <span className={pastCheck ? 'rv-check-source past' : 'rv-check-source'} title={result ? 'Статусы строк — по актуальному расчёту' : 'Строки менялись после расчёта: ошибки — из прошлого расчёта, нужен пересчёт'}>
+            {result ? 'Актуальный расчёт' : <>Прошлый расчёт{pastCheck && checkTime(pastCheck.at) && ` ${checkTime(pastCheck.at)}`}{counts.changed > 0 && <> · изменено {counts.changed}</>} · нужен пересчёт</>}
+          </span>}
+          <label className="rv-search">
+            <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Товар или код" aria-label="Найти товар или код" />
+          </label>
+          {menu}
+        </span>
+      </div>}
 
       {removedRow && <div className="rv-undo" role="status">
         <span>Строка {removedRow.rowNumber}{removedRow.name ? ` «${removedRow.name.length > 60 ? `${removedRow.name.slice(0, 60)}…` : removedRow.name}»` : ''} удалена</span>
@@ -355,30 +386,13 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
         <button type="button" className="rv-undo-close" onClick={dismissRemovedRow} aria-label="Закрыть сообщение">×</button>
       </div>}
 
-      {items.length === 0 && <p className="rv-empty-filter">Строк пока нет. Загрузите XLSX или нажмите «+ Строка» — в неё можно вставить строки из Excel (Ctrl+V).</p>}
-      {items.length > 0 && visible.length === 0 && <p className="rv-empty-filter">В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => setFilter('all')}>Показать все строки</button></p>}
-      <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} hidePackage={packageUnused} compact={density === 'compact'} apiRef={sheetApi}
+      {items.length === 0 && <p className="rv-empty-filter">Строк пока нет. Загрузите XLSX или выберите «+ Строка» в меню «⋯» — в неё можно вставить строки из Excel (Ctrl+V).</p>}
+      {items.length > 0 && visible.length === 0 && <p className="rv-empty-filter">В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => { setFilter('all'); setQuery('') }}>Показать все строки</button></p>}
+      <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} showPhoto={showPhoto} showPackage={showPackage} compact={density === 'compact'} apiRef={sheetApi}
+        totals={{ ...totals, included: includedCount, all: items.length }}
         onChanges={applyChanges} onAction={rowAction} onSelectAll={toggleAllVisible} onInsertRow={insertRow} onDeleteRows={deleteRows}
         onPickRows={(indexes) => openDirectoryPicker(indexes.map((index) => items[index]?.id ?? '').filter(Boolean))} onUndo={history.undo} onRedo={history.redo} />
       <input ref={photoInput} type="file" accept="image/jpeg,image/png" style={{ display: 'none' }} onChange={(event) => { if (photoTarget.current) addManualPhoto(photoTarget.current, event) }} />
-      {items.length > 0 && <p className="rv-totals">
-        <b>Итого</b> <small>по строкам в расчёте{filter !== 'all' ? ', не только показанным' : ''}:</small>
-        <span>места <b>{total(totals.places)}</b></span>
-        <span>кол-во <b>{total(totals.quantity)}</b> шт</span>
-        <span>брутто <b>{total(totals.grossKg)}</b> кг</span>
-        <span>нетто <b>{total(totals.netKg)}</b> кг</span>
-      </p>}
-      <div className="rv-actions">
-        <span className={failed ? 'goods-storage-error' : 'rv-actions-note'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>
-        <details className="rv-more">
-          <summary>Ещё</summary>
-          <div className="rv-more-menu">
-            <button type="button" className="rv-clear" onClick={(event) => { event.currentTarget.closest('details')?.removeAttribute('open'); clearAll() }} disabled={loading || items.length === 0}>Очистить смету…</button>
-          </div>
-        </details>
-        <button type="button" className="btn-save-draft" onClick={() => void saveDraft()} disabled={loading || items.length === 0} title="Сохранить черновик на сервере сейчас (Ctrl+S)">Сохранить черновик</button>
-        <button type="button" className="btn-calculate" onClick={() => void calculate()} disabled={loading || includedCount === 0}>{loading ? 'Считаем…' : 'Рассчитать →'}</button>
-      </div>
     </section>
   </div>
 }

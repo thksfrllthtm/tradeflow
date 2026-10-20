@@ -7,15 +7,19 @@
   .goods-calculator-embedded .goods-page { padding-inline: 12px; }
 }
 
-/* Этап результата занимает высоту окна: шапка, итоги и панель — по содержимому, таблица —
-   всё остальное и прокручивается сама. На низком окне страница прокручивается целиком. */
-.goods-calculator-embedded.is-result { height: 100%; }
-.goods-calculator-embedded.is-result .goods-page { display: flex; flex-direction: column; height: 100%; min-height: 600px; padding-bottom: 12px; }
-.goods-calculator-embedded.is-result .goods-page > * { flex: 0 0 auto; }
-.goods-calculator-embedded.is-result .goods-page > .rs-step { flex: 1 1 auto; min-height: min-content; }
+/* Этап результата: страница по высоте содержимого; таблица строк — до низа окна со своей прокруткой
+   (шапка и «Итого» закреплены), панель строки прилипает. */
+.goods-estimates-app:has(.is-result) { height: auto; min-height: 100vh; }
+.goods-estimates-app:has(.is-result) .estimates-content { overflow: visible; }
+@media (min-width: 761px) {
+  /* Белая полоса списка смет — на всю высоту рабочей области, как бы ни была длинна страница. */
+  .goods-estimates-app:has(.is-result) .estimates-workspace { background: linear-gradient(to right, var(--tf-card) 0 60px, var(--tf-border) 60px 61px, var(--tf-bg) 61px); }
+}
+/* Отступы сверху и снизу — минимальные: каждый пиксель уходит таблице строк (она до низа окна). */
+.goods-calculator-embedded.is-result .goods-page { padding: 12px 24px 8px; }
+.goods-calculator-embedded.is-result .goods-disclaimer { margin-top: 8px; }
 @media (max-width: 760px) {
-  .goods-calculator-embedded.is-result, .goods-calculator-embedded.is-result .goods-page { height: auto; min-height: 0; }
-  .goods-calculator-embedded.is-result .rs-table-wrap { height: 70vh; }
+  .goods-calculator-embedded.is-result .goods-page { padding: 16px; }
 }
 
 .goods-page table,

@@ -18,7 +18,8 @@ describe('priceChanges', () => {
     const items = [row('10', '10'), row('9', '10'), row('', ''), row('5', '5', true)]
     const shown = result('8', '9', '7', '1')
     expect(changedFromExcel(items, shown)).toEqual([0, 1])
-    expect(changedFromRows(items, shown)).toEqual([0])
+    // Строка 2: цены в строке сметы нет, на экране — цена подбора; её тоже вернёт «Вернуть цены из файла».
+    expect(changedFromRows(items, shown)).toEqual([0, 2])
     expect(changedFromExcel(items, null)).toEqual([1])
   })
 })

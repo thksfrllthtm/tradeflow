@@ -142,10 +142,10 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
   let evaluations = 0
   const nothing = (message: string, total = 0): BudgetDistribution<T> => ({ items: rows, status: 'nothing', total, gap: money(budget - total), fixedRows, evaluations, message })
 
-  if (!(budget > 0)) return nothing('Укажите бюджет больше нуля')
+  if (!(budget > 0)) return nothing('Укажите кассу больше нуля')
   const over = options.over === true
   if (!(minGap >= 0) || !(maxGap >= minGap)) return nothing(`${over ? 'Перерасход' : 'Недостача'}: «от» не меньше нуля и не больше «до»`)
-  if (!over && !(budget > minGap)) return nothing(`Бюджет должен быть больше недостачи (${format(minGap)} USD)`)
+  if (!over && !(budget > minGap)) return nothing(`Касса должна быть больше недостачи (${format(minGap)} USD)`)
   if (groups.length === 0) return nothing('Нет строк с количеством больше нуля — распределять нечего')
   if (free.length === 0) return nothing('У всех строк цена уже задана. Чтобы распределить заново, нажмите «Сбросить цены»')
 
@@ -239,7 +239,7 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     if (!trial) return failed()
     if (trial.total > target) upper = trial; else lower = trial
     if (trial.factor <= minFactor && trial.total > budget - windowLow) {
-      return nothing(`Даже при минимальных ценах растаможка к оплате ${format(trial.total)} USD — это больше ${over ? `бюджета с перерасходом (${format(budget - windowLow)} USD)` : `бюджета ${format(budget)} USD`}. Её дают сбор, ставки за кг или штуку и строки с уже заданной ценой. Увеличьте бюджет или проверьте эти строки`, trial.total)
+      return nothing(`Даже при минимальных ценах растаможка к оплате ${format(trial.total)} USD — это больше ${over ? `кассы с перерасходом (${format(budget - windowLow)} USD)` : `кассы ${format(budget)} USD`}. Её дают сбор, ставки за кг или штуку и строки с уже заданной ценой. Увеличьте кассу или проверьте эти строки`, trial.total)
     }
     const slope = (trial.total - previous.total) / (trial.factor - previous.factor)
     const secant = Number.isFinite(slope) && slope > 0 ? trial.factor + (target - trial.total) / slope : NaN
@@ -286,6 +286,6 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     gap,
     fixedRows,
     evaluations,
-    message: inWindow ? undefined : `Не удалось точно попасть в бюджет: ${gap >= 0 ? 'недостача' : 'перерасход'} ${format(Math.abs(gap))} USD. Проверьте цены вручную`,
+    message: inWindow ? undefined : `Не удалось точно попасть в кассу: ${gap >= 0 ? 'недостача' : 'перерасход'} ${format(Math.abs(gap))} USD. Проверьте цены вручную`,
   }
 }

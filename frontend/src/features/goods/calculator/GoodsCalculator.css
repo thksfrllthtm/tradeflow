@@ -24,7 +24,33 @@
 .est-steps button.active .est-step-num { border-color: #24704a; background: #24704a; color: #fff; }
 .est-steps button.done .est-step-num { border-color: #9cc9ae; background: #e3f1e8; color: #1c6b43; }
 
-.goods-estimates-app .goods-disclaimer { flex: 0 0 auto; margin: 10px 0 0; padding: 0 2px; border: 0; background: none; color: #5a6960; font-size: .82rem; }
+/* Компактные этапы (проверка, результат): «(✓) Файл — (2) Проверка строк — (3) Результат».
+   Номер в кружке и линия между этапами — чтобы читалось как последовательность шагов. */
+.est-steps.compact { gap: 20px; padding: 0; border: 0; background: transparent; }
+.est-steps.compact button { position: relative; gap: 7px; height: 30px; padding: 0 10px 0 6px; border-radius: var(--tf-radius); color: var(--tf-text-2); font-size: .86rem; font-weight: 500; }
+.est-steps.compact button + button::before { content: ''; position: absolute; top: 50%; left: -17px; width: 14px; border-top: 1.5px solid var(--tf-border); }
+.est-steps.compact button.done + button::before { border-color: var(--tf-green); }
+.est-steps.compact button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.est-steps.compact button.active, .est-steps.compact button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
+.est-steps.compact .est-step-num { width: 20px; height: 20px; font-size: .72rem; }
+.est-steps.compact button.active .est-step-num { border-color: var(--tf-green); background: var(--tf-green); }
+.est-steps.compact button.done .est-step-num { border-color: var(--tf-green); background: var(--tf-green-soft); color: var(--tf-green); }
+.est-steps.compact button.unfinished .est-step-num { border: 0; color: var(--tf-ai); font-size: .93rem; }
+.est-step-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: .79rem; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.est-step-count.bad { background: #fef3f2; color: #b42318; }
+
+/* Дисклеймер — одна строка внизу, полный текст — в подсказке. */
+.goods-estimates-app .goods-disclaimer { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; margin: 16px 0 0; padding: 0 2px; border: 0; background: none; color: var(--tf-muted); font-size: .82rem; }
+.goods-disclaimer svg { flex: none; }
+
+/* Уведомление внизу после смены кода на этапе результата. */
+.code-notice { position: fixed; bottom: 24px; left: 50%; z-index: 90; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 32px); padding: 8px 8px 8px 16px; transform: translateX(-50%); border-radius: 10px; background: var(--tf-text); box-shadow: var(--tf-shadow-pop); color: #fff; font-size: .93rem; }
+.code-notice.failed { border: 1px solid #f0cccc; background: #fff; color: var(--tf-error); }
+.code-notice button { height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: inherit; font-weight: 600; }
+.code-notice button.code-notice-undo { color: #a8dcbd; }
+.code-notice button:hover:not(:disabled) { background: rgba(255, 255, 255, .12); }
+.code-notice.failed button:hover:not(:disabled) { background: #fdf0f0; }
+.code-notice button.code-notice-close { padding: 0 8px; font-size: 1.15rem; font-weight: 400; }
 
 @media (max-width: 900px) {
   .estimate-bar { flex-wrap: wrap; }

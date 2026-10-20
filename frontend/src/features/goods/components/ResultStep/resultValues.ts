@@ -1,5 +1,6 @@
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
-import { moneyText, weightText } from '@/shared/lib/rounding'
+import { moneyText, roundHalfUp, weightText } from '@/shared/lib/rounding'
+import { isSirFallback } from './errorGroups'
 import { GoodsCalculationResult } from '@/shared/types/goods'
 
 type Value = string | number | undefined | null
@@ -106,3 +107,61 @@ export const excelColumnHtml = (values: Value[]) => {
 
 // Текстовая колонка для Excel: перенос строки или табуляция внутри названия разбили бы его на несколько ячеек.
 export const textColumn = (values: string[]) => values.map((value) => value.replace(/\s+/g, ' ').trim()).join('\n')
+
+// Название строки в две строки: основное (русское) и под ним мелко — китайское или исходное из Excel.
+export function itemNames(item: DisplayNameItem, source?: DisplayNameItem): { main: string; sub: string } {
+  const snapshot = item.directorySnapshot
+  const russian = typeof snapshot?.name === 'string' ? snapshot.name.trim() : ''
+  const chinese = typeof snapshot?.nameZh === 'string' ? snapshot.nameZh.trim() : ''
+  const productChosen = Boolean(source?.productDirectoryId) || snapshot?.productDirectoryId != null
+  if (productChosen && russian) return { main: russian, sub: chinese !== russian ? chinese : '' }
+  const main = itemDisplayName(item, source)
+  const original = source?.supplierName?.trim() || item.supplierName?.trim() || ''
+  return { main, sub: original !== main ? original : '' }
+}
+
+type PaymentItem = { excluded?: boolean; errors?: string[]; dutyKzt?: string; antiDumpingKzt?: string; vatKzt?: string; feeKzt?: string }
+
+// К оплате по строке, ₸: пошлина + антидемпинг + НДС + сбор (как итог на сервере). Сумма в тиынах —
+// без ошибок двоичной записи. Пусто — строка исключена или с ошибкой (пошлина и НДС не посчитаны).
+export function rowPaymentKzt(item: PaymentItem): string {
+  const parts = [item.dutyKzt, item.antiDumpingKzt, item.vatKzt, item.feeKzt]
+  if (item.excluded || item.errors?.length || parts.every((value) => String(value ?? '').trim() === '')) return ''
+  const cents = parts.reduce((total, value) => total + Math.round((parseCalculatorNumber(value) ?? 0) * 100), 0)
+  return moneyText(cents / 100)
+}
+
+// Ставка НДС из снимка строки: «16%».
+export function vatRateText(snapshot?: Record<string, unknown>) {
+  const percent = (snapshot?.vat as { percent?: string } | undefined)?.percent
+  return percent ? `${formatRuNumber(percent)}%` : ''
+}
+
+// Растаможка к оплате в USD по курсу сметы; null — нет суммы или курса.
+export function customsPaymentsUsd(result: GoodsCalculationResult) {
+  const kzt = parseCalculatorNumber(result.totals.customsPaymentsKzt)
+  const rate = parseCalculatorNumber(result.usdKzt)
+  return kzt !== null && rate !== null && rate > 0 ? kzt / rate : null
+}
+
+type SirLine = { country: string; profile: string; priceUsd: string; discountPercent: string; pricePerKgUsd: string; weightKg: string; weight: string; valueUsd: string }
+const WEIGHT_LABEL: Record<string, string> = { net: 'нетто', gross: 'брутто' }
+
+// Как посчитана ТС строки по СУР — подсказка суммы ТС.
+export function sirTitle(sir: SirLine) {
+  const discount = Number(sir.discountPercent) > 0 ? ` − ${displayNumber(sir.discountPercent)} % = ${fixedNumber(sir.pricePerKgUsd, 2)}` : ''
+  return `ТС по СУР (${sir.country}, профиль ${sir.profile}): ${fixedNumber(sir.priceUsd, 2)} USD/кг${discount} × ${fixedNumber(sir.weightKg, 1)} кг ${WEIGHT_LABEL[sir.weight] ?? sir.weight} = ${displayNumber(sir.valueUsd)} USD, плюс доставка`
+}
+
+// Число с фиксированным числом знаков для показа: индикатор СУР — 2 («2,00»), вес в таблице — 1 («20 230,0»).
+export function fixedNumber(value: Value, decimals: number) {
+  const parsed = parseCalculatorNumber(value)
+  return value === undefined || value === null || String(value).trim() === '' || parsed === null ? '—' : formatRuNumber(roundHalfUp(parsed, decimals).toFixed(decimals))
+}
+
+// Рассчитанные строки: сервер не считает рассчитанной строку без индикатора СУР (она по инвойсу, с предупреждением),
+// но в итог она входит — для экрана она рассчитана.
+export function calculatedRows(result: GoodsCalculationResult) {
+  const invoiceFallback = result.items.filter((item) => !item.excluded && item.status !== 'calculated' && !item.errors?.length && (item.warnings ?? []).length > 0 && item.warnings.every(isSirFallback)).length
+  return result.totals.calculatedCount + invoiceFallback
+}

@@ -4,7 +4,7 @@ import { GoodsEstimateInput, GoodsEstimateSummary } from '@/shared/types/goods'
 import { isAdmin, User } from '@/shared/types/user'
 import { Link } from '@/shared/router/Link'
 import { GoodsCalculator } from './calculator/GoodsCalculator'
-import { estimateTitle } from '@/shared/lib/estimateTitle'
+import { estimateDisplayTitle, estimateTitle } from '@/shared/lib/estimateTitle'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuDate, todayIso } from '@/shared/lib/dates'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
@@ -132,7 +132,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     <AppHeader user={user} section="estimates" onLogout={onLogout} />
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
     <div className="estimates-workspace">
-      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={(estimate) => estimateTitle(estimate.name)} hrefOf={paths.goods} onCreate={() => navigate(paths.goods())} onRemove={(estimate) => void remove(estimate)} />
+      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={(estimate) => estimateDisplayTitle(estimate.name)} hrefOf={paths.goods} onCreate={() => navigate(paths.goods())} onRemove={(estimate) => void remove(estimate)} />
       <section className="estimates-content">
         {selected ? <GoodsCalculator
           key={selected.id}
@@ -140,12 +140,26 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
           onEstimateSaved={onEstimateSaved}
           exportName={[estimateTitle(selected.name), selected.client].filter(Boolean).join(' — ')}
           headerSlot={<div className="estimate-bar-meta">
-            <h1 title={estimateTitle(selected.name)}>{estimateTitle(selected.name)}</h1>
-            <span className="estimate-bar-sub">{selected.client || 'Клиент не указан'} · {formatRuDate(selected.assessmentDate)}</span>
+            <h1 title={estimateDisplayTitle(selected.name)}>{estimateDisplayTitle(selected.name)}</h1>
+            {/* Дата уже в названии — под ним не повторяется. */}
+            <span className="estimate-bar-sub">{estimateDisplayTitle(selected.name).includes(formatRuDate(selected.assessmentDate)) ? '' : `${formatRuDate(selected.assessmentDate)} · `}{selected.client || 'Клиент не указан'} ·</span>
             {employeeEstimate && <span className="estimate-owner" title="Изменения и расчёт сохраняются в смете сотрудника">Смета сотрудника: {foreign?.ownerName || 'сотрудник'} · <Link href={paths.employees}>к сотрудникам</Link></span>}
-            <details className="estimate-bar-editor"><summary>Изменить</summary><div className="estimate-bar-fields"><label>Название<input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta || !meta.name.trim()}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
+            <details className="estimate-bar-editor"><summary>{selected.client ? 'Изменить' : 'Указать'}</summary><div className="estimate-bar-fields"><label>Название<input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta || !meta.name.trim()}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
           </div>}
-        /> : !loading && fresh && <div className="estimates-empty"><div><h1>Начните с новой сметы</h1><p>Загрузите инвойс в Excel, проверьте строки и получите расчёт растаможки. Все сметы сохраняются в списке слева.</p><button type="button" onClick={() => void create()}>+ Создать смету</button></div></div>}
+        /> : !loading && fresh && <div className="estimates-empty">
+          {/* Как карточки этапов сметы: заголовок, три шага (как в шапке сметы) и зелёная кнопка. */}
+          <div className="es-empty-card">
+            <svg className="es-empty-icon" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M3.5 9h17M9 9v11.5M14.5 9v11.5" /></svg>
+            <h1>Начните с новой сметы</h1>
+            <p>Загрузите инвойс в Excel, проверьте строки и получите расчёт растаможки. Все сметы сохраняются в списке слева.</p>
+            <ol className="es-empty-steps" aria-label="Этапы сметы">
+              <li><b>1</b><span>Файл<small>Excel поставщика</small></span></li>
+              <li><b>2</b><span>Проверка строк<small>коды, количество, вес</small></span></li>
+              <li><b>3</b><span>Результат<small>пошлина, НДС, к оплате</small></span></li>
+            </ol>
+            <button type="button" className="es-empty-create" onClick={() => void create()}>+ Создать смету</button>
+          </div>
+        </div>}
       </section>
     </div>
   </main>

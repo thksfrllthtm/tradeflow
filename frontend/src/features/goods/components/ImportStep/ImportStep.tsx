@@ -1,14 +1,16 @@
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, ReactNode, useEffect, useRef, useState } from 'react'
 import { GoodsParseRow, SheetInfo } from '@/shared/types/goods'
 import { GoodsMapping } from '../../types'
 import '../../goods.css'
+import '../ReviewStep/ReviewStep.css'
 import './ImportStep.css'
 import { ExcelPreview } from './ExcelPreview'
-import { ColumnFieldMenu, ColumnMenuAnchor } from './ColumnFieldMenu'
 
 type MappingOption = { value: keyof GoodsMapping; label: string }
 
 type Props = {
+  // Название сметы и этапы — строка заголовка, как на этапах проверки и результата.
+  header: ReactNode
   loading: boolean
   sheets: SheetInfo[]
   sheet: string
@@ -32,28 +34,21 @@ type Props = {
   applyMapping: () => void
 }
 
-// Вид таблицы строк файла: обычная или пробный «Как в Excel» (Jspreadsheet CE). Выбор помнит браузер.
-type View = 'table' | 'excel'
-const viewKey = 'tradeflow.importView'
-function storedView(): View {
-  try { return localStorage.getItem(viewKey) === 'excel' ? 'excel' : 'table' } catch { return 'table' }
-}
-
 // Подписи полей — короткие, те же, что в заголовках таблицы на этапе проверки.
 const shortLabel: Record<keyof GoodsMapping, string> = { name: 'Наименование', name2: 'Наименование 2', name3: 'Наименование 3', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт / пар', places: 'Места', pairsPerPlace: 'Шт. / пар в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
 
-export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, headers, rawRows, mapping, fileName, selectedFileAvailable, mappingFieldOptions, upload, addEmptyRow, setSheet, setHeaderRow, setDataStartRow, reparseSelectedSheet, mappedFieldForHeader, setMappingForHeader, setRawRowIncluded, applyMapping }: Props) {
+// Этап 1 «Файл и колонки» — в одном стиле с этапами проверки и результата (классы rv-*): строка заголовка,
+// панель файла (лист, строки заголовков и товаров, «Применить») и лист «как в Excel» до низа окна. Колонке
+// назначают поле щелчком по её заголовку — назначенные видны в заголовках («Наименование ← Колонка 3»).
+export function ImportStep({ header, loading, sheets, sheet, headerRow, dataStartRow, headers, rawRows, mapping, fileName, selectedFileAvailable, mappingFieldOptions, upload, addEmptyRow, setSheet, setHeaderRow, setDataStartRow, reparseSelectedSheet, mappedFieldForHeader, setMappingForHeader, setRawRowIncluded, applyMapping }: Props) {
   const fileInput = <input type="file" accept=".xlsx,.xls" onChange={upload} disabled={loading} />
-  const [view, setViewState] = useState<View>(storedView)
-  const [menu, setMenu] = useState<ColumnMenuAnchor | null>(null)
-  function setView(next: View) {
-    setViewState(next)
-    try { localStorage.setItem(viewKey, next) } catch { /* выбор просто не запомнится */ }
-  }
+  const titlebar = <div className="estimate-bar rv-titlebar">{header}</div>
 
-  if (headers.length === 0 && sheets.length === 0) return <div className="goods-step-page im-step">
+  // Файла ещё нет — только зона загрузки, без строки заголовка: клиента и дату можно указать после загрузки.
+  if (headers.length === 0 && sheets.length === 0) return <div className="goods-step-page rv-step im-step">
     <label className={loading ? 'im-drop busy' : 'im-drop'}>
       {fileInput}
+      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15" /></svg>
       <strong>{loading ? 'Читаем файл…' : 'Перетащите Excel (XLSX или XLS) сюда или нажмите, чтобы выбрать файл'}</strong>
       <span>Файл до 100 МБ. Фото из XLSX сжимаются и сохраняются только в этой смете; из старого XLS фото не читаются.</span>
     </label>
@@ -61,66 +56,107 @@ export function ImportStep({ loading, sheets, sheet, headerRow, dataStartRow, he
   </div>
 
   const includedCount = rawRows.filter((row) => row.included).length
-  const mappedCount = mappingFieldOptions.filter((option) => mapping[option.value]).length
-  const fieldByHeader = headers.map((header) => mappedFieldForHeader(header, mapping))
   const fields = mappingFieldOptions.map((option) => ({ value: option.value, label: shortLabel[option.value] }))
-  const menuChosen = menu ? mappedFieldForHeader(menu.header, mapping) : ''
-  const holder = (field: string) => headers.find((header) => header !== menu?.header && mappedFieldForHeader(header, mapping) === field)
-  function toggleMenu(header: string, button: HTMLElement) {
-    const rect = button.getBoundingClientRect()
-    setMenu((open) => open?.header === header ? null : { header, left: rect.left, top: rect.bottom, width: rect.width })
-  }
-  return <div className="goods-step-page im-step">
-    <section className="rv-card">
-      <div className="im-toolbar">
-        <label className="im-file-button">{loading ? 'Обработка…' : 'Заменить файл'}{fileInput}</label>
-        {fileName && <span className="im-file-name" title={fileName}>{fileName}</span>}
-        <div className="im-settings">
-          <label className="im-field">Лист<select value={sheet} onChange={(event) => setSheet(event.target.value)}>{sheets.length ? sheets.map((value) => <option key={value.name} value={value.name}>{value.name} ({value.rows} строк)</option>) : <option value="">Первый лист</option>}</select></label>
-          <label className="im-field" title="Номер строки Excel с названиями колонок">Заголовки в строке<input type="number" min={1} value={headerRow} onChange={(event) => setHeaderRow(Math.max(1, Number(event.target.value) || 1))} /></label>
-          <label className="im-field" title="Номер строки Excel, с которой начинаются товары">Товары со строки<input type="number" min={2} value={dataStartRow} onChange={(event) => setDataStartRow(Math.max(2, Number(event.target.value) || 2))} /></label>
-          <button type="button" className="rv-bar-button" onClick={reparseSelectedSheet} disabled={loading || !selectedFileAvailable} title="Перечитать файл с выбранным листом и строками">Перечитать</button>
-        </div>
+
+  return <div className="goods-step-page rv-step im-step">
+    {titlebar}
+
+    {/* Панель файла: слева — откуда читаем, справа — сколько строк и «Применить». */}
+    <div className="rv-toolbar im-toolbar">
+      <SourceSettings loading={loading} fileName={fileName} fileInput={fileInput} sheets={sheets} sheet={sheet} headerRow={headerRow} dataStartRow={dataStartRow}
+        selectedFileAvailable={selectedFileAvailable} setSheet={setSheet} setHeaderRow={setHeaderRow} setDataStartRow={setDataStartRow} reparse={reparseSelectedSheet} />
+      <div className="rv-title-actions">
+        <span className="rv-save-state im-count">К импорту <b>{includedCount}</b> из {rawRows.length} строк</span>
+        {/* Без колонки «Наименование» строки не применить — подсказка рядом со счётчиком. */}
+        {!mapping.name && <span className="rv-save-state unsaved" title="Нажмите на заголовок колонки с названиями товаров и выберите «Наименование»">Выберите колонку «Наименование»</span>}
+        <label className="rv-btn im-replace">{loading ? 'Обработка…' : 'Заменить файл'}{fileInput}</label>
+        <button type="button" className="rv-btn" onClick={addEmptyRow}>+ Строка вручную</button>
+        <button type="button" className="rv-btn primary" onClick={applyMapping} disabled={loading || includedCount === 0}>Применить и перейти к проверке <span aria-hidden="true">→</span></button>
       </div>
-      <div className="im-mapping">
-        <span className="im-mapping-title">Колонки файла:</span>
-        <div className="im-view" role="radiogroup" aria-label="Вид таблицы">
-          <button type="button" role="radio" aria-checked={view === 'table'} className={view === 'table' ? 'active' : undefined} onClick={() => setView('table')}>Таблица</button>
-          <button type="button" role="radio" aria-checked={view === 'excel'} className={view === 'excel' ? 'active' : undefined} onClick={() => setView('excel')} title="Пробный режим: выделение ячеек мышью и копирование в Excel">Как в Excel</button>
-        </div>
-        {mappingFieldOptions.map((option) => <span key={option.value} className={mapping[option.value] ? 'im-chip set' : 'im-chip'} title={option.value === 'code' ? 'Если указать колонку с кодом, коды сверятся с номенклатурой ТН ВЭД ЕАЭС и строки получат её ставки' : option.value === 'name2' || option.value === 'name3' ? 'Ещё одна колонка с наименованием (например, китайское и русское): подбор кода и поиск в базе решений используют все наименования' : option.label}>
-          {shortLabel[option.value]}{mapping[option.value] ? <b>{mapping[option.value]}</b> : <i>не выбрана</i>}
-        </span>)}
-      </div>
-      {view === 'excel' ? <>
-        <p className="im-xp-hint">Нажмите на заголовок колонки, чтобы выбрать, что в ней. Выделяйте ячейки мышью (с Shift — диапазон), Ctrl+C — скопировать в Excel. Флажок в первой колонке — импортировать строку.</p>
-        <ExcelPreview headers={headers} rows={rawRows} fields={fields} fieldForHeader={(header) => mappedFieldForHeader(header, mapping)} onFieldChange={(header, field) => setMappingForHeader(header, field as keyof GoodsMapping | '')} onIncludedChange={setRawRowIncluded} />
-      </> : <div className="im-table-wrap">
-        <table className="sheet im-table">
-          <thead><tr>
-            <th className="im-check"><input type="checkbox" checked={rawRows.length > 0 && includedCount === rawRows.length} onChange={(event) => rawRows.forEach((row) => setRawRowIncluded(row.sourceRow, event.target.checked))} aria-label="Импортировать все строки" title="Импортировать все строки" /></th>
-            <th className="im-row" title="Номер строки в Excel">Стр.</th>
-            {headers.map((header, index) => <th key={header} className={fieldByHeader[index] ? 'im-mapped' : ''}>
-              <span className="im-col-name" title={header}>{header}</span>
-              <button type="button" className="im-pick" aria-haspopup="listbox" aria-expanded={menu?.header === header} aria-label={`Что в колонке ${header}`} onClick={(event) => toggleMenu(header, event.currentTarget)}>
-                <span>{fieldByHeader[index] ? shortLabel[fieldByHeader[index] as keyof GoodsMapping] : 'Не использовать'}</span><i aria-hidden="true">▾</i>
-              </button>
-            </th>)}
-          </tr></thead>
-          <tbody>{rawRows.map((row) => <tr key={row.sourceRow} className={row.included ? '' : 'im-excluded'}>
-            <td className="im-check"><input type="checkbox" checked={row.included} onChange={(event) => setRawRowIncluded(row.sourceRow, event.target.checked)} aria-label={`Импортировать строку ${row.sourceRow}`} /></td>
-            <td className={row.warnings?.length ? 'im-row im-warn' : 'im-row'} title={row.warnings?.join('\n') || undefined}>{row.sourceRow}</td>
-            {headers.map((header, index) => <td key={header} className={fieldByHeader[index] ? 'im-mapped' : ''} title={row.values[header] || undefined}>{row.values[header]}</td>)}
-          </tr>)}</tbody>
-        </table>
-        {menu && <ColumnFieldMenu anchor={menu} fields={fields} chosen={menuChosen} holder={holder} ignoreSelector=".im-table th .im-pick"
-          onChoose={(field) => { setMappingForHeader(menu.header, field as keyof GoodsMapping | ''); setMenu(null) }} onClose={() => setMenu(null)} />}
-      </div>}
-      <div className="rv-actions">
-        <span className="rv-actions-note">К импорту <b>{includedCount}</b> из {rawRows.length} строк · колонок выбрано <b>{mappedCount}</b> из {mappingFieldOptions.length}{!mapping.name && <em className="im-need"> · выберите колонку «Наименование»</em>}</span>
-        <button type="button" className="rv-clear im-manual" onClick={addEmptyRow}>+ Строка вручную</button>
-        <button type="button" className="btn-calculate" onClick={applyMapping} disabled={loading || includedCount === 0}>Применить и перейти к проверке →</button>
-      </div>
+    </div>
+
+    <section className="rv-card" aria-label="Строки файла">
+      <ExcelPreview headers={headers} rows={rawRows} fields={fields} fieldForHeader={(column) => mappedFieldForHeader(column, mapping)} onFieldChange={(column, field) => setMappingForHeader(column, field as keyof GoodsMapping | '')} onIncludedChange={setRawRowIncluded} />
     </section>
+  </div>
+}
+
+type SourceProps = {
+  loading: boolean
+  fileName: string
+  fileInput: ReactNode
+  sheets: SheetInfo[]
+  sheet: string
+  headerRow: number
+  dataStartRow: number
+  selectedFileAvailable: boolean
+  setSheet: (value: string) => void
+  setHeaderRow: (value: number) => void
+  setDataStartRow: (value: number) => void
+  reparse: () => void
+}
+
+// Откуда читаются строки — как «Параметры расчёта» на этапе проверки: сводка (файл, лист, строки заголовков
+// и товаров) и кнопка «Изменить», под ней — список: лист кнопками, номера строк и «Перечитать» (файла во
+// вкладке нет — вместо неё «Выбрать файл»). Лист и строки применяются только перечитыванием файла; после перезагрузки страницы файла
+// в браузере нет — тогда его нужно выбрать снова.
+function SourceSettings({ loading, fileName, fileInput, sheets, sheet, headerRow, dataStartRow, selectedFileAvailable, setSheet, setHeaderRow, setDataStartRow, reparse }: SourceProps) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const outside = (event: MouseEvent) => { if (!box.current?.contains(event.target as Node)) setOpen(false) }
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', outside)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('mousedown', outside); document.removeEventListener('keydown', escape) }
+  }, [open])
+
+  const sheetRows = sheets.find((value) => value.name === sheet)?.rows
+  const shown = [
+    { label: 'Файл', text: fileName || 'не выбран', empty: !fileName, file: true },
+    { label: 'Лист', text: sheet || 'первый', empty: !sheet },
+    { label: 'Заголовки', text: `строка ${headerRow}` },
+    { label: 'Товары', text: `со строки ${dataStartRow}` },
+  ]
+  const number = (value: string, min: number) => Math.max(min, Math.round(Number(value)) || min)
+
+  return <div className="rv-params im-source" ref={box}>
+    <div className="rv-params-summary">
+      {shown.map((item) => <span key={item.label} className={`rv-params-item${item.empty ? ' empty' : ''}${item.file ? ' im-file' : ''}`} title={item.file ? fileName : undefined}><span>{item.label}</span><b>{item.text}</b></span>)}
+      <button type="button" className={open ? 'rv-params-edit open' : 'rv-params-edit'} onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="true">Изменить
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3" /></svg>
+      </button>
+    </div>
+
+    {open && <div className="rv-params-form im-source-form" role="group" aria-label="Откуда читать строки">
+      <div className="rv-param im-sheets">
+        <span>Лист</span>
+        {sheets.length > 1
+          ? <div className="rv-seg" role="radiogroup" aria-label="Лист файла">
+            {sheets.map((value) => <button key={value.name} type="button" role="radio" aria-checked={value.name === sheet} className={value.name === sheet ? 'active' : undefined}
+              onClick={() => setSheet(value.name)} title={`${value.rows} строк`}>{value.name}</button>)}
+          </div>
+          : <b className="rv-param-static">{sheet || 'первый'}{sheetRows ? <small> · {sheetRows} строк</small> : null}</b>}
+      </div>
+      <label className="rv-param" title="Номер строки Excel с названиями колонок">
+        <span>Заголовки в строке</span>
+        <input type="number" min={1} value={headerRow} onChange={(event) => setHeaderRow(number(event.target.value, 1))} />
+      </label>
+      <label className="rv-param" title="Номер строки Excel, с которой начинаются товары">
+        <span>Товары со строки</span>
+        <input type="number" min={2} value={dataStartRow} onChange={(event) => setDataStartRow(number(event.target.value, 2))} />
+      </label>
+      {selectedFileAvailable
+        ? <div className="im-source-actions">
+          <span>Лист и строки применятся после перечитывания</span>
+          <button type="button" className="rv-btn primary small" onClick={() => { setOpen(false); reparse() }} disabled={loading}
+            title="Прочитать файл заново с выбранным листом и строками">Перечитать</button>
+        </div>
+        : <div className="im-source-missing" role="status">
+          <span><b>Файл не загружен в этой вкладке.</b> Чтобы перечитать, выберите его снова.</span>
+          <label className="rv-btn small im-replace">{loading ? 'Обработка…' : 'Выбрать файл'}{fileInput}</label>
+        </div>}
+    </div>}
   </div>
 }

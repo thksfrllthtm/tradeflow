@@ -1,9 +1,9 @@
 /* Выбор антидемпинга строки: кнопка под пошлиной и список вариантов по мерам реестра ЕЭК. */
-.goods-page .rs-table button.dump-choose { display: flex; align-items: center; gap: 4px; height: auto; margin: 3px 0 0 auto; padding: 1px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; font-size: .8rem; font-weight: 650; line-height: 1.3; white-space: nowrap; cursor: pointer; }
-.goods-page .rs-table button.dump-choose.ask { border-color: #ecd59a; background: #fff8e3; color: #7a5810; }
-.goods-page .rs-table button.dump-choose.on { border-color: #efc7c1; background: #fdecec; color: #8a2626; }
-.goods-page .rs-table button.dump-choose.off { color: #5a6960; }
-.goods-page .rs-table button.dump-choose:hover:not(:disabled) { border-color: currentColor; }
+.goods-page :is(.rs-table, .rp) button.dump-choose { display: flex; align-items: center; gap: 4px; height: auto; margin: 3px 0 0 auto; padding: 1px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; font-size: .8rem; font-weight: 650; line-height: 1.3; white-space: nowrap; cursor: pointer; }
+.goods-page :is(.rs-table, .rp) button.dump-choose.ask { border-color: #ecd59a; background: #fff8e3; color: #7a5810; }
+.goods-page :is(.rs-table, .rp) button.dump-choose.on { border-color: #efc7c1; background: #fdecec; color: #8a2626; }
+.goods-page :is(.rs-table, .rp) button.dump-choose.off { color: #5a6960; }
+.goods-page :is(.rs-table, .rp) button.dump-choose:hover:not(:disabled) { border-color: currentColor; }
 
 .dump-menu { position: fixed; z-index: 70; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; box-sizing: border-box; max-height: min(460px, 70vh); white-space: normal; padding: 10px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(20, 45, 30, .18); text-align: left; }
 .dump-menu-text { margin: 0; color: #56665c; font-size: .74rem; line-height: 1.4; }
@@ -11,7 +11,7 @@
 .dump-menu-search:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
 .dump-menu-list { min-width: 0; min-height: 0; overflow-y: auto; }
 .dump-menu-list section + section { margin-top: 8px; }
-.dump-menu-list h4 { margin: 0 0 3px; padding: 0 6px; color: #5a6960; font-size: .68rem; font-weight: 750; letter-spacing: .03em; text-transform: uppercase; }
+.dump-menu-list h4 { margin: 0 0 3px; padding: 0 6px; color: #5a6960; font-size: .79rem; font-weight: 600; }
 .dump-menu button { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; height: auto; margin: 0; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: #1f2d24; font-size: .78rem; font-weight: 500; text-align: left; cursor: pointer; }
 .dump-menu button:hover { background: #f1f6f2; }
 .dump-menu button.active { background: #e3f1e8; color: #1a4d33; font-weight: 650; }

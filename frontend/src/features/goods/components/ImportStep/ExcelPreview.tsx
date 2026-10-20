@@ -17,7 +17,7 @@ type Props = {
 // Колонки перед колонками файла: флажок импорта и номер строки Excel.
 const leadColumns = 2
 
-// Пробный режим «Как в Excel» на шаге «Файл и колонки»: строки файла в Jspreadsheet CE (MIT).
+// Лист «Как в Excel» на шаге «Файл и колонки»: строки файла в Jspreadsheet CE (MIT).
 // Ячейки только для чтения, но их можно выделять мышью и копировать (Ctrl+C) прямо в Excel;
 // первая колонка — флажок импорта строки, клик по заголовку колонки файла открывает список
 // полей сметы. Формулы из файла не вычисляются. Библиотека загружается только здесь.
@@ -56,6 +56,18 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
       setMenu((open) => open?.header === headers[index] ? null : { header: headers[index], left: rect.left, top: rect.bottom, width: rect.width })
     }
     element.addEventListener('click', openMenu)
+    // Лист — до низа окна, как на этапе проверки: --xp-top — где он начинается, --xp-below — что под ним до
+    // конца сметы (подпись, отступ). Перемер — при изменении высоты страницы сметы и окна.
+    const measure = () => {
+      const box = element.getBoundingClientRect()
+      const page = element.closest('.goods-page')?.getBoundingClientRect()
+      element.style.setProperty('--xp-top', `${box.top + window.scrollY}px`)
+      element.style.setProperty('--xp-below', `${page ? Math.max(0, page.bottom - box.bottom) : 0}px`)
+    }
+    const resized = new ResizeObserver(measure)
+    const pageElement = element.closest('.goods-page')
+    if (pageElement) resized.observe(pageElement)
+    window.addEventListener('resize', measure)
     void (async () => {
       try {
         const [{ default: jss }] = await Promise.all([import('jspreadsheet-ce'), import('jspreadsheet-ce/dist/jspreadsheet.css'), import('jsuites/dist/jsuites.css')])
@@ -67,14 +79,12 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
           worksheets: [{
             data: current.map((row) => [row.included, String(row.sourceRow), ...headers.map((header) => row.values[header] ?? '')]),
             columns: [
-              { type: 'checkbox', title: '✓', width: 40 },
-              { type: 'text', title: 'Стр.', width: 56, readOnly: true, align: 'right' },
-              ...headers.map((_header, index) => ({ type: 'text' as const, title: titles[index], width: 180, readOnly: true, align: 'left' as const })),
+              { type: 'checkbox', title: '✓', width: 32 },
+              { type: 'text', title: 'Стр.', width: 48, readOnly: true, align: 'right' },
+              ...headers.map((_header, index) => ({ type: 'text' as const, title: titles[index], width: 160, readOnly: true, align: 'left' as const })),
             ],
-            tableOverflow: true,
-            // Высота — по окну, чтобы таблица и кнопка «Применить» помещались на экране при любом масштабе.
-            tableHeight: 'calc(100vh - 380px)',
-            tableWidth: '100%',
+            // Прокрутка — у .xp-host (высота до низа окна, ниже), а не у библиотеки: так шапка прилипает к верху листа.
+            tableOverflow: false,
             columnSorting: false,
             columnDrag: false,
             rowDrag: false,
@@ -104,6 +114,7 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
         // Свои номера строк библиотеки не нужны: номер строки Excel — в колонке «Стр.».
         worksheets[0].hideIndex()
         markExcluded(element, current)
+        measure()
         setBuilt((count) => count + 1)
         setError('')
       } catch (reason) {
@@ -114,6 +125,8 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
       cancelled = true
       sheet.current = null
       element.removeEventListener('click', openMenu)
+      resized.disconnect()
+      window.removeEventListener('resize', measure)
       if (created) created.destroy(element as unknown as jspreadsheet.JspreadsheetInstanceElement, true)
       element.innerHTML = ''
     }
@@ -154,7 +167,7 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
   // Колонка, у которой поле уже назначено: выбор здесь переносит его сюда.
   const holder = (field: string) => headers.find((header) => header !== menu?.header && fieldForHeader(header) === field)
   return <div className="xp-wrap">
-    {error && <p className="xp-error">Не удалось открыть режим «Как в Excel»: {error}. Переключитесь на обычную таблицу.</p>}
+    {error && <p className="xp-error">Не удалось открыть таблицу: {error}. Обновите страницу.</p>}
     <div ref={host} className="xp-host" />
     {menu && <ColumnFieldMenu anchor={menu} fields={fields} chosen={chosen} holder={holder} ignoreSelector=".xp-host thead td.xp-pick"
       onChoose={(field) => { onFieldChange(menu.header, field); setMenu(null) }} onClose={() => setMenu(null)} />}

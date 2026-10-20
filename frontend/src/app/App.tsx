@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { authApi } from '@/features/auth/authApi'
-import { canTranslate, isAdmin, User } from '@/shared/types/user'
+import { canEstimate, canTranslate, isAdmin, User } from '@/shared/types/user'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { NomenclaturePage } from '@/features/directories/nomenclature/NomenclaturePage'
@@ -15,6 +15,8 @@ import { TranslatorPage } from '@/features/translator/TranslatorPage'
 import { TranslatorDocumentPage } from '@/features/translator/TranslatorDocumentPage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
+const estimatePages: string[] = ['goods', 'products', 'decisions', 'ceramics']
+
 export function App() {
   const [user, setUser] = useState<User | null>(null)
   const [checkingSession, setCheckingSession] = useState(true)
@@ -24,8 +26,9 @@ export function App() {
   // Куда вернуться после входа, если страницу открыли без сессии.
   const returnTo = useRef<string | null>(null)
   const authPage = route?.page === 'login' || route?.page === 'register'
-  // Сотрудники — только администратору, «Переводчик» — переводчику и администратору; остальных на главную.
-  const knownRoute = route !== null && !(user !== null && (route.page === 'employees' && !isAdmin(user) || route.page === 'translator' && !canTranslate(user)))
+  // Сотрудники — только администратору, «Переводчик» — переводчику и администратору, сметы,
+  // справочник товаров, база решений и керамика — не переводчику; остальных на главную.
+  const knownRoute = route !== null && !(user !== null && (route.page === 'employees' && !isAdmin(user) || route.page === 'translator' && !canTranslate(user) || estimatePages.includes(route.page) && !canEstimate(user)))
 
   useEffect(() => {
     const onSessionExpired = () => {
@@ -74,7 +77,7 @@ export function App() {
   if (!user) return route?.page === 'register'
     ? <RegisterPage onLogin={login} onLoginMode={() => { setSessionNotice(''); navigate(paths.login) }} />
     : <LoginPage notice={sessionNotice} onLogin={login} onRegister={() => { setSessionNotice(''); navigate(paths.register) }} />
-  if (!route || authPage) return null
+  if (!route || authPage || !knownRoute) return null
 
   switch (route.page) {
     case 'home': return <HomePage user={user} onLogout={() => void logout()} />

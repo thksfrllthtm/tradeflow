@@ -1,61 +1,56 @@
-/* Подбор цен под бюджет растаможки на этапе результата. */
-.budget-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.budget-field { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: #46564c; font-size: .86rem; font-weight: 600; white-space: nowrap; }
+/* Подбор цен под бюджет растаможки на этапе результата: блок бюджета в полосе итогов, настройки — в меню «⋯». */
+.budget-meter { display: grid; min-width: 240px; }
+.budget-meter-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.budget-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; white-space: nowrap; }
+.budget-field b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .budget-input { position: relative; display: inline-flex; }
-.budget-input input { box-sizing: border-box; width: 132px; height: 32px; margin: 0; padding: 0 40px 0 10px; border: 1px solid #8a968f; border-radius: 8px; background: #fff; color: #1f2d24; font-size: .86rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-.budget-input input::placeholder { color: #68766e; font-weight: 500; }
-.budget-input input:focus { outline: 2px solid #1c6b43; outline-offset: 0; border-color: #1c6b43; }
-.budget-input i { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); color: #5a6960; font-size: .8rem; font-style: normal; font-weight: 600; pointer-events: none; }
-.budget-controls button.budget-run, .budget-controls button.budget-ai { height: 32px; padding: 0 14px; border-radius: 8px; font-size: .86rem; font-weight: 650; white-space: nowrap; }
-.budget-controls button.budget-ai { border: 1px solid #c9d3e8; background: #fff; color: #2f4f8f; }
-.budget-controls button.budget-ai:hover:not(:disabled) { border-color: #2f4f8f; background: #f3f6fc; }
-.budget-controls button.budget-ai:disabled { border-color: #e3e8f1; background: #fafbfd; color: #a7b1c6; opacity: 1; }
+.budget-input input { box-sizing: border-box; width: 92px; height: 30px; margin: 0; padding: 0 38px 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: .86rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-input input::placeholder { color: var(--tf-muted); font-weight: 400; }
+.budget-input input:focus { outline: 2px solid rgba(30, 91, 60, .25); outline-offset: 0; border-color: var(--tf-green); }
+.budget-input i { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); color: var(--tf-muted); font-size: .79rem; font-style: normal; font-weight: 500; pointer-events: none; }
+.budget-rest { color: var(--tf-warn-text); font-size: .86rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.budget-rest.over { color: var(--tf-error); }
 
-/* Разница с бюджетом: значок и окошко под ним. */
-.budget-gap { position: relative; }
-.budget-controls button.budget-gap-chip { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border: 1px solid #dfe7e1; border-radius: 999px; background: #f5f8f6; color: #46564c; font-size: .82rem; font-weight: 600; white-space: nowrap; }
-.budget-controls button.budget-gap-chip:hover:not(:disabled), .budget-controls button.budget-gap-chip.open { border-color: #b9cbbf; background: #fff; color: #1f2d24; }
-.budget-controls button.budget-gap-chip.changed { border-color: #b8d3c1; background: #eef7f1; color: #1c5538; }
-.budget-controls button.budget-gap-chip.invalid { border-color: #e2a99d; background: #fff1ee; color: #9a3024; }
-.budget-gap-chip svg { transition: transform .15s; }
-.budget-gap-chip.open svg { transform: rotate(180deg); }
-.budget-gap-pop { position: fixed; z-index: 60; display: grid; gap: 10px; width: 280px; padding: 12px; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px rgba(20, 45, 30, .14); animation: budget-pop .12s ease-out; }
-@keyframes budget-pop { from { opacity: 0; transform: translateY(-4px); } }
-.budget-gap-title { margin: 0; color: #56665c; font-size: .7rem; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
-.budget-gap-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border: 1px solid #dfe7e1; border-radius: 8px; background: #f5f8f6; }
-.budget-gap-seg button { height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: #56665c; font-size: .76rem; font-weight: 600; }
-.budget-gap-seg button:hover:not(:disabled) { background: #eaf1ec; color: #1f2d24; }
-.budget-gap-seg button.active, .budget-gap-seg button.active:hover:not(:disabled) { background: #fff; color: #1a4d33; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
-.budget-gap-range { display: flex; align-items: center; gap: 6px; color: #56665c; font-size: .8rem; }
-.budget-gap-range input { box-sizing: border-box; width: 64px; height: 30px; margin: 0; padding: 0 8px; border: 1px solid #d4dcd6; border-radius: 7px; font-size: .84rem; text-align: right; font-variant-numeric: tabular-nums; }
-.budget-gap-range input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.budget-gap-example { margin: 0; padding: 6px 8px; border-radius: 7px; background: #f5f8f6; color: #34443b; font-size: .74rem; font-variant-numeric: tabular-nums; }
-.budget-gap-example.invalid { background: #fff1ee; color: #9a3024; }
+/* [Подобрать цены | ▾]: стрелка открывает одну панель настроек подбора. */
+.budget-split { position: relative; display: inline-flex; }
+.rs-step .budget-split button.budget-run { border-radius: var(--tf-radius) 0 0 var(--tf-radius); }
+.rs-step .budget-split button.budget-caret { display: grid; place-items: center; width: 30px; height: 32px; padding: 0; border: 1px solid var(--tf-border); border-left-width: 0; border-radius: 0 var(--tf-radius) var(--tf-radius) 0; background: var(--tf-card); color: var(--tf-text-2); }
+.rs-step .budget-split button.budget-caret:hover:not(:disabled), .rs-step .budget-split button.budget-caret.open { background: var(--tf-chip); color: var(--tf-text); }
+.budget-caret svg { transition: transform .15s; }
+.budget-caret.open svg { transform: rotate(180deg); }
+.rs-step .budget-split.primary button.budget-run, .rs-step .budget-split.primary button.budget-caret { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+.rs-step .budget-split.primary button.budget-caret { border-left: 1px solid rgba(255, 255, 255, .3); }
+.rs-step .budget-split.primary button:hover:not(:disabled) { background: var(--tf-green-hover); }
+.budget-settings { position: absolute; top: calc(100% + 6px); right: 0; z-index: 60; display: grid; gap: 12px; width: 330px; max-width: calc(100vw - 32px); padding: 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); color: var(--tf-text); }
+.budget-settings-title { margin: 0; font-size: .86rem; font-weight: 600; }
+.budget-settings-label { margin: 0 0 -6px; color: var(--tf-text-2); font-size: .86rem; }
+.budget-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--tf-text-2); font-size: .86rem; }
+.budget-settings-row .budget-gap-seg { width: 96px; }
+.budget-gap-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); }
+.rs-step .budget-gap-seg button { height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; white-space: nowrap; }
+.rs-step .budget-gap-seg button:hover:not(:disabled) { background: var(--tf-card); color: var(--tf-text); }
+.rs-step .budget-gap-seg button.active, .rs-step .budget-gap-seg button.active:hover:not(:disabled) { background: var(--tf-card); color: var(--tf-text); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+.budget-gap-range { display: flex; align-items: center; gap: 6px; color: var(--tf-text-2); font-size: .86rem; }
+.budget-gap-range input { box-sizing: border-box; width: 64px; height: 30px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 6px; font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; }
+.budget-gap-range input:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .12); }
+.budget-gap-example { margin: 0; padding: 6px 8px; border-radius: 6px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.budget-gap-example.invalid { background: #fef3f2; color: #b42318; }
 .budget-gap-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.budget-gap-pop button.budget-gap-link { min-width: 0; height: auto; padding: 0; white-space: normal; text-align: left; border: 0; background: transparent; color: #1b6b43; font-size: .74rem; font-weight: 600; }
-.budget-gap-pop button.budget-gap-link:hover:not(:disabled) { background: transparent; text-decoration: underline; }
-.budget-gap-pop button.budget-gap-link:disabled { color: #a3aea7; opacity: 1; }
-.budget-gap-pop button.budget-gap-done { height: 28px; padding: 0 14px; border-radius: 7px; font-size: .76rem; font-weight: 650; }
+.rs-step .budget-settings button.budget-gap-link { min-width: 0; height: auto; padding: 0; border: 0; background: transparent; color: var(--tf-green); font-size: .79rem; font-weight: 500; text-align: left; white-space: normal; }
+.rs-step .budget-settings button.budget-gap-link:hover:not(:disabled) { background: transparent; text-decoration: underline; }
+.rs-step .budget-settings button.budget-gap-link:disabled { color: var(--tf-muted); opacity: .6; }
+.rs-step .budget-settings button.budget-gap-done { height: 30px; padding: 0 14px; border: 0; border-radius: var(--tf-radius); background: var(--tf-green); color: #fff; font-size: .86rem; font-weight: 600; }
+.rs-step .budget-settings button.budget-gap-done:hover:not(:disabled) { background: var(--tf-green-hover); }
 .budget-status { display: grid; gap: 4px; }
-.budget-summary, .budget-notice, .budget-warning { margin: 0; font-size: .86rem; }
-.budget-summary { color: #34443b; }
-.budget-summary b { color: #1c5538; }
-.budget-summary span { color: #5a6960; }
-.budget-notice { color: #6b5a14; }
-.budget-warning { padding: 5px 10px; border: 1px solid #f0d58a; border-radius: 7px; background: #fff8e1; color: #6b4e00; }
-/* Пояснения к ценам подбора «По товарам» по кодам ТН ВЭД — одна строка на код, без повторов по строкам таблицы. */
-.ai-explanations { border: 1px solid #dde5f3; border-radius: 8px; background: #f7f9fd; }
-.ai-explanations > summary { padding: 6px 10px; color: #2f4f8f; font-size: .86rem; font-weight: 700; cursor: pointer; }
-.ai-explanations > summary span { color: #4a5a80; font-weight: 500; }
-.ai-explanations ul { display: grid; gap: 2px; max-height: 160px; margin: 0; padding: 0 10px 8px; overflow-y: auto; list-style: none; }
-.ai-explanations li { display: grid; grid-template-columns: 96px minmax(120px, 260px) 90px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 3px 0; border-top: 1px solid #e8edf7; font-size: .86rem; }
-.ai-explanations li:first-child { border-top: 0; }
-.ai-explanations code, .ai-explanations .copy-code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .72rem; font-weight: 700; }
-.ai-explanations .ai-names { overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
-.ai-explanations b { color: #1f2d24; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ai-explanations .ai-reason { color: #2f4f8f; }
-.ai-explanations small { color: #5a6960; white-space: nowrap; }
-@media (max-width: 900px) {
-  .ai-explanations li { grid-template-columns: 1fr auto; }
-  .ai-explanations .ai-names, .ai-explanations small { display: none; }
-}
+.budget-notice, .budget-warning { margin: 0; font-size: .86rem; }
+.budget-notice { color: var(--tf-warn-text); }
+.budget-warning { padding: 6px 10px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+
+/* Маркер «цена оценена ИИ». */
+.ai-dot { display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--tf-ai); vertical-align: middle; cursor: help; }
+.rs-step .budget-split button.budget-run { gap: 6px; }
+.budget-settings-note { margin: -8px 0 0; color: var(--tf-muted); font-size: .82rem; }
+.budget-settings hr { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--tf-border-inner); }
+.rs-step .budget-settings button.budget-settings-item { width: 100%; height: auto; margin: -6px 0 0; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--tf-text); font-size: .86rem; font-weight: 500; text-align: left; }
+.rs-step .budget-settings button.budget-settings-item:hover:not(:disabled) { background: var(--tf-chip); }
+.rs-step .budget-settings button.budget-settings-item:disabled { color: var(--tf-muted); opacity: .55; }

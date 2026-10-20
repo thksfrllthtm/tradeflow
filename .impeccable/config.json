@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "frontend/src/features/goods/agent/agent.css"
+        ],
+        "createdAt": "2026-10-20T17:46:03.079Z",
+        "reason": "Claude: flagged line is a 2px blockquote rule for invoice citations (.ag-cand/.ag-why blockquote), standard quote styling, not a card side-tab; predates session"
+      }
+    ]
+  }
+}

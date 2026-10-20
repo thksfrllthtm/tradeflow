@@ -1,50 +1,51 @@
-import { useState } from 'react'
-import { GoodsCalculationResult } from '@/shared/types/goods'
-import { errorGroups, plural, rowRangeParts } from './errorGroups'
+import { ProblemGroup, plural, rowRangeParts } from './errorGroups'
 import './CalculationErrors.css'
 
-type Props = { result: GoodsCalculationResult; onBackToReview: () => void; onShowRow: (row: number) => void }
+type Props = {
+  groups: ProblemGroup[]
+  onBackToReview: () => void
+  // «Подобрать цены»; нет — кнопки нет (режим СУР).
+  onPickPrices?: () => void
+  onShowRow: (row: number) => void
+}
 
-// Плашка над итогами: ошибки (строка не рассчитана) и предупреждения, одинаковые сообщения —
-// одной строкой, номера строк — кнопки, которые прокручивают таблицу к строке. Длинный список
-// свёрнут в одну строку, чтобы не забирать место у таблицы.
-export function CalculationErrors({ result, onBackToReview, onShowRow }: Props) {
-  const errors = errorGroups(result, 'errors')
-  const warnings = errorGroups(result, 'warnings')
-  const [open, setOpen] = useState(errors.length + warnings.length <= 2)
-  if (errors.length === 0 && warnings.length === 0) return null
-  const rowCount = (groups: typeof errors) => new Set(groups.flatMap((group) => group.rows)).size
-  const errorRows = rowCount(errors)
-  const warningRows = rowCount(warnings)
-  const total = result.items.filter((item) => !item.excluded).length
-  const counts = [
-    errors.length > 0 && (errorRows > 0 ? `${errorRows} из ${total} ${plural(total, ['строки', 'строк', 'строк'])} с ошибками` : `${errors.length} ${plural(errors.length, ['общая ошибка', 'общие ошибки', 'общих ошибок'])}`),
-    warningRows > 0 && `${warningRows} с предупреждениями`,
-  ].filter(Boolean).join(' · ')
+const rowsText = (count: number) => `${count} ${plural(count, ['строка', 'строки', 'строк'])}`
+
+const ICON: Record<ProblemGroup['tone'], string> = { error: '!', todo: '•', warn: '?' }
+
+// Один баннер над итогами: проблема — строка со счётчиком строк и кнопкой действия; номера строк —
+// в раскрывающейся части (номер — переход к строке). Ошибки (нет кода, ставок) — красные, нет цены —
+// следующий шаг (жёлтый), предупреждения — жёлтые.
+export function CalculationErrors({ groups, onBackToReview, onPickPrices, onShowRow }: Props) {
+  if (groups.length === 0) return null
+  const blocking = groups.some((group) => group.tone === 'error')
+  const withRows = groups.filter((group) => group.rows.length > 0)
+
+  function action(group: ProblemGroup) {
+    // Нет кода — главное действие экрана: зелёная кнопка.
+    if (group.kind === 'code') return <button type="button" className="rs-problem-action primary" onClick={onBackToReview}>Перейти к проверке строк</button>
+    if (group.kind === 'price' && onPickPrices) return <button type="button" className="rs-problem-action" onClick={onPickPrices}>Подобрать цены ИИ</button>
+    return null
+  }
 
   return (
-    <section className={errors.length > 0 ? 'rs-issues bad' : 'rs-issues warn'} aria-label="Ошибки и предупреждения расчёта">
-      <div className="rs-issues-head">
-        <p role={errors.length > 0 ? 'alert' : 'status'}>
-          <strong>{errors.length > 0 ? 'Расчёт не завершён' : 'Проверьте предупреждения'}</strong>
-          <span className="rs-issues-count">{counts}</span>
-        </p>
-        <button type="button" className="rs-issues-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? 'Скрыть список' : `Показать список · ${errors.length + warnings.length}`}
-        </button>
-        {errors.length > 0 && <button type="button" className="button-link rs-issues-back" onClick={onBackToReview} title="Вернуться к проверке строк. Цены, изменённые на этапе результата, вернутся к ценам из Excel">К проверке строк (цены этапа 3 сбросятся)</button>}
-      </div>
-      {open && <ul className="rs-issues-list">
-        {[...errors.map((group) => ({ ...group, kind: 'bad' })), ...warnings.map((group) => ({ ...group, kind: 'warn' }))].map((group) => (
-          <li key={`${group.kind}:${group.text}`} className={group.kind}>
-            <span className="rs-issues-text">{group.text}</span>
-            <span className="rs-issues-rows">{group.rows.length > 0
-              ? <><b>{group.rows.length} {plural(group.rows.length, ['строка', 'строки', 'строк'])}</b> №{' '}
-                {rowRangeParts(group.rows).map((part, index) => <span key={part.label}>{index > 0 && ', '}<button type="button" onClick={() => onShowRow(part.first)} title={`Показать строку ${part.first} в таблице`}>{part.label}</button></span>)}</>
-              : 'общая ошибка'}</span>
-          </li>
-        ))}
-      </ul>}
+    <section className="rs-problems" aria-label="Что мешает завершить расчёт" role={blocking ? 'alert' : 'status'}>
+      <ul className="rs-problems-list">
+        {groups.map((group) => <li key={group.text} className={group.tone}>
+          <span className="rs-problem-icon" aria-hidden="true">{ICON[group.tone]}</span>
+          <span className="rs-problem-text"><b>{group.text}</b>{group.rows.length > 0 && <> — {rowsText(group.rows.length)}</>}</span>
+          {action(group)}
+        </li>)}
+      </ul>
+      {withRows.length > 0 && <details className="rs-problems-rows">
+        <summary>Показать строки</summary>
+        <ul>
+          {withRows.map((group) => <li key={group.text}>
+            <span>{group.text}:</span>{' '}
+            {rowRangeParts(group.rows).map((part, index) => <span key={part.label}>{index > 0 && ', '}<button type="button" className="button-link" onClick={() => onShowRow(part.first)} title={`Показать строку ${part.first}`}>№ {part.label}</button></span>)}
+          </li>)}
+        </ul>
+      </details>}
     </section>
   )
 }

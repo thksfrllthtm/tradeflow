@@ -1,25 +1,20 @@
-/* Плашка ошибок и предупреждений расчёта: заголовок в одну строку, список — по кнопке. */
-
-.rs-issues { flex: 0 0 auto; border: 1px solid #efcaca; border-radius: 10px; background: #fff7f7; color: #6e2626; }
-.rs-issues.warn { border-color: #ecd59a; background: #fffaeb; color: #5c4105; }
-.rs-issues-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; padding: 8px 14px; }
-.rs-issues-head p { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0; }
-.rs-issues-head strong { font-size: .93rem; }
-.rs-issues.bad .rs-issues-head strong { color: #8d2929; }
-.rs-issues-count { font-size: .86rem; font-weight: 600; }
-.rs-step .rs-issues-head button.rs-issues-toggle { height: 28px; padding: 0 10px; border: 1px solid currentColor; border-radius: 7px; background: transparent; color: inherit; font-size: .82rem; font-weight: 650; }
-.rs-step .rs-issues-head button.rs-issues-toggle:hover:not(:disabled) { background: #ffffff99; }
-.rs-step .rs-issues-head .button-link.rs-issues-back { margin-left: auto; color: #8d2929; font-size: .86rem; font-weight: 650; }
-.rs-issues-list { max-height: min(220px, 26vh); margin: 0; padding: 0 14px 8px; overflow: auto; list-style: none; }
-.rs-issues-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; padding: 6px 0; border-top: 1px solid #00000014; font-size: .86rem; line-height: 1.4; }
-.rs-issues-text { font-weight: 600; }
-.rs-issues-list li.bad .rs-issues-text { color: #8d2929; }
-.rs-issues-list li.warn .rs-issues-text { color: #6b4b06; }
-.rs-issues-rows { font-variant-numeric: tabular-nums; }
-.rs-issues-rows b { margin-right: 6px; font-weight: 700; }
-.rs-step .rs-issues-rows button { display: inline; height: auto; padding: 0 2px; border: 0; border-radius: 3px; background: transparent; color: inherit; font: inherit; font-weight: 650; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; cursor: pointer; }
-.rs-step .rs-issues-rows button:hover:not(:disabled) { background: #00000010; }
-@media (max-width: 760px) {
-  .rs-issues-list li { grid-template-columns: 1fr; gap: 2px; }
-  .rs-step .rs-issues-head .button-link.rs-issues-back { margin-left: 0; }
-}
+/* Баннер проблем расчёта над итогами: одна строка на проблему, номера строк — по раскрытию. */
+.rs-problems { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.rs-problems-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.rs-problems-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; font-size: .86rem; }
+.rs-problems-list li + li { border-top: 1px solid var(--tf-border-inner); }
+.rs-problems-list li.error { background: #fef3f2; color: #b42318; }
+.rs-problems-list li.todo, .rs-problems-list li.warn { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.rs-problem-icon { display: inline-grid; flex: none; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .75rem; font-weight: 700; line-height: 1; }
+.rs-problems-list li.error .rs-problem-icon { background: #b42318; color: #fff; }
+.rs-problems-list li.todo .rs-problem-icon, .rs-problems-list li.warn .rs-problem-icon { background: var(--tf-ai); color: #fff; }
+.rs-problem-text { flex: 1 1 260px; }
+.rs-problem-text b { font-weight: 600; }
+.rs-step button.rs-problem-action { height: 32px; padding: 0 12px; border: 1px solid currentColor; border-radius: var(--tf-radius); background: #fff; color: inherit; font-size: .86rem; font-weight: 600; }
+.rs-step button.rs-problem-action:hover:not(:disabled) { background: rgba(255, 255, 255, .6); }
+.rs-problems-rows { border-top: 1px solid var(--tf-border-inner); }
+.rs-problems-rows > summary { padding: 8px 16px; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; cursor: pointer; }
+.rs-problems-rows ul { display: grid; gap: 6px; max-width: 100%; margin: 0; padding: 0 16px 12px; list-style: none; color: var(--tf-text-2); font-size: .86rem; }
+.rs-problems-rows .button-link { font-size: .86rem; }
+.rs-step button.rs-problem-action.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+.rs-step button.rs-problem-action.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }

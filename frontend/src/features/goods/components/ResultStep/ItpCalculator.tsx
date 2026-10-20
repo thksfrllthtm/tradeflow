@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NumberField } from '@/shared/components/NumberField/NumberField'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { moneyText, weightText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult, ItpSaved } from '@/shared/types/goods'
@@ -8,7 +9,7 @@ import { calculatorInputValue, parseCalculatorNumber, weightInputValue } from '.
 // «Сверка по ИТП» (свёрнута по умолчанию): ИТП × общий нетто = USD, × курс = ₸. Только для сверки,
 // на расчёт не влияет. Нетто и курс заполняются из результата, их можно поправить. Введённое
 // хранится в смете (saved / onSave), пока задан ИТП.
-export function ItpCalculator({ result, saved, onSave }: { result: GoodsCalculationResult; saved?: ItpSaved; onSave: (value: ItpSaved | undefined) => void }) {
+export function ItpCalculator({ result, saved, onSave, onClose }: { result: GoodsCalculationResult; saved?: ItpSaved; onSave: (value: ItpSaved | undefined) => void; onClose: () => void }) {
   const defaultNetKg = () => {
     const total = result.items.reduce((sum, item) => {
       if (item.excluded) return sum
@@ -35,22 +36,18 @@ export function ItpCalculator({ result, saved, onSave }: { result: GoodsCalculat
     ? itsUsd * exchangeRate
     : null
 
-  // Окошко под кнопкой в полосе итогов; Esc закрывает и возвращает фокус на кнопку.
+  // Карточка под полосой итогов, открывается из меню «⋯»; Esc и ✕ закрывают.
   return (
-    <details className="rs-itp" onKeyDown={(event) => {
-      if (event.key !== 'Escape' || !event.currentTarget.open) return
-      event.currentTarget.open = false
-      event.currentTarget.querySelector('summary')?.focus()
-    }}>
-      <summary>Сверка по ИТП</summary>
-      <div className="rs-itp-pop" role="group" aria-label="Сверка по ИТП">
+    <section className="rs-itp" aria-label="Сверка по ИТП" onKeyDown={(event) => { if (event.key === 'Escape') onClose() }}>
+      <div className="rs-itp-pop">
+      <div className="rs-itp-head"><strong>Сверка по ИТП</strong><button type="button" className="rs-icon" onClick={onClose} aria-label="Закрыть сверку по ИТП">✕</button></div>
       <p className="rs-itp-note">ИТП × нетто × курс — только для сверки, на расчёт не влияет</p>
       <div className="rs-its-grid">
-        <label>ИТП, USD за 1 кг<input inputMode="decimal" value={itsValue} onChange={(event) => setItsValue(event.target.value.replace(',', '.'))} onBlur={() => setItsValue(calculatorInputValue(itsValue))} placeholder="введите" /></label>
+        <label>ИТП, USD за 1 кг<NumberField value={itsValue} onChange={setItsValue} onBlur={() => setItsValue(calculatorInputValue(itsValue))} placeholder="введите" /></label>
         <span className="rs-op">×</span>
-        <label>Нетто всего, кг<input inputMode="decimal" value={itsNetKg} onChange={(event) => setItsNetKg(event.target.value.replace(',', '.'))} onBlur={() => setItsNetKg(weightInputValue(itsNetKg))} /></label>
+        <label>Нетто всего, кг<NumberField value={itsNetKg} onChange={setItsNetKg} onBlur={() => setItsNetKg(weightInputValue(itsNetKg))} /></label>
         <span className="rs-op">×</span>
-        <label>Курс, ₸ за 1 USD<input inputMode="decimal" value={itsRate} onChange={(event) => setItsRate(event.target.value.replace(',', '.'))} onBlur={() => setItsRate(calculatorInputValue(itsRate))} /></label>
+        <label>Курс, ₸ за 1 USD<NumberField value={itsRate} onChange={setItsRate} onBlur={() => setItsRate(calculatorInputValue(itsRate))} /></label>
         <span className="rs-op">=</span>
         <div className="rs-total rs-its-total">
           <strong>{itsKzt !== null ? `${formatRuNumber(moneyText(itsKzt))} ₸` : '—'}</strong>
@@ -58,6 +55,6 @@ export function ItpCalculator({ result, saved, onSave }: { result: GoodsCalculat
         </div>
       </div>
       </div>
-    </details>
+    </section>
   )
 }

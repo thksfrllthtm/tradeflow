@@ -4,7 +4,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
 import { Link } from '@/shared/router/Link'
 import { navigate, paths } from '@/shared/router/router'
-import { isAdmin, User } from '@/shared/types/user'
+import { canEstimate, isAdmin, User } from '@/shared/types/user'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { goodsEstimatesApi } from '@/features/goods/goodsEstimatesApi'
 import { estimateTitle } from '@/shared/lib/estimateTitle'
@@ -29,6 +29,8 @@ const ArrowIcon = () => <svg {...icon} width={16} height={16}><path d="M7 5l5 5-
 // первыми: с клавиатуры «Новая смета» — первая остановка после шапки.
 export function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const admin = isAdmin(user)
+  // Переводчику — только проверка кодов и справка: без смет и керамики.
+  const estimator = canEstimate(user)
   const [estimates, setEstimates] = useState<GoodsEstimateSummary[] | null>(null)
   const [listError, setListError] = useState('')
   const [decisionCount, setDecisionCount] = useState(0)
@@ -48,7 +50,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
     return () => { active = false }
   }, [])
 
-  useEffect(() => loadEstimates(), [loadEstimates])
+  useEffect(() => estimator ? loadEstimates() : undefined, [estimator, loadEstimates])
   useEffect(() => {
     let active = true
     // Счётчики проверок — подсказки администратору: без них главная работает.
@@ -87,15 +89,15 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
         <div className="home-grid">
           <aside className="home-side" aria-label="Действия и последние сметы">
             <div className="home-actions">
-              <button type="button" className="home-action primary" onClick={() => void create()} disabled={creating} aria-busy={creating} title="Создаст черновик сметы: загрузите инвойс Excel и получите расчёт растаможки">
+              {estimator && <button type="button" className="home-action primary" onClick={() => void create()} disabled={creating} aria-busy={creating} title="Создаст черновик сметы: загрузите инвойс Excel и получите расчёт растаможки">
                 <ActionBody icon={<PlusIcon />} title={creating ? 'Создаём черновик…' : 'Новая смета'} text="Создаст черновик сметы: загрузите инвойс Excel и получите расчёт растаможки" />
-              </button>
+              </button>}
               <Link className="home-action" href={`${paths.nomenclature}?check=1`} title="Вставьте колонку из Excel — покажем, каких кодов нет в номенклатуре ТН ВЭД ЕАЭС">
                 <ActionBody icon={<CodesIcon />} title="Проверить коды ТН ВЭД" text="Вставьте колонку из Excel — покажем, каких кодов нет в номенклатуре" />
               </Link>
-              <Link className="home-action" href={paths.ceramics} title="Наименование и цена по марке и фото">
+              {estimator && <Link className="home-action" href={paths.ceramics} title="Наименование и цена по марке и фото">
                 <ActionBody icon={<CeramicsIcon />} title="Подобрать керамику" text="Наименование и цена по марке и фото" />
-              </Link>
+              </Link>}
             </div>
             {createError && <p className="home-error" role="alert">Смета не создана: {createError}</p>}
 
@@ -105,7 +107,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
               <ArrowIcon />
             </Link>}
 
-            <section className="home-section" aria-labelledby="home-recent">
+            {estimator && <section className="home-section" aria-labelledby="home-recent">
               <div className="home-section-head">
                 <h2 id="home-recent">Последние сметы{estimates && estimates.length > 0 && <span className="home-count"> · {estimates.length}</span>}</h2>
                 <Link href={paths.goods()}>Все сметы<ArrowIcon /></Link>
@@ -127,7 +129,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
                     </Link>
                   })}
                 </div>}
-            </section>
+            </section>}
           </aside>
           <div className="home-chat"><ReferenceChat /></div>
         </div>

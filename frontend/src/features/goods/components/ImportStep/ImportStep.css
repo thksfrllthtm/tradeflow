@@ -1,61 +1,52 @@
-/* Этап 1: загрузка файла, настройки листа и назначение колонок. */
+/* Этап 1 «Файл и колонки» — в стиле этапов проверки и результата: кнопки, карточки, панель и чипы — классы
+   rv-* (ReviewStep.css), здесь — только своё: панель файла, чипы колонок, пустое состояние, раскладка. */
 
-.im-drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 220px; margin: 0; padding: 24px; border: 2px dashed #bfd2c5; border-radius: 12px; background: #fff; color: #56665c; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
-.im-drop:hover, .im-drop:focus-within { border-color: #24704a; background: #f6fbf8; }
+/* Раскладка — как у проверки: страница ровно в окно, лист — до низа окна со своей прокруткой (ExcelPreview). */
+.goods-estimates-app:has(.is-import) { height: auto; min-height: 100vh; }
+.goods-estimates-app:has(.is-import) .estimates-content { overflow: visible; }
+@media (min-width: 761px) {
+  .goods-estimates-app:has(.is-import) .estimates-workspace { background: linear-gradient(to right, var(--tf-card) 0 60px, var(--tf-border) 60px 61px, var(--tf-bg) 61px); }
+}
+.goods-calculator-embedded.is-import .goods-page { padding: 12px 20px 8px; }
+.goods-calculator-embedded.is-import .goods-disclaimer { margin-top: 8px; }
+@media (max-width: 760px) {
+  .goods-calculator-embedded.is-import .goods-page { padding: 16px; }
+}
+
+/* Пустое состояние: файла ещё нет. */
+.im-drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 260px; margin: 0; padding: 32px 24px; border: 1.5px dashed var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); color: var(--tf-muted); text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+.im-drop:hover, .im-drop:focus-within { border-color: var(--tf-green); background: var(--tf-green-soft); }
+.im-drop svg { color: var(--tf-green); }
 .im-drop.busy { cursor: progress; opacity: .7; }
-.im-drop strong { color: #1f2d24; font-size: 1rem; }
-.im-drop span { color: #7a877f; font-size: .8rem; }
+.im-drop strong { color: var(--tf-text); font-size: .95rem; font-weight: 600; }
+.im-drop span { font-size: .8rem; }
 .im-drop input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.im-alt { margin: 0; color: #7a877f; font-size: .82rem; text-align: center; }
-.im-alt .button-link { font-size: .82rem; font-weight: 600; }
+.im-alt { margin: 0; color: var(--tf-muted); font-size: .84rem; text-align: center; }
 
-.im-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 10px 14px; border-bottom: 1px solid #e6ece8; }
-.im-file-button { position: relative; display: inline-flex; align-items: center; height: 30px; margin: 0; padding: 0 12px; overflow: hidden; border: 1px solid #b8d3c1; border-radius: 6px; background: #eef7f1; color: #1c5538; font-size: .78rem; font-weight: 650; white-space: nowrap; cursor: pointer; }
-.im-file-button:hover { border-color: #24704a; }
-.im-file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.im-file-name { max-width: 260px; overflow: hidden; color: #34443a; font-size: .8rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.im-settings { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-left: auto; }
-.im-settings .im-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: #6b7a71; font-size: .76rem; font-weight: 600; white-space: nowrap; }
-.im-settings input, .im-settings select { box-sizing: border-box; height: 30px; margin: 0; padding: 4px 8px; border: 1px solid #d4dcd6; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .82rem; }
-.im-settings input { width: 56px; text-align: right; }
-.im-settings select { width: auto; max-width: 220px; }
-.im-settings input:focus, .im-settings select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.im-settings .rv-bar-button { height: 30px; padding: 0 12px; }
+/* Панель файла: сводка «откуда читаем» — как «Параметры расчёта» этапа проверки (rv-params-*), справа — счётчик и кнопки. */
+.im-toolbar .im-source { flex: 1 1 0; }
+.im-source .im-file b { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.im-count { color: var(--tf-text-2); font-size: .84rem; }
+.im-count b { color: var(--tf-text); font-weight: 600; }
+/* Список настроек: строки одного вида — подпись слева обычным шрифтом, значение справа; лист — кнопками
+   (переносятся, если листов много), номера строк — узкие поля; внизу — «Перечитать» или «Выбрать файл». */
+.im-source-form { width: 380px; padding: 6px; }
+.im-source-form .rv-param { min-height: 40px; margin: 0; }
+.im-source-form .rv-param > span { color: var(--tf-text-2); font-size: .86rem; font-weight: 400; }
+.im-source-form .im-sheets { grid-template-columns: auto minmax(0, 1fr); }
+.im-source-form .im-sheets .rv-seg { flex-wrap: wrap; justify-self: end; }
+.im-source-form .rv-param-static { justify-self: end; padding-right: 4px; font-size: .86rem; font-weight: 600; }
+.im-source-form .rv-param-static small { color: var(--tf-muted); font-weight: 400; }
+.im-source-form .rv-param input[type="number"] { width: 72px; height: 30px; }
+.im-source-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px -6px -6px; padding: 8px 10px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-muted); font-size: .78rem; }
+/* Файла во вкладке нет: жёлтая плашка с объяснением и кнопкой выбора файла. */
+.im-source-missing { display: flex; align-items: center; gap: 12px; margin-top: 4px; padding: 10px 10px 10px 12px; border-radius: 8px; background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: .8rem; line-height: 1.35; }
+.im-source-missing b { font-weight: 600; }
+.im-source-missing .rv-btn { flex: none; }
+/* «Заменить файл» — кнопка-подпись со скрытым полем выбора файла. */
+.rv-step label.im-replace { position: relative; overflow: hidden; margin: 0; cursor: pointer; }
+.im-replace input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
-.im-mapping { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 14px; border-bottom: 1px solid #e6ece8; background: #fbfcfb; }
-.im-mapping-title { margin-right: 2px; color: #7a877f; font-size: .76rem; font-weight: 600; }
-.im-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 280px; padding: 3px 9px; border: 1px dashed #cfd8d2; border-radius: 999px; background: #fff; color: #7a877f; font-size: .74rem; font-weight: 600; white-space: nowrap; }
-.im-chip i { color: #a3aea7; font-style: normal; font-weight: 500; }
-.im-chip b { overflow: hidden; color: #1d6a3f; font-weight: 600; text-overflow: ellipsis; }
-.im-chip.set { border: 1px solid #b8d3c1; background: #eef7f1; color: #34443a; }
-.im-chip.set::before { content: "✓"; color: #24704a; }
-
-.im-table-wrap { overflow: auto; max-height: max(320px, calc(100vh - 330px)); }
-.goods-page .im-table { width: max-content; min-width: 100% !important; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .8rem; }
-.goods-page .im-table th, .goods-page .im-table td { max-width: 240px; padding: 5px 10px !important; overflow: hidden; border-bottom: 1px solid var(--xl-grid); background: #fff; color: #9aa59e; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
-.goods-page .im-table th { position: sticky; top: 0; z-index: 3; min-width: 120px; padding: 7px 8px !important; border-bottom: 1px solid var(--xl-head-line); background: var(--xl-head); font-size: .74rem !important; text-align: left; vertical-align: top; }
-.goods-page .im-table td.im-mapped { color: #1f2d24; background: #fbfdfb; }
-.goods-page .im-table th.im-mapped { min-width: 170px; background: #e6f3eb; box-shadow: inset 0 -2px 0 #24704a; }
-.im-col-name { display: block; max-width: 220px; margin-bottom: 4px; overflow: hidden; color: #5d6d63; font-weight: 600; text-overflow: ellipsis; }
-/* Выбор «что в колонке» — как в «Как в Excel»: кнопка в заголовке и список под ней. */
-.goods-page .im-table th button.im-pick { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; height: 28px; margin: 0; padding: 0 8px; border: 1px dashed #cfd8d2; border-radius: 6px; background: #fff; color: #9aa59e; font-size: .78rem; font-weight: 500; cursor: pointer; }
-.goods-page .im-table th button.im-pick:hover { border-color: #9cbfa9; background: #fff; }
-.goods-page .im-table th button.im-pick span { overflow: hidden; text-overflow: ellipsis; }
-.goods-page .im-table th button.im-pick i { color: #9aa59e; font-size: .7rem; font-style: normal; }
-.goods-page .im-table th.im-mapped button.im-pick { border: 1px solid #24704a; color: #1c5538; font-weight: 650; }
-.goods-page .im-table th button.im-pick:focus-visible, .goods-page .im-table th button.im-pick[aria-expanded="true"] { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
-.goods-page .im-table .im-check { position: sticky; left: 0; z-index: 2; width: 36px; min-width: 36px; text-align: center; }
-.goods-page .im-table .im-row { position: sticky; left: 36px; z-index: 2; width: 44px; min-width: 44px; color: #8a968f; font-variant-numeric: tabular-nums; text-align: right; box-shadow: inset -1px 0 0 var(--xl-grid); }
-.goods-page .im-table th.im-check, .goods-page .im-table th.im-row { z-index: 4; vertical-align: bottom; }
-.goods-page .im-table td.im-warn { color: #956b16; font-weight: 700; }
-.goods-page .im-table input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #24704a; cursor: pointer; }
-.goods-page .im-table tbody tr:hover td { background: #f3f8f4; }
-.goods-page .im-table tbody tr.im-excluded td:not(.im-check) { color: #c3cbc5; text-decoration: line-through; text-decoration-color: #d8dfda; }
-.goods-page .im-table tbody tr:last-child td { border-bottom: 0; }
-.im-need { color: #956b16; font-style: normal; font-weight: 600; }
-.rv-actions .im-manual { color: #24704a; }
-.rv-actions .im-manual:hover:not(:disabled) { background: #eef7f1; }
-
-@media (max-width: 900px) {
-  .im-settings { margin-left: 0; }
+@media (max-width: 1100px) {
+  .im-toolbar { flex-wrap: wrap; }
 }

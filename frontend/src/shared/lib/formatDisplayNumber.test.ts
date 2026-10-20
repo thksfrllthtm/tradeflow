@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDisplayNumber, formatRuNumber } from './formatDisplayNumber'
+import { formatDisplayNumber, formatMoney, formatRuNumber } from './formatDisplayNumber'
 
 describe('formatRuNumber', () => {
   it('groups thousands and shows the fraction after a comma', () => {
@@ -8,6 +8,11 @@ describe('formatRuNumber', () => {
     expect(formatRuNumber('12')).toBe('12')
     expect(formatRuNumber('—')).toBe('—')
     expect(formatRuNumber('')).toBe('')
+  })
+
+  it('formats money with a non-breaking space before the currency', () => {
+    expect(formatMoney('128432.04', '₸')).toBe('128 432,04 ₸')
+    expect(formatMoney('', 'USD')).toBe('—')
   })
 
   it('leaves the dot formatter unchanged', () => {

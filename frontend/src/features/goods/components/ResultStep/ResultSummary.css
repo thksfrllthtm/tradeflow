@@ -1,69 +1,75 @@
-/* Полоса итогов: растаможка, слагаемые, справочные суммы, сохранение и кнопки — в одну строку
-   на широком экране, в две — на узком. Пока идёт пересчёт, итог приглушён. */
+/* Полоса итогов: «К оплате» крупно, слагаемые, бюджет и инструменты — одна карточка, одна строка. */
+.rs-summary { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 0; padding: 14px 20px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+/* Итоги — как сводка параметров на этапе проверки: подпись мелко сверху, значение под ней, между — линия. */
+.rs-sum-total { position: relative; display: grid; gap: 2px; padding-right: 24px; }
+.rs-sum-label { color: var(--tf-muted); font-size: .76rem; }
+.rs-sum-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.rs-sum-value strong { color: var(--tf-text); font-size: 1.6rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; white-space: nowrap; font-variant-numeric: tabular-nums; transition: opacity .15s; }
+.rs-sum-value strong button.copy-code { padding: 0; }
+/* Значок копирования не отодвигает знак ₸: сумма копируется по нажатию, подсказка — в title. */
+.rs-sum-value strong button.copy-code i { display: none; }
+.rs-summary.calculating .rs-sum-value strong { opacity: .45; }
+.rs-sum-sub { color: var(--tf-muted); font-size: .86rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rs-sum-sub em { font-style: normal; }
+/* Подсказка при наведении на «К оплате»: таможенная стоимость, доставка, курс. */
+.rs-sum-tip { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; display: none; gap: 6px; min-width: 320px; margin: 0; padding: 12px 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
+.rs-sum-value:hover ~ .rs-sum-tip, .rs-sum-value:focus-within ~ .rs-sum-tip { display: grid; }
+.rs-step .rs-sum-diff { padding: 0; font-size: inherit; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rs-sum-tip div { display: flex; justify-content: space-between; gap: 16px; font-size: .86rem; }
+.rs-sum-tip dt { color: var(--tf-muted); }
+.rs-sum-tip dd { margin: 0; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rs-sum-tip dd small { color: var(--tf-muted); font-weight: 400; }
 
-.rs-summary { position: relative; display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: 10px 16px; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
-.rs-summary dl { margin: 0; }
-.rs-summary dd { margin: 0; }
+.rs-sum-parts { display: flex; flex-wrap: wrap; gap: 12px 0; margin: 0; }
+.rs-part { display: grid; align-content: start; gap: 2px; min-width: 110px; padding: 0 24px; border-left: 1px solid var(--tf-border-inner); }
+.rs-part dt { color: var(--tf-muted); font-size: .76rem; }
+.rs-part dd { margin: 0; color: var(--tf-text); font-size: 1rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Справа — сохранение, экспорт и «⋯»; бюджет и подбор цен — в нижней строке карточки (SirControls). */
+.rs-sum-tools { display: flex; flex-direction: column; align-self: center; align-items: flex-end; gap: 8px; margin-left: auto; padding-left: 24px; }
+.rs-sum-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
 
-.rs-sum-total { display: grid; gap: 1px; min-width: 0; }
-.rs-sum-label { color: #46564c; font-size: .86rem; font-weight: 650; }
-.rs-sum-total strong { color: #154f32; font-size: 1.55rem; font-weight: 750; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; transition: opacity .2s ease-out; }
-.rs-sum-sub { color: #5a6960; font-size: .86rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rs-sum-sub em { color: #75520a; font-style: normal; font-weight: 650; }
-.rs-summary.calculating .rs-sum-total strong, .rs-summary.calculating .rs-sum-parts dd { opacity: .45; }
-.rs-partial { justify-self: start; margin-top: 3px; padding: 1px 8px; border-radius: 5px; background: #fdf3d6; color: #6b4b06; font-size: .82rem; font-weight: 650; white-space: nowrap; }
-
-/* Формула и справочная строка под ней; на узком окне слагаемые переносятся, кнопки остаются в ряду. */
-.rs-sum-body { display: grid; flex: 1 1 340px; gap: 6px; min-width: 0; }
-.rs-sum-parts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
-.rs-part { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; }
-.rs-part .rs-op { grid-row: 1 / span 2; color: #5a6960; font-size: 1.05rem; font-weight: 500; }
-.rs-part dt { color: #5a6960; font-size: .82rem; font-weight: 600; }
-.rs-part dd { color: #1f2d24; font-size: .98rem; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; transition: opacity .2s ease-out; }
-.rs-summary dd small { color: #5a6960; font-size: .82rem; font-weight: 500; }
-.rs-sum-ref { display: flex; flex-wrap: wrap; gap: 2px 18px; padding-top: 6px; border-top: 1px solid #e9eeeb; }
-.rs-sum-ref > div { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
-.rs-sum-ref dt { color: #5a6960; font-size: .82rem; font-weight: 600; }
-.rs-sum-ref dd { color: #1f2d24; font-size: .86rem; font-weight: 650; font-variant-numeric: tabular-nums; }
-
-.rs-sum-actions { display: grid; justify-items: end; gap: 6px; margin-left: auto; }
-.rs-sum-meta { display: flex; align-items: center; gap: 4px 12px; min-width: 0; }
-.rs-save-state { max-width: 300px; margin: 0; overflow: hidden; color: #5a6960; font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
-.rs-save-state.failed { padding: 2px 8px; border: 1px solid #efcaca; border-radius: 6px; background: #fff7f7; color: #8d2929; font-weight: 600; white-space: normal; }
-.rs-sum-buttons { display: flex; align-items: center; gap: 8px; }
-.rs-summary .rs-sum-buttons > button { height: 36px; padding: 0 16px; border-radius: 8px; font-size: .9rem; font-weight: 650; white-space: nowrap; }
-.rs-summary button.rs-save { border: 1px solid #b8cfc0; background: #fff; color: #154f32; }
-.rs-summary button.rs-save:hover:not(:disabled) { border-color: #1c6b43; background: #f0f7f2; }
-.rs-summary button.rs-export { min-width: 150px; }
-
-/* «Сверка по ИТП» — окошко под кнопкой. */
-.rs-itp { position: relative; }
-.rs-itp > summary { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 6px; color: #154f32; font-size: .82rem; font-weight: 650; cursor: pointer; list-style: none; white-space: nowrap; }
-.rs-itp > summary::-webkit-details-marker { display: none; }
-.rs-itp > summary:hover, .rs-itp[open] > summary { background: #edf4ef; }
-.rs-itp > summary::after { content: ''; width: 6px; height: 6px; margin: -3px 0 0 8px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
-.rs-itp[open] > summary::after { margin-top: 3px; transform: rotate(225deg); }
-.rs-itp-pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; display: grid; gap: 10px; width: max-content; max-width: min(640px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(20, 45, 30, .16); }
-.rs-itp-note { margin: 0; color: #5a6960; font-size: .82rem; }
+/* «Сверка по ИТП» — карточка под полосой итогов, открывается из меню «⋯». */
+.rs-itp-pop { display: grid; gap: 10px; padding: 14px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.rs-itp-head { display: flex; align-items: center; justify-content: space-between; }
+.rs-step .rs-itp-head .rs-icon { width: 30px; height: 30px; border-color: transparent; }
+.rs-itp-note { margin: 0; color: var(--tf-muted); font-size: .82rem; }
 .rs-its-grid { display: grid; grid-template-columns: 112px auto 112px auto 104px auto auto; justify-content: start; align-items: end; gap: 8px 10px; }
-.rs-its-grid > label { display: flex; flex-direction: column; gap: 3px; margin: 0; color: #46564c; font-size: .8rem; font-weight: 600; white-space: nowrap; }
-.rs-its-grid > .rs-op { align-self: end; height: 32px; color: #5a6960; font-size: 1.1rem; line-height: 32px; text-align: center; }
-.rs-itp input { box-sizing: border-box; width: 100%; height: 32px; margin: 0; padding: 4px 8px; border: 1px solid #8a968f; border-radius: 6px; background: #fff; color: #1f2d24; font-size: .93rem; text-align: right; font-variant-numeric: tabular-nums; }
-.rs-itp input:focus { outline: 2px solid #1c6b43; outline-offset: 0; border-color: #1c6b43; }
-.rs-itp input::placeholder { color: #68766e; }
+.rs-its-grid > label { display: flex; flex-direction: column; gap: 3px; margin: 0; color: var(--tf-text-2); font-size: .8rem; font-weight: 500; white-space: nowrap; }
+.rs-its-grid > .rs-op { align-self: end; height: 32px; color: var(--tf-muted); font-size: 1.1rem; line-height: 32px; text-align: center; }
+.rs-itp input { box-sizing: border-box; width: 100%; height: 32px; margin: 0; padding: 4px 8px; border: 1px solid var(--tf-border); border-radius: 6px; background: #fff; color: var(--tf-text); font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; }
+.rs-itp input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
 .rs-its-total { display: grid; margin-left: 4px; }
-.rs-its-total strong { color: #154f32; font-size: 1.15rem; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rs-its-total small { color: #5a6960; font-size: .82rem; }
+.rs-its-total strong { color: var(--tf-text); font-size: 1.15rem; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rs-its-total small { color: var(--tf-muted); font-size: .82rem; }
 
-@media (max-width: 700px) {
-  .rs-sum-actions { justify-items: start; margin-left: 0; }
+@media (max-width: 760px) {
+  .rs-sum-tools { align-items: flex-start; margin-left: 0; padding-left: 0; }
+  .rs-part { padding-inline: 16px; }
+  .rs-sum-row { justify-content: flex-start; }
   .rs-its-grid { grid-template-columns: 1fr; }
   .rs-its-grid > .rs-op { display: none; }
-  .rs-itp-pop { right: auto; left: 0; }
 }
-/* Окно уже 1500px: пояснение к доставке — только в подсказке, справочная строка короче. */
-@media (max-width: 1500px) {
-  .rs-summary .rs-wide { display: none; }
-  .rs-summary { gap: 10px 20px; }
-  .rs-sum-ref { gap: 2px 14px; }
+
+/* От 1280px — одна строка: итоги слева, бюджет и кнопки справа; «≈ USD» — под суммой, отступы плотнее.
+   Перенос не запрещён: если не поместится (длинная строка разницы СУР) — кнопки уйдут вниз, а не наедут. */
+@media (min-width: 1280px) {
+  .rs-sum-value { flex-direction: column; align-items: flex-start; gap: 0; }
+  .rs-sum-row { gap: 8px; }
+  .rs-summary .budget-meter { min-width: 0; }
+  .rs-summary .budget-meter-top { gap: 8px; }
+  .rs-summary .budget-input input { width: 96px; }
 }
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .rs-sum-value strong { font-size: 1.45rem; }
+  .rs-part dd { font-size: .95rem; }
+}
+
+/* Итог не посчитан: «—» размером с остальные суммы (подписи выровнены по верху — значения на одной линии),
+   «расчёт не завершён» — мелко под ним. */
+.rs-sum-value:has(strong.empty) { flex-direction: column; align-items: flex-start; gap: 0; }
+.rs-sum-value strong.empty { font-size: 1rem; line-height: 1.5; }
+.rs-sum-value:has(strong.empty) .rs-sum-sub { font-size: .79rem; }
+
+/* Нижняя строка карточки: «Таможенная стоимость [По инвойсу | По СУР]», по СУР — условия; бежевая — признак режима. */
+.rs-summary > .sir-bar { flex: 1 0 100%; margin: 0 -20px -14px; padding: 8px 20px; border: 0; border-top: 1px solid var(--tf-border-inner); border-radius: 0 0 var(--tf-radius-card) var(--tf-radius-card); background: transparent; }
+.rs-summary > .sir-bar.on { border-top-color: #ecd59a; background: #fffbef; }

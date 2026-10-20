@@ -54,20 +54,19 @@ type Props = {
   totalRows: number
   disabled: boolean
   onChange: (patch: SirParams) => void
-  onCompare: () => void
-  // По инвойсу: подбор под бюджет — после переключателя, откат цен — справа. По СУР они не нужны.
-  invoiceTools: ReactNode
-  priceTools: ReactNode
+  // Справа в той же строке (по инвойсу — бюджет и «Подобрать цены»).
+  children?: ReactNode
 }
 
-// Полоса инструментов результата. Таможенная стоимость сметы: по инвойсу (обычно) или по стоимостному индикатору риска КГД —
-// вес нетто или брутто × СУР × (1 − снижение %). Строки без индикатора считаются по инвойсу.
-export function SirControls({ sir, sirRows, totalRows, disabled, onChange, onCompare, invoiceTools, priceTools }: Props) {
+// Полоса под итогом: «Таможенная стоимость [По инвойсу | По СУР]». По СУР — справа вес, снижение, страна
+// и сколько строк по СУР: ТС = вес нетто или брутто × индикатор КГД × (1 − снижение %); строки без индикатора — по инвойсу.
+export function SirControls({ sir, sirRows, totalRows, disabled, onChange, children }: Props) {
   const mode = sir.customsValueMode === 'sir' ? 'sir' : 'invoice'
   const country = sir.sirCountry || 'CN'
   const [countryText, setCountryText] = useState(country)
   useEffect(() => setCountryText(country), [country])
   const countryOk = /^([A-Za-z]{2}|00)$/.test(countryText.trim())
+  const invoiceRows = totalRows - sirRows
 
   function applyCountry() {
     const value = countryText.trim().toUpperCase()
@@ -78,28 +77,22 @@ export function SirControls({ sir, sirRows, totalRows, disabled, onChange, onCom
   return <div className={mode === 'sir' ? 'sir-bar on' : 'sir-bar'} role="group" aria-label="Таможенная стоимость">
     <span className="sir-label">Таможенная стоимость</span>
     <div className="rs-seg" role="radiogroup" aria-label="Как считать таможенную стоимость">
-      <button type="button" role="radio" aria-checked={mode === 'invoice'} className={mode === 'invoice' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'invoice' })} disabled={disabled} title="ТС = стоимость по инвойсу + доставка">По инвойсу</button>
-      <button type="button" role="radio" aria-checked={mode === 'sir'} className={mode === 'sir' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'sir' })} disabled={disabled} title="ТС = вес × стоимостной индикатор риска КГД (USD за 1 кг) × (1 − снижение) + доставка">По СУР</button>
+      <button type="button" role="radio" aria-checked={mode === 'invoice'} className={mode === 'invoice' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'invoice' })} disabled={disabled} title="Таможенная стоимость = стоимость по инвойсу + доставка">По инвойсу</button>
+      <button type="button" role="radio" aria-checked={mode === 'sir'} className={mode === 'sir' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'sir' })} disabled={disabled} title="Таможенная стоимость = вес × стоимостной индикатор риска КГД (USD за 1 кг) × (1 − снижение) + доставка">По СУР</button>
     </div>
-    {mode === 'invoice' && <>
-      <span className="sir-sep" aria-hidden="true" />
-      {invoiceTools}
-    </>}
     {mode === 'sir' && <>
       <span className="sir-sep" aria-hidden="true" />
       <SirOptions weight={sir.sirWeight === 'gross' ? 'gross' : 'net'} discount={sir.sirDiscountPercent ?? ''} disabled={disabled} onChange={onChange} />
       <span className="sir-sep" aria-hidden="true" />
-      <label className="sir-field" title="Колонка страны в файлах профилей риска; файлы «…_прил CN» — для Китая">
+      {/* Страна выглядит текстом, поле — при наведении и вводе. */}
+      <label className="sir-field" title="Колонка страны в файлах профилей риска; файлы «…_прил CN» — для Китая. Нажмите, чтобы изменить">
         Страна
         <input className={countryOk ? 'sir-country' : 'sir-country invalid'} value={countryText} maxLength={2} onChange={(event) => setCountryText(event.target.value.toUpperCase())} onBlur={applyCountry}
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); applyCountry() } else if (event.key === 'Escape') setCountryText(country) }}
           disabled={disabled} aria-label="Страна для СУР, двухбуквенный код" aria-invalid={!countryOk} />
       </label>
+      <span className="sir-count" role="status" title="Цены инвойса на таможенную стоимость не влияют; строки без индикатора — по инвойсу">по СУР <b>{sirRows}</b> из {totalRows}{invoiceRows > 0 && ` · ${invoiceRows} по инвойсу`}</span>
     </>}
-    <span className="sir-end">
-      {mode === 'sir' && <span className="sir-count" role="status" title="Цены инвойса на таможенную стоимость не влияют; строки без индикатора — по инвойсу">по СУР <b>{sirRows}</b> из {totalRows}{sirRows < totalRows && <span> · остальные по инвойсу</span>}</span>}
-      {mode === 'invoice' && priceTools}
-      <button type="button" className="sir-compare" onClick={onCompare} disabled={disabled} title="Сравнить инвойс и СУР: итоги и каждая строка рядом">Сравнить с СУР</button>
-    </span>
+    {children && <div className="sir-extra">{children}</div>}
   </div>
 }

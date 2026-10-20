@@ -1,118 +1,146 @@
-/* Лист этапа 2 «как в Excel» (Jspreadsheet CE): сетка Excel (токены --xl-* из base.css), серая
-   шапка и номера строк, зелёная рамка выделения. Селекторы через .xs-host — чтобы перебить стили
-   библиотеки и общие стили таблиц, кнопок и полей страницы сметы. */
+/* Лист этапа 2 «как в Excel» (Jspreadsheet CE): ячейки с границами, двухуровневая шапка (группы колонок),
+   номер строки с точкой состояния и флажком выбора, строка «Итого в расчёте». Лист без своей прокрутки:
+   шапка прилипает к верху окна, «Итого» — к низу. Селекторы через .xs-host — чтобы перебить стили
+   библиотеки и общие стили таблиц, кнопок и полей страницы сметы. Колонки (data-x): 0 фото, 1 товар,
+   2 код, 3 пошлина, 4 места, 5 шт. в месте, 6 кол-во, 7 брутто, 8 упаковка, 9 нетто, 10 в расчёте. */
 
 .xs-wrap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
-/* Ширина листа берётся только от родителя: широкий лист прокручивается внутри, а не раздвигает страницу. */
-.xs-host { min-width: 0; min-height: 300px; contain: inline-size; font-size: .84rem; }
-.xs-host .jss_container { width: 100%; }
-.xs-host .jss_content { border: 0; border-top: 1px solid var(--xl-head-line); box-shadow: none; }
-.xs-host table.jss_worksheet { width: 100%; table-layout: fixed; border-collapse: separate; font-family: inherit; font-size: .84rem; line-height: 1.25; color: #1f2d24; }
-.xs-host table.jss_worksheet td { padding: 0 6px !important; height: 30px; border-color: var(--xl-grid); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-/* Закреплённая шапка — выше значков и фото в строках, которые прокручиваются под ней. */
-.xs-host table.jss_worksheet > thead > tr > td { z-index: 5; height: 30px; background: var(--xl-head); border-bottom-color: var(--xl-head-line); color: var(--xl-head-ink); font-size: .82rem; font-weight: 600; white-space: nowrap; }
-/* Значок состояния и фото — без отступов и многоточия. */
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="1"],
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="2"] { padding: 0 2px !important; text-overflow: clip; }
-.xs-host table.jss_worksheet > tbody > tr > td:first-child { background: var(--xl-head); color: #767676; font-size: .74rem; font-variant-numeric: tabular-nums; }
+/* Ширина листа берётся только от родителя: широкий лист не раздвигает страницу. */
+.xs-host { min-width: 0; contain: inline-size; font-size: .86rem; }
+/* Блоками, а не inline-block (как в библиотеке): у строчного блока под таблицей зазор под хвосты букв (~4px) —
+   «Итого» прилипало к низу таблицы на 4px выше низа прокрутки, под ним была полоса и в конце прокрутки оно прыгало. */
+.xs-host .jss_container, .xs-host .jss_content { display: block; width: 100%; }
+.xs-host .jss_content { padding: 0; border: 0; box-shadow: none; overflow: visible; }
+/* Без рамки библиотеки (снизу и справа 1px): рамку даёт карточка, а «Итого» прилипало бы выше нижней рамки. */
+.xs-host table.jss_worksheet { width: 100%; table-layout: fixed; border: 0; border-collapse: separate; border-spacing: 0; font-family: inherit; font-size: .86rem; line-height: 1.3; color: var(--tf-text); }
+.xs-host table.jss_worksheet td { padding: 0 10px !important; height: 36px; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.xs-wrap.compact .xs-host table.jss_worksheet > tbody > tr > td { height: 32px; }
 .xs-host table.jss_worksheet td.readonly { color: inherit; }
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="5"],
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="6"],
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="7"],
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="8"],
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="9"],
-.xs-host table.jss_worksheet > tbody > tr > td[data-x="10"] { font-variant-numeric: tabular-nums; }
-.xs-host input[type="checkbox"] { display: inline-block; width: 15px; height: 15px; margin: 0; accent-color: var(--xl-active); vertical-align: middle; }
-.xs-host table.jss_worksheet td[data-x="0"], .xs-host table.jss_worksheet td[data-x="11"] { text-align: center !important; }
-/* «В расчёте» — переключатель: зелёный — строка считается, серый — исключена. */
-.xs-host table.jss_worksheet > tbody td[data-x="11"] input[type="checkbox"] {
-  width: 28px;
-  height: 16px;
-  border-radius: 8px;
-  background: radial-gradient(circle at 8px 50%, #fff 5px, transparent 5.5px) #c3ccc6;
-  cursor: pointer;
-  appearance: none;
-  transition: background-color .15s;
-}
-.xs-host table.jss_worksheet > tbody td[data-x="11"] input[type="checkbox"]:checked { background: radial-gradient(circle at 20px 50%, #fff 5px, transparent 5.5px) var(--xl-active); }
-.xs-host table.jss_worksheet > tbody td[data-x="11"] input[type="checkbox"]:hover { filter: brightness(.95); }
-.xs-host .jss_contextmenu { font-size: .82rem; }
+.xs-host table.jss_worksheet > tbody > tr > td:is([data-x="3"], [data-x="4"], [data-x="5"], [data-x="6"], [data-x="7"], [data-x="8"], [data-x="9"]) { font-variant-numeric: tabular-nums; text-align: right !important; }
+.xs-host table.jss_worksheet td[data-x="10"] { text-align: center !important; }
 
-/* Подробный вид: выше строки и крупнее фото. Компактный — одна строка Excel. */
-.xs-wrap:not(.compact) .xs-host table.jss_worksheet > tbody > tr > td { height: 44px; }
-.xs-wrap:not(.compact) .xs-thumb { width: 36px; height: 36px; }
+/* ── Шапка: названия колонок; прилипает к верху окна ── */
+.xs-host table.jss_worksheet > thead { position: sticky; top: 0; z-index: 6; }
+.xs-host table.jss_worksheet > thead > tr > td { position: static; height: 34px; padding: 0 10px !important; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); background: var(--xl-head); color: var(--tf-text); font-size: .8rem; font-weight: 600; text-align: left; white-space: nowrap; }
+.xs-host table.jss_worksheet > thead > tr:last-child > td { border-bottom-color: var(--tf-border); }
+.xs-host table.jss_worksheet > thead > tr:last-child > td:is([data-x="3"], [data-x="4"], [data-x="5"], [data-x="6"], [data-x="7"], [data-x="8"], [data-x="9"]) { text-align: right; }
+.xs-host table.jss_worksheet > thead > tr:last-child > td[data-x="10"] { text-align: center; }
+/* Между группами колонок (код, количество, вес, «В расчёте») — линия темнее. */
+.xs-host table.jss_worksheet tr > td:is([data-x="2"], [data-x="4"], [data-x="7"], [data-x="10"]),
+.xs-host tfoot.xs-foot td:is(.xs-foot-code, .xs-foot-places, .xs-foot-grossKg, .xs-foot-included) { box-shadow: inset 1px 0 0 var(--tf-border); }
+/* Активная колонка и строка подсвечены в шапке и в номере. */
+.xs-host table.jss_worksheet > thead > tr > td.selected { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
 
-/* Выделение — как в Excel: заливка диапазона, рамка, активная ячейка белая. */
-.xs-host table.jss_worksheet > tbody > tr > td.highlight { background-color: #e3f1e8; }
+/* ── Номер строки: точка состояния, номер; флажок выбора — при наведении и у выбранных ── */
+.xs-host table.jss_worksheet > tbody > tr > td:first-child { position: relative; padding: 0 12px 0 30px !important; background: var(--xl-head); color: var(--tf-muted); font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; }
+/* Флажок «выбрать все» в углу шапки — над флажками строк. */
+.xs-host table.jss_worksheet > thead > tr > td:first-child { position: relative; padding: 0 0 0 10px !important; }
+/* Линия между флажками и номерами — в шапке и в строках. */
+.xs-host table.jss_worksheet > :is(thead, tbody) > tr > td:first-child::after { content: ""; position: absolute; top: 0; bottom: 0; left: 33px; border-left: 1px solid var(--xl-grid); pointer-events: none; }
+.xs-host table.jss_worksheet > tbody > tr.selected > td:first-child { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
+.xs-host td.xs-index { display: table-cell; }
+.xs-num { display: inline-block; min-width: 18px; text-align: right; }
+.xs-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; vertical-align: middle; }
+.xs-dot.error { background: #b42318; }
+.xs-dot.warn { background: var(--tf-ai); }
+.xs-dot.changed { background: #2c4f86; }
+.xs-host td.xs-row-error { color: #b42318 !important; font-weight: 600; }
+.xs-host td.xs-row-warn { color: var(--tf-warn-text) !important; font-weight: 600; }
+/* Флажок выбора — поверх левого края ячейки номера (номер и точка не сдвигаются). */
+.xs-host td input.xs-pick { position: absolute; top: 50%; left: 10px; width: 14px; height: 14px; margin: 0; transform: translateY(-50%); accent-color: var(--tf-green); cursor: pointer; opacity: 0; }
+.xs-host input.xs-pick-all { display: block; width: 14px; height: 14px; margin: 0; accent-color: var(--tf-green); cursor: pointer; }
+.xs-host tr:hover input.xs-pick, .xs-host td.xs-picked input.xs-pick, .xs-host input.xs-pick:focus-visible { opacity: 1; }
+/* Флажок занимает место номера только у выбранных и под мышью. */
+.xs-host tr:hover td.xs-index .xs-dot, .xs-host td.xs-picked .xs-dot { visibility: hidden; }
+
+/* ── Ячейки ── */
+.xs-host table.jss_worksheet > tbody > tr:hover > td:not(:first-child) { background-color: var(--xl-hover); }
+.xs-zh { color: var(--tf-muted); }
+.xs-auto { color: var(--tf-muted); }
+.xs-host td.xs-repeat, .xs-host td.xs-repeat .xs-code-text, .xs-host td.xs-repeat .xs-zh { color: #9aa29d; }
+.xs-host tr.xs-group-start > td { box-shadow: inset 0 1px 0 var(--tf-border); }
+.xs-host tr.xs-group-start > td:is([data-x="2"], [data-x="4"], [data-x="7"], [data-x="10"]) { box-shadow: inset 0 1px 0 var(--tf-border), inset 1px 0 0 var(--tf-border); }
+.xs-host td.xs-code { color: var(--tf-text); font-family: var(--tf-mono); font-size: .82rem; }
+.xs-host td.xs-duty { color: var(--tf-text-2); }
+/* Проблема в ячейке: ошибка — красным, предупреждение — жёлтым. */
+.xs-host table.jss_worksheet > tbody > tr > td.xs-err { background-color: #fef3f2; color: #b42318; }
+.xs-host table.jss_worksheet > tbody > tr > td.xs-warn { background-color: #fff7e6; color: #7a4e00; }
+.xs-host td.xs-need { background-color: #fff7e6; }
+.xs-host td.xs-own { color: var(--tf-text); font-weight: 600; }
+.xs-host td.xs-muted { color: var(--tf-muted); }
+.xs-host input[type="checkbox"] { display: inline-block; width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); vertical-align: middle; cursor: pointer; }
+/* Исключённая строка — бледная, в итоги не входит. */
+.xs-host tr.xs-excluded > td:not(:first-child) { opacity: .45; }
+.xs-host tr.xs-excluded > td[data-x="10"] { opacity: 1; }
+.xs-host tr.xs-selected > td:not(:first-child) { background-color: #f3f8f4; }
+.xs-host .jss_contextmenu { font-size: .86rem; }
+
+/* Выделение — как в Excel: заливка диапазона, рамка 2px, активная ячейка белая. */
+.xs-host table.jss_worksheet > tbody > tr > td.highlight { background-color: #eaf2ec; }
 .xs-host table.jss_worksheet > tbody > tr > td.highlight-selected { background-color: #fff; }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-top { border-top: 2px solid var(--xl-active); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-bottom { border-bottom: 2px solid var(--xl-active); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-left { border-left: 2px solid var(--xl-active); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-right { border-right: 2px solid var(--xl-active); }
-.xs-host table.jss_worksheet > thead > tr > td.selected,
-.xs-host table.jss_worksheet > tbody > tr.selected > td:first-child { background: #d2e7da; color: #1a4d33; }
-.xs-host .jss_corner { background: var(--xl-active); border-color: #fff; }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-top { border-top: 2px solid var(--tf-green); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-bottom { border-bottom: 2px solid var(--tf-green); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-left { border-left: 2px solid var(--tf-green); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-right { border-right: 2px solid var(--tf-green); }
+.xs-host .jss_corner { background: var(--tf-green); border-color: #fff; }
 .xs-host table.jss_worksheet > tbody > tr > td.editor { padding: 0 !important; }
 .xs-host table.jss_worksheet > tbody > tr > td.editor input { font: inherit; }
 
-/* Строки: отмеченные, исключённые из расчёта, требующие внимания. */
-.xs-host tr.xs-selected > td:not(:first-child) { background-color: #f1f8f3; }
-.xs-host tr.xs-excluded > td:not(:first-child):not([data-x="0"]):not([data-x="11"]) { color: #a3aea7 !important; text-decoration: line-through; text-decoration-color: #c5cdc8; }
-.xs-host tr.xs-excluded img { opacity: .5; }
-
-/* Ячейки: авто-значения бледным курсивом, подсветка того, что нужно исправить. */
-.xs-auto { color: #8a968f; font-style: italic; }
-.xs-host td.xs-missing { background-color: #fffaf0; }
-.xs-host td.xs-missing .xs-auto { color: #75520a; font-style: normal; }
-.xs-host td.xs-code { color: #1c6b43; font-weight: 700; letter-spacing: .01em; }
-.xs-host td.xs-code.xs-warn { background-color: #fdf6e3; color: #6b4d0c; }
-.xs-host td.xs-need { box-shadow: inset 0 0 0 1px #d9a441; background-color: #fffaf0; }
-.xs-host td.xs-bad { background-color: #fff1ee; color: #8f2a1f; }
-.xs-host td.xs-own { color: #1a4d33; font-weight: 650; }
-.xs-host td.xs-muted { color: #a3aea7; }
-
-/* Состояние строки: значок, форма отличается, а не только цвет. */
-.xs-state { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; }
-/* Всё в порядке — просто зелёная галочка; заметны только строки, где что-то не так. */
-.xs-state.ok { background: transparent; color: #1c6b43; }
-.xs-state.bad { background: #fde8e6; color: #a12a2a; }
-.xs-state.warn, .xs-state.todo { background: #fdf2d6; color: #75520a; }
-.xs-state.changed { background: #e7eefa; color: #2c4f86; }
-.xs-state.off { background: #eef1ef; color: #7a877f; }
-/* По прошлому расчёту — тот же значок, бледнее (пояснение — в подсказке и над таблицей). */
-.xs-state.past { opacity: .6; }
-
-/* Фото: миниатюра и «+» для добавления. */
-.xs-thumb { position: relative; display: inline-block; width: 24px; height: 24px; padding: 0; overflow: hidden; border: 1px solid #ccd7cf; border-radius: 4px; background: #fff; cursor: zoom-in; vertical-align: middle; }
-.xs-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.xs-thumb b { position: absolute; bottom: 0; left: 0; padding: 0 3px; border-radius: 0 3px 0 0; background: #24382c; color: #fff; font-size: .66rem; line-height: 12px; }
-.xs-photo-add { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: 1px solid #8fb39c; border-radius: 50%; background: #fff; color: #1c6b43; font-size: .78rem; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; vertical-align: middle; }
-.xs-host tr:hover .xs-photo-add, .xs-photo-add:focus-visible { opacity: 1; }
-/* Без фото ячейка пустая; «+ фото» — на строке под мышью и в выделенной ячейке. */
-.xs-photo-add.empty { width: 24px; height: 24px; border: 1px dashed #a9b8ae; border-radius: 4px; color: #5a6960; font-weight: 500; }
-.xs-host td.highlight-selected .xs-photo-add { opacity: 1; }
-.xs-photo-add:hover { border-color: #1c6b43; color: #1c6b43; }
-
-/* Ячейка кода: код слева, значки справа — справочник, подбор ИИ (цвет и отметка — состояние), база решений. */
+/* ── Код: моноширинный, метка «ИИ», значки — у выбранной строки и при наведении; без кода — «Указать код» ── */
 .xs-code-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .xs-code-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.xs-tools { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 1px; }
-.xs-host .xs-tool { --tone: #7a877f; position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--tone); font-weight: 400; letter-spacing: 0; cursor: pointer; }
-.xs-host .xs-tool:hover:not(:disabled) { border-color: #c3d3c8; background: #eef6f1; color: #154f32; }
+.xs-ai { flex: none; padding: 1px 5px; border-radius: 4px; background: #f1f3f0; color: #4f5752; font-family: var(--tf-font); font-size: .7rem; font-weight: 600; }
+/* Значки — поверх правого края ячейки (код под ними не сжимается), только у выбранной строки и при наведении. */
+.xs-host td.xs-code { position: relative; }
+.xs-tools { position: absolute; top: 50%; right: 4px; display: inline-flex; align-items: center; gap: 1px; padding-left: 6px; transform: translateY(-50%); background: var(--tf-card); visibility: hidden; }
+.xs-host tr:hover:not(.selected) .xs-tools { background: var(--xl-hover); }
+.xs-host tr:hover .xs-tools, .xs-host tr.selected .xs-tools, .xs-host td.highlight-selected .xs-tools { visibility: visible; }
+.xs-host .xs-tool { --tone: var(--tf-muted); position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--tone); font-weight: 400; letter-spacing: 0; cursor: pointer; }
+.xs-host .xs-tool:hover:not(:disabled) { border-color: var(--tf-border); background: var(--tf-chip); color: var(--tf-text); }
 .xs-host .xs-tool:disabled { opacity: .5; cursor: progress; }
-.xs-host .xs-tool i { position: absolute; top: -3px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 6px; background: var(--tone); color: #fff; font-size: .62rem; font-style: normal; font-weight: 800; line-height: 12px; text-align: center; }
-.xs-host .xs-tool.agent.running { --tone: #1c6b43; }
+.xs-host .xs-tool i { position: absolute; top: -3px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 6px; background: var(--tone); color: #fff; font-family: var(--tf-font); font-size: .62rem; font-style: normal; font-weight: 800; line-height: 12px; text-align: center; }
+.xs-host .xs-tool.agent.running { --tone: var(--tf-green); }
 .xs-host .xs-tool.agent.running svg { animation: xs-pulse 1.2s infinite ease-in-out; }
 .xs-host .xs-tool.agent.waiting, .xs-host .xs-tool.agent.suggest { --tone: #a0700c; }
-.xs-host .xs-tool.agent.error { --tone: #b3392b; }
-.xs-host .xs-tool.agent.same, .xs-host .xs-tool.saved { --tone: #1c6b43; }
+.xs-host .xs-tool.agent.error { --tone: #b42318; }
+.xs-host .xs-tool.agent.same, .xs-host .xs-tool.saved { --tone: var(--tf-green); }
 .xs-host .xs-tool.saved { cursor: default; }
-/* Значки не мешают читать: бледные, ярче — на строке под мышью и в выделенной ячейке. */
-.xs-host tr:not(:hover) td:not(.highlight-selected) .xs-tool.agent.idle,
-.xs-host tr:not(:hover) td:not(.highlight-selected) .xs-tool[data-act="picker"],
-.xs-host tr:not(:hover) td:not(.highlight-selected) .xs-tool[data-act="decision"] { opacity: .55; }
+/* Подбор идёт или ждёт ответа — значок виден и без наведения. */
+.xs-host .xs-tools:has(.xs-tool.agent:is(.running, .waiting, .error, .suggest)) { visibility: visible; }
 @keyframes xs-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .xs-host .xs-tool.agent.running svg { animation: none; } }
+.xs-host button.xs-set-code { height: 26px; margin: 0; padding: 0 10px; border: 1px solid #fecdca; border-radius: 6px; background: #fff; color: #b42318; font-family: var(--tf-font); font-size: .82rem; font-weight: 600; cursor: pointer; }
+.xs-host button.xs-set-code:hover:not(:disabled) { border-color: #b42318; background: #fff; }
+
+/* ── Фото: миниатюра и «+» для добавления ── */
+.xs-host table.jss_worksheet > tbody > tr > td[data-x="0"] { padding: 0 4px !important; text-overflow: clip; text-align: center; }
+.xs-thumb { position: relative; display: inline-block; width: 26px; height: 26px; padding: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: 4px; background: #fff; cursor: zoom-in; vertical-align: middle; }
+.xs-wrap:not(.compact) .xs-thumb { width: 32px; height: 32px; }
+.xs-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.xs-thumb b { position: absolute; bottom: 0; left: 0; padding: 0 3px; border-radius: 0 3px 0 0; background: var(--tf-text); color: #fff; font-size: .66rem; line-height: 12px; }
+.xs-photo-add { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: 1px solid var(--tf-border); border-radius: 50%; background: #fff; color: var(--tf-green); font-size: .78rem; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; vertical-align: middle; }
+.xs-host tr:hover .xs-photo-add, .xs-photo-add:focus-visible, .xs-host td.highlight-selected .xs-photo-add { opacity: 1; }
+.xs-photo-add.empty { width: 26px; height: 26px; border: 1px dashed var(--tf-border); border-radius: 4px; color: var(--tf-muted); font-weight: 500; }
+.xs-photo-add:hover { border-color: var(--tf-green); color: var(--tf-green); }
+
+/* ── «Итого в расчёте»: суммы под колонками, прилипает к низу окна ── */
+.xs-host tfoot.xs-foot { position: sticky; bottom: 0; z-index: 6; }
+.xs-host tfoot.xs-foot td { height: 36px; padding: 0 10px !important; border-top: 1px solid var(--tf-border); border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 0; background: var(--xl-head); color: var(--tf-text); font-size: .86rem; font-weight: 700; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.xs-host tfoot.xs-foot td.xs-foot-name { text-align: left; }
+.xs-host tfoot.xs-foot td.xs-foot-included { text-align: center; }
+.xs-foot-count { color: var(--tf-text); font-weight: 700; }
 
 /* Строка состояния под листом: сумма выделенного, как в Excel. */
-.xs-selection { margin: 0; padding: 4px 14px; border-top: 1px solid var(--xl-grid); background: #fbfcfb; color: var(--xl-head-ink); font-size: .78rem; font-variant-numeric: tabular-nums; text-align: right; }
+.xs-foot-sel { margin-left: 16px; color: var(--tf-muted); font-size: .8rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Узкое окно: лист шире карточки — прокрутка у листа (шапка там не прилипает к окну). */
+@media (max-width: 1199px) {
+  .xs-host { overflow-x: auto; }
+}
+/* Лист — до низа окна, как таблица этапа «Результат»: своя прокрутка в обе стороны, смета ровно в окно
+   (--xs-top, --xs-below ставит ReviewSheet): страница не прокручивается, шапка листа, «Итого» и полоса
+   прокрутки вбок всегда на экране. С панелью «Подбор кода» полоса смет слева — по высоте сметы, а не окна
+   (иначе страница длиннее окна на высоту шапки сайта). */
+.is-review .xs-host, .goods-estimates-app:has(.ag-panel) .xs-host { max-height: max(240px, calc(100vh - var(--xs-top, 0px) - var(--xs-below, 0px))); overflow: auto; }
+.app-shell.goods-estimates-app:has(.ag-panel) .estimates-workspace { min-height: 0; }
+.app-shell.goods-estimates-app:has(.ag-panel) .es-sidebar.es-rail { align-self: stretch; height: auto; }

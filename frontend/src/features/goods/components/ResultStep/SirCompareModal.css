@@ -50,7 +50,7 @@
 .sc-rows th, .sc-rows td { padding: 7px 12px; border-bottom: 1px solid var(--rs-line); text-align: right; white-space: nowrap; }
 .sc-rows thead { position: sticky; top: 0; z-index: 1; }
 .sc-rows thead th { background: var(--rs-head); color: var(--rs-ink-2); font-size: .8rem; font-weight: 650; }
-.sc-rows thead tr:first-child th { padding-block: 6px 2px; border-bottom: 0; color: var(--rs-ink-3); font-size: .74rem; letter-spacing: .02em; text-transform: uppercase; }
+.sc-rows thead tr:first-child th { padding-block: 6px 2px; border-bottom: 0; color: var(--rs-ink-3); font-size: .79rem; font-weight: 600; }
 .sc-rows thead th.sc-span { text-align: center; box-shadow: inset 1px 0 0 var(--rs-line-strong); }
 .sc-rows thead th.sc-sir { background: #fdf3d6; }
 .sc-rows .sc-start { box-shadow: inset 1px 0 0 var(--rs-line-strong); }

@@ -8,7 +8,7 @@ type PriceState = {
   setResult: Dispatch<SetStateAction<GoodsCalculationResult | null>>
   setPreviousBulkResult: Dispatch<SetStateAction<GoodsCalculationResult | null>>
   // Пересчёт без замены исходных строк (updateInputItems = false).
-  calculate: (itemsOverride?: GoodsItemInput[], updateInputItems?: boolean) => Promise<void>
+  calculate: (itemsOverride?: GoodsItemInput[], updateInputItems?: boolean) => Promise<unknown>
 }
 
 // Этап 3: временные цены единицы — ручная правка, цены подбора под бюджет и откат.

@@ -72,10 +72,10 @@ export function useDirectorySearch(onError: (message: string) => void) {
       cancelPending()
       void search(query)
     },
-    // Открытие окна: все записи, вкладка остаётся той, что выбирали в прошлый раз.
-    restart() {
+    // Открытие окна: поиск по initial (пусто — все записи), вкладка остаётся той, что выбирали в прошлый раз.
+    restart(initial = '') {
       cancelPending()
-      void search('')
+      void search(initial)
     },
     reset() {
       setQuery('')

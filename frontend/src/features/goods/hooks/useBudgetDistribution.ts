@@ -25,11 +25,11 @@ function storedGap(): { min: string; max: string; mode: GapMode } {
   return { min: String(BUDGET_MIN_GAP), max: String(BUDGET_MAX_GAP), mode: 'under' }
 }
 
-// Знаков после запятой в подобранных ценах: 4 (по умолчанию) или 2. Браузер запоминает выбор.
+// Знаков после запятой в подобранных ценах: 2 (по умолчанию) или 4. Браузер запоминает выбор.
 export type PriceDecimals = 2 | 4
 const decimalsStorageKey = 'tradeflow.budgetDecimals'
 function storedDecimals(): PriceDecimals {
-  try { return localStorage.getItem(decimalsStorageKey) === '2' ? 2 : 4 } catch { return 4 }
+  try { return localStorage.getItem(decimalsStorageKey) === '4' ? 4 : 2 } catch { return 2 }
 }
 
 // Проверка недостачи: числа не меньше нуля, «от» не больше «до». null — ввод неверный.
@@ -173,7 +173,7 @@ export function useBudgetDistribution({ estimateId, unit, result, items, preview
     setPriceDecimalsState(value)
     try { localStorage.setItem(decimalsStorageKey, String(value)) } catch { /* не запомнится — не страшно */ }
   }
-  const resetGap = () => { setGapMinState(String(BUDGET_MIN_GAP)); setGapMaxState(String(BUDGET_MAX_GAP)); setGapModeState('under'); saveGap(String(BUDGET_MIN_GAP), String(BUDGET_MAX_GAP), 'under'); setPriceDecimals(4) }
+  const resetGap = () => { setGapMinState(String(BUDGET_MIN_GAP)); setGapMaxState(String(BUDGET_MAX_GAP)); setGapModeState('under'); saveGap(String(BUDGET_MIN_GAP), String(BUDGET_MAX_GAP), 'under'); setPriceDecimals(2) }
   const gap = parseGap(gapMin, gapMax)
   const [running, setRunning] = useState<BudgetMode | null>(null)
   const [summary, setSummary] = useState<BudgetSummary | null>(() => saved?.summary ?? null)

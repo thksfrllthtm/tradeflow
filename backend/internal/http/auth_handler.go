@@ -181,6 +181,16 @@ func (s *Server) requireTranslator(c *gin.Context) {
 	c.Next()
 }
 
+// requireNotTranslator follows requireUser on estimates, the product directory, the decision base,
+// ceramics and agent runs for estimate rows: a translator works only with documents.
+func (s *Server) requireNotTranslator(c *gin.Context) {
+	if currentUser(c).Role == repository.RoleTranslator {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "Раздел недоступен переводчику", "code": "forbidden"}})
+		return
+	}
+	c.Next()
+}
+
 // estimateScope is the owner filter for estimates: an administrator works with
 // every employee's estimates, everyone else only with their own.
 func estimateScope(c *gin.Context) int64 {

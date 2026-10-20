@@ -18,6 +18,7 @@ func routerAs(role string) *gin.Engine {
 	signedIn := func(c *gin.Context) { c.Set(userContextKey, repository.User{ID: 7, Role: role}) }
 	router.POST("/admin-only", signedIn, server.requireAdmin, func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	router.GET("/translator-only", signedIn, server.requireTranslator, func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	router.GET("/not-translator", signedIn, server.requireNotTranslator, func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	router.GET("/scope", signedIn, func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"scope": estimateScope(c)}) })
 	return router
 }
@@ -46,6 +47,20 @@ func TestRequireTranslatorAllowsTranslatorsAndAdministrators(t *testing.T) {
 	} {
 		response := httptest.NewRecorder()
 		routerAs(role).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/translator-only", nil))
+		if response.Code != want {
+			t.Fatalf("role %q: expected %d, got %d", role, want, response.Code)
+		}
+	}
+}
+
+func TestRequireNotTranslatorBlocksOnlyTranslators(t *testing.T) {
+	for role, want := range map[string]int{
+		repository.RoleAdmin:      http.StatusNoContent,
+		repository.RoleInvoicer:   http.StatusNoContent,
+		repository.RoleTranslator: http.StatusForbidden,
+	} {
+		response := httptest.NewRecorder()
+		routerAs(role).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/not-translator", nil))
 		if response.Code != want {
 			t.Fatalf("role %q: expected %d, got %d", role, want, response.Code)
 		}

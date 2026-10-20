@@ -9,6 +9,9 @@ import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, I
 import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes } from '../lib/importMapping'
 import { lookupNomenclature, withNomenclatureRates } from '../lib/nomenclatureRates'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
+import { savedAtText } from '@/shared/lib/dates'
+import { plural, rowProblems } from '../components/ResultStep/errorGroups'
+import { reviewStatus, rowMissing } from '../components/ReviewRow/reviewStatus'
 import { useDirectorySearch } from '../hooks/useDirectorySearch'
 import { useDraftAutosave } from '../hooks/useDraftAutosave'
 import { useServerAutosave } from '../hooks/useServerAutosave'
@@ -76,10 +79,18 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // Фото строки на этапе проверки: просмотр с удалением и переносом в другую строку.
   const [rowPhotos, setRowPhotos] = useState<{ itemId: string; index: number } | null>(null)
-  const [paramsOpen, setParamsOpen] = useState<boolean>(() => !storedParams(estimateId).usdKzt)
   // Строка, для которой открыт чат подбора кода ИИ, и пакетный подбор для строк без кода.
   const [agentRowId, setAgentRowId] = useState<string | null>(null)
   const [agentBatch, setAgentBatch] = useState<{ done: number; total: number } | null>(null)
+  // Уведомление внизу после смены кода на этапе результата: «Отменить» (previous — строки до смены) или ошибка.
+  const [codeNotice, setCodeNotice] = useState<{ text: string; failed?: boolean; previous?: GoodsItemInput[] } | null>(null)
+
+  // Удачное уведомление само скрывается через 8 секунд; ошибка — висит, пока не закроют.
+  useEffect(() => {
+    if (!codeNotice || codeNotice.failed) return
+    const timer = window.setTimeout(() => setCodeNotice(null), 8000)
+    return () => window.clearTimeout(timer)
+  }, [codeNotice])
   const selectedFileRef = useRef<File | null>(null)
   const autoRateRequestedRef = useRef(false)
   // Дата, на которую курс взят из НБРК; пусто — курс введён вручную или его нет.
@@ -119,7 +130,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     onSaved: (summary, saved) => {
       markSaved(saved.params, saved.items, saved.result)
       onEstimateSaved?.(summary)
-      setStorageNotice(`Сохранено на сервере · ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`)
+      setStorageNotice(savedAtText())
     },
     onError: (message) => setStorageNotice(`Не сохранено на сервере: ${message}. Повторим автоматически`),
   })
@@ -164,10 +175,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         setItems(mergeStoredPhotos(restoredItems, storedPhotos))
         setResult(draft.result ?? null)
         if (draft.result) setReviewCheck(checkFromResult(estimateId, restoredItems, draft.result))
-        // Параметры свёрнуты, если у сметы на сервере уже есть курс.
-        setParamsOpen(!serverParams.usdKzt)
         setStep(draft.result ? 3 : Array.isArray(draft.input?.items) && draft.input.items.length > 0 ? 2 : 1)
-        setStorageNotice(`Смета загружена: ${new Date(draft.updatedAt).toLocaleString('ru-RU')}`)
+        setStorageNotice(savedAtText(draft.updatedAt))
       } else {
         setItems((current) => mergeStoredPhotos(current, storedPhotos))
         setStorageNotice('Показаны изменения из этого браузера — сохраняем их на сервер')
@@ -363,13 +372,54 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     // Название строки меняется только при выборе товара из справочника товаров. Код ТН ВЭД
     // сам по себе название не меняет — остаётся название из Excel.
     const names = (item: GoodsItemInput) => product ? { name: fullDisplayName, supplierName: fullDisplayName } : { name: item.name, supplierName: item.supplierName }
-    setItems((current) => current.map((item) => pickerTargets.includes(item.id ?? '') ? { ...item, ...names(item), standardName, code: entry.code, coefficient: companyCoefficient, productDirectoryId: product?.id, directorySnapshot: snapshot } : item))
+    const nextItems = items.map((item) => pickerTargets.includes(item.id ?? '') ? { ...item, ...names(item), standardName, code: entry.code, coefficient: companyCoefficient, productDirectoryId: product?.id, directorySnapshot: snapshot } : item)
     // Выбор для выбранных галочкой строк снимает галочки; выбор для одной строки их не трогает.
     if (pickerTargets.length > 1 || pickerTargets.every((id) => selectedForDirectory.includes(id))) setSelectedForDirectory((current) => current.filter((id) => !pickerTargets.includes(id)))
+    const targets = pickerTargets
     setPickerTargets([])
     setDirectoryOpen(false)
-    setResult(null)
     setError('')
+    // На этапе результата («Сменить» в панели строки) — сразу пересчёт с текущими ценами, без возврата к проверке.
+    if (step === 3 && result) {
+      void recalculateCode(nextItems, items.filter((item) => targets.includes(item.id ?? '')))
+      return
+    }
+    setItems(nextItems)
+    setResult(null)
+  }
+
+  // Код строки сменили на этапе результата: смета пересчитывается с текущими ценами. Получилось — новые строки
+  // и уведомление с «Отменить» (previous — строки до смены); не получилось — прежние код и результат остаются.
+  async function recalculateCode(nextItems: GoodsItemInput[], previous?: GoodsItemInput[]) {
+    const failure = await calculate(withResultPrices(nextItems), false, undefined, false)
+    if (failure) {
+      setCodeNotice({ text: `${previous ? 'Код не изменён' : 'Прежний код не вернулся'}: ${failure}`, failed: true })
+      return
+    }
+    setItems(nextItems)
+    setCodeNotice(previous ? { text: 'Код изменён, смета пересчитана', previous } : { text: 'Прежний код возвращён, смета пересчитана' })
+  }
+
+  // «Отменить» в уведомлении: вернуть строкам прежний код и товар; цену оставить текущей.
+  function undoCodeChange(previous: GoodsItemInput[]) {
+    const nextItems = items.map((item) => {
+      const before = previous.find((row) => row.id === item.id)
+      return before ? { ...before, pricePerPair: item.pricePerPair, antiDumpingChoice: item.antiDumpingChoice, excluded: item.excluded } : item
+    })
+    setCodeNotice(null)
+    void recalculateCode(nextItems)
+  }
+
+  // «Учитывать строку в расчёте» в панели строки результата; смета пересчитывается с текущими ценами.
+  function setResultIncluded(index: number, included: boolean) {
+    const nextItems = items.map((item, itemIndex) => itemIndex === index ? { ...item, excluded: !included } : item)
+    setItems(nextItems)
+    void calculate(withResultPrices(nextItems), false)
+  }
+
+  // Строки с ценами текущего результата (правка, подбор под бюджет) — для пересчёта без потери этих цен.
+  function withResultPrices(list: GoodsItemInput[]) {
+    return list.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
   }
 
   // Код из подбора ИИ: ставки — пошлина ЕТТ и НДС из номенклатуры, как при выборе кода вручную.
@@ -413,6 +463,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
 
   // Строки, для которых открыт выбор товара или кода: отдельно от галочек, чтобы выбор для одной
   // строки не сбрасывал массовое выделение.
+  // Поиск открывается пустым: текущий код строки виден в блоке «Сейчас в строке».
   function openDirectoryPicker(ids: string[]) {
     if (ids.length === 0) return
     setPickerTargets(ids)
@@ -421,11 +472,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }
 
   // Результат сохраняется на сервер автосохранением, как и любая другая правка.
-  async function calculate(itemsOverride?: GoodsItemInput[], updateInputItems = true, paramsOverride?: GoodsParams) {
+  // Возвращает текст ошибки или null; showError — показать ошибку плашкой (иначе её покажет вызвавший).
+  async function calculate(itemsOverride?: GoodsItemInput[], updateInputItems = true, paramsOverride?: GoodsParams, showError = true): Promise<string | null> {
     const itemsToCalculate = itemsOverride ?? items
     if (itemsToCalculate.filter((item) => !item.excluded).length === 0) {
-      setError('Добавьте хотя бы одну включённую строку')
-      return
+      const message = 'Добавьте хотя бы одну включённую строку'
+      if (showError) setError(message)
+      return message
     }
     const requestId = calculationRequestRef.current + 1
     calculationRequestRef.current = requestId
@@ -434,12 +487,15 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     try {
       const itemsForRequest = itemsToCalculate.map(({ photoUrl: _photoUrl, photoUrls: _photoUrls, ...item }) => ({ ...item, photoUrl: '' }))
       const calculated = await goodsEstimatesApi.calculate({ ...(paramsOverride ?? params), items: itemsForRequest, source: sourceSnapshot ?? undefined })
-      if (requestId !== calculationRequestRef.current) return
+      if (requestId !== calculationRequestRef.current) return 'расчёт прерван более новым'
       setResult(calculated)
       setReviewCheck(checkFromResult(estimateId, itemsToCalculate, calculated))
       setStep(3)
+      return null
     } catch (reason) {
-      if (requestId === calculationRequestRef.current) setError(requestErrorMessage(reason))
+      const message = requestErrorMessage(reason)
+      if (requestId === calculationRequestRef.current && showError) setError(message)
+      return message
     } finally {
       if (requestId === calculationRequestRef.current) { setLoading(false); setActivity('') }
     }
@@ -468,8 +524,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   function chooseAntiDumping(index: number, key: string) {
     const choice = key || undefined
     setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, antiDumpingChoice: choice } : item))
-    const nextItems = items.map((item, itemIndex) => ({ ...item, antiDumpingChoice: itemIndex === index ? choice : item.antiDumpingChoice, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
-    void calculate(nextItems, false)
+    void calculate(withResultPrices(items.map((item, itemIndex) => itemIndex === index ? { ...item, antiDumpingChoice: choice } : item)), false)
   }
 
   // ТС по инвойсу или по СУР, вес, снижение и страна СУР: хранятся в параметрах сметы, расчёт
@@ -478,14 +533,12 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     const nextParams = { ...params, ...patch }
     setParams(nextParams)
     if (patch.customsValueMode === 'sir') budget.reset()
-    const nextItems = items.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
-    void calculate(nextItems, false, nextParams)
+    void calculate(withResultPrices(items), false, nextParams)
   }
 
   // Окно сравнения: та же смета с ценами текущего результата, но с другими параметрами СУР.
   function previewSir(patch: SirParams) {
-    const nextItems = items.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
-    return previewCalculation(nextItems, { ...params, ...patch })
+    return previewCalculation(withResultPrices(items), { ...params, ...patch })
   }
 
   function changeResultPrice(index: number, value: string) {
@@ -502,7 +555,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     setLoading(true); setActivity('save'); setError('')
     try {
       await autosave.saveNow()
-      setStorageNotice(`Сохранено на сервере · ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`)
+      setStorageNotice(savedAtText())
     } catch (reason) {
       setError(requestErrorMessage(reason))
     } finally {
@@ -538,30 +591,44 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   const pickerRows = items.filter((item) => pickerTargets.includes(item.id ?? ''))
   // № — как в таблице; строка Excel — в скобках, если строка из файла.
   const pickerRowNumber = pickerRows.length === 1 ? items.indexOf(pickerRows[0]) + 1 : 0
-  const pickerTitle = pickerRows.length === 1 ? `Выбор товара или кода для строки ${pickerRowNumber}${pickerRows[0].sourceRow ? ` (в Excel ${pickerRows[0].sourceRow})` : ''}${pickerRows[0].supplierName ? ` · ${pickerRows[0].supplierName}` : ''}` : pickerRows.length > 1 ? `Выбор товара или кода для ${pickerRows.length} выбранных строк` : 'Выберите товар или код ТН ВЭД'
+  const pickerTitle = pickerRows.length === 1 ? `Код для строки ${pickerRowNumber}` : pickerRows.length > 1 ? `Код для ${pickerRows.length} выбранных строк` : 'Выбор кода ТН ВЭД'
+  const pickerSubtitle = pickerRows.length === 1 ? pickerRows[0].name || pickerRows[0].supplierName || '' : ''
+  const pickerTarget = pickerRows.length === 1 ? `К строке ${pickerRowNumber}` : `К ${pickerRows.length} выбранным строкам`
+  // Общий код выбранных строк; у строк разные коды — блока «Сейчас в строке» нет.
+  const pickerCodes = [...new Set(pickerRows.map((row) => row.code ?? ''))]
+  const pickerCurrentCode = pickerCodes.length === 1 ? pickerCodes[0] : ''
   const pickerPhotos = pickerRows.flatMap((row) => photosOf(row).map((photo) => ({ photo, row })))
-  const deliverySummary = params.deliveryMode === 'wagons' ? (params.wagons ? `${params.wagons} ваг. × ${params.wagonTariffUsd} USD` : 'по вагонам') : params.deliveryMode === 'total' ? (params.deliveryTotalUsd ? `всего ${params.deliveryTotalUsd} USD` : 'общая сумма') : params.deliveryMode === 'none' ? 'без доставки' : 'не задана'
-  const feeSummary = params.customsFeeKzt ? `${params.customsFeeKzt} ₸` : params.mrp && params.feeMultiplier ? `${params.mrp} × ${params.feeMultiplier}` : '—'
+  // На этапе результата степпер компактный: «✓ Файл · ✓ Проверка · Результат».
+  const resultStep = step === 3 && Boolean(result)
+  // На этапе проверки строк — красный счётчик строк, требующих внимания (те же проверки, что в таблице).
+  const reviewStep = step === 2
+  const reviewAttention = reviewStep ? items.filter((item, index) => reviewStatus(item, result?.items[index], result ? undefined : reviewCheck?.rows[item.id ?? ''], rowMissing(item, params.packageWeightKg)).attention).length : 0
+  const codeProblemRows = result ? result.items.filter((item, index) => !item.excluded && rowProblems(item, item.code || items[index]?.code || '').some((problem) => problem.kind === 'code')).length : 0
   const stepList: { value: 1 | 2 | 3; label: string; available: boolean }[] = [
-    { value: 1, label: 'Файл и колонки', available: true },
+    { value: 1, label: 'Файл', available: true },
     { value: 2, label: 'Проверка строк', available: hasSource },
     { value: 3, label: 'Результат', available: Boolean(result) },
   ]
-  const calculatorStepper = <nav className="est-steps" aria-label="Этапы расчёта товаров">
+  const calculatorStepper = <nav className="est-steps compact" aria-label="Этапы расчёта товаров">
     {stepList.map(({ value, label, available }) => {
-      const done = value < step && available
-      return <button type="button" key={value} className={step === value ? 'active' : done ? 'done' : undefined} aria-current={step === value ? 'step' : undefined} onClick={() => available && setStep(value)} disabled={!available} title={label}>
-        <span className="est-step-num">{done ? '✓' : value}</span><span className="est-step-label">{label}</span>
+      // «Проверка» завершена, только если у всех строк есть код и ставки; иначе — ⚠ и число таких строк.
+      const unfinished = value === 2 && step === 3 && codeProblemRows > 0
+      const done = value < step && available && !unfinished
+      const title = unfinished ? `${label}: ${codeProblemRows} ${plural(codeProblemRows, ['строка', 'строки', 'строк'])} без кода ТН ВЭД или ставок` : label
+      return <button type="button" key={value} className={step === value ? 'active' : done ? 'done' : unfinished ? 'unfinished' : undefined} aria-current={step === value ? 'step' : undefined} onClick={() => available && setStep(value)} disabled={!available} title={title}>
+        <span className="est-step-num">{unfinished ? '⚠' : done ? '✓' : value}</span><span className="est-step-label">{label}</span>
+        {unfinished && <b className="est-step-count" aria-label={title}>{codeProblemRows}</b>}
+        {value === 2 && reviewStep && reviewAttention > 0 && <b className="est-step-count bad" title={`Требуют внимания: ${reviewAttention}`}>{reviewAttention}</b>}
       </button>
     })}
   </nav>
-  // На этапе результата страница занимает высоту окна: прокручивается только таблица.
-  return <div className={step === 3 && result ? 'goods-calculator-embedded is-result' : step === 2 ? 'goods-calculator-embedded is-review' : 'goods-calculator-embedded'}>
+  // Строку заголовка (название сметы и этапы) рисует сам этап — у каждого рядом свои кнопки.
+  return <div className={`goods-calculator-embedded ${resultStep ? 'is-result' : step === 2 ? 'is-review' : 'is-import'}`}>
     <div className="goods-page">
-      <div className="estimate-bar">{headerSlot}{calculatorStepper}</div>
       {error && <div className="banner error goods-request-error" role="alert"><div><strong>Не удалось выполнить действие</strong><p>{error}</p></div><button type="button" onClick={() => setError('')} aria-label="Закрыть сообщение">×</button></div>}
 
       {step === 1 && <ImportStep
+        header={<>{headerSlot}{calculatorStepper}</>}
         loading={loading}
         sheets={sheets}
         sheet={sheet}
@@ -570,7 +637,8 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         headers={headers}
         rawRows={rawRows}
         mapping={mapping}
-        fileName={selectedFileRef.current?.name ?? ''}
+        // После перезагрузки файла в браузере нет — имя берём из сохранённой сметы.
+        fileName={selectedFileRef.current?.name ?? sourceSnapshot?.filename ?? ''}
         selectedFileAvailable={Boolean(selectedFileRef.current)}
         mappingFieldOptions={mappingFieldOptions}
         upload={upload}
@@ -590,17 +658,15 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         items={items}
         result={result}
         selectedForDirectory={selectedForDirectory}
-        paramsOpen={paramsOpen}
         loading={loading}
-         storageNotice={storageNotice}
+        storageNotice={storageNotice}
+        unsaved={autosave.unsaved}
+        header={<>{headerSlot}{calculatorStepper}</>}
          usdRateLoading={usdRateLoading}
          usdRateNotice={usdRateNotice}
-        deliverySummary={deliverySummary}
-        feeSummary={feeSummary}
         includedCount={includedCount}
         editItems={(next) => { setItems(next); setResult(null) }}
         setSelectedForDirectory={setSelectedForDirectory}
-        setParamsOpen={setParamsOpen}
          setParam={setParam}
          loadUsdRate={loadUsdRate}
         openDirectoryPicker={openDirectoryPicker}
@@ -622,10 +688,14 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         startAgentBatch={() => void startAgentBatch()}
       />}
 
-      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping} sir={params} onSirChange={changeSir} previewSir={previewSir} itp={params.resultTools?.itp} onItpChange={(value) => setResultTool('itp', value)} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoPrices={() => { budget.reset(); undoLastPriceChange() }} canUndoPrices={Boolean(previousBulkResult)} budget={budget} />}
+      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} header={<>{headerSlot}{calculatorStepper}</>} unsaved={autosave.unsaved} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping}
+        onChangeCode={(index) => { const id = items[index]?.id; if (id) openDirectoryPicker([id]) }} onToggleIncluded={setResultIncluded} sir={params} onSirChange={changeSir} previewSir={previewSir} itp={params.resultTools?.itp} onItpChange={(value) => setResultTool('itp', value)} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoPrices={() => { budget.reset(); undoLastPriceChange() }} canUndoPrices={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <DirectoryPickerModal
         title={pickerTitle}
+        subtitle={pickerSubtitle}
+        target={pickerTarget}
+        currentCode={pickerCurrentCode}
         photos={pickerPhotos}
         multipleRows={pickerRows.length > 1}
         mode={directorySearch.mode}
@@ -642,13 +712,24 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         onPick={applyDirectoryEntry}
         onPreview={openPhotoGallery}
       />}
-      <p className="goods-disclaimer">Это внутренний предварительный расчёт. Пошлина (ЕТТ) и НДС берутся из номенклатуры ТН ВЭД ЕАЭС по коду строки, ИТС — из карточки товара; это не официальное подтверждение.</p>
+      <p className="goods-disclaimer" title="Это внутренний предварительный расчёт. Пошлина (ЕТТ) и НДС берутся из номенклатуры ТН ВЭД ЕАЭС по коду строки, ИТС — из карточки товара; это не официальное подтверждение.">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>
+        Предварительный расчёт, не официальный документ. Пошлина и НДС — из номенклатуры ТН ВЭД ЕАЭС.
+      </p>
+      {codeNotice && <div className={codeNotice.failed ? 'code-notice failed' : 'code-notice'} role={codeNotice.failed ? 'alert' : 'status'}>
+        <span>{codeNotice.text}</span>
+        {codeNotice.previous && <button type="button" className="code-notice-undo" onClick={() => codeNotice.previous && undoCodeChange(codeNotice.previous)} disabled={loading}>Отменить</button>}
+        <button type="button" className="code-notice-close" onClick={() => setCodeNotice(null)} aria-label="Закрыть уведомление">×</button>
+      </div>}
     </div>
     {agentRowId && (() => {
       const index = items.findIndex((item) => item.id === agentRowId)
       if (index < 0) return null
-      return <AgentPanel estimateId={estimateId} item={items[index]} rowNumber={index + 1} onClose={() => setAgentRowId(null)}
-        onApplyCode={(code) => applyAgentCode(agentRowId, code)} onApplyName={(name) => applyAgentName(agentRowId, name)} onChanged={() => { agentRows.refresh(); void rowDecisions.refresh() }} />
+      // Ключ — строка: при переходе ↑ ↓ к соседней строке панель начинает с чистого состояния.
+      const neighbour = (offset: number) => { const id = items[index + offset]?.id; return id ? () => setAgentRowId(id) : undefined }
+      return <AgentPanel key={agentRowId} estimateId={estimateId} item={items[index]} rowNumber={index + 1} rowCount={items.length} onPrev={neighbour(-1)} onNext={neighbour(1)} onClose={() => setAgentRowId(null)}
+        onApplyCode={(code) => applyAgentCode(agentRowId, code)} onApplyName={(name) => applyAgentName(agentRowId, name)} onAddPhoto={(event) => addManualPhoto(agentRowId, event)}
+        onChanged={() => { agentRows.refresh(); void rowDecisions.refresh() }} />
     })()}
     {rowPhotos && <RowPhotos items={items} itemId={rowPhotos.itemId} startIndex={rowPhotos.index} onClose={closeRowPhotos}
       onRemove={(itemId, index) => setItems((current) => removeRowPhoto(current, itemId, index))}

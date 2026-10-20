@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { Baseline, baselineOf, changesSince, DraftState, requestsFor } from '../lib/draftPatch'
@@ -25,6 +25,8 @@ export function useServerAutosave({ estimateId, state, enabled, onSaving, onSave
   const stateRef = useRef(state)
   stateRef.current = state
   const savingRef = useRef<Promise<void> | null>(null)
+  // Версия сохранённого на сервере: меняется при загрузке и после сохранения — пересчитать «есть несохранённое».
+  const [baselineVersion, setBaselineVersion] = useState(0)
   const callbacks = useRef({ onSaving, onSaved, onError })
   callbacks.current = { onSaving, onSaved, onError }
 
@@ -40,6 +42,7 @@ export function useServerAutosave({ estimateId, state, enabled, onSaving, onSave
         let summary: GoodsEstimateSummary | null = null
         for (const request of requestsFor(changes)) summary = await goodsEstimatesApi.patchDraft(estimateId, request)
         baselineRef.current = changes.next
+        setBaselineVersion((version) => version + 1)
         if (summary) callbacks.current.onSaved(summary, state)
       } catch (reason) {
         callbacks.current.onError(requestErrorMessage(reason))
@@ -59,6 +62,9 @@ export function useServerAutosave({ estimateId, state, enabled, onSaving, onSave
     return () => { window.clearTimeout(timer); window.clearTimeout(retry) }
   }, [enabled, state.params, state.items, state.result, state.source])
 
+  // baselineRef меняется вместе с baselineVersion — поэтому он в зависимостях через неё.
+  const unsaved = useMemo(() => enabled && baselineRef.current !== null && changesSince(baselineRef.current, state) !== null, [enabled, state.params, state.items, state.result, state.source, baselineVersion])
+
   // Переход на другую смету раньше паузы: несохранённое уходит сразу (в браузере оно тоже есть).
   const enabledRef = useRef(enabled)
   enabledRef.current = enabled
@@ -66,8 +72,10 @@ export function useServerAutosave({ estimateId, state, enabled, onSaving, onSave
 
   return {
     // Что сейчас на сервере: задаётся при загрузке сметы.
-    setBaseline: (saved: DraftState) => { baselineRef.current = baselineOf(saved) },
+    setBaseline: (saved: DraftState) => { baselineRef.current = baselineOf(saved); setBaselineVersion((version) => version + 1) },
     // Сохранить сразу (кнопка «Сохранить»). Без загруженной с сервера версии уходит всё целиком.
     saveNow: save,
+    // Есть правки, которых ещё нет на сервере (до загрузки сметы с сервера — нет).
+    unsaved,
   }
 }

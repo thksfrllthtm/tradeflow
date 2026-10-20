@@ -128,7 +128,7 @@ func (s *Server) Router() *gin.Engine {
 
 	// Подсказки для подбора цен под бюджет — общие для смет перчаток и товаров.
 	pricing := router.Group("/api/estimates")
-	pricing.Use(s.requireUser)
+	pricing.Use(s.requireUser, s.requireNotTranslator)
 	pricing.POST("/price-weights", s.suggestPriceWeights)
 	pricing.POST("/price-history", s.priceHistory)
 
@@ -162,7 +162,7 @@ func (s *Server) Router() *gin.Engine {
 	kzRates.POST("/import", s.importKZRatesExcel)
 
 	productsDirectory := router.Group("/api/product-directory")
-	productsDirectory.Use(s.requireUser)
+	productsDirectory.Use(s.requireUser, s.requireNotTranslator)
 	productsDirectory.GET("", s.listProductDirectory)
 	productsDirectory.GET("/export", s.requireAdmin, s.exportProductDirectory)
 	productsDirectory.POST("/import", s.requireAdmin, s.importProductDirectory)
@@ -174,14 +174,14 @@ func (s *Server) Router() *gin.Engine {
 
 	// Разбор Excel, расчёт растаможки и экспорт смет товаров.
 	goods := router.Group("/api/goods")
-	goods.Use(s.requireUser)
+	goods.Use(s.requireUser, s.requireNotTranslator)
 	goods.POST("/parse-xlsx", s.parseGoodsXlsx)
 	goods.POST("/calculate", s.calculateGoods)
 	goods.POST("/export", s.exportGoods)
 
 	// Сметы товаров: список, карточка и сохранённый черновик с результатом.
 	goodsEstimates := router.Group("/api/goods-estimates")
-	goodsEstimates.Use(s.requireUser)
+	goodsEstimates.Use(s.requireUser, s.requireNotTranslator)
 	goodsEstimates.GET("", s.listGoodsEstimates)
 	goodsEstimates.POST("", s.createGoodsEstimate)
 	goodsEstimates.GET("/:id", s.getGoodsEstimate)
@@ -198,7 +198,7 @@ func (s *Server) Router() *gin.Engine {
 
 	// База решений «товар из инвойса → код ТН ВЭД»: проверка, правка и импорт — администратор.
 	decisions := router.Group("/api/code-decisions")
-	decisions.Use(s.requireUser)
+	decisions.Use(s.requireUser, s.requireNotTranslator)
 	decisions.GET("", s.listCodeDecisions)
 	decisions.GET("/stats", s.codeDecisionStats)
 	decisions.GET("/estimate/:id", s.estimateDecisionStatus)
@@ -210,20 +210,21 @@ func (s *Server) Router() *gin.Engine {
 	decisions.POST("/:id/reject", s.requireAdmin, s.rejectCodeDecision)
 	decisions.DELETE("/:id", s.requireAdmin, s.deleteCodeDecision)
 
-	// ИИ-агент подбора кода ТН ВЭД для строки сметы.
+	// ИИ-агент подбора кода ТН ВЭД для строки сметы. Переводчику — только справка с главной
+	// (вопрос, ответ, документы, наименование): подбор по сметам и запись в базу решений закрыты.
 	agent := router.Group("/api/tnved-agent")
 	agent.Use(s.requireUser)
 	agent.GET("/status", s.agentStatus)
 	agent.GET("/usage", s.requireAdmin, s.agentUsage)
-	agent.GET("/sessions", s.listAgentSessions)
-	agent.POST("/sessions", s.startAgentSession)
+	agent.GET("/sessions", s.requireNotTranslator, s.listAgentSessions)
+	agent.POST("/sessions", s.requireNotTranslator, s.startAgentSession)
 	agent.GET("/sessions/:id", s.getAgentSession)
-	agent.POST("/sessions/:id/begin", s.beginAgentSession)
+	agent.POST("/sessions/:id/begin", s.requireNotTranslator, s.beginAgentSession)
 	agent.POST("/sessions/:id/messages", s.messageAgentSession)
-	agent.POST("/sessions/:id/rerun", s.rerunAgentSession)
+	agent.POST("/sessions/:id/rerun", s.requireNotTranslator, s.rerunAgentSession)
 	agent.POST("/sessions/:id/documents", s.documentsAgentSession)
-	agent.POST("/sessions/:id/cancel", s.cancelAgentSession)
-	agent.POST("/sessions/:id/apply", s.applyAgentSession)
+	agent.POST("/sessions/:id/cancel", s.requireNotTranslator, s.cancelAgentSession)
+	agent.POST("/sessions/:id/apply", s.requireNotTranslator, s.applyAgentSession)
 	agent.POST("/sessions/:id/name", s.applyAgentName)
 	agent.GET("/reference", s.referenceHistory)
 	agent.POST("/reference", s.askReference)
@@ -231,7 +232,7 @@ func (s *Server) Router() *gin.Engine {
 
 	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
 	ceramics := router.Group("/api/ceramics")
-	ceramics.Use(s.requireUser)
+	ceramics.Use(s.requireUser, s.requireNotTranslator)
 	ceramics.GET("/status", s.ceramicsStatus)
 	ceramics.GET("/types", s.listCeramicsTypes)
 	ceramics.GET("/products", s.listCeramicsProducts)

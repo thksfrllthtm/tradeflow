@@ -1,136 +1,150 @@
-/* Общая шапка. Селекторы кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
+/* Общая шапка: белая, граница снизу. Селекторы кнопок с двумя классами — чтобы перебить общий стиль button:hover. */
 
 .app-header {
   flex: 0 0 auto;
+  position: relative;
+  z-index: 60;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 28px;
-  height: 52px;
-  padding: 0 20px;
-  background: #0f2e1c;
-  color: #fff;
+  column-gap: 28px;
+  row-gap: 4px;
+  min-height: 56px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--tf-border);
+  background: var(--tf-card);
+  color: var(--tf-text);
+  font-family: var(--tf-font);
 }
 
-.app-header-brand { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+.app-header-brand { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; color: var(--tf-text); text-decoration: none; }
 .app-header-logo {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  background: linear-gradient(135deg, #2f9a64, #146c43);
+  background: var(--tf-green);
+  color: #fff;
   font-size: .7rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: .02em;
 }
-.app-header-name { font-size: .86rem; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; }
+.app-header-name { font-size: 1.07rem; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
 
-.app-header-nav { position: relative; display: flex; flex: 1 1 auto; align-items: center; gap: 4px; min-width: 0; }
-.app-header-nav a {
-  flex: 0 0 auto;
-  padding: 6px 12px;
-  border-radius: 7px;
-  color: #a9c7b4;
-  font-size: .82rem;
-  font-weight: 600;
+/* Меню разделов: не помещается — переносится, а не обрезается. */
+.app-header-nav { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.app-header-nav > a, .app-menu > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--tf-radius);
+  color: var(--tf-text-2);
+  font-size: 1rem;
+  font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
+  list-style: none;
+  cursor: pointer;
   transition: background .12s, color .12s;
 }
-.app-header-nav a:hover { background: rgba(255, 255, 255, .07); color: #fff; }
-.app-header-nav a.active { background: rgba(255, 255, 255, .13); color: #fff; }
+.app-menu > summary::-webkit-details-marker { display: none; }
+.app-header-nav > a:hover, .app-menu > summary:hover, .app-menu[open] > summary { background: var(--tf-chip); color: var(--tf-text); }
+.app-header-nav > a.active, .app-menu.active > summary { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
 
-/* Разделы, которые не поместились, — в меню «Ещё»; скрытая копия меню нужна для замера ширины. */
-.app-header-measure { position: absolute; top: 0; left: 0; display: flex; gap: 4px; visibility: hidden; pointer-events: none; }
-.app-header-measure span { padding: 6px 12px; font-size: .82rem; font-weight: 600; white-space: nowrap; }
-.app-header-more { position: relative; flex: 0 0 auto; }
-.app-header-more > summary { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 7px; color: #c3dccb; font-size: .82rem; font-weight: 600; list-style: none; cursor: pointer; white-space: nowrap; }
-.app-header-more > summary::-webkit-details-marker { display: none; }
-.app-header-more > summary:hover, .app-header-more[open] > summary { background: rgba(255, 255, 255, .07); color: #fff; }
-.app-header-more.active > summary { background: rgba(255, 255, 255, .13); color: #fff; }
-.app-header-more-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; display: grid; min-width: 200px; padding: 6px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(15, 46, 28, .22); }
-.app-header-nav .app-header-more-menu a { padding: 8px 10px; border-radius: 6px; color: #1f2d24; font-size: .86rem; }
-.app-header-nav .app-header-more-menu a:hover { background: #eef5f0; color: #13241a; }
-.app-header-nav .app-header-more-menu a.active { background: #e3f1e8; color: #154f32; }
-.app-header .app-header-more-menu :focus-visible { outline-color: #146c43; outline-offset: -2px; }
-/* Видимый фокус на тёмной шапке — светлая рамка. */
-.app-header :focus-visible { outline: 2px solid #cfe8d9; outline-offset: 2px; }
-
-/* Курс НБРК на сегодня — справочно, рядом с пользователем: две валюты и дата курса под ними. */
-.app-header-rates { position: relative; flex: 0 0 auto; padding-right: 18px; border-right: 1px solid rgba(255, 255, 255, .14); }
-.app-header-rates > summary { display: grid; grid-template-columns: auto auto; column-gap: 14px; row-gap: 1px; padding: 3px 8px; border-radius: 7px; list-style: none; cursor: pointer; }
-.app-header-rates > summary::-webkit-details-marker { display: none; }
-.app-header-rates > summary:hover, .app-header-rates[open] > summary { background: rgba(255, 255, 255, .07); }
-/* Конвертер — белое окошко под курсом, как меню «Ещё». */
-.app-header-converter { position: absolute; top: calc(100% + 8px); right: 18px; z-index: 80; display: grid; gap: 10px; width: 380px; padding: 14px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(15, 46, 28, .22); color: #1f2d24; }
-.app-header-converter strong { font-size: .86rem; }
-.app-header-converter small { color: #68766e; font-size: .74rem; }
-.app-header-converter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
-.app-header-converter-amount { box-sizing: border-box; height: 34px; margin: 0; padding: 0 8px; border: 1px solid #d3ddd6; border-radius: 7px; background: #fff; color: #1f2d24; font-size: .88rem; }
-.app-header-converter-amount { width: 100%; font-size: 1rem !important; text-align: right; font-variant-numeric: tabular-nums; }
-.app-header .app-header-converter-row .cur-swap { width: 34px; height: 38px; padding: 0; border: 1px solid #d3ddd6; border-radius: 7px; background: #f3f7f4; color: #146c43; font-size: 1rem; }
-.app-header .app-header-converter-row .cur-swap:hover:not(:disabled) { background: #e6f3ec; }
-.app-header-converter-result { color: #0f2e1c; font-size: 1.35rem; font-weight: 750; font-variant-numeric: tabular-nums; }
-.app-header .app-header-converter :focus-visible { outline-color: #146c43; }
-.app-header-rate { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
-.app-header-rate small { color: #a9c7b4; font-size: .74rem; font-weight: 600; }
-.app-header-rate b { color: #fff; font-size: .86rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.app-header-rate-date { grid-column: 1 / -1; color: #8fb39c; font-size: .7rem; white-space: nowrap; }
-@media (max-width: 900px) { .app-header-rates { display: none; } }
-
-.app-header-user { display: flex; flex: 0 1 auto; align-items: center; gap: 9px; min-width: 0; }
-.app-header-avatar {
+/* Выпадающие меню: справочники и профиль. */
+.app-menu { position: relative; flex: 0 0 auto; }
+.app-menu-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 80;
   display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #1f5a3a;
-  color: #cfe8d9;
-  font-size: .68rem;
-  font-weight: 700;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius-card);
+  background: var(--tf-card);
+  box-shadow: var(--tf-shadow-pop);
 }
-.app-header-who { overflow: hidden; color: #cfe0d5; font-size: .8rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.app-header-who small { display: block; color: #a9c7b4; font-size: .82rem; }
-.app-header .app-header-logout {
-  flex: 0 0 auto;
-  height: 28px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, .18);
-  border-radius: 7px;
-  background: transparent;
-  color: #cfe0d5;
-  font-size: .82rem;
+.app-menu-right { left: auto; right: 0; }
+.app-menu-pop a, .app-header .app-header-logout {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--tf-text);
+  font-size: .93rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+}
+.app-menu-pop a:hover, .app-header .app-header-logout:hover:not(:disabled) { background: var(--tf-chip); }
+.app-menu-pop a.active { background: var(--tf-green-soft); font-weight: 600; }
+.app-header :focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
+.app-menu-pop :focus-visible { outline-offset: -2px; }
+
+/* Курс НБРК: «USD 452,59 · EUR 507,67», под ним дата. Нажатие — конвертер. */
+.app-header-rates { position: relative; flex: 0 0 auto; margin-left: auto; }
+.app-header-rates > summary { display: grid; justify-items: end; padding: 3px 8px; border-radius: var(--tf-radius); list-style: none; cursor: pointer; }
+.app-header-rates > summary::-webkit-details-marker { display: none; }
+.app-header-rates > summary:hover, .app-header-rates[open] > summary { background: var(--tf-chip); }
+.app-header-rate { color: var(--tf-text-2); font-size: .93rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app-header-rate b { color: var(--tf-text); font-weight: 600; }
+.app-header-rate-date { color: var(--tf-muted); font-size: .79rem; white-space: nowrap; }
+.app-header-converter { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; display: grid; gap: 10px; width: 380px; max-width: calc(100vw - 32px); padding: 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); color: var(--tf-text); }
+.app-header-converter strong { font-size: .93rem; }
+.app-header-converter small { color: var(--tf-muted); font-size: .79rem; }
+.app-header-converter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
+.app-header-converter-amount { box-sizing: border-box; width: 100%; height: 36px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: 1rem !important; text-align: right; font-variant-numeric: tabular-nums; }
+.app-header .app-header-converter-row .cur-swap { width: 36px; height: 38px; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text); font-size: 1rem; }
+.app-header .app-header-converter-row .cur-swap:hover:not(:disabled) { background: var(--tf-green-soft); }
+.app-header-converter-result { color: var(--tf-text); font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Профиль: аватар-кнопка, в меню — email, роль, Сотрудники, Выйти. */
+.app-header-user { flex: 0 0 auto; }
+.app-header-user > summary.app-header-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--tf-border);
+  border-radius: 50%;
+  background: var(--tf-card);
+  color: var(--tf-text);
+  font-size: .79rem;
   font-weight: 600;
 }
-.app-header .app-header-logout:hover:not(:disabled) { border-color: rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .08); color: #fff; }
+.app-header-who { display: grid; gap: 1px; margin-bottom: 4px; padding: 8px 10px 10px; border-bottom: 1px solid var(--tf-border-inner); font-size: .86rem; }
+.app-header-who span { overflow: hidden; color: var(--tf-text); text-overflow: ellipsis; white-space: nowrap; }
+.app-header-who small { color: var(--tf-muted); font-size: .79rem; }
+.app-header .app-header-logout { width: 100%; border: 0; background: transparent; cursor: pointer; }
 
 @media (max-width: 900px) {
-  .app-header { gap: 14px; padding: 0 14px; }
-  .app-header-name, .app-header-who { display: none; }
+  .app-header { column-gap: 14px; padding: 8px 16px; }
+  .app-header-name { display: none; }
 }
 @media (max-width: 560px) {
-  .app-header { gap: 8px; padding: 0 10px; }
-  .app-header-nav a, .app-header-measure span, .app-header-more > summary { padding: 6px 8px; font-size: .78rem; }
-  .app-header-avatar { display: none; }
+  .app-header-nav { order: 3; flex-basis: 100%; }
+  .app-header-nav > a, .app-menu > summary { padding: 6px 9px; font-size: .9rem; }
 }
 
 /* Выбор валюты в конвертере: плашка «код + название», список с поиском на всю ширину окна. */
 .cur-select { min-width: 0; }
-.app-header .cur-select-button { display: flex; align-items: center; gap: 7px; width: 100%; height: 38px; padding: 0 9px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fff; color: #1f2d24; font-size: .84rem; text-align: left; }
-.app-header .cur-select-button:hover:not(:disabled), .app-header .cur-select-button.open { border-color: #25855a; background: #fff; }
-.cur-select-button b, .cur-list li b { flex: none; padding: 2px 6px; border-radius: 5px; background: #e6f3ec; color: #146c43; font-size: .74rem; font-weight: 750; letter-spacing: .02em; }
-.cur-select-button span { overflow: hidden; color: #34443b; text-overflow: ellipsis; white-space: nowrap; }
-.cur-select-button svg { flex: none; margin-left: auto; color: #68766e; }
-.cur-list { position: absolute; left: 14px; right: 14px; z-index: 2; margin-top: 6px; padding: 6px; border: 1px solid #d5ded8; border-radius: 10px; background: #fff; box-shadow: 0 14px 34px rgba(15, 46, 28, .2); }
-.cur-search { box-sizing: border-box; width: 100%; height: 34px; margin: 0 0 6px; padding: 0 10px; border: 1px solid #d3ddd6; border-radius: 7px; font-size: .86rem; }
-.cur-search:focus { outline: none; border-color: #25855a; box-shadow: 0 0 0 3px #25855a22; }
+.app-header .cur-select-button { display: flex; align-items: center; gap: 7px; width: 100%; height: 38px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: .86rem; text-align: left; }
+.app-header .cur-select-button:hover:not(:disabled), .app-header .cur-select-button.open { border-color: var(--tf-muted); background: #fff; }
+.cur-select-button b, .cur-list li b { flex: none; padding: 2px 6px; border-radius: 5px; background: var(--tf-chip); color: var(--tf-text); font-size: .76rem; font-weight: 600; letter-spacing: .02em; }
+.cur-select-button span { overflow: hidden; color: var(--tf-text-2); text-overflow: ellipsis; white-space: nowrap; }
+.cur-select-button svg { flex: none; margin-left: auto; color: var(--tf-muted); }
+.cur-list { position: absolute; left: 14px; right: 14px; z-index: 2; margin-top: 6px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: #fff; box-shadow: var(--tf-shadow-pop); }
+.cur-search { box-sizing: border-box; width: 100%; height: 34px; margin: 0 0 6px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); font-size: .86rem; }
+.cur-search:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .15); }
 .cur-list ul { max-height: 280px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
-.cur-list li { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 7px; color: #1f2d24; font-size: .86rem; cursor: pointer; }
+.cur-list li { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 6px; color: var(--tf-text); font-size: .86rem; cursor: pointer; }
 .cur-list li span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cur-list li small { flex: none; color: #68766e; font-size: .78rem; font-variant-numeric: tabular-nums; }
-.cur-list li[aria-selected="true"] { background: #eef6f1; }
-.cur-list li.chosen b { background: #146c43; color: #fff; }
-.cur-list li.cur-split { margin-bottom: 4px; box-shadow: 0 5px 0 -4px #e4eae6; }
-.cur-list .cur-empty { color: #68766e; cursor: default; }
+.cur-list li small { flex: none; color: var(--tf-muted); font-size: .79rem; font-variant-numeric: tabular-nums; }
+.cur-list li[aria-selected="true"] { background: var(--tf-chip); }
+.cur-list li.chosen b { background: var(--tf-green); color: #fff; }
+.cur-list li.cur-split { margin-bottom: 4px; box-shadow: 0 5px 0 -4px var(--tf-border-inner); }
+.cur-list .cur-empty { color: var(--tf-muted); cursor: default; }

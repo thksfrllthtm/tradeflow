@@ -5,8 +5,10 @@ import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { photosOf } from '@/shared/lib/itemPhotos'
 import { formatCode } from '@/shared/tnved/codes'
 import { autoNetFor, DEFAULT_PACKAGE_WEIGHT, effectivePackageWeight, formatWeight, netHint } from '../../lib/netWeight'
-import { autoQuantityHint, QuantityField } from '../../lib/quantities'
-import { hasNomenclatureRates, reviewStatus, ReviewTone } from '../ReviewRow/reviewStatus'
+import { autoQuantity, autoQuantityHint, QuantityField } from '../../lib/quantities'
+import { ReviewProblem } from '../../lib/reviewProblems'
+import { hasNomenclatureRates, reviewStatus } from '../ReviewRow/reviewStatus'
+import { dutyRateText, fixedNumber, itemNames } from '../ResultStep/resultValues'
 import { AgentRowStatus } from '../../agent/agentApi'
 import { canSaveRowDecision, RowDecisionState } from '../../hooks/useRowDecisions'
 import { columnIndex, copyValue, NUMBER_FIELDS, SHEET_COLUMNS, SheetChange, SheetKey, sheetRow } from './sheetModel'
@@ -15,22 +17,32 @@ import './ReviewSheet.css'
 export type SheetRowView = {
   item: GoodsItemInput
   status: ReturnType<typeof reviewStatus>
+  // Проблемы строки по ячейкам (для подсветки) и код, предложенный подбором ИИ и совпадающий с кодом строки.
+  problems: ReviewProblem[]
+  aiCode: boolean
   visible: boolean
   selected: boolean
   agent?: AgentRowStatus
   decision?: RowDecisionState
 }
 
-export type RowAction = 'photos' | 'upload' | 'picker' | 'agent' | 'decision'
+export type RowAction = 'photos' | 'upload' | 'picker' | 'agent' | 'decision' | 'select'
 
-// Управление листом снаружи: F8 ставит курсор на строку.
-export type SheetApi = { focusRow: (index: number) => void; currentRow: () => number }
+// Итоги включённых строк — строка «Итого в расчёте» под колонками.
+export type SheetTotals = { places: number; quantity: number; grossKg: number; netKg: number; included: number; all: number }
+
+// Управление листом снаружи: F8 ставит курсор на ячейку проблемы.
+export type SheetApi = { focusCell: (index: number, key: SheetKey) => void; currentRow: () => number }
+
+// Выбранная ячейка — для строки значения над таблицей.
 
 type Props = {
   rows: SheetRowView[]
   defaultPackageWeight: string
-  hidePackage: boolean
+  showPhoto: boolean
+  showPackage: boolean
   compact: boolean
+  totals: SheetTotals
   apiRef: MutableRefObject<SheetApi | null>
   onChanges: (changes: SheetChange[]) => void
   onAction: (action: RowAction, index: number) => void
@@ -48,6 +60,7 @@ type Worksheet = jspreadsheet.WorksheetInstance
 // Delete, протягивание за уголок, Ctrl+Z / Ctrl+Y. Строки сметы — источник правды: правки листа
 // уходят в onChanges, а лист после каждого рендера приводится к строкам (sync). Отмена — своя,
 // по строкам сметы (onUndo / onRedo): история библиотеки не знает о выборе кода, фото и т. п.
+// Лист без своей прокрутки: прокручивается страница, шапка прилипает к верху, «Итого» — к низу окна.
 export function ReviewSheet(props: Props) {
   const host = useRef<HTMLDivElement>(null)
   const sheet = useRef<Worksheet | null>(null)
@@ -71,19 +84,29 @@ export function ReviewSheet(props: Props) {
   })
   // Каждый рендер: строки, статусы подбора, база решений, фильтр — всё приводится к листу.
   useEffect(() => { syncRef.current() })
+  // Сумма выделенного — в строке «Итого», рядом с подписью: своя строка под листом появлялась и пропадала
+  // при выделении, и лист прыгал по высоте.
+  useEffect(() => {
+    const slot = sheet.current?.table.querySelector('.xs-foot-sel')
+    if (slot && slot.textContent !== selectionSum) slot.textContent = selectionSum
+  })
 
   useEffect(() => {
     let cancelled = false
     let created: typeof jspreadsheet | null = null
+    let resized: ResizeObserver | null = null
     const element = host.current
     if (!element) return
-    // Кнопки внутри ячеек (фото, значки у кода, флажок «все»).
+    // Кнопки внутри ячеек (фото, значки у кода, «Указать код», выбор строки, флажок «все»).
     const onClick = (event: MouseEvent) => {
       const target = (event.target as HTMLElement).closest<HTMLElement>('[data-act]')
       if (!target || !element.contains(target)) return
-      if (target.dataset.act === 'select-all') { event.preventDefault(); latest.current.onSelectAll(); return }
-      const y = Number(target.closest<HTMLElement>('td[data-y]')?.dataset.y)
+      // Флажок «все» ставит синхронизация. После preventDefault браузер возвращает флажок в прежнее
+      // состояние уже после обработчиков — поэтому сверяем его ещё раз, когда это произойдёт.
+      if (target.dataset.act === 'select-all') { event.preventDefault(); latest.current.onSelectAll(); window.setTimeout(() => syncRef.current()); return }
+      const y = Number(target.closest<HTMLElement>('td[data-y]')?.dataset.y ?? target.closest<HTMLElement>('tr[data-y]')?.dataset.y)
       if (!Number.isInteger(y)) return
+      if (target.dataset.act === 'select') { event.preventDefault(); latest.current.onAction('select', y); return }
       latest.current.onAction(target.dataset.act as RowAction, y)
       // Значок открывает окно (справочник, чат, фото): второй щелчок двойного щелчка попал бы
       // в открывшееся окно — например, выбрал бы первый код списка. Его пропускаем.
@@ -91,12 +114,25 @@ export function ReviewSheet(props: Props) {
       document.addEventListener('click', swallow, { capture: true, once: true })
       window.setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
     }
-    // Двойной щелчок по значку у кода — не правка ячейки.
+    // Двойной щелчок по значку или кнопке в ячейке — не правка ячейки; флажок выбора строки не выделяет строку.
     const onDoubleClick = (event: MouseEvent) => {
       if ((event.target as HTMLElement).closest('[data-act]')) event.stopPropagation()
     }
+    const onMouseDown = (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest('[data-act="select"], [data-act="select-all"]')) event.stopPropagation()
+    }
+    // Библиотека слушает клавиши на всём документе и печатает в выбранную ячейку, даже когда
+    // курсор в поле поверх таблицы (поиск в окне выбора кода). Ввод в чужое поле снимает с листа фокус.
+    const onKeyDownOutside = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement
+      if (created && !element.contains(target) && target.matches('input, textarea, select, [contenteditable]')) {
+        (created as unknown as { current: unknown }).current = null
+      }
+    }
     element.addEventListener('click', onClick)
     element.addEventListener('dblclick', onDoubleClick, true)
+    element.addEventListener('mousedown', onMouseDown, true)
+    document.addEventListener('keydown', onKeyDownOutside, true)
     void (async () => {
       try {
         const [{ default: jss }] = await Promise.all([import('jspreadsheet-ce'), import('jspreadsheet-ce/dist/jspreadsheet.css'), import('jsuites/dist/jsuites.css')])
@@ -109,10 +145,9 @@ export function ReviewSheet(props: Props) {
           autoIncrement: false,
           allowExport: false,
           worksheets: [{
-            data: rows.map((row) => sheetRow(row.item, row.selected)),
+            data: rows.map((row) => sheetRow(row.item)),
             columns: SHEET_COLUMNS.map((column) => ({ type: column.type, title: column.title, width: column.width, readOnly: column.readOnly, align: column.align })),
-            tableOverflow: true,
-            tableHeight: 'max(300px, calc(100vh - 330px))',
+            tableOverflow: false,
             tableWidth: '100%',
             columnSorting: false,
             columnDrag: false,
@@ -137,7 +172,9 @@ export function ReviewSheet(props: Props) {
           oneditionend: () => { requestAnimationFrame(() => syncRef.current()) },
           oncopy: (instance, range) => copiedText(instance, range),
           onresizecolumn: (instance) => fitNameColumn(instance),
-          onselection: (instance, x1, y1, x2, y2) => setSelectionSum(selectionSummary(instance, x1, y1, x2, y2)),
+          onselection: (instance, x1, y1, x2, y2) => {
+            setSelectionSum(selectionSummary(instance, x1, y1, x2, y2))
+          },
           contextMenu: (instance, _x, y) => contextMenu(instance, Number(y), latest.current),
         })
         created = jss
@@ -152,10 +189,17 @@ export function ReviewSheet(props: Props) {
           if (column.hint) ws.headers[x].title = column.hint
           if (!column.title) ws.headers[x].textContent = ''
         })
-        ws.headers[columnIndex('select')].innerHTML = '<input type="checkbox" data-act="select-all" aria-label="Выбрать все показанные строки">'
+        // Флажок «выбрать все показанные» — в углу шапки, над номерами строк.
+        const corner = ws.headerContainer.children[0] as HTMLElement | undefined
+        if (corner) corner.innerHTML = '<input type="checkbox" class="xs-pick-all" data-act="select-all" aria-label="Выбрать все показанные строки" title="Выбрать все показанные строки">'
+        // Строка «Итого в расчёте» — своя строка таблицы.
+        const foot = document.createElement('tfoot')
+        foot.className = 'xs-foot'
+        foot.innerHTML = '<tr></tr>'
+        ws.table.appendChild(foot)
         latest.current.apiRef.current = {
-          focusRow: (index) => {
-            const x = columnIndex('name')
+          focusCell: (index, key) => {
+            const x = columnIndex(key)
             ws.updateSelectionFromCoords(x, index, x, index)
             ws.records[index]?.[x]?.element.scrollIntoView({ block: 'center' })
           },
@@ -164,7 +208,26 @@ export function ReviewSheet(props: Props) {
         // «Товар» без своей ширины забирает всё свободное место (таблица — на всю ширину, раскладку
         // при любом изменении окна делает браузер); min-width не даёт ему сжаться меньше обычного.
         ws.colgroupContainer.children[columnIndex('name') + 1]?.removeAttribute('width')
+        // Колонка номера: флажок слева, номер справа — шире стандартной, чтобы они не наезжали друг на друга.
+        ws.colgroupContainer.children[0]?.setAttribute('width', '72')
         fitNameColumn(ws)
+        // Рамку выделения и маркер протягивания библиотека ставит один раз, при выделении. Колонки
+        // меняют ширину (открылась панель справа, изменилось окно) — ставим их заново.
+        // --xs-top — где лист начинается на странице, --xs-below — сколько под ним до конца сметы (подпись,
+        // отступы): смета ровно в окно, без прокрутки страницы (CSS). Страница сметы — тоже: над листом и под ним
+        // появляются строки («Строка удалена», сумма выделенного), и лист должен под них ужаться.
+        resized = new ResizeObserver(() => {
+          const box = element.getBoundingClientRect()
+          const page = element.closest('.goods-page')?.getBoundingClientRect()
+          element.style.setProperty('--xs-top', `${box.top + window.scrollY}px`)
+          element.style.setProperty('--xs-below', `${page ? Math.max(0, page.bottom - box.bottom) : 0}px`)
+          const cell = ws.selectedCell
+          if (cell) ws.updateSelectionFromCoords(Number(cell[0]), Number(cell[1]), Number(cell[2]), Number(cell[3]))
+        })
+        resized.observe(ws.table)
+        resized.observe(document.body)
+        const page = element.closest('.goods-page')
+        if (page) resized.observe(page)
         syncRef.current()
         setError('')
       } catch (reason) {
@@ -177,6 +240,9 @@ export function ReviewSheet(props: Props) {
       latest.current.apiRef.current = null
       element.removeEventListener('click', onClick)
       element.removeEventListener('dblclick', onDoubleClick, true)
+      element.removeEventListener('mousedown', onMouseDown, true)
+      document.removeEventListener('keydown', onKeyDownOutside, true)
+      resized?.disconnect()
       if (created) created.destroy(element as unknown as jspreadsheet.JspreadsheetInstanceElement, true)
       element.innerHTML = ''
     }
@@ -185,7 +251,6 @@ export function ReviewSheet(props: Props) {
   return <div className={props.compact ? 'xs-wrap compact' : 'xs-wrap'}>
     {error && <p className="xp-error">Не удалось открыть таблицу: {error}</p>}
     <div ref={host} className="xs-host" aria-label="Строки сметы: стрелки — переход, Enter или F2 — правка, Ctrl+C / Ctrl+V — копирование и вставка с Excel, Delete — очистить, Ctrl+Z — отменить" />
-    {selectionSum && <p className="xs-selection" role="status">{selectionSum}</p>}
   </div>
 }
 
@@ -223,11 +288,11 @@ function syncSheet(ws: Worksheet, props: Props, idsRef: MutableRefObject<string[
   const prefix = known.every((id, y) => y >= ids.length || ids[y] === id)
   silently(ws, () => {
     if (prefix && length < ids.length && known.length === length) ws.insertRow(ids.length - length)
-    else if (!prefix || length !== ids.length) ws.setData(props.rows.map((row) => sheetRow(row.item, row.selected)))
+    else if (!prefix || length !== ids.length) ws.setData(props.rows.map((row) => sheetRow(row.item)))
     idsRef.current = ids
     const data = ws.options.data as unknown[][]
     props.rows.forEach((row, y) => {
-      sheetRow(row.item, row.selected).forEach((value, x) => {
+      sheetRow(row.item).forEach((value, x) => {
         if (String(data[y]?.[x] ?? '') === String(value)) return
         if (ws.records[y][x].element.classList.contains('editor')) return
         ws.setValueFromCoords(x, y, value, true)
@@ -237,48 +302,86 @@ function syncSheet(ws: Worksheet, props: Props, idsRef: MutableRefObject<string[
   decorate(ws, props)
 }
 
-// Вид ячеек, которого нет в значениях: состояние, фото, кнопки, авто-значения, подсветка.
-// drawn — что уже нарисовано в ячейке: ключ вида и разметка, как её вернул браузер. Фото не
-// перерисовываются на каждый рендер, а ячейку, которую переписала библиотека, видно по разметке.
+// Колонку можно спрятать: своё скрытие, а не ws.hideColumn — та сбрасывает выделение и не прячет
+// ячейки строк, добавленных позже. Возвращает true, если видимость поменялась.
+function setColumnShown(ws: Worksheet, key: SheetKey, shown: boolean) {
+  const x = columnIndex(key)
+  const display = shown ? '' : 'none'
+  if (ws.headers[x].style.display === display) return false
+  ws.headers[x].style.display = display
+  ws.cols[x].colElement.style.display = display
+  return true
+}
+
+// Вид ячеек, которого нет в значениях: номер с состоянием и выбором, фото, кнопки, авто-значения,
+// подсветка проблем, повторы кода. drawn — что уже нарисовано в ячейке: ключ вида и разметка, как её
+// вернул браузер. Фото не перерисовываются на каждый рендер, а ячейку, которую переписала библиотека,
+// видно по разметке.
 const drawn = new WeakMap<HTMLElement, { key: string; html: string }>()
+
+function draw(td: HTMLElement, view: CellView, readOnly: boolean) {
+  const key = `${view.key ?? view.html}|${view.title}|${view.className ?? ''}`
+  const before = drawn.get(td)
+  // Ячейку со значением библиотека перерисовывает сама при правке — сверяем и разметку.
+  if (before?.key === key && (readOnly || td.innerHTML === before.html)) return
+  td.innerHTML = view.html
+  td.title = view.title
+  td.className = td.className.replace(/\bxs-\S+/g, '').trim()
+  if (view.className) td.classList.add(...view.className.split(' '))
+  drawn.set(td, { key, html: readOnly ? '' : td.innerHTML })
+}
 
 function decorate(ws: Worksheet, props: Props) {
   const visibleRows = props.rows.filter((row) => row.visible)
   const all = visibleRows.length > 0 && visibleRows.every((row) => row.selected)
-  const selectAll = ws.headers[columnIndex('select')]?.querySelector('input')
+  const selectAll = ws.headerContainer.querySelector<HTMLInputElement>('input[data-act="select-all"]')
   if (selectAll) { selectAll.checked = all; selectAll.indeterminate = !all && visibleRows.some((row) => row.selected) }
-  // Колонка упаковки, когда нетто есть везде. Своё скрытие, а не ws.hideColumn: та сбрасывает
-  // выделение и не прячет ячейки строк, добавленных позже.
-  const packageColumn = columnIndex('packageWeightKg')
-  const packageDisplay = props.hidePackage ? 'none' : ''
-  const toggled = ws.headers[packageColumn].style.display !== packageDisplay
-  ws.headers[packageColumn].style.display = packageDisplay
-  ws.cols[packageColumn].colElement.style.display = packageDisplay
-  ws.records.forEach((record) => { if (record[packageColumn]) record[packageColumn].element.style.display = packageDisplay })
+  const toggled = [setColumnShown(ws, 'photo', props.showPhoto), setColumnShown(ws, 'packageWeightKg', props.showPackage)].some(Boolean)
+  const hidden = new Set<number>([...(props.showPhoto ? [] : [columnIndex('photo')]), ...(props.showPackage ? [] : [columnIndex('packageWeightKg')])])
+  drawTotals(ws, props.totals, hidden)
   if (toggled) fitNameColumn(ws)
+  // Повтор кода строки выше (среди показанных) — название, код и ставка серым; начало новой группы кодов — линия темнее.
+  let previousCode: string | null = null
   props.rows.forEach((row, y) => {
     const tr = ws.rows[y]?.element
     if (!tr) return
     tr.style.display = row.visible ? '' : 'none'
+    const code = row.item.code.trim()
+    const repeat = row.visible && previousCode !== null && code !== '' && code === previousCode
+    const groupStart = row.visible && previousCode !== null && code !== previousCode
+    if (row.visible) previousCode = code
     tr.classList.toggle('xs-excluded', row.item.excluded)
     tr.classList.toggle('xs-selected', row.selected)
-    tr.classList.toggle('xs-attention', row.status.attention)
+    tr.classList.toggle('xs-group-start', groupStart)
+    // Ячейку номера библиотека переписывает сама (вставка строк) — сверяем разметку, как у ячеек со значением.
+    const index = tr.children[0] as HTMLElement | undefined
+    if (index) draw(index, numberView(row, y), false)
     SHEET_COLUMNS.forEach((column, x) => {
-      const view = cellView(column.key, row, props.defaultPackageWeight)
-      if (!view) return
       const td = ws.records[y][x].element
-      if (td.classList.contains('editor')) return
-      const key = `${view.key ?? view.html}|${view.title}|${view.className ?? ''}`
-      const before = drawn.get(td)
-      // Ячейку со значением библиотека перерисовывает сама при правке — сверяем и разметку.
-      if (before?.key === key && (column.readOnly || td.innerHTML === before.html)) return
-      td.innerHTML = view.html
-      td.title = view.title
-      td.className = td.className.replace(/\bxs-\S+/g, '').trim()
-      if (view.className) td.classList.add(...view.className.split(' '))
-      drawn.set(td, { key, html: column.readOnly ? '' : td.innerHTML })
+      td.style.display = hidden.has(x) ? 'none' : ''
+      const view = cellView(column.key, row, props.defaultPackageWeight, repeat)
+      if (!view || td.classList.contains('editor')) return
+      draw(td, view, Boolean(column.readOnly))
     })
   })
+}
+
+// Строка «Итого в расчёте» под колонками: места, количество, брутто, нетто и сколько строк в расчёте.
+function drawTotals(ws: Worksheet, totals: SheetTotals, hidden: Set<number>) {
+  const tr = ws.table.querySelector<HTMLTableRowElement>('tfoot.xs-foot > tr')
+  if (!tr) return
+  const value = (key: SheetKey) => {
+    if (key === 'name') return '<b>Итого в расчёте</b><span class="xs-foot-sel" role="status"></span>'
+    if (key === 'places') return escape(quantityText(totals.places))
+    if (key === 'pairs') return escape(quantityText(totals.quantity))
+    if (key === 'grossKg') return escape(fixedNumber(totals.grossKg, 1))
+    if (key === 'netKg') return escape(fixedNumber(totals.netKg, 1))
+    if (key === 'included') return `<span class="xs-foot-count">${totals.included} из ${totals.all}</span>`
+    return ''
+  }
+  const html = `<td></td>${SHEET_COLUMNS.map((column, x) => `<td class="xs-foot-${column.key}"${hidden.has(x) ? ' style="display:none"' : ''}>${value(column.key)}</td>`).join('')}`
+  // Сверяем с прошлой разметкой, а не с innerHTML: в ячейке «Итого» ещё и сумма выделенного (ставит ReviewSheet).
+  if (tr.dataset.html !== html) { tr.innerHTML = html; tr.dataset.html = html }
 }
 
 type CellView = { html: string; title: string; className?: string; key?: string }
@@ -286,13 +389,36 @@ type CellView = { html: string; title: string; className?: string; key?: string 
 const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const ru = (text: string) => text.replace(/(\d)\.(\d)/g, '$1,$2')
 const auto = (text: string) => `<span class="xs-auto">${escape(text)}</span>`
+// Количество — целое; дробное (места из количества ÷ штук в месте) — как есть, чтобы ошибку было видно.
+const quantityText = (value: number) => formatRuNumber(Math.abs(value - Math.round(value)) < 1e-9 ? String(Math.round(value)) : String(Number(value.toFixed(3))))
+// Вес в ячейке — один знак после запятой («20 230,0»); точное значение — в строке значения над таблицей.
+const weightCell = (value: string) => { const text = fixedNumber(value, 1); return text === '—' ? '' : text }
 
-function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string): CellView | null {
-  const { item, status } = row
-  const value = (field: keyof GoodsItemInput) => String(item[field] ?? '')
+// Ячейка номера: номер, цветная точка состояния (ошибка — красная, предупреждение — жёлтая),
+// флажок выбора строки — при наведении и у выбранных строк.
+function numberView(row: SheetRowView, y: number): CellView {
+  const tone = row.problems.some((problem) => problem.tone === 'error') ? 'error' : row.problems.length > 0 ? 'warn' : ''
+  const changed = row.status.tone === 'changed'
+  const dot = tone ? `<i class="xs-dot ${tone}" aria-hidden="true"></i>` : changed ? '<i class="xs-dot changed" aria-hidden="true"></i>' : ''
+  const pick = `<input type="checkbox" class="xs-pick" data-act="select"${row.selected ? ' checked' : ''} aria-label="Выбрать строку ${y + 1}">`
+  const title = [row.status.label, ...row.problems.map((problem) => problem.text)].filter(Boolean).join('\n')
+  return { html: `${pick}${dot}<span class="xs-num">${y + 1}</span>`, title, className: ['xs-index', row.selected ? 'xs-picked' : '', tone ? `xs-row-${tone}` : ''].filter(Boolean).join(' ') }
+}
+
+// Подсветка ячейки с проблемой: ошибка важнее предупреждения; текст проблемы — в подсказке.
+function problemOf(row: SheetRowView, key: SheetKey) {
+  const own = row.problems.filter((problem) => problem.column === key)
+  if (own.length === 0) return { className: '', text: '' }
+  return { className: own.some((problem) => problem.tone === 'error') ? 'xs-err' : 'xs-warn', text: own.map((problem) => problem.text).join('\n') }
+}
+
+function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string, repeat: boolean): CellView | null {
+  const { item } = row
+  const problem = problemOf(row, key)
+  const withProblem = (view: CellView): CellView => problem.className
+    ? { ...view, title: [problem.text, view.title].filter(Boolean).join('\n'), className: [view.className, problem.className].filter(Boolean).join(' ') }
+    : view
   switch (key) {
-    case 'status':
-      return { html: `<span class="xs-state ${status.tone}${status.source === 'past' ? ' past' : ''}" role="img" aria-label="${escape(status.label)}">${STATE_ICONS[status.tone]}</span>`, title: [status.label, ...status.issues].join('\n') }
     case 'photo': {
       const photos = photosOf(item)
       const add = `<button type="button" class="xs-photo-add${photos.length ? '' : ' empty'}" data-act="upload" title="Добавить фото" aria-label="Добавить фото">+</button>`
@@ -301,11 +427,19 @@ function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string
       return { html, title: '', key: `${photos.length}:${photos[0].length}:${photos[0].slice(-24)}` }
     }
     case 'name': {
+      // Русское название и через точку серым — китайское (или исходное из Excel).
+      const names = itemNames(item, item)
       const other = item.otherNames?.length ? `\nДругие наименования из файла: ${item.otherNames.join(' · ')}` : ''
-      return { html: item.name ? escape(item.name) : auto('Название товара'), title: item.name + other }
+      const html = item.name ? `${escape(names.main)}${names.sub ? ` <span class="xs-zh">· ${escape(names.sub)}</span>` : ''}` : auto('Название товара')
+      return withProblem({ html, title: item.name + other, className: repeat ? 'xs-repeat' : '' })
     }
     case 'code': {
-      // Код слева, справа — значки: справочник, подбор ИИ (с его состоянием), база решений.
+      // Нет кода — кнопка «Указать код» (справочник); код — моноширинным, метка «ИИ», если его предложил подбор;
+      // значки справочника, подбора ИИ и базы решений — у выбранной строки и при наведении.
+      if (!item.code) {
+        const html = item.excluded ? '' : '<button type="button" class="xs-set-code" data-act="picker">Указать код</button>'
+        return withProblem({ html, title: 'Выберите код в справочнике или введите его (двойной щелчок или просто начните печатать)', className: 'xs-code-empty' })
+      }
       const agent = agentView(row.agent, item.code)
       const saved = row.decision === 'saved' || typeof row.decision === 'number'
       const decision = !canSaveRowDecision(item) ? ''
@@ -317,20 +451,24 @@ function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string
         + `<button type="button" class="xs-tool agent ${agent.tone}" data-act="agent" title="${escape(agent.title)}">${ICONS.agent}${agent.mark ? `<i>${escape(agent.mark)}</i>` : ''}</button>`
         + `${decision}</span>`
       const verified = hasNomenclatureRates(item)
-      const text = item.code ? escape(formatCode(item.code)) : item.excluded ? '' : auto('нужен код')
-      const title = !item.code ? 'Введите или вставьте код ТН ВЭД (двойной щелчок или просто начните печатать)'
-        : verified ? 'Ставки из номенклатуры ТН ВЭД ЕАЭС' : 'Кода нет в номенклатуре ТН ВЭД ЕАЭС или она не загружена'
-      const className = !item.code ? (item.excluded ? '' : 'xs-missing') : verified ? 'xs-code' : 'xs-code xs-warn'
-      return { html: `<span class="xs-code-cell"><span class="xs-code-text">${text}</span>${tools}</span>`, title, className }
+      const ai = row.aiCode ? '<span class="xs-ai" title="Код предложил подбор ИИ">ИИ</span>' : ''
+      const title = verified ? 'Ставки из номенклатуры ТН ВЭД ЕАЭС' : 'Кода нет в номенклатуре ТН ВЭД ЕАЭС или она не загружена'
+      return withProblem({ html: `<span class="xs-code-cell"><span class="xs-code-text">${escape(formatCode(item.code))}</span>${ai}${tools}</span>`, title, className: ['xs-code', repeat ? 'xs-repeat' : ''].filter(Boolean).join(' ') })
+    }
+    case 'duty': {
+      const rate = dutyRateText(item.directorySnapshot).replace(/^ЕТТ\s*/, '')
+      return { html: rate ? escape(rate) : '—', title: rate ? `Пошлина ЕТТ из номенклатуры: ${rate}` : 'Ставки нет: код не указан или его нет в номенклатуре', className: ['xs-duty', repeat ? 'xs-repeat' : ''].filter(Boolean).join(' ') }
     }
     case 'places': case 'pairsPerPlace': case 'pairs': {
-      if (item[key]) return { html: escape(formatRuNumber(item[key])), title: '' }
+      if (item[key]) return withProblem({ html: escape(formatRuNumber(item[key])), title: '' })
+      // Пустое поле, которое рассчитается: значение серым, формула — в подсказке.
       const hint = autoQuantityHint(item, key as QuantityField)
-      return { html: hint ? auto(ru(hint.placeholder)) : '', title: hint ? ru(hint.title) : '' }
+      const value = autoQuantity(item, key as QuantityField)
+      return withProblem({ html: value !== null ? auto(quantityText(value)) : '', title: hint ? ru(hint.title.replace('Рассчитается автоматически', 'Рассчитано')) : '' })
     }
     case 'grossKg': {
       const need = !item.excluded && !item.grossKg.trim() && !item.netKg.trim()
-      return { html: escape(formatRuNumber(item.grossKg)), title: need ? 'Укажите брутто: без него не посчитать авто-нетто' : '', className: need ? 'xs-need' : '' }
+      return withProblem({ html: escape(weightCell(item.grossKg)), title: need ? 'Укажите брутто: без него не посчитать авто-нетто' : '', className: need ? 'xs-need' : '' })
     }
     case 'packageWeightKg': {
       const own = item.packageWeightKg.trim() !== '' && item.packageWeightKg !== defaultPackageWeight
@@ -341,24 +479,12 @@ function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string
       const netItem = { ...item, packageWeightKg: effectivePackageWeight(item, defaultPackageWeight) }
       const hint = netHint(netItem)
       const autoNet = autoNetFor(netItem)
-      const html = item.netKg ? escape(formatRuNumber(value('netKg'))) : autoNet !== null ? auto(`авто ${ru(formatWeight(autoNet))}`) : ''
-      return { html, title: ru(hint.text) + (item.netKg && item.netSource !== 'excel' ? '\nDelete — вернуть авто-нетто' : ''), className: hint.className === 'net-bad' ? 'xs-bad' : '' }
+      const html = item.netKg ? escape(weightCell(item.netKg)) : autoNet !== null ? auto(weightCell(String(autoNet))) : ''
+      return withProblem({ html, title: ru(hint.text) + (item.netKg && item.netSource !== 'excel' ? '\nDelete — вернуть авто-нетто' : ''), className: hint.className === 'net-bad' && !problem.className ? 'xs-err' : '' })
     }
     default:
       return null
   }
-}
-
-// Значок состояния строки: форма отличается, а не только цвет (✓, !, ?, ↻, –).
-const svg = (body: string) => `<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
-const question = '<path d="M4.4 4.4a1.7 1.7 0 1 1 2.4 1.5c-.5.3-.8.6-.8 1.2v.2"/><circle cx="6" cy="9.4" r=".5" fill="currentColor"/>'
-const STATE_ICONS: Record<ReviewTone, string> = {
-  ok: svg('<path d="M2.8 6.3 5 8.4l4.2-4.6"/>'),
-  bad: svg('<path d="M6 2.8v4"/><circle cx="6" cy="9.2" r=".5" fill="currentColor"/>'),
-  warn: svg(question),
-  todo: svg(question),
-  changed: svg('<path d="M9.3 4.6A3.6 3.6 0 1 0 9.6 7"/><path d="M9.6 2.4v2.4H7.2"/>'),
-  off: svg('<path d="M3.4 6h5.2"/>'),
 }
 
 // Значки кнопок в ячейке кода: справочник (лупа), подбор ИИ (искра), база решений (закладка).

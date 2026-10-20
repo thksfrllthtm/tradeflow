@@ -74,7 +74,7 @@ describe('distributeBudget', () => {
     // One step of 0.0001 on a million units moves the total by 100 USD — more than the 10 USD wide window.
     const result = await distributeBudget([{ code: 'A', quantity: 1_000_000 }], 12_375, access, { evaluate: cost })
     expect(result.status).toBe('closest')
-    expect(result.message).toMatch(/Не удалось точно попасть в бюджет/)
+    expect(result.message).toMatch(/Не удалось точно попасть в кассу/)
   })
 
   it('does nothing when every price is set, the payment cannot be counted or is over budget without prices', async () => {

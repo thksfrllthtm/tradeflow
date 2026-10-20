@@ -94,8 +94,8 @@ export function RatesConverter({ rates }: { rates: TodayRate[] }) {
 
   return <details className="app-header-rates" ref={ref} onToggle={(event) => setOpen(event.currentTarget.open)}>
     <summary title={`Курс Национального банка РК на ${formatRuDate(rates[0].date)} — нажмите, чтобы пересчитать сумму`} aria-label="Курс НБРК и конвертер валют">
-      {shown.map((rate) => <span key={rate.currency} className="app-header-rate"><small>1 {rate.currency}</small><b>{formatRuNumber(rate.rate)} ₸</b></span>)}
-      <span className="app-header-rate-date">НБРК · {formatRuDate(rates[0].date)}</span>
+      <span className="app-header-rate">{shown.map((rate, index) => <span key={rate.currency}>{index > 0 && ' · '}{rate.currency} <b>{formatRuNumber(rate.rate)}</b></span>)}</span>
+      <span className="app-header-rate-date">НБРК, {formatRuDate(rates[0].date)}</span>
     </summary>
     {open && <div className="app-header-converter" role="group" aria-label="Конвертер валют">
       <strong>Конвертер валют</strong>

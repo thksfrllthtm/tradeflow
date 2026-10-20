@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import './ColumnFieldMenu.css'
 
 export type ColumnField = { value: string; label: string }
@@ -16,12 +16,23 @@ type Props = {
   onClose: () => void
 }
 
-// Список «что в этой колонке» под заголовком колонки файла — один для обычной таблицы и для
-// вида «Как в Excel». Закрывается кликом мимо, Esc и прокруткой (он привязан к месту заголовка).
+// Наименования (name, name2, name3) — одним пунктом «Наименование» со своим списком внутри.
+const NAME = /^name\d*$/
+const nameLabel: Record<string, [string, string]> = {
+  name: ['Основное', 'Главное наименование товара — по нему подбирается код'],
+  name2: ['Второе', 'Ещё одна колонка с наименованием (например, китайское): подбор кода и база решений используют все наименования'],
+  name3: ['Третье', 'Ещё одна колонка с наименованием: подбор кода и база решений используют все наименования'],
+}
+
+// Список «что в этой колонке» под заголовком колонки файла (лист «Как в Excel»). Закрывается кликом мимо,
+// Esc и прокруткой (он привязан к месту заголовка).
 export function ColumnFieldMenu({ anchor, fields, chosen, holder, ignoreSelector, onChoose, onClose }: Props) {
   const menuRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
   closeRef.current = onClose
+  // Список наименований открыт сразу, если колонке уже назначено одно из них.
+  const [namesOpen, setNamesOpen] = useState(NAME.test(chosen))
+  const names = fields.filter((field) => NAME.test(field.value))
 
   useEffect(() => {
     const close = (event: Event) => {
@@ -43,15 +54,30 @@ export function ColumnFieldMenu({ anchor, fields, chosen, holder, ignoreSelector
     }
   }, [ignoreSelector])
 
+  function option(field: ColumnField, label: ReactNode, title?: string) {
+    const other = holder(field.value)
+    return <button key={field.value} type="button" role="option" aria-selected={chosen === field.value} className={chosen === field.value ? 'active' : undefined} onClick={() => onChoose(field.value)} title={title}>
+      <span>{label}</span>{other && <small>сейчас: {other}</small>}
+    </button>
+  }
+
   return <div ref={menuRef} className="xp-menu" role="listbox" aria-label={`Что в колонке «${anchor.header}»`}
     style={{ left: Math.max(8, Math.min(anchor.left, window.innerWidth - 268)), top: anchor.top + 2, minWidth: Math.max(anchor.width, 220) }}>
     <div className="xp-menu-head">{anchor.header}</div>
     <button type="button" role="option" aria-selected={!chosen} className={!chosen ? 'active' : undefined} onClick={() => onChoose('')}>Не использовать</button>
     {fields.map((field) => {
-      const other = holder(field.value)
-      return <button key={field.value} type="button" role="option" aria-selected={chosen === field.value} className={chosen === field.value ? 'active' : undefined} onClick={() => onChoose(field.value)}>
-        <span>{field.label}</span>{other && <small>сейчас: {other}</small>}
-      </button>
+      if (!NAME.test(field.value)) return option(field, field.label)
+      if (field !== names[0]) return null
+      const inGroup = NAME.test(chosen)
+      return <div key="names" className="xp-menu-names">
+        <button type="button" className={inGroup ? 'xp-menu-group has-chosen' : 'xp-menu-group'} aria-expanded={namesOpen} onClick={() => setNamesOpen((open) => !open)}>
+          <span>Наименование</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3" /></svg>
+        </button>
+        {namesOpen && <div className="xp-menu-sub" role="group" aria-label="Наименование">
+          {names.map((name) => option(name, nameLabel[name.value]?.[0] ?? name.label, nameLabel[name.value]?.[1]))}
+        </div>}
+      </div>
     })}
   </div>
 }

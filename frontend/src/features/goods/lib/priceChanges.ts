@@ -27,7 +27,11 @@ export function changedFromExcel(items: GoodsItemInput[], result: GoodsCalculati
   return items.flatMap((item, index) => !item.excluded && priceDiffers(item.sourcePricePerPair, shownPrice(items, result, index)) ? [index] : [])
 }
 
-// Строки, где цена на экране отличается от цены строки сметы: их меняет «Сбросить цены».
+// Строки, где цена на экране отличается от цены строки сметы (или у строки сметы цены нет, а на экране есть —
+// её поставил подбор под бюджет): их меняет «Вернуть цены из файла», их цены заменяет новый подбор.
 export function changedFromRows(items: GoodsItemInput[], result: GoodsCalculationResult | null) {
-  return items.flatMap((item, index) => !item.excluded && priceDiffers(item.pricePerPair, shownPrice(items, result, index)) ? [index] : [])
+  return items.flatMap((item, index) => {
+    const shown = shownPrice(items, result, index)
+    return !item.excluded && shown && (!item.pricePerPair?.trim() || priceDiffers(item.pricePerPair, shown)) ? [index] : []
+  })
 }

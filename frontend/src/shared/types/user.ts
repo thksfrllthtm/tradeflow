@@ -15,3 +15,7 @@ export const isAdmin = (user: User) => user.role === 'admin'
 
 // Раздел «Переводчик» — переводчикам и администратору (на сервере — requireTranslator).
 export const canTranslate = (user: User) => user.role === 'admin' || user.role === 'translator'
+
+// Сметы, справочник товаров, база решений и керамика — всем, кроме переводчика
+// (на сервере — requireNotTranslator).
+export const canEstimate = (user: User) => user.role !== 'translator'

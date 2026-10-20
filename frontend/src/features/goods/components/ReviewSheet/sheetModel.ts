@@ -5,37 +5,36 @@ import { normalizeTnvedCode } from '../../lib/nomenclatureRates'
 // Таблица этапа 2 «как в Excel»: колонки листа и перевод правок листа (ввод, вставка, Delete,
 // протягивание) в строки сметы. Строки сметы — источник правды, лист их только показывает.
 
-export type SheetKey = 'select' | 'status' | 'photo' | 'name' | 'code' | NumberField | 'included'
+export type SheetKey = 'photo' | 'name' | 'code' | 'duty' | NumberField | 'included'
 export type NumberField = 'places' | 'pairsPerPlace' | 'pairs' | 'grossKg' | 'packageWeightKg' | 'netKg'
 
 export type SheetColumn = { key: SheetKey; title: string; width: number; type: 'text' | 'checkbox'; readOnly?: boolean; align: 'left' | 'right' | 'center'; hint?: string }
 
 export const NUMBER_FIELDS: NumberField[] = ['places', 'pairsPerPlace', 'pairs', 'grossKg', 'packageWeightKg', 'netKg']
 
+// Выбор строк и их состояние — в ячейке номера (не колонки листа); «Фото» и «Упак.» прячутся, когда не нужны.
 export const SHEET_COLUMNS: SheetColumn[] = [
-  { key: 'select', title: '', width: 34, type: 'checkbox', align: 'center', hint: 'Отметить строки для действий над несколькими строками' },
-  { key: 'status', title: '', width: 30, type: 'text', readOnly: true, align: 'center', hint: 'Состояние строки' },
   { key: 'photo', title: 'Фото', width: 58, type: 'text', readOnly: true, align: 'center' },
-  { key: 'name', title: 'Товар', width: 340, type: 'text', align: 'left' },
-  { key: 'code', title: 'Код ТН ВЭД', width: 196, type: 'text', align: 'left', hint: 'Код можно ввести или вставить; ставки подставятся из номенклатуры. Значки справа: справочник, подбор ИИ, база решений' },
-  { key: 'places', title: 'Места', width: 80, type: 'text', align: 'right', hint: 'Количество мест' },
-  { key: 'pairsPerPlace', title: 'Шт. в месте', width: 92, type: 'text', align: 'right', hint: 'Количество товара в одном месте' },
-  { key: 'pairs', title: 'Кол-во, шт', width: 96, type: 'text', align: 'right', hint: 'Пустое из трёх полей рассчитается: места × штук в месте' },
-  { key: 'grossKg', title: 'Брутто, кг', width: 96, type: 'text', align: 'right' },
-  { key: 'packageWeightKg', title: 'Упак., кг', width: 82, type: 'text', align: 'right', hint: 'Вес упаковки одного места для авто-нетто. Пустое — общая упаковка из параметров расчёта' },
-  { key: 'netKg', title: 'Нетто, кг', width: 104, type: 'text', align: 'right', hint: 'Пустое — рассчитается: брутто − места × вес упаковки' },
-  { key: 'included', title: 'В расчёте', width: 78, type: 'checkbox', align: 'center', hint: 'Учитывать строку в расчёте' },
+  { key: 'name', title: 'Товар', width: 260, type: 'text', align: 'left' },
+  { key: 'code', title: 'Код ТН ВЭД', width: 176, type: 'text', align: 'left', hint: 'Код можно ввести или вставить; ставки подставятся из номенклатуры. Значки справа: справочник, подбор ИИ, база решений' },
+  { key: 'duty', title: 'Пошлина', width: 92, type: 'text', readOnly: true, align: 'right', hint: 'Ставка пошлины ЕТТ по коду из номенклатуры ТН ВЭД ЕАЭС' },
+  { key: 'places', title: 'Места', width: 76, type: 'text', align: 'right', hint: 'Количество мест' },
+  { key: 'pairsPerPlace', title: 'Шт. в месте', width: 96, type: 'text', align: 'right', hint: 'Количество товара в одном месте' },
+  { key: 'pairs', title: 'Кол-во, шт', width: 100, type: 'text', align: 'right', hint: 'Пустое из трёх полей рассчитается: места × штук в месте' },
+  { key: 'grossKg', title: 'Брутто, кг', width: 100, type: 'text', align: 'right' },
+  { key: 'packageWeightKg', title: 'Упак., кг', width: 90, type: 'text', align: 'right', hint: 'Вес упаковки одного места для авто-нетто. Пустое — общая упаковка из параметров расчёта' },
+  { key: 'netKg', title: 'Нетто, кг', width: 100, type: 'text', align: 'right', hint: 'Пустое — рассчитается: брутто − места × вес упаковки' },
+  { key: 'included', title: 'В расчёте', width: 84, type: 'checkbox', align: 'center', hint: 'Учитывать строку в расчёте' },
 ]
 
 export const columnIndex = (key: SheetKey) => SHEET_COLUMNS.findIndex((column) => column.key === key)
 
 export type SheetCell = string | boolean
 
-// Значения строки для листа. Служебные колонки (состояние, фото, подбор) пустые: их вид рисуется
+// Значения строки для листа. Служебные колонки (фото, пошлина) пустые: их вид рисуется
 // отдельно, а при копировании они дают пустые ячейки.
-export function sheetRow(item: GoodsItemInput, selected: boolean): SheetCell[] {
+export function sheetRow(item: GoodsItemInput): SheetCell[] {
   return SHEET_COLUMNS.map(({ key }) => {
-    if (key === 'select') return selected
     if (key === 'included') return !item.excluded
     if (key === 'name' || key === 'code' || (NUMBER_FIELDS as string[]).includes(key)) return String(item[key as keyof GoodsItemInput] ?? '')
     return ''
@@ -60,7 +59,7 @@ export function parseFlag(value: unknown): boolean | null {
 
 // Значение ячейки для буфера обмена: числа с запятой (русский Excel), флажки — «да»/«нет».
 export function copyValue(key: SheetKey, value: unknown): string {
-  if (key === 'select' || key === 'status' || key === 'photo') return ''
+  if (key === 'photo' || key === 'duty') return ''
   if (key === 'included') return parseFlag(value) ? 'да' : 'нет'
   const text = String(value ?? '').replace(/[\t\r\n]+/g, ' ')
   return (NUMBER_FIELDS as string[]).includes(key) ? text.replace('.', ',') : text
@@ -71,8 +70,6 @@ export type SheetChange = { x: number; y: number; value: unknown }
 export type AppliedChanges = {
   // null — строки не изменились (например, Delete по флажкам).
   items: GoodsItemInput[] | null
-  // Отметки строк (колонка выбора): id → отмечена.
-  selected: Map<string, boolean>
   // Строки с новым кодом из 10 цифр: ставки нужно взять из номенклатуры.
   codes: Map<string, string>
 }
@@ -81,7 +78,6 @@ export type AppliedChanges = {
 // длиннее таблицы) становятся новыми строками.
 export function applySheetChanges(items: GoodsItemInput[], changes: SheetChange[], packageWeightKg: string, newId: (index: number) => string): AppliedChanges {
   const next = [...items]
-  const selected = new Map<string, boolean>()
   const codes = new Map<string, string>()
   let changed = false
   for (const { x, y, value } of changes) {
@@ -90,7 +86,6 @@ export function applySheetChanges(items: GoodsItemInput[], changes: SheetChange[
     while (next.length <= y) { next.push(emptyItem(newId(next.length), packageWeightKg)); changed = true }
     const item = next[y]
     const id = item.id ?? ''
-    if (key === 'select') { selected.set(id, parseFlag(value) ?? false); continue }
     let updated = item
     if (key === 'included') {
       const flag = parseFlag(value)
@@ -113,5 +108,5 @@ export function applySheetChanges(items: GoodsItemInput[], changes: SheetChange[
     }
     if (updated !== item) { next[y] = updated; changed = true }
   }
-  return { items: changed ? next : null, selected, codes }
+  return { items: changed ? next : null, codes }
 }
