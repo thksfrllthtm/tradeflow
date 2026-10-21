@@ -1,55 +1,55 @@
 /* Калькулятор утильсбора: карточки ввода и результата в стиле справочников. */
 
 .uf-page { width: min(860px, 100%); overflow: auto; }
-.uf-card { display: grid; gap: 10px; padding: 16px; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
-.uf-card h2 { margin: 0; color: #1a2a20; font-size: .95rem; }
-.uf-card label { display: grid; gap: 5px; margin: 0; color: #56665c; font-size: .76rem; font-weight: 600; }
+.uf-card { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; }
+.uf-card h2 { margin: 0; color: var(--tf-text); font-size: .95rem; }
+.uf-card label { display: grid; gap: 5px; margin: 0; color: var(--tf-text-2); font-size: .76rem; font-weight: 600; }
 .uf-card input:not([type="checkbox"]), .uf-card select {
   height: 36px;
   margin: 0;
   padding: 0 10px;
-  border: 1px solid #d3ddd6;
-  border-radius: 7px;
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius);
   background: #fff;
   font-size: .86rem;
 }
-.uf-card input:focus, .uf-card select:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.uf-card input:focus, .uf-card select:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .12); }
 
 .uf-inputs { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-.uf-hint, .uf-edition { margin: 0; color: #7a877f; font-size: .8rem; }
-.uf-empty { color: #34443b; font-size: .88rem; }
+.uf-hint, .uf-edition { margin: 0; color: var(--tf-muted); font-size: .8rem; }
+.uf-empty { color: var(--tf-text-2); font-size: .86rem; }
 
 .uf-matches { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.uf-matches li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; color: #1f2d24; font-size: .86rem; }
-.uf-title { flex-basis: 100%; color: #6b7a71; font-size: .78rem; }
+.uf-matches li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; color: var(--tf-text); font-size: .86rem; }
+.uf-title { flex-basis: 100%; color: var(--tf-muted); font-size: .78rem; }
 .uf-note { flex-basis: 100%; color: #8a5a00; font-size: .78rem; }
-.uf-kind { padding: 0 8px; border-radius: 999px; font-size: .72rem; font-weight: 650; line-height: 20px; }
-.uf-kind-product { background: #e3ece6; color: #1a4d33; }
+.uf-kind { padding: 0 8px; border-radius: 999px; font-size: .76rem; font-weight: 600; line-height: 20px; }
+.uf-kind-product { background: var(--tf-border); color: var(--tf-green); }
 .uf-kind-packaging { background: #eef0fb; color: #2f3b8a; }
 .uf-kind-vehicle { background: #fbf1e3; color: #7a4b00; }
-.uf-k { color: #34443b; font-weight: 650; }
+.uf-k { color: var(--tf-text-2); font-weight: 600; }
 .uf-positions { display: flex; flex-basis: 100%; flex-wrap: wrap; gap: 6px; }
-.uf-positions button, .uf-positions button:hover:not(:disabled) { height: 28px; padding: 0 10px; border: 1px solid #d3ddd6; border-radius: 6px; background: #fff; color: #1f2d24; font-family: ui-monospace, monospace; font-size: .78rem; }
-.uf-positions button:hover:not(:disabled) { border-color: #24704a; background: #f3f7f4; }
+.uf-positions button, .uf-positions button:hover:not(:disabled) { height: 28px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: 6px; background: #fff; color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: .78rem; }
+.uf-positions button:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-chip); }
 
 .uf-section { flex-basis: 100%; }
 .uf-section summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; cursor: pointer; }
 .uf-section[open] summary { margin-bottom: 8px; }
 
-.uf-formula { margin: -4px 0 0; color: #7a877f; font-size: .78rem; }
+.uf-formula { margin: -4px 0 0; color: var(--tf-muted); font-size: .78rem; }
 .uf-row { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
 .uf-row label { min-width: 180px; }
 .uf-row .uf-wide { flex: 1 1 280px; }
-.uf-card .uf-check { display: flex; align-items: center; gap: 7px; min-width: 0; height: 36px; color: #34443b; font-size: .82rem; font-weight: 500; cursor: pointer; }
-.uf-check input { width: 16px; height: 16px; margin: 0; accent-color: #24704a; }
-.uf-amount { margin-left: auto; color: #1a2a20; font-size: 1rem; font-weight: 700; line-height: 36px; white-space: nowrap; }
-.uf-remove, .uf-remove:hover:not(:disabled), .uf-add, .uf-add:hover:not(:disabled) { border: 1px solid #d3ddd6; background: #fff; color: #34443b; }
-.uf-remove { width: 36px; height: 36px; padding: 0; border-radius: 7px; font-size: 1rem; }
-.uf-add { justify-self: start; height: 32px; padding: 0 12px; border-radius: 7px; font-size: .8rem; font-weight: 600; }
-.uf-remove:hover:not(:disabled), .uf-add:hover:not(:disabled) { background: #f3f7f4; }
+.uf-card .uf-check { display: flex; align-items: center; gap: 7px; min-width: 0; height: 36px; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; cursor: pointer; }
+.uf-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); }
+.uf-amount { margin-left: auto; color: var(--tf-text); font-size: 1rem; font-weight: 600; line-height: 36px; white-space: nowrap; }
+.uf-remove, .uf-remove:hover:not(:disabled), .uf-add, .uf-add:hover:not(:disabled) { border: 1px solid var(--tf-border); background: #fff; color: var(--tf-text-2); }
+.uf-remove { width: 36px; height: 36px; padding: 0; border-radius: var(--tf-radius); font-size: 1rem; }
+.uf-add { justify-self: start; height: 32px; padding: 0 12px; border-radius: var(--tf-radius); font-size: .8rem; font-weight: 600; }
+.uf-remove:hover:not(:disabled), .uf-add:hover:not(:disabled) { background: var(--tf-chip); }
 
-.uf-total { grid-template-columns: 1fr auto; align-items: center; background: #eef7f1; color: #1a4d33; font-size: .92rem; }
-.uf-total strong { font-size: 1.15rem; }
+.uf-total { grid-template-columns: 1fr auto; align-items: center; background: var(--tf-green-soft); color: var(--tf-green); font-size: .86rem; }
+.uf-total strong { font-size: 1.12rem; }
 
 @media (max-width: 640px) {
   .uf-inputs { grid-template-columns: 1fr; }

@@ -104,7 +104,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
         {result.matches.length === 0 && result.possible.length === 0 &&
           <div className="uf-card uf-empty">Код <code>{formatCode(result.code)}</code> не входит в перечень — утильсбор не платится.</div>}
         {result.matches.length > 0 && <div className="uf-card">
-          <h2>Код {formatCode(result.code)} в перечне</h2>
+          <h2>Код <code>{formatCode(result.code)}</code> в перечне</h2>
           <ul className="uf-matches">
             {result.matches.map((match) => <li key={match.section}>
               <strong>Раздел {match.section}, п. {match.item}</strong> <span className={`uf-kind uf-kind-${match.kind}`}>{kindLabels[match.kind]}</span>
@@ -116,7 +116,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
         </div>}
         {result.possible.length > 0 && <div className="uf-card">
           <h2>Зависит от полного кода</h2>
-          <p className="uf-formula">Эти позиции перечня начинаются с {result.code}. Введите код полностью или выберите позицию.</p>
+          <p className="uf-formula">Эти позиции перечня начинаются с <code>{formatCode(result.code)}</code>. Введите код полностью или выберите позицию.</p>
           <ul className="uf-matches">
             {[...new Set(result.possible.map((match) => match.section))].map((sectionNumber) => {
               const items = result.possible.filter((match) => match.section === sectionNumber)

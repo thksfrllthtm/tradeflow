@@ -109,7 +109,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
 
             {estimator && <section className="home-section" aria-labelledby="home-recent">
               <div className="home-section-head">
-                <h2 id="home-recent">Последние сметы{estimates && estimates.length > 0 && <span className="home-count"> · {estimates.length}</span>}</h2>
+                <h2 id="home-recent">Последние сметы{estimates && estimates.length > 0 && <span className="home-count">{estimates.length}</span>}</h2>
                 <Link href={paths.goods()}>Все сметы<ArrowIcon /></Link>
               </div>
               {listError ? <div className="home-state error" role="alert">

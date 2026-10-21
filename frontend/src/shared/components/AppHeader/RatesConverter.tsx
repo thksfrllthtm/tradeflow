@@ -102,7 +102,7 @@ export function RatesConverter({ rates }: { rates: TodayRate[] }) {
       <input className="app-header-converter-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} aria-label="Сумма" autoFocus />
       <div className="app-header-converter-row">
         <CurrencySelect value={from} codes={codes} rates={rates} label="Из валюты" onChange={setFrom} />
-        <button type="button" className="cur-swap" onClick={() => { setFrom(to); setTo(from) }} title="Поменять местами" aria-label="Поменять валюты местами">⇄</button>
+        <button type="button" className="cur-swap" onClick={() => { setFrom(to); setTo(from) }} title="Поменять местами" aria-label="Поменять валюты местами">⇅</button>
         <CurrencySelect value={to} codes={codes} rates={rates} label="В валюту" onChange={setTo} />
       </div>
       <output className="app-header-converter-result">{result === null ? '—' : `${amountText(result)} ${symbol(to)}`}</output>

@@ -69,7 +69,7 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
     <aside className="drawer dc-drawer" role="dialog" aria-modal="true" aria-labelledby="dc-title">
       <header className="drawer-head">
         <div>
-          <h2 id="dc-title">Решение · {decision ? formatCode(decision.code) : '…'}</h2>
+          <h2 id="dc-title">Решение · {decision ? <code>{formatCode(decision.code)}</code> : '…'}</h2>
           {decision && <p>
             <span className={`dc-status ${decision.status}`}>{decisionStatusLabels[decision.status]}</span>
             {' '}{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}
@@ -105,12 +105,12 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
               : <p className="dc-warn">Кода нет в текущей номенклатуре ТН ВЭД ЕАЭС.</p>}
             {decision.quote && <blockquote className="dc-quote">{decision.quote}</blockquote>}
             {decision.agentCode && <p className={decision.agentCorrect === false || agentChanged ? 'dc-warn' : 'dc-sub'}>
-              ИИ предлагал {formatCode(decision.agentCode)}{decision.agentCorrect === true ? ' — верно' : decision.agentCorrect === false ? ' — администратор исправил' : agentChanged ? ' — при проверке будет отмечено, что ИИ ошибся' : ''}
+              ИИ предлагал <code>{formatCode(decision.agentCode)}</code>{decision.agentCorrect === true ? ' — верно' : decision.agentCorrect === false ? ' — администратор исправил' : agentChanged ? ' — при проверке будет отмечено, что ИИ ошибся' : ''}
             </p>}
           </section>
           {decision.rejectedCodes.length > 0 && <section className="drawer-section">
             <h3>Рассматривались и не подошли</h3>
-            {decision.rejectedCodes.map((item) => <p key={item.code} className="dc-sub"><b>{formatCode(item.code)}</b> — {item.why}</p>)}
+            {decision.rejectedCodes.map((item) => <p key={item.code} className="dc-sub"><code>{formatCode(item.code)}</code> — {item.why}</p>)}
           </section>}
           {(admin || decision.note) && <section className="drawer-section">
             <h3>Заметка</h3>

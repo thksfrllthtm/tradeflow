@@ -42,8 +42,14 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
       {!docked && <button type="button" className="es-icon" onClick={() => setOpen(false)} title="Закрыть список (Esc)" aria-label="Закрыть список смет">×</button>}
     </div>
     <div className="es-tools">
-      <button type="button" className="es-create" onClick={() => { setOpen(false); onCreate() }}>+ Новая смета</button>
-      {estimates.length > 5 && <input className="es-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск: название, клиент, дата" aria-label="Поиск сметы" autoFocus={!docked} />}
+      <button type="button" className="es-create" onClick={() => { setOpen(false); onCreate() }}>
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M7 2.5v9M2.5 7h9" /></svg>
+        Новая смета
+      </button>
+      {estimates.length > 5 && <label className="es-search">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="6" cy="6" r="4.2" /><path d="m9.2 9.2 3 3" /></svg>
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Название, клиент, дата" aria-label="Поиск сметы" autoFocus={!docked} />
+      </label>}
     </div>
     {loading ? <p className="es-note">Загрузка…</p>
       : estimates.length === 0 ? <p className="es-note">Смет пока нет. Создайте первую.</p>
@@ -51,6 +57,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
       : <nav className="es-list" aria-label="Список смет">
         {visible.map((estimate) => {
           const name = nameOf(estimate)
+          const date = formatRuDate(estimate.assessmentDate)
           const calculated = estimate.status === 'Рассчитано'
           return <div className={estimate.id === selectedId ? 'es-item active' : 'es-item'} key={estimate.id}>
             <Link href={hrefOf(estimate.id)} aria-current={estimate.id === selectedId ? 'page' : undefined} title={name}>
@@ -59,8 +66,9 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
                 <i className={calculated ? 'es-status done' : 'es-status'}>{estimate.status}</i>
               </span>
               <span className="es-item-sub">
-                <span>{estimate.client || 'Без клиента'}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
-                <span>{formatRuDate(estimate.assessmentDate)}</span>
+                <span className={estimate.client ? undefined : 'es-none'}>{estimate.client || 'Без клиента'}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
+                {/* Дата уже в названии по умолчанию («Смета товаров · 21.10.2026») — второй раз не пишем. */}
+                {!name.includes(date) && <span>{date}</span>}
               </span>
             </Link>
             <button type="button" className="es-remove" onClick={() => onRemove(estimate)} title="Удалить смету" aria-label={`Удалить смету ${name}`}>×</button>

@@ -1,20 +1,24 @@
-/* Выбор кода ТН ВЭД в карточке товара: поле поиска, список под ним, выбранный код с ставками. */
+/* Выбор кода ТН ВЭД в карточке товара: поле поиска, список под ним, выбранный код со ставками.
+   Цвета — токены --tf-* (base.css), как в этапах сметы. */
 
-.tnved-picker { position: relative; display: grid; gap: 8px; }
+.tnved-picker { position: relative; display: grid; gap: 10px; }
 .tnved-picker > input {
   width: 100%;
-  height: 38px;
+  height: 36px;
   margin: 0;
   padding: 0 12px;
-  border: 1px solid #d3ddd6;
-  border-radius: 7px;
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius);
+  background: var(--tf-card);
+  color: var(--tf-text);
   font-size: .86rem;
 }
-.tnved-picker > input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.tnved-picker > input::placeholder { color: var(--tf-muted); }
+.tnved-picker > input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); box-shadow: none; }
 
 .tnved-picker-list {
   position: absolute;
-  top: 42px;
+  top: 40px;
   right: 0;
   left: 0;
   z-index: 5;
@@ -22,27 +26,25 @@
   margin: 0;
   padding: 4px;
   overflow-y: auto;
-  border: 1px solid #dfe7e1;
-  border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 12px 28px rgba(20, 52, 35, .14);
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius-card);
+  background: var(--tf-card);
+  box-shadow: var(--tf-shadow-pop);
   list-style: none;
 }
-.tnved-picker-list li {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 1px 10px;
-  padding: 7px 9px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.tnved-picker-list li.active { background: #eef6f1; }
-.tnved-picker-list li.selected code::after { content: ' ✓'; color: #24704a; }
-.tnved-picker-list code { grid-row: span 2; color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .8rem; font-weight: 700; }
-.tnved-picker-list span { overflow: hidden; color: #1f2d24; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
-.tnved-picker-list small { color: #7a877f; font-size: .7rem; }
-.tnved-picker-list .tnved-picker-empty { display: block; color: #7a877f; font-size: .8rem; cursor: default; }
+.tnved-picker-list li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 1px 10px; padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+.tnved-picker-list li.active { background: var(--tf-chip); }
+.tnved-picker-list li.selected code::after { content: ' ✓'; color: var(--tf-green); }
+.tnved-picker-list code { grid-row: span 2; color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 400; white-space: nowrap; }
+.tnved-picker-list span { overflow: hidden; color: var(--tf-text); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.tnved-picker-list small { color: var(--tf-muted); font-size: .78rem; }
+.tnved-picker-list .tnved-picker-empty { display: block; color: var(--tf-muted); font-size: .86rem; cursor: default; }
 
-.tnved-picker-card { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding: 8px 12px; border-radius: 7px; background: #f3f8f5; color: #56665c; font-size: .76rem; }
-.tnved-picker-card code { color: #1b6b43; font-family: inherit; font-variant-numeric: tabular-nums; font-size: .84rem; font-weight: 700; }
-.tnved-picker-card .warn { color: #9a5d0c; font-weight: 600; }
+/* Выбранный код: крупно код, под ним наименование из номенклатуры и ставки чипами */
+.tnved-picker-card { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--tf-radius); background: var(--tf-green-soft); }
+.tnved-picker-card code { color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: 1rem; font-weight: 500; letter-spacing: 0; }
+.tnved-picker-name { overflow: hidden; color: var(--tf-text-2); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.tnved-picker-rates { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tnved-picker-rates i { height: 24px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: 999px; background: var(--tf-card); color: var(--tf-text); font-size: .8rem; font-style: normal; font-weight: 500; line-height: 22px; font-variant-numeric: tabular-nums; }
+.tnved-picker-rates i.warn { border-color: #f5dfa6; background: #fff7e6; color: var(--tf-warn-text); font-weight: 600; }
+.tnved-picker-card > .warn { color: var(--tf-warn-text); font-size: .86rem; font-weight: 600; }

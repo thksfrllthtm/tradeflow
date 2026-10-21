@@ -31,7 +31,7 @@ function ChangeRow({ change }: { change: NomenclatureChange }) {
   const rateChanged = change.kind === 'changed' && change.oldTariffText !== change.tariffText
   return <li className={`nom-change ${change.kind}`}>
     <span className="nom-change-kind">{changeLabels[change.kind]}</span>
-    <b>{formatCode(change.code)}</b>
+    <code>{formatCode(change.code)}</code>
     <span className="nom-change-text">
       {change.kind === 'changed'
         ? <>{nameChanged ? <><s>{change.oldName}</s> → {change.name}</> : change.name}{rateChanged && <small>Ставка: <s>{change.oldTariffText || '—'}</s> → {change.tariffText || '—'}</small>}</>

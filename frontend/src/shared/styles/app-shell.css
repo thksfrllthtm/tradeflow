@@ -29,14 +29,14 @@
   background: var(--c-error-bg);
   border: 1px solid #f0cccc;
   box-shadow: 0 4px 16px rgba(0,0,0,.1);
-  font-size: .85rem;
+  font-size: .86rem;
 }
 .banner button {
   flex-shrink: 0;
   padding: 0 4px;
   background: transparent;
   color: var(--c-error);
-  font-size: 1.1rem;
+  font-size: 1.12rem;
   line-height: 1;
 }
 .banner button:hover:not(:disabled) { background: transparent; }

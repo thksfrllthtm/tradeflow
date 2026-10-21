@@ -13,7 +13,7 @@
 }
 .login-card h1 { margin-bottom: 6px; font-size: 1.7rem; }
 .form-stack { display: grid; gap: 16px; margin-top: 24px; }
-.auth-notice { margin: 8px 0 0; color: #6b7b72; font-size: .85rem; }
+.auth-notice { margin: 8px 0 0; color: #6b7b72; font-size: .86rem; }
 .auth-switch {
   width: 100%;
   margin-top: 14px;
@@ -36,7 +36,7 @@
 }
 .password-toggle:hover:not(:disabled) { background: transparent; color: var(--c-green); }
 .password-field input { padding-right: 70px; }
-.field-hint { display: block; margin-top: 4px; color: var(--c-text-muted); font-size: .75rem; }
+.field-hint { display: block; margin-top: 4px; color: var(--c-text-muted); font-size: .76rem; }
 
 /* Курс НБРК на сегодня — внизу карточки, справочно. */
 .auth-rates { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--c-border); }

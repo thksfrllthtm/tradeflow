@@ -8,7 +8,6 @@ table.sheet th, table.sheet td { border-right: 1px solid var(--xl-grid); border-
 table.sheet th:last-child, table.sheet td:last-child { border-right: 0; }
 table.sheet thead th { border-bottom-color: var(--xl-head-line); background: var(--xl-head); color: var(--xl-head-ink); font-weight: 600; }
 table.sheet tbody tr:hover > td { background: var(--xl-hover); }
-table.sheet tbody td:not(.dir-empty):hover { box-shadow: inset 0 0 0 2px var(--xl-active); }
 
 table.sheet-rownum tbody { counter-reset: xl-row; }
 table.sheet-rownum tbody tr:not(.sheet-section):not(:has(> .dir-empty)) { counter-increment: xl-row; }
@@ -22,14 +21,14 @@ table.sheet-rownum tr > :first-child::before {
   width: 38px;
   border-right: 1px solid var(--xl-grid);
   background: var(--xl-head);
-  color: #767676;
-  font-size: .7rem;
+  color: var(--tf-muted);
+  font-size: .76rem;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
 table.sheet-rownum thead tr > :first-child::before { content: ''; }
 table.sheet-rownum tbody tr:not(.sheet-section):not(:has(> .dir-empty)) > :first-child::before { content: counter(xl-row); }
-table.sheet-rownum tbody tr:hover > :first-child::before { background: #dcdcdc; color: #3b3b3b; }
+table.sheet-rownum tbody tr:hover > :first-child::before { background: var(--tf-chip); color: var(--tf-text); }
 table.sheet-rownum tbody tr.sheet-section > :first-child { padding-left: 12px; }
 
 /* Статусы в ячейках — цветной текст вместо «таблеток». */

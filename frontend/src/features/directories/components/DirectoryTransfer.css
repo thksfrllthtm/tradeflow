@@ -2,26 +2,26 @@
 
 .dir-head-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 8px; }
 .dir-transfer { display: flex; flex: 0 0 auto; gap: 6px; }
-.dir-head .dir-transfer .dir-transfer-button, .dir-transfer .dir-transfer-button { height: 38px; padding: 0 14px; border: 1px solid #d3ddd6; border-radius: 8px; background: #fff; color: #34443b; font-size: .82rem; font-weight: 600; }
-.dir-transfer .dir-transfer-button:hover:not(:disabled) { background: #f3f7f4; }
-.dir-transfer .dir-transfer-button.active, .dir-transfer .dir-transfer-button.active:hover:not(:disabled) { border-color: #24704a; background: #e8f3ec; color: #1a4d33; }
+.dir-head .dir-transfer .dir-transfer-button, .dir-transfer .dir-transfer-button { height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; }
+.dir-transfer .dir-transfer-button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+.dir-transfer .dir-transfer-button.active, .dir-transfer .dir-transfer-button.active:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green-soft); color: var(--tf-text); }
 
-.dir-transfer-panel { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
+.dir-transfer-panel { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .dir-transfer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-.dir-transfer-row strong { color: #1f2d24; font-size: .9rem; }
-.dir-transfer-row p { margin: 2px 0 0; color: #7a877f; font-size: .78rem; }
-.dir-transfer-close { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: transparent; color: #8a968f; font-size: 1.2rem; line-height: 1; }
-.dir-transfer-close:hover:not(:disabled) { background: #eef3ef; color: #1f2d24; }
-.dir-transfer-check { display: flex; align-items: center; gap: 7px; margin: 0; color: #34443b; font-size: .8rem; font-weight: 500; }
-.dir-transfer-check input { width: 16px; height: 16px; margin: 0; accent-color: #24704a; }
-.dir-transfer-file { position: relative; display: inline-flex; align-items: center; height: 36px; margin: 0; padding: 0 16px; border-radius: 8px; background: var(--c-green); color: #fff; font-size: .82rem; font-weight: 650; cursor: pointer; }
-.dir-transfer-file:hover { background: var(--c-green-dark); }
+.dir-transfer-row strong { color: var(--tf-text); font-size: .86rem; }
+.dir-transfer-row p { margin: 2px 0 0; color: var(--tf-muted); font-size: .78rem; }
+.dir-transfer-close { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: transparent; color: var(--tf-muted); font-size: 1.12rem; line-height: 1; }
+.dir-transfer-close:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.dir-transfer-check { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--tf-text-2); font-size: .8rem; font-weight: 500; }
+.dir-transfer-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); }
+.dir-transfer-file { position: relative; display: inline-flex; align-items: center; height: 36px; margin: 0; padding: 0 16px; border-radius: 8px; background: var(--tf-green); color: #fff; font-size: .82rem; font-weight: 600; cursor: pointer; }
+.dir-transfer-file:hover { background: var(--tf-green-hover); }
 .dir-transfer-file.busy { opacity: .7; cursor: progress; }
 .dir-transfer-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.dir-transfer-ok { margin: 0; padding: 8px 10px; border-radius: 8px; background: #eef7f1; color: #1a4d33; font-size: .8rem; }
+.dir-transfer-ok { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--tf-green-soft); color: var(--tf-green); font-size: .8rem; }
 .dir-transfer-error { margin: 0; padding: 8px 10px; border-radius: 8px; background: #fff4f2; color: #9a3024; font-size: .8rem; font-weight: 600; }
-.dir-transfer-errors { display: grid; gap: 4px; max-height: 220px; margin: 0; padding: 0; overflow: auto; list-style: none; font-size: .78rem; color: #34443b; }
-.dir-transfer-errors b { margin-right: 6px; color: #9a3024; font-weight: 700; }
+.dir-transfer-errors { display: grid; gap: 4px; max-height: 220px; margin: 0; padding: 0; overflow: auto; list-style: none; font-size: .78rem; color: var(--tf-text-2); }
+.dir-transfer-errors b { margin-right: 6px; color: #9a3024; font-weight: 600; }
 
 @media (max-width: 560px) {
   .dir-transfer { width: 100%; margin-left: 0; }

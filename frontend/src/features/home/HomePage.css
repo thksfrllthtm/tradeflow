@@ -4,13 +4,13 @@
    Селекторы с .home — чтобы перебить общий стиль button / button:hover. */
 
 .home-shell {
-  --home-ink: #13241a;
-  --home-ink-2: #3f4f45;
-  --home-muted: #56655c;
-  --home-line: #dfe6e1;
-  --home-green: #1b6b43;
-  --home-focus: #146c43;
-  background: #f4f6f4;
+  --home-ink: var(--tf-text);
+  --home-ink-2: var(--tf-text-2);
+  --home-muted: var(--tf-muted);
+  --home-line: var(--tf-border);
+  --home-green: var(--tf-green);
+  --home-focus: var(--tf-green);
+  background: var(--tf-bg);
 }
 .home-scroll { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .home { display: flex; flex-direction: column; gap: 20px; width: min(1440px, 100%); margin: 0 auto; padding: 28px 28px 36px; }
@@ -27,9 +27,9 @@
 /* Приветствие и курс */
 .home-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .home-date { margin: 0 0 4px; color: var(--home-muted); font-size: .86rem; font-weight: 500; }
-.home-hero h1 { margin: 0; color: var(--home-ink); font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
-.home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; }
-.home .home-retry:hover:not(:disabled) { background: transparent; color: #0e5233; }
+.home-hero h1 { margin: 0; color: var(--home-ink); font-size: 1.75rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+.home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.home .home-retry:hover:not(:disabled) { background: transparent; color: var(--tf-green-hover); }
 
 .home-error { margin: 0; padding: 9px 12px; border: 1px solid #efcaca; border-radius: 10px; background: #fff4f2; color: #8d2929; font-size: .86rem; font-weight: 600; }
 
@@ -44,7 +44,7 @@
   min-height: 0;
   padding: 11px 14px;
   border: 1px solid var(--home-line);
-  border-radius: 12px;
+  border-radius: var(--tf-radius-card);
   background: #fff;
   color: var(--home-ink);
   font-weight: 400;
@@ -54,38 +54,38 @@
   cursor: pointer;
   transition: border-color .15s, background .15s;
 }
-.home .home-action:hover:not(:disabled) { border-color: #b9cbbf; background: #fbfdfc; }
-.home-action-icon { display: grid; grid-row: 1 / 3; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #edf5f0; color: var(--home-green); }
-.home-action-title { font-size: .95rem; font-weight: 650; letter-spacing: -.01em; }
+.home .home-action:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-card); }
+.home-action-icon { display: grid; grid-row: 1 / 3; place-items: center; width: 36px; height: 36px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--home-green); }
+.home-action-title { font-size: .95rem; font-weight: 600; letter-spacing: -.01em; }
 .home-action-text { color: var(--home-muted); font-size: .86rem; line-height: 1.4; }
 
-.home .home-action.primary { border-color: transparent; background: #0f2e1c; color: #fff; }
-.home .home-action.primary:hover:not(:disabled) { border-color: transparent; background: #173f28; }
-.home .home-action.primary:focus-visible { outline-color: #0f2e1c; }
+.home .home-action.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+.home .home-action.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
+.home .home-action.primary:focus-visible { outline-color: var(--tf-green); }
 .home .home-action.primary:disabled { opacity: .8; cursor: progress; }
 .home-action.primary .home-action-icon { background: rgba(255, 255, 255, .14); color: #fff; }
-.home-action.primary .home-action-text { color: #c4dccd; }
+.home-action.primary .home-action-text { color: #d3e4d9; }
 
 /* Что ждёт проверки (только у администратора) */
-.home-notice { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #ecd59a; border-radius: 12px; background: #fffaf0; color: #4f3c0b; font-size: .86rem; text-decoration: none; transition: background .15s; }
-.home-notice:hover { background: #fff5e0; }
+.home-notice { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #f5dfa6; border-radius: var(--tf-radius-card); background: #fff7e6; color: var(--tf-warn-text); font-size: .86rem; text-decoration: none; transition: background .15s; }
+.home-notice:hover { border-color: #e9c46a; background: var(--tf-warn-bg); }
 .home-notice > span:nth-child(2) { flex: 1 1 auto; }
-.home-notice b { font-weight: 650; }
-.home-notice-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #c98a10; box-shadow: 0 0 0 4px #f6e3b8; }
+.home-notice b { font-weight: 600; }
+.home-notice-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--tf-ai); box-shadow: 0 0 0 4px #f8e6bd; }
 
 /* Последние сметы: две строки на смету — название и статус, затем клиент или номер и время. */
 .home-section { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-.home-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.home-section-head h2 { margin: 0; color: var(--home-ink); font-size: 1rem; font-weight: 650; letter-spacing: -.01em; }
-.home-count { color: var(--home-muted); font-weight: 500; }
-.home-section-head a { display: inline-flex; align-items: center; gap: 2px; color: var(--home-green); font-size: .86rem; font-weight: 650; text-decoration: none; }
-.home-section-head a:hover { color: #0e5233; text-decoration: underline; }
+.home-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.home-section-head h2 { display: flex; align-items: center; margin: 0; color: var(--home-ink); font-size: 1rem; font-weight: 600; letter-spacing: -.01em; }
+.home-count { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 20px; font-variant-numeric: tabular-nums; }
+.home-section-head a { display: inline-flex; align-items: center; gap: 2px; color: var(--home-green); font-size: .86rem; font-weight: 600; text-decoration: none; }
+.home-section-head a:hover { color: var(--tf-green-hover); text-decoration: underline; }
 
 /* Список прокручивается внутри; тени сверху и снизу показывают, что есть ещё строки. */
 .home-list {
   overflow: hidden;
   border: 1px solid var(--home-line);
-  border-radius: 12px;
+  border-radius: var(--tf-radius-card);
   background:
     linear-gradient(#fff 30%, rgba(255, 255, 255, 0)) top / 100% 24px no-repeat local,
     linear-gradient(rgba(255, 255, 255, 0), #fff 70%) bottom / 100% 24px no-repeat local,
@@ -93,18 +93,19 @@
     radial-gradient(farthest-side at 50% 100%, rgba(20, 47, 31, .14), rgba(20, 47, 31, 0)) bottom / 100% 10px no-repeat scroll,
     #fff;
 }
-.home-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 10px; padding: 6px 14px; border-top: 1px solid #edf1ee; color: var(--home-ink); text-decoration: none; transition: background .12s; }
+.home-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 10px; padding: 6px 14px; border-top: 1px solid var(--tf-border-inner); color: var(--home-ink); text-decoration: none; transition: background .12s; }
 .home-row:first-child { border-top: 0; }
-a.home-row:hover { background: #f4f8f5; }
+a.home-row:hover { background: var(--tf-chip); }
 .home-row strong { overflow: hidden; font-size: .93rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.home-row strong.untitled { color: var(--home-ink-2); font-weight: 550; }
+.home-row strong.untitled { color: var(--home-ink-2); font-weight: 500; }
 .home-row small { overflow: hidden; color: var(--home-muted); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
 .home-row time { color: var(--home-muted); font-size: .86rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.home-status { justify-self: end; padding: 1px 8px; border-radius: 999px; background: #eceff0; color: #3f4f45; font-size: .82rem; font-weight: 650; white-space: nowrap; }
-.home-status.done { background: #e1f0e7; color: #17583a; }
-.home-row.skeleton { min-height: 52px; background: linear-gradient(90deg, #fff 0%, #f1f5f2 50%, #fff 100%) 0 0 / 200% 100%; animation: home-shimmer 1.2s ease-in-out infinite; }
+.home-status { display: inline-flex; align-items: center; gap: 5px; justify-self: end; height: 22px; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .78rem; font-weight: 500; white-space: nowrap; }
+.home-status.done { border-color: #c7dccd; background: var(--tf-green-soft); color: var(--tf-green); }
+.home-status.done::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.home-row.skeleton { min-height: 52px; background: linear-gradient(90deg, #fff 0%, var(--tf-chip) 50%, #fff 100%) 0 0 / 200% 100%; animation: home-shimmer 1.2s ease-in-out infinite; }
 @keyframes home-shimmer { to { background-position: -200% 0; } }
-.home-state { display: grid; justify-items: start; gap: 8px; padding: 18px 16px; border: 1px dashed #c9d5cd; border-radius: 12px; color: var(--home-muted); font-size: .9rem; line-height: 1.45; }
+.home-state { display: grid; justify-items: start; gap: 8px; padding: 18px 16px; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-card); color: var(--home-muted); font-size: .86rem; line-height: 1.45; }
 .home-state p { margin: 0; }
 .home-state.error { border: 1px solid #efcaca; background: #fff7f6; color: #7a2a2a; }
 .home-state.error b { color: #8d2929; }

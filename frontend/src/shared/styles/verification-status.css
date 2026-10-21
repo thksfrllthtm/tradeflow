@@ -5,11 +5,20 @@
   min-height: 24px;
   padding: 4px 9px;
   border-radius: 999px;
-  font-size: .68rem;
-  font-weight: 700;
+  font-size: .76rem;
+  font-weight: 600;
   line-height: 1.1;
   white-space: nowrap;
 }
-.directory-status.operator_verified { background: #d9f0df; color: #20623c; }
-.directory-status.needs_review { background: #fff1cf; color: #866313; }
-.directory-status.archived { background: #eef1ef; color: #6b7a71; }
+.directory-status.operator_verified { background: var(--tf-green-soft); color: var(--tf-green); }
+.directory-status.needs_review { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.directory-status.archived { background: var(--tf-chip); color: var(--tf-muted); }
+
+/* В таблицах справочников — точка и текст, как статусы этапов сметы: проверенное — спокойно,
+   «Требует проверки» — заметнее. Два класса у таблицы — чтобы перебить table.sheet из sheet.css. */
+.dir-table.sheet .directory-status { gap: 7px; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; }
+.dir-table.sheet .directory-status::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--tf-green); }
+.dir-table.sheet .directory-status.needs_review { color: var(--tf-warn-text); font-weight: 600; }
+.dir-table.sheet .directory-status.needs_review::before { background: var(--tf-ai); }
+.dir-table.sheet .directory-status.archived { color: var(--tf-muted); }
+.dir-table.sheet .directory-status.archived::before { background: #b5bdb7; }

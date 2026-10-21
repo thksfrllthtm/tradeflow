@@ -1,0 +1,30 @@
+/* Карточка товара в боковой панели — как этапы сметы: серый фон, белые карточки 12px, в карточке
+   заголовок и строки «подпись слева — поле справа» (как «Параметры расчёта», ReviewStep.css).
+   Поля берут вид из drawer.css (.drawer-field), здесь — только раскладка. */
+
+.drawer-body:has(.pe-card) { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 20px; background: var(--tf-bg); }
+
+/* Статус проверки — строкой над карточками */
+.pe-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 2px; color: var(--tf-text-2); font-size: .86rem; }
+
+.pe-card { display: grid; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.pe-card > h3 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px 4px; color: var(--tf-text); font-size: .93rem; font-weight: 600; letter-spacing: -.01em; }
+.pe-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Строка: подпись 128px слева, поле справа; строки разделены тонкой линией */
+.drawer-field.pe-row { grid-template-columns: 128px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; color: var(--tf-text-2); font-size: .86rem; font-weight: 400; }
+.drawer-field.pe-row + .drawer-field.pe-row { border-top: 1px solid var(--tf-border-inner); }
+.drawer-field.pe-row.top { align-items: start; }
+.drawer-field.pe-row.top > span:first-child { padding-top: 8px; }
+.drawer-field.pe-row > span em { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 18px; }
+
+.pe-pad { padding: 6px 14px 10px; }
+.pe-foot { margin: 0; padding: 10px 14px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-muted); font-size: .8rem; line-height: 1.45; }
+.pe-foot b { color: var(--tf-text-2); font-weight: 600; }
+
+@media (max-width: 560px) {
+  .drawer-body:has(.pe-card) { padding-inline: 12px; }
+  .drawer-field.pe-row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .drawer-field.pe-row.top > span:first-child { padding-top: 0; }
+  .pe-status { flex-wrap: wrap; }
+}

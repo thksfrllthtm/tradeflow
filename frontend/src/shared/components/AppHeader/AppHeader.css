@@ -93,13 +93,18 @@
 .app-header-rate b { color: var(--tf-text); font-weight: 600; }
 .app-header-rate-date { color: var(--tf-muted); font-size: .79rem; white-space: nowrap; }
 .app-header-converter { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; display: grid; gap: 10px; width: 380px; max-width: calc(100vw - 32px); padding: 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); color: var(--tf-text); }
-.app-header-converter strong { font-size: .93rem; }
+.app-header-converter strong { font-size: .93rem; font-weight: 600; }
 .app-header-converter small { color: var(--tf-muted); font-size: .79rem; }
-.app-header-converter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; }
-.app-header-converter-amount { box-sizing: border-box; width: 100%; height: 36px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: 1rem !important; text-align: right; font-variant-numeric: tabular-nums; }
-.app-header .app-header-converter-row .cur-swap { width: 36px; height: 38px; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text); font-size: 1rem; }
-.app-header .app-header-converter-row .cur-swap:hover:not(:disabled) { background: var(--tf-green-soft); }
-.app-header-converter-result { color: var(--tf-text); font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Валюты друг под другом во всю ширину — названия не обрезаются; «поменять местами» справа на обе строки. */
+.app-header-converter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "from swap" "to swap"; gap: 6px; }
+.app-header-converter-row > .cur-select:first-child { grid-area: from; }
+.app-header-converter-row > .cur-select:last-child { grid-area: to; }
+.app-header-converter-amount { box-sizing: border-box; width: 100%; height: 40px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: 1.12rem !important; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+/* Фокус — как у полей этапов: зелёная рамка и мягкая подсветка, без второй тёмной обводки. */
+.app-header .app-header-converter-amount:focus, .app-header .app-header-converter-amount:focus-visible, .app-header .cur-search:focus-visible { outline: 2px solid rgba(30, 91, 60, .2); outline-offset: 0; border-color: var(--tf-green); box-shadow: none; }
+.app-header .app-header-converter-row .cur-swap { grid-area: swap; align-self: stretch; width: 36px; height: auto; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: 1rem; }
+.app-header .app-header-converter-row .cur-swap:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+.app-header-converter-result { color: var(--tf-text); font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 
 /* Профиль: аватар-кнопка, в меню — email, роль, Сотрудники, Выйти. */
 .app-header-user { flex: 0 0 auto; }
@@ -132,10 +137,10 @@
 
 /* Выбор валюты в конвертере: плашка «код + название», список с поиском на всю ширину окна. */
 .cur-select { min-width: 0; }
-.app-header .cur-select-button { display: flex; align-items: center; gap: 7px; width: 100%; height: 38px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: .86rem; text-align: left; }
+.app-header .cur-select-button { display: flex; align-items: center; gap: 7px; width: 100%; height: 36px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: .86rem; text-align: left; }
 .app-header .cur-select-button:hover:not(:disabled), .app-header .cur-select-button.open { border-color: var(--tf-muted); background: #fff; }
 .cur-select-button b, .cur-list li b { flex: none; padding: 2px 6px; border-radius: 5px; background: var(--tf-chip); color: var(--tf-text); font-size: .76rem; font-weight: 600; letter-spacing: .02em; }
-.cur-select-button span { overflow: hidden; color: var(--tf-text-2); text-overflow: ellipsis; white-space: nowrap; }
+.cur-select-button span { overflow: hidden; font-weight: 400; color: var(--tf-text-2); text-overflow: ellipsis; white-space: nowrap; }
 .cur-select-button svg { flex: none; margin-left: auto; color: var(--tf-muted); }
 .cur-list { position: absolute; left: 14px; right: 14px; z-index: 2; margin-top: 6px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: #fff; box-shadow: var(--tf-shadow-pop); }
 .cur-search { box-sizing: border-box; width: 100%; height: 34px; margin: 0 0 6px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); font-size: .86rem; }

@@ -1,32 +1,33 @@
 /* Глобальная основа: дизайн-токены, сброс, элементы форм, типографика, общие кнопки. */
 
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: var(--tf-font);
   font-size: 14px;
   line-height: 1.5;
-  color: #1a2620;
-  background: #f4f6f4;
+  color: var(--tf-text);
+  background: var(--tf-bg);
   font-synthesis: none;
-  --c-green: #146c43;
-  --c-green-dark: #0e5233;
-  --c-green-light: #e6f3ec;
-  --c-border: #dde5df;
-  --c-border-focus: #25855a;
+  /* Старые имена — те же цвета, что у этапов сметы (--tf-* ниже). */
+  --c-green: var(--tf-green);
+  --c-green-dark: var(--tf-green-hover);
+  --c-green-light: var(--tf-green-soft);
+  --c-border: var(--tf-border);
+  --c-border-focus: var(--tf-green);
   --c-bg: #fff;
-  --c-bg-alt: #f8faf8;
-  --c-text-muted: #68766e;
-  --c-text-label: #34443b;
+  --c-bg-alt: var(--tf-chip);
+  --c-text-muted: var(--tf-muted);
+  --c-text-label: var(--tf-text-2);
   --c-error: #a32626;
   --c-error-bg: #fff4f4;
-  /* Таблицы в стиле Excel (shared/styles/sheet.css) */
-  --xl-grid: #d9d9d9;
-  --xl-head: #f3f3f3;
-  --xl-head-line: #bfbfbf;
-  --xl-head-ink: #3b3b3b;
-  --xl-hover: #e9f4ee;
-  --xl-active: #217346;
-  --radius: 6px;
-  --radius-lg: 10px;
+  /* Таблицы в стиле Excel (shared/styles/sheet.css) — мягкая сетка, как в этапах сметы */
+  --xl-grid: var(--tf-border-inner);
+  --xl-head: #eff2ee;
+  --xl-head-line: var(--tf-border);
+  --xl-head-ink: var(--tf-text);
+  --xl-hover: #f6f8f6;
+  --xl-active: var(--tf-green);
+  --radius: var(--tf-radius);
+  --radius-lg: var(--tf-radius-card);
   --shadow-card: 0 1px 4px rgba(20,47,31,.08), 0 4px 16px rgba(20,47,31,.05);
 
   /* Новый дизайн (шапка, результат сметы, список смет). Зелёный — только главная кнопка,
@@ -56,9 +57,13 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
-/* Один шрифт во всём приложении: коды (code, kbd, pre) и меню таблицы «Как в Excel» (jsuites)
-   тоже в нём, без моноширинного и системного шрифта браузера. */
-code, kbd, pre, samp, body .jcontextmenu > div, body .jtooltip { font-family: inherit; }
+/* Поле внутри <label> не наследует её жирность 600: текст и подсказка в поле — обычным шрифтом. */
+input, textarea, select { font-weight: 400; }
+/* Коды ТН ВЭД (code) — моноширинным JetBrains Mono, как в этапах сметы; kbd, pre и меню таблицы
+   «Как в Excel» (jsuites) — основным шрифтом. Все числа — ровными цифрами (tabular-nums), как в этапах. */
+code { font-family: var(--tf-mono); font-weight: 400; letter-spacing: 0; }
+kbd, pre, samp, body .jcontextmenu > div, body .jtooltip { font-family: inherit; }
+body { font-variant-numeric: tabular-nums; }
 h1, h2, h3, h4, h5, h6, p { margin-top: 0; }
 
 /* ── Элементы форм ── */
@@ -74,8 +79,8 @@ input, textarea, select {
   padding: 7px 10px;
   color: #1a2620;
 }
-input:focus, textarea:focus, select:focus { outline: 2px solid rgba(37,133,90,.25); border-color: var(--c-border-focus); }
-input:disabled { background: #eef2ef; color: #6c7a72; }
+input:focus, textarea:focus, select:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--c-border-focus); }
+input:disabled { background: var(--tf-chip); color: var(--tf-muted); }
 label {
   display: block;
   font-size: .8rem;
@@ -87,17 +92,17 @@ label {
 .eyebrow {
   margin-bottom: 4px;
   color: #39805c;
-  font-size: .68rem;
-  font-weight: 800;
+  font-size: .76rem;
+  font-weight: 600;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
 .muted { color: var(--c-text-muted); line-height: 1.5; }
-.error { color: var(--c-error); margin: 0; font-size: .85rem; }
+.error { color: var(--c-error); margin: 0; font-size: .86rem; }
 
 /* ── Общие кнопки ── */
-.secondary { color: var(--c-green); background: var(--c-green-light); border: 1px solid #c4d9c9; }
-.secondary:hover:not(:disabled) { background: #d2e9db; }
+.secondary { color: var(--tf-text); background: var(--tf-card); border: 1px solid var(--tf-border); }
+.secondary:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
 button {
   border: 0;
   background: var(--c-green);
@@ -107,6 +112,6 @@ button {
   cursor: pointer;
   white-space: nowrap;
   transition: background .12s;
-  border-radius: 6px;
+  border-radius: var(--tf-radius);
   box-shadow: none;
 }

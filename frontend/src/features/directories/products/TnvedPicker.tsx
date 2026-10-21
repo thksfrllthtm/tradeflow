@@ -1,12 +1,13 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { nameParts } from '@/shared/tnved/codes'
+import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 import { nomenclatureApi } from '../nomenclature/nomenclatureApi'
 
 const shortName = (item: NomenclatureCode) => nameParts(item.name).slice(-1)[0] || 'Без наименования'
-const rates = (item: NomenclatureCode) => [`ЕТТ ${item.tariffText || 'не указана'}`, item.vatPercent && `НДС ${item.vatPercent}%`, item.kz?.active && `РК ${item.kz.rateText}`].filter(Boolean).join(' · ')
+const rateList = (item: NomenclatureCode) => [`ЕТТ ${item.tariffText || 'не указана'}`, item.vatPercent && `НДС ${item.vatPercent}%`, item.kz?.active && `РК ${item.kz.rateText}`].filter((rate): rate is string => Boolean(rate))
+const rates = (item: NomenclatureCode) => rateList(item).join(' · ')
 
 // Код ТН ВЭД товара — из номенклатуры ТН ВЭД ЕАЭС: поиск по началу кода или словам наименования.
 // ↑ ↓ — выбор, Enter — применить, Esc — закрыть список. Под полем — выбранный код со ставками.
@@ -61,7 +62,7 @@ export function TnvedPicker({ value, onChange, disabled = false }: { value: stri
   const empty = loading ? 'Ищем…' : error || (search ? 'Ничего не найдено в номенклатуре ТН ВЭД ЕАЭС.' : 'Начните вводить код (6116 10) или слова наименования.')
   return <div className="tnved-picker">
     <input
-      value={open ? query : value ? `${value}${selected ? ` · ${shortName(selected)}` : ''}` : ''}
+      value={open ? query : ''}
       onChange={(event) => { setQuery(event.target.value); setOpen(true) }}
       onFocus={() => setOpen(true)}
       onBlur={() => { setOpen(false); setQuery('') }}
@@ -75,15 +76,20 @@ export function TnvedPicker({ value, onChange, disabled = false }: { value: stri
     {open && <ul className="tnved-picker-list" ref={listRef} role="listbox">
       {matches.length === 0 ? <li className="tnved-picker-empty">{empty}</li>
         : matches.map((item, index) => <li key={item.code} role="option" aria-selected={item.code === value} className={[index === active ? 'active' : '', item.code === value ? 'selected' : ''].join(' ')} onMouseDown={(event) => { event.preventDefault(); pick(item) }} onMouseEnter={() => setActive(index)}>
-          <code>{item.code}</code>
+          <code>{formatCode(item.code)}</code>
           <span title={nameParts(item.name).join(' ')}>{shortName(item)}</span>
           <small>{rates(item)}</small>
         </li>)}
     </ul>}
     {value && !open && <div className="tnved-picker-card">
-      <code>{value}</code>
-      {selected === undefined ? null : selected ? <><span>{rates(selected)}</span>{selected.antiDumping?.some((measure) => measure.exact && !measure.suspended) && <span className="warn">есть антидемпинг</span>}</>
-        : <span className="warn">кода нет в номенклатуре ТН ВЭД ЕАЭС — проверьте код</span>}
+      <code>{formatCode(value)}</code>
+      {selected === undefined ? null : selected ? <>
+        <span className="tnved-picker-name" title={nameParts(selected.name).join(' ')}>{shortName(selected)}</span>
+        <span className="tnved-picker-rates">
+          {rateList(selected).map((rate) => <i key={rate}>{rate}</i>)}
+          {selected.antiDumping?.some((measure) => measure.exact && !measure.suspended) && <i className="warn">есть антидемпинг</i>}
+        </span>
+      </> : <span className="warn">Кода нет в номенклатуре ТН ВЭД ЕАЭС — проверьте код</span>}
     </div>}
   </div>
 }

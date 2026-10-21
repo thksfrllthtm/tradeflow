@@ -6,37 +6,37 @@
   gap: 12px;
   align-items: end;
   padding: 16px;
-  border: 1px solid #dfe7e1;
-  border-radius: 10px;
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius);
   background: #fff;
 }
-.emp-card label { display: grid; gap: 5px; margin: 0; color: #56665c; font-size: .76rem; font-weight: 600; }
+.emp-card label { display: grid; gap: 5px; margin: 0; color: var(--tf-text-2); font-size: .76rem; font-weight: 600; }
 .emp-card input, .emp-card select, .emp-password input, .emp-role {
   height: 36px;
   margin: 0;
   padding: 0 10px;
-  border: 1px solid #d3ddd6;
-  border-radius: 7px;
+  border: 1px solid var(--tf-border);
+  border-radius: var(--tf-radius);
   background: #fff;
-  font-size: .84rem;
+  font-size: .86rem;
 }
-.emp-card input:focus, .emp-card select:focus, .emp-password input:focus, .emp-role:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.emp-card input:focus, .emp-card select:focus, .emp-password input:focus, .emp-role:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .12); }
 .emp-card-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
-.emp-card-actions button, .emp-actions button, .emp-password button { height: 34px; padding: 0 14px; border-radius: 7px; font-size: .8rem; font-weight: 650; white-space: nowrap; }
+.emp-card-actions button, .emp-actions button, .emp-password button { height: 34px; padding: 0 14px; border-radius: var(--tf-radius); font-size: .8rem; font-weight: 600; white-space: nowrap; }
 
 .emp-table { min-width: 720px; }
 .emp-table tbody tr { cursor: default; }
-.emp-table .c-name strong { display: block; color: #1f2d24; font-weight: 650; }
-.emp-table .c-name small { display: block; color: #7a877f; }
-.emp-self { color: #7a877f; font-weight: 500; }
+.emp-table .c-name strong { display: block; color: var(--tf-text); font-weight: 600; }
+.emp-table .c-name small { display: block; color: var(--tf-muted); }
+.emp-self { color: var(--tf-muted); font-weight: 500; }
 .emp-role { min-width: 160px; }
-.emp-role:disabled { background: #f5f7f6; color: #6b7a71; }
+.emp-role:disabled { background: var(--tf-chip); color: var(--tf-muted); }
 .emp-actions, .emp-password { display: flex; align-items: center; gap: 6px; }
 .emp-password input { width: 170px; }
 
 /* Второстепенные кнопки: белые с рамкой; «Заблокировать» подсвечивается красным при наведении. */
-.emp-secondary, .emp-secondary:hover:not(:disabled) { border: 1px solid #d3ddd6; background: #fff; color: #34443b; }
-.emp-secondary:hover:not(:disabled) { background: #f3f7f4; }
+.emp-secondary, .emp-secondary:hover:not(:disabled) { border: 1px solid var(--tf-border); background: #fff; color: var(--tf-text-2); }
+.emp-secondary:hover:not(:disabled) { background: var(--tf-chip); }
 .emp-secondary.danger:hover:not(:disabled) { border-color: #e2b4ad; background: #fdf1ef; color: #9a3024; }
 
 @media (max-width: 900px) {
@@ -45,22 +45,22 @@
 
 /* Правка имени и email в строке, число смет, панель смет сотрудника */
 .emp-edit { display: grid; gap: 6px; }
-.emp-edit input { height: 32px; margin: 0; padding: 0 9px; border: 1px solid #d3ddd6; border-radius: 7px; font-size: .82rem; }
-.emp-edit input:focus { outline: none; border-color: #24704a; box-shadow: 0 0 0 3px #24704a1f; }
+.emp-edit input { height: 32px; margin: 0; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); font-size: .82rem; }
+.emp-edit input:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .12); }
 .emp-table .emp-count-col { width: 80px; text-align: center; }
-.emp-table .emp-count { min-width: 40px; height: 30px; padding: 0 10px; border: 1px solid #c4d9c9; border-radius: 999px; background: #fff; color: #1b6b43; font-size: .8rem; font-weight: 700; }
-.emp-table .emp-count:hover:not(:disabled) { border-color: #24704a; background: #e8f3ec; }
-.emp-table .emp-count:disabled { border-color: #e3eae5; color: #9aa59e; opacity: 1; cursor: default; }
+.emp-table .emp-count { min-width: 40px; height: 30px; padding: 0 10px; border: 1px solid var(--tf-muted); border-radius: 999px; background: #fff; color: var(--tf-green); font-size: .8rem; font-weight: 600; }
+.emp-table .emp-count:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green-soft); }
+.emp-table .emp-count:disabled { border-color: var(--tf-border); color: var(--tf-muted); opacity: 1; cursor: default; }
 .emp-actions { flex-wrap: wrap; }
 
 .emp-estimates { width: min(520px, 100%); }
 .emp-estimates-list { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
-.emp-estimates-list a { display: grid; gap: 3px; padding: 11px 14px; border: 1px solid #e1e8e3; border-radius: 10px; color: #1f2d24; text-decoration: none; transition: border-color .12s, background .12s; }
-.emp-estimates-list a:hover { border-color: #c4d9c9; background: #f7faf8; }
+.emp-estimates-list a { display: grid; gap: 3px; padding: 11px 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); text-decoration: none; transition: border-color .12s, background .12s; }
+.emp-estimates-list a:hover { border-color: var(--tf-muted); background: var(--tf-chip); }
 .emp-estimate-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.emp-estimate-top strong { overflow: hidden; font-size: .86rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.emp-estimate-top i { flex: 0 0 auto; padding: 1px 8px; border-radius: 999px; background: #eff2f0; color: #6b7a71; font-size: .7rem; font-style: normal; font-weight: 700; }
-.emp-estimate-top i.done { background: #e3f1e8; color: #1c6b43; }
-.emp-estimates-list small { color: #7a877f; font-size: .76rem; }
-.emp-estimates-empty { margin: 16px 0 0; color: #7a877f; font-size: .84rem; }
-.emp-estimates-error { margin: 16px 0 0; color: #9a3024; font-size: .84rem; font-weight: 600; }
+.emp-estimate-top strong { overflow: hidden; font-size: .86rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.emp-estimate-top i { flex: 0 0 auto; padding: 1px 8px; border-radius: 999px; background: var(--tf-border-inner); color: var(--tf-muted); font-size: .76rem; font-style: normal; font-weight: 600; }
+.emp-estimate-top i.done { background: var(--tf-green-soft); color: var(--tf-green); }
+.emp-estimates-list small { color: var(--tf-muted); font-size: .76rem; }
+.emp-estimates-empty { margin: 16px 0 0; color: var(--tf-muted); font-size: .86rem; }
+.emp-estimates-error { margin: 16px 0 0; color: #9a3024; font-size: .86rem; font-weight: 600; }

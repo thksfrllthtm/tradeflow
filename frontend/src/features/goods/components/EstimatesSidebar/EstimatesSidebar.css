@@ -1,102 +1,128 @@
-/* Список смет слева. Смета открыта — узкая полоса (.es-rail), список выезжает поверх сметы (.es-panel).
+/* Список смет слева — в стиле этапов сметы (кнопки, поиск, вкладки и чипы rv-* из ReviewStep.css):
+   токены --tf-*, кнопки 32px, активный пункт — мягкий зелёный фон, статусы — чипы-«пилюли».
+   Смета открыта — узкая полоса (.es-rail), список выезжает поверх сметы (.es-panel).
    Кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
 
 .es-sidebar {
   display: flex;
   flex-direction: column;
-  flex: 0 0 256px;
+  flex: 0 0 272px;
   min-height: 0;
   border-right: 1px solid var(--tf-border);
-  background: #fff;
+  background: var(--tf-card);
 }
+.es-sidebar :is(button, a, input):focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
+
+/* Узкая полоса: «Сметы» и «+» */
 .es-sidebar.es-rail { position: relative; z-index: 30; flex-basis: 60px; align-items: center; gap: 8px; padding: 12px 0; }
-.es-sidebar .es-rail-button { position: relative; display: grid; justify-items: center; gap: 3px; width: 48px; padding: 7px 0 6px; border: 1px solid transparent; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .66rem; font-weight: 650; line-height: 1; }
-.es-sidebar .es-rail-button:hover:not(:disabled), .es-rail.open .es-rail-button { border-color: var(--tf-border); background: var(--tf-chip); color: var(--tf-text); }
-.es-rail-button b { position: absolute; top: 2px; right: 3px; min-width: 16px; padding: 0 4px; border-radius: 999px; background: var(--tf-green-soft); color: var(--tf-text); font-size: .6rem; line-height: 15px; }
-.es-panel { position: absolute; top: 0; bottom: 0; left: 100%; display: flex; flex-direction: column; width: 300px; min-height: 0; border-right: 1px solid var(--tf-border); background: #fff; box-shadow: 12px 0 32px rgba(23, 32, 27, .14); animation: es-slide .14s ease-out; }
+.es-sidebar .es-rail-button { position: relative; display: grid; justify-items: center; gap: 4px; width: 48px; padding: 8px 0 7px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 1; }
+.es-sidebar .es-rail-button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.es-sidebar.es-rail.open .es-rail-button { background: var(--tf-green-soft); color: var(--tf-text); }
+.es-rail-button b { position: absolute; top: 3px; right: 4px; min-width: 16px; padding: 0 4px; border-radius: 999px; background: var(--tf-green); color: #fff; font-size: .6rem; font-weight: 600; line-height: 15px; font-variant-numeric: tabular-nums; }
+.es-panel { position: absolute; top: 0; bottom: 0; left: 100%; display: flex; flex-direction: column; width: 320px; min-height: 0; border-right: 1px solid var(--tf-border); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); animation: es-slide .14s ease-out; }
 @keyframes es-slide { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .es-panel { animation: none; } }
 
-.es-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 12px 8px 16px; }
-.es-head h2 { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--tf-text); font-size: .92rem; font-weight: 700; letter-spacing: -.01em; }
-.es-head h2 span { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-muted); font-size: .68rem; font-weight: 700; line-height: 18px; text-align: center; }
+/* Шапка: «Сметы товаров 6» и × */
+.es-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 56px; padding: 12px 12px 8px 16px; }
+.es-head h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--tf-text); font-size: 1rem; font-weight: 600; letter-spacing: -.015em; }
+.es-head h2 span { min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; }
 
 .es-sidebar .es-icon {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 1px solid var(--tf-border);
   border-radius: var(--tf-radius);
-  background: #fff;
-  color: var(--tf-muted);
+  background: var(--tf-card);
+  color: var(--tf-text-2);
   font-size: 1rem;
+  font-weight: 500;
   line-height: 1;
 }
 .es-sidebar .es-icon:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
-.es-sidebar .es-icon-primary, .es-sidebar .es-icon-primary:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+.es-sidebar .es-icon-primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+.es-sidebar .es-icon-primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); color: #fff; }
 
-.es-tools { display: grid; gap: 8px; padding: 0 12px 10px; border-bottom: 1px solid var(--tf-border-inner); }
+/* «Новая смета» — основная кнопка этапов (rv-btn primary), поиск — как rv-search */
+.es-tools { display: grid; gap: 8px; padding: 0 12px 12px; border-bottom: 1px solid var(--tf-border-inner); }
 .es-sidebar .es-create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 32px;
   padding: 0 12px;
-  border: 1px dashed var(--tf-muted);
+  border: 1px solid var(--tf-green);
   border-radius: var(--tf-radius);
-  background: var(--tf-chip);
-  color: var(--tf-text);
-  font-size: .8rem;
-  font-weight: 650;
+  background: var(--tf-green);
+  color: #fff;
+  font-size: .86rem;
+  font-weight: 600;
 }
-.es-sidebar .es-create:hover:not(:disabled) { border-style: solid; border-color: var(--tf-green); background: var(--tf-green-soft); }
-.es-tools .es-search { height: 30px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); font-size: .78rem; }
-.es-tools .es-search:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .12); }
+.es-sidebar .es-create:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
+.es-search { position: relative; display: flex; align-items: center; margin: 0; color: var(--tf-muted); }
+.es-search svg { position: absolute; left: 10px; pointer-events: none; }
+.es-search input { height: 32px; margin: 0; padding: 0 10px 0 32px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: .86rem; font-weight: 400; }
+.es-search input::placeholder { color: var(--tf-muted); }
+.es-search input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); box-shadow: none; }
 
-.es-note { margin: 0; padding: 14px 16px; color: var(--tf-muted); font-size: .8rem; }
+.es-note { margin: 0; padding: 16px; color: var(--tf-muted); font-size: .86rem; }
 
+/* Пункты: как вкладки этапов (rv-tabs) — наведение серым, текущий — мягким зелёным */
 .es-list { display: grid; align-content: start; gap: 2px; min-height: 0; padding: 8px; overflow-y: auto; }
 .es-item { position: relative; }
 .es-item a {
   display: grid;
-  gap: 3px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 9px 10px;
   border-radius: var(--tf-radius);
   color: inherit;
   text-decoration: none;
 }
 .es-item a:hover { background: var(--tf-chip); }
-.es-item.active a { background: var(--tf-green-soft); box-shadow: inset 3px 0 var(--tf-green); }
+.es-item.active a { background: var(--tf-green-soft); }
 .es-item-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.es-item strong { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--tf-text); font-size: .8rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-.es-item-sub { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 22px; color: var(--tf-muted); font-size: .7rem; white-space: nowrap; }
+.es-item strong { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--tf-text); font-size: .86rem; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.es-item.active strong { font-weight: 600; }
+.es-item-sub { display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 26px; color: var(--tf-text-2); font-size: .78rem; white-space: nowrap; }
 .es-item-sub span { overflow: hidden; text-overflow: ellipsis; }
-.es-item-sub span + span::before { content: '·'; margin-right: 6px; color: #b5bfb8; }
-.es-owner { color: #3d6b52; font-style: normal; }
-.es-status { flex: 0 0 auto; padding: 0 6px; border-radius: 4px; background: var(--tf-chip); color: var(--tf-muted); font-size: .64rem; font-style: normal; font-weight: 700; line-height: 16px; }
-.es-status.done { background: var(--tf-green-soft); color: var(--tf-green); }
+.es-item-sub span + span::before { content: '·'; margin-right: 6px; color: var(--tf-muted); }
+.es-item-sub .es-none { color: var(--tf-muted); }
+.es-owner { color: var(--tf-green); font-style: normal; }
+
+/* Статус — чип-«пилюля», как rv-pchip: черновик — нейтральный, рассчитано — зелёный с точкой */
+.es-status { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-style: normal; font-weight: 500; }
+.es-status.done { border-color: #c7dccd; background: var(--tf-green-soft); color: var(--tf-green); }
+.es-status.done::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.es-item.active .es-status { background: var(--tf-card); }
 
 .es-sidebar .es-remove {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 20px;
-  height: 20px;
+  right: 8px;
+  bottom: 7px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
-  color: #a3aea7;
-  font-size: .95rem;
+  color: var(--tf-muted);
+  font-size: 1rem;
   line-height: 1;
   opacity: 0;
 }
 .es-item:hover .es-remove, .es-sidebar .es-remove:focus-visible { opacity: 1; }
-.es-sidebar .es-remove:hover:not(:disabled) { background: #fbeaea; color: #a33232; }
+.es-sidebar .es-remove:hover:not(:disabled) { background: #fef3f2; color: #b42318; }
 
 @media (max-width: 760px) {
   .es-sidebar { flex: 0 0 auto; max-height: 240px; border-right: 0; border-bottom: 1px solid var(--tf-border); }
   .es-sidebar.es-rail { flex-basis: auto; flex-direction: row; justify-content: flex-start; max-height: none; padding: 8px 12px; }
-  .es-sidebar .es-rail-button { display: flex; width: auto; padding: 6px 10px; font-size: .78rem; }
+  .es-sidebar .es-rail-button { display: flex; width: auto; padding: 7px 10px; font-size: .86rem; }
   .es-rail-button b { position: static; }
   .es-panel { position: fixed; top: 0; bottom: 0; left: 0; width: min(320px, 86vw); max-height: none; }
   .es-remove { opacity: 1; }

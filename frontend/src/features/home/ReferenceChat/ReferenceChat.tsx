@@ -29,7 +29,7 @@ function historyState(item: ReferenceSummary) {
   if (item.status === 'running' || item.status === 'searching') return 'ищет…'
   if (item.status === 'waiting') return 'ждёт ответа'
   if (item.status === 'error' || item.status === 'cancelled') return 'не завершён'
-  return item.bestCode ? formatCode(item.bestCode) : 'код не найден'
+  return item.bestCode ? <code>{formatCode(item.bestCode)}</code> : 'код не найден'
 }
 
 // Что озвучить экранному диктору при смене состояния вопроса.
@@ -339,7 +339,7 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProp
           {message.content.item.name && <p>{message.content.item.name}</p>}
         </div>
         case 'user': return <div key={message.id} className="rc-user"><p>{message.content.text}</p></div>
-        case 'documents': return <div key={message.id} className="rc-user"><p>Документы для ввоза · {formatCode(message.content.code)}</p></div>
+        case 'documents': return <div key={message.id} className="rc-user"><p>Документы для ввоза · <code>{formatCode(message.content.code)}</code></p></div>
         case 'question': return <div key={message.id} className="rc-bot rc-question"><b>Уточните</b>{message.content.text}</div>
         case 'match': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.byPhoto ? 'то же фото' : 'то же наименование', verified: match.decision.status === 'verified' }))} title="Этот товар уже оформляли" /> : null
         case 'similar': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.verdict === 'same' ? `тот же товар · ${match.score}%` : `похожий · ${match.score}%`, verified: match.decision.status === 'verified' }))} title="Похожие товары в базе решений" /> : null

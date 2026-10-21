@@ -31,7 +31,7 @@
   border-radius: 999px;
   background: #1f6b45;
   color: #fff;
-  font-size: .75rem;
+  font-size: .76rem;
 }
 .image-lightbox-close:hover { color: #a33232; border-color: #a33232; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -94,6 +94,6 @@
   background: #fff;
   color: #26382e;
   box-shadow: 0 1px 5px #0003;
-  font-size: 1.2rem;
+  font-size: 1.12rem;
   line-height: 1;
 }
