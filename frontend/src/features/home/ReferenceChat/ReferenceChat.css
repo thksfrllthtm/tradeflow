@@ -2,28 +2,31 @@
 
 .rc { position: relative; display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: #fff; }
 
-.rc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--tf-border-inner); }
+.rc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--tf-border-inner); }
 .rc-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.rc-logo { display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--tf-green); }
+.rc-logo { display: grid; place-items: center; flex: 0 0 auto; width: 32px; height: 32px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--tf-green); }
 .rc-title h2 { margin: 0; color: var(--tf-text); font-size: 1rem; font-weight: 600; letter-spacing: -.01em; }
 .rc-title p { margin: 1px 0 0; color: var(--tf-muted); font-size: .86rem; }
 .rc-head-actions { display: flex; flex: 0 0 auto; gap: 6px; }
 .rc .rc-ghost { height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: .86rem; font-weight: 600; }
 .rc .rc-ghost:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+.rc .rc-ghost:disabled { opacity: .45; cursor: default; }
 .rc .rc-history-toggle { display: none; }
 
-.rc-body { display: grid; grid-template-columns: 230px minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
+.rc-body { display: grid; grid-template-columns: 270px minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
 
 /* История вопросов */
 .rc-history { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding: 12px 10px; border-right: 1px solid var(--tf-border-inner); background: var(--tf-card); }
-.rc-history-title { margin: 0 6px 8px; color: var(--tf-muted); font-size: .78rem; font-weight: 600; letter-spacing: .02em; }
+.rc-history-title { display: flex; align-items: center; gap: 6px; margin: 0 6px 8px; color: var(--tf-text-2); font-size: .82rem; font-weight: 600; }
+.rc-history-title span { padding: 0 7px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; line-height: 20px; font-variant-numeric: tabular-nums; }
 .rc-history-empty { margin: 0 6px; color: var(--tf-muted); font-size: .86rem; line-height: 1.45; }
 .rc-history ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .rc-history li { position: relative; border-radius: var(--tf-radius); }
 .rc-history li.active { background: var(--tf-green-soft); }
 .rc .rc-history li > button:first-child { display: grid; gap: 2px; width: 100%; height: auto; padding: 8px 26px 8px 8px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text); font-weight: 500; text-align: left; white-space: normal; }
 .rc .rc-history li > button:first-child:hover { background: var(--tf-chip); }
-.rc-history-name { display: -webkit-box; overflow: hidden; font-size: .86rem; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* Вопрос — одной строкой (целиком — в подсказке), под ним — статус и дата. */
+.rc-history-name { display: block; overflow: hidden; font-size: .86rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .rc-history-photo { margin: 0 4px -1px 0; color: var(--tf-text-2); vertical-align: baseline; }
 .rc-history li small { color: var(--tf-muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
 .rc .rc-history-remove { position: absolute; top: 6px; right: 4px; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); font-size: 1rem; line-height: 1; opacity: 0; }
@@ -173,3 +176,12 @@
 /* «Копировать» — тот же значок, что у всех кнопок копирования сайта, после копирования — зелёная галочка. */
 .rc-name-actions button.rc-copy { display: inline-flex; align-items: center; gap: 5px; }
 .rc-name-actions button.rc-copy.copied { color: var(--tf-green); }
+
+/* Игра, пока ИИ ищет код: грузовик и шлагбаумы. Карточка под индикатором поиска, во всю ширину чата. */
+.rc-game { display: grid; gap: 6px; width: 100%; padding: 10px 12px 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.rc-game-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; color: var(--tf-muted); font-size: .8rem; }
+.rc-game-head b { color: var(--tf-text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rc-game-head kbd { padding: 0 5px; border: 1px solid var(--tf-border); border-radius: 4px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; }
+.rc-game canvas { display: block; width: 100%; height: 150px; cursor: pointer; touch-action: manipulation; }
+/* Место игры — между лентой и полем ввода, не прокручивается вместе с шагами агента. */
+.rc-game-dock { flex: none; padding: 8px 20px 0; background: var(--tf-bg); }

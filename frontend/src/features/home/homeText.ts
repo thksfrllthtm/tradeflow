@@ -20,7 +20,7 @@ export function estimateLabel(estimate: { id: number; name: string; client: stri
   const client = estimate.client.trim()
   const generic = /^Смета товаров(\s*·\s*\d{4}-\d{2}-\d{2})?$/.test(title.trim())
   if (!generic) return { title, detail: client || 'Без клиента', untitled: false }
-  return client ? { title: client, detail: `Смета №${estimate.id}`, untitled: false } : { title: `Смета №${estimate.id}`, detail: 'Без названия и клиента', untitled: true }
+  return client ? { title: client, detail: `Смета №${estimate.id}`, untitled: false } : { title: `Смета №${estimate.id}`, detail: '', untitled: true }
 }
 
 // «сегодня, 14:20», «вчера, 09:05», иначе «21.09.2026».

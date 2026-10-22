@@ -82,6 +82,46 @@ input, textarea, select {
 }
 input:focus, textarea:focus, select:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--c-border-focus); }
 input:disabled { background: var(--tf-chip); color: var(--tf-muted); }
+
+/* ── Выпадающие списки — единый вид на всём сайте ──
+   Закрытое поле: своя стрелка вместо системной, рамка как у полей. В Chrome/Edge (appearance: base-select)
+   оформляется и раскрытый список: карточка с тенью, пункты как в меню сайта, выбранный — на зелёном с
+   галочкой. В остальных браузерах список раскрывается системным, поле выглядит так же. */
+select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%235b635e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+select:hover:not(:disabled) { border-color: var(--tf-muted); }
+select:disabled { background-color: var(--tf-chip); color: var(--tf-muted); cursor: not-allowed; }
+@supports (appearance: base-select) {
+  select, ::picker(select) { appearance: base-select; }
+  /* Закрытое поле — в одну строку: длинный текст обрезается, стрелка всегда справа. */
+  select { position: relative; display: flex; align-items: center; overflow: hidden; white-space: nowrap; background-image: none; }
+  /* Стрелка — на подложке цвета поля: закрывает конец длинного текста. */
+  select::picker-icon { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 30px; border-radius: 0 var(--radius) var(--radius) 0; background-color: inherit; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%235b635e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; transition: transform .15s; }
+  select:open::picker-icon { transform: scaleY(-1); }
+  select:open { border-color: var(--tf-green); outline: 2px solid rgba(30, 91, 60, .2); }
+  ::picker(select) {
+    max-height: min(360px, 60vh);
+    margin-top: 4px;
+    padding: 4px;
+    overflow-y: auto;
+    border: 1px solid var(--tf-border);
+    border-radius: var(--tf-radius-card);
+    background: var(--tf-card);
+    box-shadow: var(--tf-shadow-pop);
+    scrollbar-width: thin;
+  }
+  option { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 10px; border-radius: 6px; color: var(--tf-text); font-size: .86rem; line-height: 1.3; cursor: pointer; }
+  option:hover, option:focus-visible { background: var(--tf-chip); outline: none; }
+  option:checked { background: var(--tf-green-soft); font-weight: 600; }
+  option::checkmark { order: 1; margin-left: auto; color: var(--tf-green); }
+  option:disabled { color: var(--tf-muted); cursor: default; }
+}
 label {
   display: block;
   font-size: .8rem;

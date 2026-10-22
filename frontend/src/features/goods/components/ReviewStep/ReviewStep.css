@@ -201,3 +201,4 @@
 .goods-estimates-app:has(.ag-panel) .rv-check-source { display: none; }
 .goods-estimates-app:has(.ag-panel) .rv-panel { padding-block: 8px; }
 .goods-estimates-app:has(.ag-panel) .rv-search { width: 180px; }
+.rv-param select { padding-right: 30px; }

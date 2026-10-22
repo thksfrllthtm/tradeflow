@@ -13,7 +13,8 @@
   background: var(--tf-bg);
 }
 .home-scroll { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-.home { display: flex; flex-direction: column; gap: 20px; width: min(1440px, 100%); margin: 0 auto; padding: 28px 28px 36px; }
+/* Во всю ширину окна, как остальные страницы: чату — больше места. */
+.home { display: flex; flex-direction: column; gap: 16px; width: 100%; margin: 0; padding: 16px 24px 24px; }
 
 /* Видимый фокус клавиатуры: сплошная рамка 2px; внутри прокручиваемых блоков — внутрь. */
 .home :focus-visible { outline: 2px solid var(--home-focus); outline-offset: 2px; }
@@ -25,9 +26,11 @@
 .home-chat { grid-area: chat; height: clamp(560px, calc(100vh - 210px), 900px); min-width: 0; }
 
 /* Приветствие и курс */
-.home-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
-.home-date { margin: 0 0 4px; color: var(--home-muted); font-size: .86rem; font-weight: 500; }
-.home-hero h1 { margin: 0; color: var(--home-ink); font-size: 1.75rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+/* Приветствие — одной строкой, как заголовки страниц: «Добрый день, admin · Четверг, 22 октября». */
+.home-hero { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; }
+.home-hero > div { display: flex; flex-direction: row-reverse; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
+.home-date { margin: 0; color: var(--home-muted); font-size: .86rem; font-weight: 500; }
+.home-hero h1 { margin: 0; color: var(--home-ink); font-size: 1.2rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
 .home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .home .home-retry:hover:not(:disabled) { background: transparent; color: var(--tf-green-hover); }
 
@@ -35,14 +38,16 @@
 
 /* Быстрые действия. «Новая смета» — кнопка, создающая черновик; две другие — переходы. */
 .home-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+/* Быстрые действия — одной высоты, в одну строку: иконка и название; пояснение — в подсказке. */
 .home .home-action {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   column-gap: 12px;
   row-gap: 1px;
   align-items: center;
   min-height: 0;
-  padding: 11px 14px;
+  min-height: 48px;
+  padding: 8px 14px;
   border: 1px solid var(--home-line);
   border-radius: var(--tf-radius-card);
   background: #fff;
@@ -55,16 +60,16 @@
   transition: border-color .15s, background .15s;
 }
 .home .home-action:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-card); }
-.home-action-icon { display: grid; grid-row: 1 / 3; place-items: center; width: 36px; height: 36px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--home-green); }
+.home-action-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--home-green); }
 .home-action-title { font-size: .95rem; font-weight: 600; letter-spacing: -.01em; }
-.home-action-text { color: var(--home-muted); font-size: .86rem; line-height: 1.4; }
+.home-action-text { display: none; }
 
 .home .home-action.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
 .home .home-action.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
 .home .home-action.primary:focus-visible { outline-color: var(--tf-green); }
 .home .home-action.primary:disabled { opacity: .8; cursor: progress; }
 .home-action.primary .home-action-icon { background: rgba(255, 255, 255, .14); color: #fff; }
-.home-action.primary .home-action-text { color: #d3e4d9; }
+
 
 /* Что ждёт проверки (только у администратора) */
 .home-notice { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #f5dfa6; border-radius: var(--tf-radius-card); background: #fff7e6; color: var(--tf-warn-text); font-size: .86rem; text-decoration: none; transition: background .15s; }
@@ -100,9 +105,11 @@ a.home-row:hover { background: var(--tf-chip); }
 .home-row strong.untitled { color: var(--home-ink-2); font-weight: 500; }
 .home-row small { overflow: hidden; color: var(--home-muted); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
 .home-row time { color: var(--home-muted); font-size: .86rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.home-status { display: inline-flex; align-items: center; gap: 5px; justify-self: end; height: 22px; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .78rem; font-weight: 500; white-space: nowrap; }
-.home-status.done { border-color: #c7dccd; background: var(--tf-green-soft); color: var(--tf-green); }
-.home-status.done::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+/* Статус — цветной точкой и словом, как статусы в таблицах сайта. */
+.home-status { display: inline-flex; align-items: center; gap: 6px; justify-self: end; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; white-space: nowrap; }
+.home-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #e0a21b; }
+.home-status.done { color: var(--tf-text); }
+.home-status.done::before { background: var(--tf-green); }
 .home-row.skeleton { min-height: 52px; background: linear-gradient(90deg, #fff 0%, var(--tf-chip) 50%, #fff 100%) 0 0 / 200% 100%; animation: home-shimmer 1.2s ease-in-out infinite; }
 @keyframes home-shimmer { to { background-position: -200% 0; } }
 .home-state { display: grid; justify-items: start; gap: 8px; padding: 18px 16px; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-card); color: var(--home-muted); font-size: .86rem; line-height: 1.45; }
@@ -113,31 +120,24 @@ a.home-row:hover { background: var(--tf-chip); }
 /* От 901px по ширине: главная ровно в высоту окна, без прокрутки страницы. Чат забирает
    свободное место, в колонке прокручивается только список смет. */
 @media (min-width: 901px) and (min-height: 620px) {
-  .home { box-sizing: border-box; height: 100%; gap: 14px; padding: 18px 28px 20px; }
+  .home { box-sizing: border-box; height: 100%; gap: 12px; padding: 14px 24px 16px; }
   .home-hero { align-items: center; }
-  .home-hero h1 { font-size: 1.5rem; }
+  .home-hero h1 { font-size: 1.12rem; }
   .home-grid { flex: 1 1 auto; align-items: stretch; min-height: 0; }
   .home-chat { height: auto; min-height: 0; }
   .home-side { min-height: 0; }
   .home-section { flex: 1 1 auto; }
   .home-list { min-height: 0; overflow-y: auto; }
 }
-/* Низкое окно (ноутбук): описания действий скрыты (видны в подсказке), чтобы в колонке было
+/* Низкое окно (ноутбук): плашка «ждут проверки» плотнее, чтобы в колонке было
    видно больше последних смет. */
 @media (min-width: 901px) and (max-height: 820px) {
-  .home .home-action { grid-template-columns: 32px minmax(0, 1fr); padding: 9px 12px; }
-  .home-action-icon { grid-row: auto; width: 32px; height: 32px; }
-  .home-action-text { display: none; }
   .home-notice { padding: 8px 12px; }
 }
-/* 901–1100px: колонка уже, подписи действий короче. */
+/* 901–1100px: колонка уже. */
 @media (min-width: 901px) and (max-width: 1100px) {
   .home-grid { grid-template-columns: minmax(0, 1fr) 290px; gap: 16px; }
   .home { padding-inline: 20px; }
-  .home .home-action { padding: 10px 12px; }
-  .home-action-text { display: none; }
-  .home .home-action { grid-template-columns: 32px minmax(0, 1fr); }
-  .home-action-icon { grid-row: auto; width: 32px; height: 32px; }
 }
 
 /* До 900px: действия строкой и последние сметы — над чатом, чат не выше 70% окна. */
@@ -145,16 +145,13 @@ a.home-row:hover { background: var(--tf-chip); }
   .home { gap: 16px; padding: 18px 16px 28px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "chat"; gap: 16px; }
   .home-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .home .home-action { grid-template-columns: 32px minmax(0, 1fr); padding: 10px 12px; }
-  .home-action-icon { grid-row: auto; width: 32px; height: 32px; }
-  .home-action-text { display: none; }
   .home-list { max-height: 230px; overflow-y: auto; }
   .home-chat { height: clamp(460px, 70vh, 720px); }
 }
 
 @media (max-width: 600px) {
   .home-hero { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .home-hero h1 { font-size: 1.4rem; }
+  .home-hero h1 { font-size: 1.12rem; }
   .home-actions { grid-template-columns: minmax(0, 1fr); }
   .home-chat { height: 80vh; }
 }

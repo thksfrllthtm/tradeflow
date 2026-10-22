@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/features/home/ReferenceChat/ReferenceChat.css"
+        ],
+        "createdAt": "2026-10-22T11:39:04.347Z",
+        "reason": "Claude: L98 is a blockquote quotation rule (cited excerpt in agent answer), conventional quote styling, not a card side-tab; predates this session (commit 5b3b5d28)"
+      }
+    ]
+  }
+}

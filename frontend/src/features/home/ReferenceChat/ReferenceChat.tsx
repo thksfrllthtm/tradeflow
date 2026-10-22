@@ -11,6 +11,7 @@ import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, R
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
 import { DeclarationsLink } from '@/features/goods/agent/DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from '@/features/goods/agent/DocumentsAnswer'
+import { RoadGame } from './RoadGame'
 import './ReferenceChat.css'
 
 const pollInterval = 1500
@@ -260,13 +261,14 @@ export function ReferenceChat() {
       </div>
       <div className="rc-head-actions">
         <button type="button" className="rc-ghost rc-history-toggle" onClick={() => setHistoryOpen((value) => !value)} aria-expanded={historyOpen}>История{history.length > 0 && ` · ${history.length}`}</button>
-        {session && <button type="button" className="rc-ghost" onClick={startNew}>+ Новый вопрос</button>}
+        {/* Всегда на месте: с пустого экрана видно, где начать заново (без разговора — неактивна). */}
+        <button type="button" className="rc-ghost" onClick={startNew} disabled={!session} title={session ? 'Начать новый вопрос' : 'Вы уже в новом вопросе'}>+ Новый вопрос</button>
       </div>
     </header>
 
     <div className="rc-body">
       <aside className={historyOpen ? 'rc-history open' : 'rc-history'} aria-label="Прошлые вопросы">
-        <p className="rc-history-title">Ваши вопросы</p>
+        <p className="rc-history-title">История вопросов{history.length > 0 && <span>{history.length}</span>}</p>
         {history.length === 0 ? <p className="rc-history-empty">Здесь появятся ваши вопросы.</p>
           : <>
             <p id="rc-history-help" className="rc-sr">Стрелки вверх и вниз — по вопросам, Enter — открыть, Delete — удалить</p>
@@ -294,6 +296,10 @@ export function ReferenceChat() {
             documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />}
           {error && <p className="rc-error" role="alert">{error}</p>}
         </div>
+
+        {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
+            Только пока агент ищет код; ответ готов — игра уходит. Сервер не нагружает. */}
+        {session?.status === 'running' && <div className="rc-game-dock"><RoadGame /></div>}
 
         <form className="rc-composer" onSubmit={(event) => void send(event)}>
           {photos.length > 0 && <div className="rc-attachments">{photos.map((photo, index) => <span key={index} className="rc-attachment">

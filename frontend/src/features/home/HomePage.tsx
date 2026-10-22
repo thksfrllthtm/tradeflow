@@ -124,7 +124,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
                     return <Link key={estimate.id} className="home-row" href={paths.goods(estimate.id)} title={estimateTitle(estimate.name)}>
                       <strong className={label.untitled ? 'untitled' : undefined}>{label.title}</strong>
                       <span className={estimate.status === 'Рассчитано' ? 'home-status done' : 'home-status'}>{estimate.status}</span>
-                      <small>{label.detail}{estimate.ownerName ? ` · ${estimate.ownerName}` : ''}</small>
+                      <small>{[label.detail, estimate.ownerName].filter(Boolean).join(' · ')}</small>
                       <time dateTime={estimate.updatedAt}>{updatedText(estimate.updatedAt, now)}</time>
                     </Link>
                   })}

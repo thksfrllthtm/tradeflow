@@ -1,0 +1,28 @@
+/* Справочник товаров — как «База решений» и этапы сметы: страница во всю ширину, таблица — карточка до низа
+   окна со своей прокруткой, сверху в карточке поиск и фильтры, строки 36px в одну линию. */
+.directory-page.pd-page { width: 100%; padding: 16px 24px; overflow-y: auto; }
+@media (max-width: 900px) { .directory-page.pd-page { padding: 16px 12px; } }
+.pd-page > * { flex-shrink: 0; }
+.pd-page > .pd-card { flex: 1 1 0; min-height: 320px; }
+.pd-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.pd-card .dir-table-wrap { flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; }
+
+/* Полоса карточки: поиск растягивается, фильтры и счётчик — справа. */
+.dir-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
+.dir-filterbar .dir-search { flex: 1 1 280px; }
+.dir-filter-count { color: var(--tf-text-2); font-size: .86rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Строки в одну линию: китайское наименование и синоним — серым после русского; длинное — с многоточием. */
+.product-table td { height: 36px; padding: 3px 10px; white-space: nowrap; }
+.product-table .c-name { max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.product-table .pd-name { color: var(--tf-text); }
+.product-table .c-name small { display: inline; margin: 0; color: var(--tf-muted); font-size: .82rem; }
+.product-table .c-code { width: 150px; }
+.product-table .c-rates { width: 170px; color: var(--tf-text-2); font-variant-numeric: tabular-nums; }
+.product-table .c-num { width: 120px; }
+.product-table .c-unit { width: 60px; }
+.product-table .c-status { width: 130px; }
+.product-table .c-actions { width: 120px; }
+
+.pd-disclaimer { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: .82rem; line-height: 1.4; }
+.pd-disclaimer svg { flex: none; margin-top: 2px; }

@@ -2,7 +2,9 @@ import { ReactNode, useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
+import { formatMoney, formatRuNumber } from '@/shared/lib/formatDisplayNumber'
+import { moneyText } from '@/shared/lib/rounding'
+import { useTodayRates } from '@/shared/api/todayRates'
 import { User } from '@/shared/types/user'
 import { UtilFeeInput, UtilFeeMatch, UtilFeeResult, UtilFeeSection, utilFeeApi } from './utilFeeApi'
 import '@/shared/styles/list-page.css'
@@ -11,14 +13,11 @@ import './utilFee.css'
 // МРП на 2026 год — значение по умолчанию; сотрудник может поменять.
 const DEFAULT_MRP = '4325'
 
-const kindLabels: Record<UtilFeeMatch['kind'], string> = {
-  product: 'платится за товар',
-  packaging: 'платится за упаковку',
-  vehicle: 'транспорт и техника',
-}
-
 // Как платится — коротко, цветным текстом в колонке таблицы перечня (как статусы на этапах сметы).
 const payLabels: Record<UtilFeeMatch['kind'], string> = { product: 'за товар', packaging: 'за упаковку', vehicle: 'транспорт, техника' }
+// Вывод по коду: «утильсбор платится за товар и за упаковку» и что заполнить для суммы.
+const verdictLabels: Record<UtilFeeMatch['kind'], string> = { product: 'за товар', packaging: 'за упаковку', vehicle: 'как за транспорт или технику' }
+const needLabels: Record<UtilFeeMatch['kind'], string> = { product: 'массу товара', packaging: 'материал и массу упаковки', vehicle: 'категорию транспорта' }
 
 const money = (value: string) => `${formatRuNumber(value)} ₸`
 const digits = (code: string) => code.replace(/\s/g, '')
@@ -59,9 +58,16 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
     set({ code, massKg: '', packaging: [{ material: 'paper', massKg: '' }], vehicleCategory: '', fromBelarusRussia: false })
   }
 
-  const has = (kind: UtilFeeMatch['kind']) => result?.matches.some((match) => match.kind === kind) ?? false
   const productK = result?.matches.find((match) => match.kind === 'product')?.k
+  // Сумма в долларах — только для показа, по курсу НБРК на сегодня (как «≈ USD» в смете); считает сервер в тенге.
+  const usdRate = useTodayRates()?.find((rate) => rate.currency === 'USD')
+  const inUsd = (kzt: string) => {
+    const rate = Number(usdRate?.rate)
+    const value = Number(kzt)
+    return rate > 0 && Number.isFinite(value) ? `≈ ${formatMoney(moneyText(value / rate), 'USD')}` : ''
+  }
 
+  const has = (kind: UtilFeeMatch['kind']) => result?.matches.some((match) => match.kind === kind) ?? false
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="utilFee" onLogout={onLogout} />
     <section className="directory-page uf-page">
@@ -76,7 +82,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
       {/* Одна карточка: сверху поля, под ними перечень. Одно поле на всё: пока в нём меньше 4 цифр или слово —
           перечень фильтруется по нему; 4–10 цифр — перечень скрыт, ниже расчёт. Карточка не пересоздаётся —
           курсор в поле не слетает. */}
-      <ListTable sections={sections} query={input.code} edition={edition} onPick={setCode}
+      <ListTable sections={sections} query={input.code} onPick={setCode}
         showList={!/^\d{4,}$/.test(digits(input.code)) && sections.length > 0}
         fields={<>
           <label className="uf-code">Код ТН ВЭД<input value={input.code} onChange={(event) => setCode(event.target.value)} placeholder="код (8516500000) или слово (шины)" autoFocus /></label>
@@ -86,82 +92,113 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
       {/^\d{11,}$/.test(digits(input.code)) && <p className="uf-hint">В коде ТН ВЭД не больше 10 цифр.</p>}
       {codeReady && !result && loading && <p className="uf-hint">Ищем код в перечне…</p>}
 
+      {/* Результат — как этап «Результат» сметы: слева ответ словами (платится ли и за что), справа — панель
+          расчёта: итог крупно и блоки «за товар / за упаковку / транспорт». */}
       {result && result.code === digits(debounced.code) && <>
-        {result.matches.length === 0 && result.possible.length === 0 &&
-          <div className="uf-card uf-empty">Код <code>{groupCode(result.code)}</code> не входит в перечень — утильсбор не платится.</div>}
-        {result.matches.length > 0 && <div className="uf-card">
-          <h2>Код <code>{groupCode(result.code)}</code> в перечне</h2>
-          <ul className="uf-matches">
-            {result.matches.map((match) => <li key={match.section}>
-              <strong>Раздел {match.section}, п. {match.item}</strong> <span className={`uf-kind uf-kind-${match.kind}`}>{kindLabels[match.kind]}</span>
-              {match.k !== undefined && <span className="uf-k">k = {formatRuNumber(match.k)}</span>}
-              <div className="uf-title">{match.title} · позиция <code>{groupCode(match.prefix)}</code></div>
-              {match.note && <div className="uf-note">⚠ {match.note}</div>}
-            </li>)}
-          </ul>
-        </div>}
-        {result.possible.length > 0 && <div className="uf-card">
-          <h2>Зависит от полного кода</h2>
-          <p className="uf-formula">Эти позиции перечня начинаются с <code>{groupCode(result.code)}</code>. Введите код полностью или выберите позицию.</p>
-          <ul className="uf-matches">
-            {[...new Set(result.possible.map((match) => match.section))].map((sectionNumber) => {
-              const items = result.possible.filter((match) => match.section === sectionNumber)
-              return <li key={sectionNumber}>
-                <strong>Раздел {sectionNumber}</strong> <span className={`uf-kind uf-kind-${items[0].kind}`}>{kindLabels[items[0].kind]}</span>
-                {items[0].k !== undefined && <span className="uf-k">k = {formatRuNumber(items[0].k)}</span>}
-                <div className="uf-title">{items[0].title}</div>
-                <div className="uf-positions">
-                  {items.map((match) => <button type="button" key={match.item} title={`п. ${match.item}`} onClick={() => setCode(match.prefix)}>{groupCode(match.prefix)}</button>)}
+        <div className={result.matches.length > 0 ? 'uf-result' : 'uf-result single'}>
+          {/* Ответ словами, а не таблицей: платится ли утильсбор и за что, по какому разделу и пункту — полностью,
+              без обрезки. «Зависит от полного кода» — отдельной жёлтой плашкой, коды — кнопками. */}
+          <section className="uf-answer" aria-label="Код в перечне">
+            {result.matches.length > 0
+              ? <div className="uf-verdict yes">
+                <h2>Код <code>{groupCode(result.code)}</code> — утильсбор платится {[...new Set(result.matches.map((match) => match.kind))].map((kind) => verdictLabels[kind]).join(' и ')}</h2>
+                <ul className="uf-why">{result.matches.map((match) => <li key={`${match.section}-${match.item}`}>
+                  <span className={`uf-pay ${match.kind}`}>{payLabels[match.kind]}</span>
+                  <div>
+                    <b>Раздел {match.section}, пункт {match.item}{match.k !== undefined && <> · k = {formatRuNumber(match.k)}</>}</b>
+                    <p>{match.title}</p>
+                    <small>Позиция перечня: <code>{groupCode(match.prefix)}</code>{match.prefix.length < 10 && ' и все коды, которые с неё начинаются'}</small>
+                    {match.note && <p className="uf-note-line">⚠ {match.note}</p>}
+                  </div>
+                </li>)}</ul>
+                <p className="uf-next">Сумма — справа: заполните {[...new Set(result.matches.map((match) => match.kind))].map((kind) => needLabels[kind]).join(' и ')}.</p>
+              </div>
+              : result.possible.length > 0
+                ? <div className="uf-verdict maybe">
+                  <h2>Код <code>{groupCode(result.code)}</code> — зависит от полного кода</h2>
+                  <p>Утильсбор платится, только если полный код — один из кодов ниже. Выберите его или введите код полностью.</p>
                 </div>
-              </li>
-            })}
-          </ul>
-        </div>}
+                : <div className="uf-verdict no">
+                  <h2>Код <code>{groupCode(result.code)}</code> не входит в перечень</h2>
+                  <p>Утильсбор за этот товар и его упаковку не платится.</p>
+                </div>}
 
-        {has('product') && <div className="uf-card">
-          <h2>За товар</h2>
-          <p className="uf-formula">масса (т) × МРП × k{productK !== undefined && ` (${formatRuNumber(productK)})`}</p>
-          <div className="uf-row">
-            <label>Масса нетто, кг<input value={input.massKg} onChange={(event) => set({ massKg: event.target.value })} inputMode="decimal" /></label>
-            {result.product && <span className="uf-amount">{money(result.product.amount)}</span>}
-          </div>
-        </div>}
+            {result.possible.length > 0 && <div className="uf-possible">
+              {result.matches.length > 0 && <h3>Может платиться ещё — зависит от полного кода</h3>}
+              {[...new Set(result.possible.map((match) => match.section))].map((sectionNumber) => {
+                const items = result.possible.filter((match) => match.section === sectionNumber)
+                const k = new Set(items.map((item) => item.k)).size === 1 ? items[0].k : undefined
+                return <div className="uf-possible-group" key={sectionNumber}>
+                  <p>Если полный код {items.length > 1 ? 'один из этих' : 'такой'} — ещё <b>{payLabels[items[0].kind]}</b>: раздел {sectionNumber}{k !== undefined && <>, k = {formatRuNumber(k)}</>}</p>
+                  <small>{items[0].title}</small>
+                  <div className="uf-picks">{items.map((match) => <button type="button" key={match.item} onClick={() => setCode(match.prefix)} title="Посчитать по этому коду">
+                    <code>{groupCode(match.prefix)}</code><small>п. {match.item}</small>
+                  </button>)}</div>
+                </div>
+              })}
+            </div>}
+          </section>
 
-        {has('packaging') && <div className="uf-card">
-          <h2>За упаковку</h2>
-          <p className="uf-formula">масса упаковки (т) × МРП × k материала</p>
-          {input.packaging.map((row, index) => {
-            const amount = result.packaging.find((line) => line.index === index)
-            return <div className="uf-row" key={index}>
-              <label>Материал<select value={row.material} onChange={(event) => setRow(index, { material: event.target.value })}>
-                {result.materials.map((material) => <option key={material.id} value={material.id}>{material.label} · k {formatRuNumber(material.k)}</option>)}
-              </select></label>
-              <label>Масса упаковки, кг<input value={row.massKg} onChange={(event) => setRow(index, { massKg: event.target.value })} inputMode="decimal" /></label>
-              {amount && <span className="uf-amount">{money(amount.amount)}</span>}
-              {input.packaging.length > 1 && <button type="button" className="uf-remove" aria-label="Удалить строку" onClick={() => set({ packaging: input.packaging.filter((_, rowIndex) => rowIndex !== index) })}>×</button>}
+          {result.matches.length > 0 && <aside className="uf-calc" aria-label="Расчёт утильсбора">
+            <div className="uf-calc-total">
+              <span>Итого утильсбор</span>
+              <strong>{result.total ? money(result.total) : '—'}</strong>
+              {result.total && inUsd(result.total) && <small className="uf-usd" title={usdRate ? `Курс НБРК ${formatRuNumber(usdRate.rate)} ₸ за 1 USD` : undefined}>{inUsd(result.total)}{usdRate && ` · курс ${formatRuNumber(usdRate.rate)} ₸`}</small>}
+              {!result.total && <small>Заполните поля ниже — сумма посчитается сама</small>}
             </div>
-          })}
-          <button type="button" className="uf-add" onClick={() => set({ packaging: [...input.packaging, { material: 'polymer', massKg: '' }] })}>+ Ещё материал</button>
-        </div>}
 
-        {has('vehicle') && <div className="uf-card">
-          <h2>Транспорт и техника</h2>
-          <p className="uf-formula">50 МРП × коэффициент</p>
-          <div className="uf-row">
-            <label className="uf-wide">Категория<select value={input.vehicleCategory} onChange={(event) => set({ vehicleCategory: event.target.value })}>
-              <option value="">— выберите —</option>
-              {(result.vehicleCategories ?? []).map((category) => <option key={category.id} value={category.id}>
-                {category.label} · коэф. {formatRuNumber(input.fromBelarusRussia ? category.coef2 : category.coef1)}
-              </option>)}
-            </select></label>
-            <label className="uf-check"><input type="checkbox" checked={input.fromBelarusRussia} onChange={(event) => set({ fromBelarusRussia: event.target.checked })} />Ввоз из Беларуси или России</label>
-            {result.vehicle && <span className="uf-amount">{money(result.vehicle.amount)}</span>}
-          </div>
-        </div>}
+            {has('product') && <div className="uf-calc-block">
+              <div className="uf-calc-head"><b>За товар</b>{result.product && <span className="uf-amount">{money(result.product.amount)}<small>{inUsd(result.product.amount)}</small></span>}</div>
+              <p className="uf-formula">масса (т) × МРП × k{productK !== undefined && ` (${formatRuNumber(productK)})`}</p>
+              <label className="uf-calc-field">Масса нетто, кг<input value={input.massKg} onChange={(event) => set({ massKg: event.target.value })} inputMode="decimal" placeholder="0" /></label>
+            </div>}
 
-        {result.total && <div className="uf-card uf-total">Итого утильсбор: <strong>{money(result.total)}</strong></div>}
-        <p className="uf-edition">{result.edition}</p>
+            {has('packaging') && <div className="uf-calc-block">
+              <div className="uf-calc-head"><b>За упаковку</b></div>
+              <p className="uf-formula">масса упаковки (т) × МРП × k материала</p>
+              <div className="uf-pack-row uf-pack-head" aria-hidden="true"><span>Материал</span><span>Масса, кг</span><span>Сумма</span></div>
+              {input.packaging.map((row, index) => {
+                const amount = result.packaging.find((line) => line.index === index)
+                return <div className="uf-pack-row" key={index}>
+                  <select value={row.material} onChange={(event) => setRow(index, { material: event.target.value })} aria-label="Материал упаковки">
+                    {result.materials.map((material) => <option key={material.id} value={material.id}>{material.label} · k {formatRuNumber(material.k)}</option>)}
+                  </select>
+                  <input value={row.massKg} onChange={(event) => setRow(index, { massKg: event.target.value })} inputMode="decimal" placeholder="0" aria-label="Масса упаковки, кг" />
+                  <span className="uf-amount" title={amount ? inUsd(amount.amount) : undefined}>{amount ? money(amount.amount) : ''}</span>
+                  {input.packaging.length > 1 && <button type="button" className="uf-remove" aria-label="Удалить строку" onClick={() => set({ packaging: input.packaging.filter((_, rowIndex) => rowIndex !== index) })}>×</button>}
+                </div>
+              })}
+              <button type="button" className="uf-add" onClick={() => set({ packaging: [...input.packaging, { material: 'polymer', massKg: '' }] })}>+ Ещё материал</button>
+            </div>}
+
+            {has('vehicle') && <div className="uf-calc-block">
+              <div className="uf-calc-head"><b>Транспорт и техника</b>{result.vehicle && <span className="uf-amount">{money(result.vehicle.amount)}<small>{inUsd(result.vehicle.amount)}</small></span>}</div>
+              <p className="uf-formula">50 МРП × коэффициент</p>
+              {/* Категории — сразу списком (их немного и сервер присылает только подходящие к коду): название
+                  слева, коэффициент справа, выбранная — на зелёном. Повторный щелчок снимает выбор. */}
+              <div className="uf-calc-field">Категория
+                <div className="uf-options" role="radiogroup" aria-label="Категория транспорта">
+                  {(result.vehicleCategories ?? []).map((category) => {
+                    const chosen = input.vehicleCategory === category.id
+                    return <button key={category.id} type="button" role="radio" aria-checked={chosen} className={chosen ? 'active' : undefined}
+                      onClick={() => set({ vehicleCategory: chosen ? '' : category.id })}>
+                      <span>{category.label}</span>
+                      <b>коэф. {formatRuNumber(input.fromBelarusRussia ? category.coef2 : category.coef1)}</b>
+                    </button>
+                  })}
+                </div>
+              </div>
+              <label className="uf-check"><input type="checkbox" checked={input.fromBelarusRussia} onChange={(event) => set({ fromBelarusRussia: event.target.checked })} />Ввоз из Беларуси или России</label>
+            </div>}
+          </aside>}
+        </div>
       </>}
+
+      {/* По каким документам перечень и коэффициенты — одна строка внизу страницы, и при перечне, и при расчёте. */}
+      {(edition || result?.edition) && <p className="uf-disclaimer uf-foot">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>
+        {edition || result?.edition}
+      </p>}
     </section>
   </main>
 }
@@ -170,9 +207,9 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
 // платится, k, число позиций) раскрывает его позиции — пункт, код, k, примечание. Поиск — по коду (в обе
 // стороны: «8516500000» найдёт позицию «8516») или по словам названия раздела и примечания; найденные
 // разделы раскрываются сами.
-type ListProps = { sections: UtilFeeSection[]; query: string; edition: string; fields: ReactNode; showList: boolean; onPick: (code: string) => void }
+type ListProps = { sections: UtilFeeSection[]; query: string; fields: ReactNode; showList: boolean; onPick: (code: string) => void }
 
-function ListTable({ sections, query, edition, fields, showList, onPick }: ListProps) {
+function ListTable({ sections, query, fields, showList, onPick }: ListProps) {
   const [open, setOpen] = useState<Set<number>>(new Set())
   const code = digits(query).replace(/\./g, '')
   const byCode = /^\d+$/.test(code)
@@ -254,10 +291,5 @@ function ListTable({ sections, query, edition, fields, showList, onPick }: ListP
     </table>
     </div>}
   </section>
-  {/* По каким документам перечень и коэффициенты — под рамкой, как пометка под таблицей сметы. */}
-  {showList && edition && <p className="uf-disclaimer">
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>
-    {edition}
-  </p>}
   </>
 }

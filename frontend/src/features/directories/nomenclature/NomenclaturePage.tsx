@@ -105,7 +105,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
     <section className="directory-page nom-page">
       <div className="dir-head">
         <div>
-          <h1>Номенклатура ТН ВЭД ЕАЭС{source && <span className="dir-count">{formatDisplayNumber(source.codeCount)}</span>}</h1>
+          <h1>Номенклатура ТН ВЭД ЕАЭС</h1>
           <p>{source ? <>Источник: {source.source}{source.actualDate && <> · данные на {formatRuDate(source.actualDate)}</>} · загружено {formatRuDate(source.importedAt.slice(0, 10))}{source.importedByName && `, ${source.importedByName}`}</> : 'Все коды со ставками ввозной пошлины Единого таможенного тарифа.'}</p>
         </div>
         <div className="dir-head-actions dir-transfer">
@@ -173,7 +173,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
                   <td className="nom-sir" title={item.sir ? [item.sir.file && `Файл: ${item.sir.file}`, `Профиль ${item.sir.profile}`].filter(Boolean).join(' · ') : undefined}>
                     {item.sir ? <>{formatDisplayNumber(item.sir.priceUsd)}{item.sir.file && <small> · {item.sir.file.replace(/\.xlsx?$/i, '')}</small>}</> : <span className="dir-none">—</span>}
                   </td>
-                  <td className="nom-link">{item.detailsUrl && <a href={item.detailsUrl} target="_blank" rel="noreferrer" title={`Код ${item.code} на ${source?.source ?? 'сайте источника'}: примечания, документы, меры`}>Подробнее</a>}</td>
+                  <td className="nom-link">{item.detailsUrl && <a href={item.detailsUrl} target="_blank" rel="noreferrer" title={`Код ${item.code} на ${source?.source ?? 'сайте источника'}: примечания, документы, меры`} aria-label={`Подробнее о коде ${item.code}`}>↗</a>}</td>
                 </tr></Fragment>
               })}
           </tbody>

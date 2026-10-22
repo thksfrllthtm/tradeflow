@@ -26,8 +26,7 @@
 .nom-table .nom-vat { width: 64px; color: var(--tf-text); font-variant-numeric: tabular-nums; }
 .nom-table .nom-link { width: 96px; }
 .nom-table .nom-link a { color: var(--tf-green); font-size: .82rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
-.nom-table .nom-link a::after { content: " ↗"; }
-.nom-table .nom-link a:hover { text-decoration: underline; }
+.nom-table .nom-link a:hover { background: var(--tf-green-soft); }
 .dir-foot a { color: inherit; }
 
 @media (max-width: 760px) {
@@ -117,7 +116,7 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .nom-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .nom-card .dir-table-wrap { flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; }
 .nom-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
-.nom-filterbar .dir-search { flex: 0 1 560px; }
+.nom-filterbar .dir-search { flex: 1 1 auto; }
 .nom-more { padding: 8px; }
 .nom-disclaimer { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: .82rem; line-height: 1.4; }
 .nom-disclaimer svg { flex: none; margin-top: 2px; }
@@ -135,6 +134,8 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .nom-table .nom-ad { width: 180px; overflow: hidden; text-overflow: ellipsis; }
 .nom-table .nom-sir { width: 190px; overflow: hidden; text-overflow: ellipsis; }
 .nom-table .nom-sir small { color: var(--tf-muted); font-size: .8rem; }
-.nom-table .nom-link { width: 110px; }
+/* «Подробнее» — значок ↗ в узкой колонке (текст — в подсказке): место — наименованию. */
+.nom-table .nom-link { width: 44px; padding: 3px 4px; text-align: center; }
+.nom-table .nom-link a { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; font-size: .95rem; }
 .nom-ad-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 1px 7px; vertical-align: middle; }
 .nom-ad-chip + .nom-ad-chip { margin: 0 0 0 4px; }

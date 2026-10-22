@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-10-20T17:46:03.079Z",
         "reason": "Claude: flagged line is a 2px blockquote rule for invoice citations (.ag-cand/.ag-why blockquote), standard quote styling, not a card side-tab; predates session"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "frontend/src/features/home/ReferenceChat/ReferenceChat.css"
+        ],
+        "createdAt": "2026-10-22T11:35:32.799Z",
+        "reason": "Claude: L98 is a blockquote quotation rule (cited excerpt from documents), conventional quote styling, not a card side-tab; predates this session (commit 5b3b5d28)"
       }
     ]
   }

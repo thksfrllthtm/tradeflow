@@ -219,3 +219,5 @@
 .cer-combo-list [role="option"].cer-combo-all { position: relative; margin-bottom: 9px; }
 .cer-combo-list [role="option"].cer-combo-all::after { content: ""; position: absolute; right: 4px; bottom: -5px; left: 4px; border-bottom: 1px solid var(--tf-border-inner); }
 
+/* Место под стрелку выпадающего списка (base.css). */
+.cer-field select { padding-right: 32px; }
