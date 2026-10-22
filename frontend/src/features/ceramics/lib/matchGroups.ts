@@ -1,5 +1,5 @@
 import { GoodsParseResult, GoodsParseRow } from '@/shared/types/goods'
-import { CeramicsProduct, CeramicSize, PriceResult, Resolution, ResolutionStatus, SizeUnit } from '../types'
+import { CeramicSize, PriceResult, Resolution, ResolutionStatus, SizeUnit } from '../types'
 import { normalizeMark } from './marks'
 import { toDataUrl } from './photos'
 import { baseName, formatSize } from './sizes'
@@ -27,7 +27,8 @@ export type MatchGroup = {
   draft: Draft
   // Цена для выбранных оператором типа и размера.
   draftPrice?: PriceResult
-  saved: boolean
+  // Оператор отметил строку «Готово». В базу ничего не сохраняется: результат уходит в CSV.
+  checked: boolean
 }
 
 const patterns: Record<keyof Omit<MatchMapping, 'photo'>, RegExp> = {
@@ -109,7 +110,7 @@ export function buildGroups(parsed: GoodsParseResult, mapping: MatchMapping): Ma
     }
     groups.set(key, {
       key, mark, markKey: normalizeMark(mark), chineseName, russianName, photo: imageByRow.get(row.sourceRow) ?? '',
-      sourceRows: [row.sourceRow], state: 'pending', draft: { productType: '', sizeValue: '', sizeUnit: '', price: '', name: '' }, saved: false,
+      sourceRows: [row.sourceRow], state: 'pending', draft: { productType: '', sizeValue: '', sizeUnit: '', price: '', name: '' }, checked: false,
     })
   }
   return [...groups.values()]
@@ -130,23 +131,6 @@ export function draftFromResolution(resolution: Resolution, chineseName: string)
   }
 }
 
-// Результат сохранённой оператором записи: дальше марка находится в базе.
-export function savedResolution(group: MatchGroup, product: CeramicsProduct): Resolution {
-  const size: CeramicSize | null = product.sizeValue && product.sizeUnit ? { value: product.sizeValue, unit: product.sizeUnit } : null
-  return {
-    key: group.key, mark: product.mark, markKey: normalizeMark(product.mark), status: 'FOUND_BY_MARK', product,
-    productType: product.productType, typeStatus: 'MATCHED', typeCandidates: [], size, sizeStatus: size ? 'MATCHED' : 'NOT_NEEDED', sizeOptions: [],
-    price: { status: 'MATCHED', price: product.price, options: [], total: 1, availableSizes: [], hasUnsized: false, message: '', name: product.name },
-    displayName: product.name, chineseTerms: group.resolution?.chineseTerms ?? [],
-    // Решение оператора — первым: по нему строится колонка «Источник»; подбор остаётся ниже для истории.
-    evidence: [
-      { field: 'type', source: 'manual', text: `Сохранено в базу оператором: «», цена ` },
-      ...(size ? [{ field: 'size' as const, source: 'manual', text: 'Размер подтверждён оператором' }] : []),
-      ...(group.resolution?.evidence ?? []).filter((item) => item.source !== 'mark_exact'),
-    ],
-    warnings: [], aiUsed: group.resolution?.aiUsed ?? false,
-  }
-}
 
 export function draftSize(draft: Draft): CeramicSize | null {
   return draft.sizeValue && draft.sizeUnit ? { value: draft.sizeValue, unit: draft.sizeUnit } : null
@@ -163,7 +147,7 @@ function groupStatusLabel(group: MatchGroup) {
   if (group.state === 'pending') return 'Ожидает'
   if (group.state === 'running') return 'Анализ…'
   if (group.state === 'error' || !group.resolution) return `❌ Ошибка${group.error ? `: ${group.error}` : ''}`
-  return statusLabels[group.resolution.status]
+  return group.checked ? '✔ Проверено' : statusLabels[group.resolution.status]
 }
 
 export function chunk<T>(items: T[], size: number): T[][] {

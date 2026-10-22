@@ -1,30 +1,79 @@
-/* База решений: таблица страниц-списков (shared/styles/list-page.css) с миниатюрой фото, счётчики над таблицей,
-   карточка записи и импорт — в боковой панели (shared/styles/drawer.css). */
+/* База решений — как этапы 2–3 сметы: страница во всю ширину, таблица — карточка до низа окна со своей
+   прокруткой, сверху в карточке поиск, вкладки статуса со счётчиками и кнопки; строки 36px в одну линию.
+   Карточка записи и импорт — в боковой панели (shared/styles/drawer.css). */
 
-.dc-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.dc-stats .dc-stat { display: inline-flex; align-items: center; gap: 5px; height: 30px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: 999px; background: #fff; color: var(--tf-text-2); font-size: .78rem; font-weight: 500; }
-.dc-stats button.dc-stat:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
-.dc-stats .dc-stat b { color: var(--tf-text); }
-.dc-stats .dc-stat.warn { border-color: #f0d58a; background: #fff8e3; color: #6b4d0c; }
+.directory-page.dc-page { width: 100%; padding: 16px 24px; }
+@media (max-width: 900px) { .directory-page.dc-page { padding: 16px 12px; } }
+.dc-page > * { flex-shrink: 0; }
+.dc-page > .dc-card { flex: 1 1 0; }
+/* Общий стиль листа (sheet.css) уменьшает статусы — здесь они как остальные ячейки. */
+table.dc-table .dc-status { font-size: .86rem; font-weight: 500; }
 
-.dc-table .dc-photo-col { width: 52px; }
-.dc-table .dc-photo-col img, .dc-nophoto { display: block; width: 32px; height: 32px; border: 1px solid var(--tf-border); border-radius: 3px; object-fit: cover; background: var(--tf-chip); }
-.dc-table .dc-names { max-width: 0; line-height: 1.35; }
-.dc-table .dc-names > span { display: -webkit-box; overflow: hidden; color: var(--tf-text); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.dc-table .dc-names small { display: block; overflow: hidden; color: var(--tf-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
-.dc-table .dc-code-col { width: 150px; white-space: nowrap; }
-.dc-table .dc-code-col b { font-family: var(--tf-mono); font-size: .82rem; font-variant-numeric: tabular-nums; font-weight: 400; letter-spacing: 0; }
-.dc-table .dc-status-col { width: 140px; }
-.dc-table .dc-from-col { width: 170px; }
-.dc-table td small { display: block; margin-top: 2px; font-size: .76rem; }
-.dc-table .dc-from-col span { color: var(--tf-text-2); }
-.dc-table .dc-from-col small { color: var(--tf-muted); }
-.dc-more { border-top: 1px solid var(--tf-border-inner); }
+.dc-card { display: flex; flex: 1 1 0; flex-direction: column; min-height: 320px; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.dc-card .dir-table-wrap { flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; }
+.dc-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
+.dc-search { position: relative; display: flex; align-items: center; width: min(280px, 100%); margin: 0; color: var(--tf-muted); }
+.dc-search svg { position: absolute; left: 10px; pointer-events: none; }
+.dc-search input { width: 100%; height: 32px; margin: 0; padding: 0 10px 0 32px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: .86rem; }
+.dc-search input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
 
-.dc-status { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .76rem; font-weight: 600; white-space: nowrap; }
-.dc-status.pending { background: #fff1cf; color: #7a5810; }
-.dc-status.verified { background: var(--tf-green-soft); color: var(--tf-green); }
-.dc-status.rejected { background: var(--tf-chip); color: var(--tf-text-2); }
+/* Вкладки статуса — как на этапе «Результат» (rs-tabs): без рамки, выбранная — на зелёном, счётчик рядом. */
+.dc-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.dc-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; }
+.dc-tabs button b { color: var(--tf-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dc-tabs button.warn b { color: var(--tf-warn-text); }
+.dc-tabs button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.dc-tabs button.active, .dc-tabs button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
+.dc-tabs button.active b { color: var(--tf-text); }
+.dc-actions { display: flex; flex: none; gap: 8px; }
+
+/* Кнопки — как на этапах сметы: 32px; зелёная — главная, белая с рамкой — вторичная. */
+.dc-page button.dc-btn { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.dc-page button.dc-btn:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+.dc-page button.dc-btn.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+.dc-page button.dc-btn.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
+.dc-more { display: flex; flex: none; align-items: center; justify-content: center; gap: 14px; padding: 8px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-text-2); font-size: .86rem; }
+.dc-more b { color: var(--tf-text); font-weight: 600; }
+
+/* Таблица: строки 36px в одну линию, длинное наименование — с многоточием (целиком — в подсказке). */
+.dc-table { min-width: 900px; font-size: .86rem; }
+.dc-table th { height: 34px; padding: 4px 10px; font-size: .8rem; }
+.dc-table td { height: 36px; padding: 3px 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dc-table .dc-photo-col { width: 44px; padding: 3px 6px; }
+.dc-table .dc-photo-col img, .dc-nophoto { display: block; width: 28px; height: 28px; border: 1px solid var(--tf-border); border-radius: 4px; object-fit: cover; background: var(--tf-chip); }
+.dc-table .dc-names { max-width: 0; color: var(--tf-text); }
+/* Наименование в одну строку с многоточием; справа — «копировать», видна при наведении на строку. */
+.dc-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dc-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dc-table button.dc-copy { display: grid; flex: none; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); opacity: 0; transition: opacity .12s; }
+.dc-table tr:hover button.dc-copy, .dc-table button.dc-copy:focus-visible, .dc-table button.dc-copy.copied { opacity: 1; }
+.dc-table button.dc-copy:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.dc-table button.dc-copy.copied { color: var(--tf-green); }
+/* Миниатюра — кнопка: открывает фото крупно, с увеличением. */
+.dc-table button.dc-thumb { display: block; width: auto; height: auto; padding: 0; border: 0; border-radius: 4px; background: none; cursor: zoom-in; }
+.dc-table button.dc-thumb:hover img { border-color: var(--tf-green); }
+.dc-table .dc-code-col { width: 160px; }
+.dc-table .dc-status-col { width: 210px; }
+.dc-table .dc-source-col { width: 110px; color: var(--tf-text-2); }
+.dc-table .dc-by-col { width: 130px; overflow: hidden; color: var(--tf-text-2); text-overflow: ellipsis; }
+.dc-table .dc-date-col { width: 110px; color: var(--tf-text-2); }
+
+.dc-disclaimer { display: flex; flex: none; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: .82rem; line-height: 1.4; }
+.dc-disclaimer svg { flex: none; margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .dc-search { width: 100%; }
+}
+
+/* Статус — цветная точка и слово, как статусы на этапах сметы (не «таблетка»). */
+.dc-status { display: inline-flex; align-items: center; gap: 7px; color: var(--tf-text); font-size: .86rem; font-weight: 500; white-space: nowrap; }
+.dc-status::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--tf-muted); }
+.dc-status.pending::before { background: #e0a21b; }
+.dc-status.verified::before { background: #2f9e62; }
+.dc-status.rejected { color: var(--tf-text-2); }
+
+
+
 .dc-warn { color: #9a5a10; }
 .dc-ok { color: var(--tf-green); }
 p.dc-warn { margin: 0; font-size: .78rem; }

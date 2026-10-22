@@ -34,13 +34,13 @@ export function CeramicsPage({ user, tab, onLogout }: { user: User; tab: 'match'
           <h1>Керамика: наименование и цена</h1>
           <p>Марка + китайское наименование + фото → тип товара, размер и цена из нашей базы. Таможенных расчётов здесь нет.</p>
         </div>
+        <nav className="dir-seg cer-tabs" aria-label="Разделы керамики">
+          <Link href={paths.ceramics} className={tab === 'match' ? 'active' : undefined} aria-current={tab === 'match' ? 'page' : undefined}>Подбор по файлу</Link>
+          <Link href={paths.ceramicsBase} className={tab === 'base' ? 'active' : undefined} aria-current={tab === 'base' ? 'page' : undefined}>База марок{types.length > 0 && <span className="dir-count">{types.reduce((sum, item) => sum + item.productCount, 0)}</span>}</Link>
+        </nav>
       </div>
-      <nav className="dir-seg cer-tabs" aria-label="Разделы керамики">
-        <Link href={paths.ceramics} className={tab === 'match' ? 'active' : undefined} aria-current={tab === 'match' ? 'page' : undefined}>Подбор по файлу</Link>
-        <Link href={paths.ceramicsBase} className={tab === 'base' ? 'active' : undefined} aria-current={tab === 'base' ? 'page' : undefined}>База марок{types.length > 0 && <span className="dir-count">{types.reduce((sum, item) => sum + item.productCount, 0)}</span>}</Link>
-      </nav>
       {/* Подбор остаётся смонтированным: результаты файла не теряются при переходе в базу. */}
-      <div className="cer-tab" hidden={tab !== 'match'}><MatchTab types={types} ai={ai} onBaseChanged={reloadTypes} /></div>
+      <div className="cer-tab" hidden={tab !== 'match'}><MatchTab types={types} ai={ai} /></div>
       {tab === 'base' && <div className="cer-tab"><BaseTab user={user} types={types} onBaseChanged={reloadTypes} /></div>}
     </section>
   </main>

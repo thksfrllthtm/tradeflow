@@ -88,11 +88,12 @@ type SourceProps = {
   sheets: SheetInfo[]
   sheet: string
   headerRow: number
-  dataStartRow: number
+  // Без строки товаров (керамика: товары сразу под заголовками) — поля «Товары со строки» нет.
+  dataStartRow?: number
   selectedFileAvailable: boolean
   setSheet: (value: string) => void
   setHeaderRow: (value: number) => void
-  setDataStartRow: (value: number) => void
+  setDataStartRow?: (value: number) => void
   reparse: () => void
 }
 
@@ -100,7 +101,7 @@ type SourceProps = {
 // и товаров) и кнопка «Изменить», под ней — список: лист кнопками, номера строк и «Перечитать» (файла во
 // вкладке нет — вместо неё «Выбрать файл»). Лист и строки применяются только перечитыванием файла; после перезагрузки страницы файла
 // в браузере нет — тогда его нужно выбрать снова.
-function SourceSettings({ loading, fileName, fileInput, sheets, sheet, headerRow, dataStartRow, selectedFileAvailable, setSheet, setHeaderRow, setDataStartRow, reparse }: SourceProps) {
+export function SourceSettings({ loading, fileName, fileInput, sheets, sheet, headerRow, dataStartRow, selectedFileAvailable, setSheet, setHeaderRow, setDataStartRow, reparse }: SourceProps) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -117,7 +118,7 @@ function SourceSettings({ loading, fileName, fileInput, sheets, sheet, headerRow
     { label: 'Файл', text: fileName || 'не выбран', empty: !fileName, file: true },
     { label: 'Лист', text: sheet || 'первый', empty: !sheet },
     { label: 'Заголовки', text: `строка ${headerRow}` },
-    { label: 'Товары', text: `со строки ${dataStartRow}` },
+    ...(dataStartRow === undefined ? [] : [{ label: 'Товары', text: `со строки ${dataStartRow}` }]),
   ]
   const number = (value: string, min: number) => Math.max(min, Math.round(Number(value)) || min)
 
@@ -143,10 +144,10 @@ function SourceSettings({ loading, fileName, fileInput, sheets, sheet, headerRow
         <span>Заголовки в строке</span>
         <input type="number" min={1} value={headerRow} onChange={(event) => setHeaderRow(number(event.target.value, 1))} />
       </label>
-      <label className="rv-param" title="Номер строки Excel, с которой начинаются товары">
+      {dataStartRow !== undefined && setDataStartRow && <label className="rv-param" title="Номер строки Excel, с которой начинаются товары">
         <span>Товары со строки</span>
         <input type="number" min={2} value={dataStartRow} onChange={(event) => setDataStartRow(number(event.target.value, 2))} />
-      </label>
+      </label>}
       {selectedFileAvailable
         ? <div className="im-source-actions">
           <span>Лист и строки применятся после перечитывания</span>

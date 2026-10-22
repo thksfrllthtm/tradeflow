@@ -3,20 +3,26 @@
 
 /* Страница прокручивается целиком: раскрытые строки результата бывают высокими. */
 .cer-page { overflow: auto; }
+/* Во всю ширину окна, как смета: таблицам нужно место (длинные наименования, много колонок). */
+.directory-page.cer-page { width: 100%; padding: 16px 24px; }
+@media (max-width: 900px) { .directory-page.cer-page { padding: 16px 12px; } }
 .cer-tab { display: flex; flex: 0 0 auto; flex-direction: column; }
 .cer-tab[hidden] { display: none; }
 .cer-match, .cer-base { display: flex; flex-direction: column; gap: 12px; }
 .cer-page .dir-table-wrap { flex: 0 0 auto; }
 
-.cer-tabs { align-self: flex-start; }
-.cer-tabs a { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 6px; color: var(--tf-text-2); font-size: .8rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
-.cer-tabs a:hover { background: var(--tf-chip); color: var(--tf-text); }
-.cer-tabs a.active { background: var(--tf-green-soft); color: var(--tf-green); }
+.cer-tabs { flex: none; }
+.cer-tabs a { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 14px; border-radius: 6px; color: var(--tf-muted); font-size: .86rem; font-weight: 500; text-decoration: none; white-space: nowrap; transition: background .15s, color .15s; }
+.cer-tabs a:hover { background: rgba(255, 255, 255, .6); color: var(--tf-text); }
+/* Активная вкладка — белая плашка с тенью, как у переключателей справочников (.dir-seg). */
+.cer-tabs a.active { background: var(--tf-card); color: var(--tf-text); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+.cer-tabs .dir-count { background: var(--tf-card); color: var(--tf-muted); }
+.cer-tabs a.active .dir-count { background: var(--tf-green-soft); color: var(--tf-green); }
 
-/* ── Кнопки ── */
-.cer-match button, .cer-base button { height: 34px; padding: 0 14px; border-radius: 8px; font-size: .8rem; }
-.cer-secondary, .cer-secondary:hover:not(:disabled) { border: 1px solid var(--tf-border); background: #fff; color: var(--tf-text-2); }
-.cer-secondary:hover:not(:disabled) { background: var(--tf-chip); }
+/* ── Кнопки — как на этапах сметы (rv-btn): 32px, .86rem; зелёная — главная, белая с рамкой — вторичная ── */
+.cer-match button, .cer-base button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--tf-radius); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.cer-secondary, .cer-secondary:hover:not(:disabled) { border: 1px solid var(--tf-border); background: var(--tf-card); color: var(--tf-text); }
+.cer-secondary:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
 .cer-secondary.danger:hover:not(:disabled) { border-color: #e2b4ad; background: #fdf1ef; color: #9a3024; }
 .cer-match .cer-link, .cer-base .cer-link, .cer-link { height: auto; padding: 0; border: 0; background: transparent; color: var(--tf-green); font-size: inherit; font-weight: 600; }
 .cer-link:hover:not(:disabled) { background: transparent; color: var(--tf-green); text-decoration: underline; }
@@ -28,9 +34,10 @@
 .cer-card-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
 .cer-card-row.end { align-items: center; justify-content: flex-end; }
 .cer-toolbar-spacer { flex: 1 1 auto; }
-.cer-field { display: grid; gap: 4px; margin: 0; color: var(--tf-muted); font-size: .76rem; font-weight: 600; }
-.cer-field input, .cer-field select, .cer-field textarea { margin: 0; border: 1px solid var(--tf-border); border-radius: 8px; color: var(--tf-text); font-size: .86rem; }
-.cer-field input, .cer-field select { height: 34px; padding: 0 10px; }
+.cer-field { display: grid; gap: 4px; margin: 0; color: var(--tf-text-2); font-size: .8rem; font-weight: 500; }
+.cer-field input, .cer-field select, .cer-field textarea { margin: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: .86rem; }
+.cer-field input, .cer-field select { height: 32px; padding: 0 10px; }
+.cer-field :is(input, select, textarea):focus { outline: 2px solid rgba(30, 91, 60, .15); outline-offset: 0; border-color: var(--tf-green); }
 .cer-field textarea { padding: 8px 10px; resize: vertical; line-height: 1.4; }
 .cer-field.narrow input { width: 80px; }
 .cer-field small { color: var(--tf-muted); font-weight: 500; }
@@ -49,34 +56,37 @@
 .cer-drop input, .cer-file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .cer-drop strong { color: var(--tf-text); font-size: 1rem; }
 .cer-drop span { font-size: .8rem; }
-.cer-drop .cer-drop-icon, .cer-file-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--tf-green); font-size: .76rem; font-weight: 600; letter-spacing: .04em; }
+.cer-drop .cer-drop-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--tf-green); font-size: .76rem; font-weight: 600; letter-spacing: .04em; }
 .cer-file-button { position: relative; display: inline-flex; align-items: center; height: 34px; margin: 0; padding: 0 14px; border: 1px solid var(--tf-border); border-radius: 8px; background: #fff; color: var(--tf-text-2); font-size: .8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .cer-file-button:hover { background: var(--tf-chip); }
 
 /* Файл клиента: одна строка сводки, настройки раскрываются под ней */
-.cer-file { border: 1px solid var(--tf-border); border-radius: 12px; background: #fff; }
-.cer-file-bar { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
-.cer-file-icon { flex: 0 0 auto; width: 38px; height: 38px; }
-.cer-file-info { display: grid; flex: 1 1 auto; min-width: 0; gap: 2px; }
-.cer-file-info strong { overflow: hidden; color: var(--tf-text); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
-.cer-file-info > span { overflow: hidden; color: var(--tf-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
-.cer-setup { display: flex; flex-direction: column; gap: 14px; padding: 14px; border-top: 1px solid var(--tf-border-inner); }
-.cer-setup-fields { display: grid; grid-template-columns: minmax(120px, .8fr) auto repeat(4, minmax(140px, 1fr)); gap: 10px; align-items: end; }
 
 /* Прогресс подбора — тонкая полоса под сводкой файла */
 .cer-progress { display: flex; align-items: center; gap: 10px; padding: 0 14px 12px; color: var(--tf-muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
 .cer-progress-bar { position: relative; flex: 1 1 auto; height: 4px; overflow: hidden; border-radius: 999px; background: var(--tf-green-soft); }
-.cer-progress-bar span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--tf-green); transition: width .3s; }
+.cer-progress-bar span { position: absolute; inset: 0; border-radius: 999px; background: var(--tf-green); transform-origin: left; transition: transform .3s; }
 
-/* ── Фильтры результата ── */
-.cer-results-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* ── Карточка таблицы — как на этапе «Результат» (rs-card): сверху строка фильтров и кнопок, под ней лист ── */
+.cer-sheet-card { min-width: 0; overflow: clip; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.cer-sheet-card .dir-table-wrap { border: 0; border-radius: 0; }
+.cer-filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 12px; border-bottom: 1px solid var(--tf-border); }
+.cer-filter-count { margin: 0; color: var(--tf-text-2); font-size: .86rem; white-space: nowrap; }
+.cer-filter-count b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cer-sheet-foot { display: flex; justify-content: center; padding: 8px; border-top: 1px solid var(--tf-border-inner); }
+.cer-search { position: relative; display: flex; align-items: center; width: min(300px, 100%); margin: 0; color: var(--tf-muted); }
+.cer-search svg { position: absolute; left: 10px; pointer-events: none; }
+.cer-search input { width: 100%; height: 32px; margin: 0; padding: 0 10px 0 32px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: .86rem; }
+.cer-search input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
+.cer-type-filter { width: 300px; max-width: 100%; }
+
+/* Статусы — вкладки как на этапе «Результат» (rs-tabs): без рамки, выбранная — зелёный фон. */
 .cer-filters { display: flex; flex-wrap: wrap; gap: 4px; }
-.cer-match .cer-filters button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--tf-text-2); font-weight: 600; }
-.cer-match .cer-filters button:hover:not(:disabled) { background: var(--tf-chip); }
-.cer-match .cer-filters button.active, .cer-match .cer-filters button.active:hover:not(:disabled) { border-color: var(--tf-border); background: #fff; color: var(--tf-text); box-shadow: 0 1px 2px rgba(20,47,31,.06); }
+.cer-match .cer-filters button { height: 30px; padding: 0 10px; border: 0; background: transparent; color: var(--tf-text-2); font-weight: 500; }
+.cer-match .cer-filters button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.cer-match .cer-filters button.active, .cer-match .cer-filters button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
 .cer-seg-count { color: var(--tf-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-.cer-base .dir-search input { padding-left: 12px; }
-.cer-type-filter { width: auto; min-width: 200px; height: 38px; margin: 0; border-radius: 8px; }
+.cer-filters button.active .cer-seg-count { color: var(--tf-text); }
 
 /* Статус: цветная точка и короткое слово */
 .cer-dot { display: inline-block; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--tf-muted); }
@@ -86,27 +96,30 @@
 .cer-dot.NOT_DETERMINED, .cer-dot.error { background: #d1493b; }
 .cer-dot.running { background: #3b6fd4; animation: cer-pulse 1s ease-in-out infinite; }
 @keyframes cer-pulse { 50% { opacity: .3; } }
-.cer-status { display: inline-flex; align-items: center; gap: 7px; color: var(--tf-text-2); font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.cer-status { display: inline-flex; align-items: center; gap: 7px; color: var(--tf-text); font-size: .86rem; font-weight: 500; white-space: nowrap; }
 .cer-status.pending, .cer-status.running { color: var(--tf-muted); font-weight: 500; }
 
-/* ── Таблицы ── */
-.cer-page .dir-table-wrap { border-color: var(--tf-border); border-radius: 12px; }
-.cer-table { min-width: 860px; }
-.cer-table th { background: var(--xl-head); color: var(--tf-text); font-weight: 600; }
-.cer-table td { vertical-align: middle; }
-.cer-table code { color: var(--tf-text); font-size: .82rem; }
-.cer-table .c-photo { width: 60px; padding-right: 0; }
-.cer-table .c-mark { width: 190px; }
-.cer-table .c-mark small, .cer-table .c-status small, .cer-table .c-name small, .cer-table .c-type small { display: block; margin-top: 2px; overflow: hidden; color: var(--tf-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
-.cer-table .c-mark small.cer-zh { color: var(--tf-text-2); }
-.cer-table .c-size { width: 80px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cer-table .c-price { width: 90px; color: var(--tf-text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+/* ── Таблицы — как лист этапов сметы: строка 36px в одну линию, .86rem, сетка, серая шапка .8rem.
+   Длинный текст обрезается многоточием (полностью — в подсказке и в раскрытой строке). ── */
+.cer-page .dir-table-wrap { border-color: var(--tf-border); border-radius: var(--tf-radius-card); }
+.cer-table { min-width: 860px; table-layout: auto; font-size: .86rem; line-height: 1.35; }
+.cer-table th { height: 34px; padding: 4px 10px; background: var(--xl-head); color: var(--tf-text); font-size: .8rem; font-weight: 600; }
+.cer-table td { height: 36px; padding: 4px 10px; color: var(--tf-text); white-space: nowrap; vertical-align: middle; font-variant-numeric: tabular-nums; }
+.cer-table :is(.c-name, .c-type, .c-zh) { max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cer-table .c-photo { width: 44px; padding: 3px 6px; }
+.cer-table .c-mark { width: 150px; font-weight: 500; }
+.cer-table .c-zh { width: 18%; }
+.cer-table .c-type { width: 24%; color: var(--tf-text-2); }
+.cer-table .c-size { width: 72px; }
+.cer-table .c-price { width: 90px; text-align: right; }
+.cer-table th.c-price { text-align: right; }
 .cer-table .c-status { width: 130px; }
-.cer-table .c-actions { width: 180px; text-align: right; }
-.cer-table .c-type { color: var(--tf-text); }
-.cer-name { display: -webkit-box; overflow: hidden; color: var(--tf-text); line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.cer-table .c-status small { margin-left: 6px; color: var(--tf-muted); font-size: .8rem; }
+.cer-table .c-actions { width: 90px; text-align: right; }
+.cer-repeat { color: var(--tf-muted); font-weight: 500; }
+.cer-name { display: block; overflow: hidden; color: var(--tf-text); text-overflow: ellipsis; }
 .cer-zh { color: var(--tf-text); }
-.cer-thumb { display: block; width: 44px; height: 44px; padding: 0 !important; overflow: hidden; border: 0 !important; border-radius: 8px !important; background: var(--tf-chip) !important; }
+.cer-thumb { display: block; width: 30px; height: 30px; padding: 0 !important; overflow: hidden; border: 0 !important; border-radius: 6px !important; background: var(--tf-chip) !important; }
 .cer-thumb.empty { cursor: default; }
 .cer-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .15s; }
 .cer-thumb:hover img { transform: scale(1.06); }
@@ -120,9 +133,8 @@
 .cer-table tr.cer-invalid td { background: #fff8f6; }
 
 /* ── Раскрытая строка: причины и правка ── */
-.cer-details-row > td { padding: 0 !important; background: var(--tf-chip); cursor: default; }
-.cer-details { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(340px, 1fr); gap: 24px; padding: 18px 20px 20px; }
-.cer-details h3 { margin: 0 0 10px; color: var(--tf-text); font-size: .86rem; }
+.cer-details-row > td { height: auto; padding: 0 !important; background: var(--tf-chip); white-space: normal; cursor: default; }
+.cer-details { padding: 12px 16px 14px 50px; }
 .cer-why-group { margin-bottom: 12px; }
 .cer-why-group h4 { margin: 0 0 6px; color: var(--tf-muted); font-size: .76rem; letter-spacing: .06em; text-transform: uppercase; }
 .cer-why ul { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; font-size: .8rem; }
@@ -135,8 +147,7 @@
 .cer-warnings li { color: #7a5410; }
 .cer-warnings li::before { content: '⚠ '; }
 
-.cer-editor { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--tf-border); border-radius: 12px; background: #fff; }
-.cer-editor h3 { margin: 0; }
+.cer-editor { display: flex; flex-direction: column; gap: 10px; max-width: 1000px; padding: 14px 16px; border: 1px solid var(--tf-border); border-radius: 12px; background: #fff; }
 .cer-review-text { margin: 0; color: #7a5410; font-size: .8rem; font-weight: 600; }
 .cer-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cer-details .cer-chip, .cer-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1px solid var(--tf-border); border-radius: 999px; background: #fff; color: var(--tf-text-2); font-size: .76rem; font-weight: 600; }
@@ -147,57 +158,25 @@
 .cer-price-note.PRICE_NEED_REVIEW, .cer-price-note.NOT_FOUND, .cer-price-note.NOT_CHECKED { background: #fff8e8; color: #7a5410; }
 .cer-display-name { margin: 0; color: var(--tf-muted); font-size: .76rem; }
 .cer-display-name strong { color: var(--tf-text); }
-.cer-editor-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.cer-editor-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 8px; }
+/* «Откуда результат» — свёрнут слева от кнопок; раскрывается на всю ширину. */
+.cer-why { flex: 1 1 auto; min-width: 0; padding-top: 8px; }
+.cer-why[open] { flex-basis: 100%; order: 1; padding: 10px 0 0; border-top: 1px solid var(--tf-border-inner); }
+.cer-why summary { width: max-content; color: var(--tf-green); font-size: .8rem; font-weight: 600; cursor: pointer; }
+.cer-why[open] summary { margin-bottom: 10px; }
+.cer-missing { align-self: center; color: #7a5410; font-size: .78rem; }
+.cer-field input.cer-need { border-color: #e0a21b; background: #fffbf0; }
 
 /* ── База ── */
 .cer-form-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .cer-form-grid .wide { grid-column: span 2; }
 .cer-preview { max-height: 360px; }
 
-/* ── Строки файла клиента (в настройках) ── */
-.cer-file-preview { display: flex; flex-direction: column; gap: 8px; }
-.cer-file-preview-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; color: var(--tf-muted); font-size: .76rem; }
-.cer-file-preview-head strong { color: var(--tf-text); font-size: .86rem; }
-.cer-file-preview-head .cer-link { font-size: .76rem; }
-.cer-file-preview .cer-preview { max-height: 440px; }
-.cer-raw-table { min-width: 0; }
-.cer-raw-table.all { min-width: 900px; }
-.cer-raw-table th { padding: 8px 12px; vertical-align: bottom; white-space: normal; }
-.cer-raw-table td { padding: 6px 12px; vertical-align: middle; }
-.cer-raw-table tbody tr { cursor: pointer; }
-.cer-raw-table .c-check { width: 36px; padding-right: 0; text-align: center; }
-.cer-raw-table .c-check input { width: 15px; height: 15px; margin: 0; accent-color: var(--tf-green); cursor: pointer; }
-.cer-raw-table .c-row { width: 44px; color: var(--tf-muted); font-variant-numeric: tabular-nums; }
-.cer-raw-table .c-photo { width: 52px; }
-.cer-raw-table .c-actions { width: 110px; text-align: right; }
-.cer-raw-table.all th:not(.c-check):not(.c-row):not(.c-photo):not(.c-actions) { min-width: 120px; }
-.cer-col-label { display: block; color: var(--tf-green); font-size: .76rem; font-weight: 600; letter-spacing: .02em; }
-.cer-col-name { display: block; overflow: hidden; max-width: 260px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.cer-col-name.muted { color: var(--tf-muted); font-size: .76rem; }
-.cer-col-role { display: grid; gap: 4px; margin: 0; }
-.cer-raw-table th select { width: 100%; height: 26px; margin: 0; padding: 0 6px; border: 1px solid var(--tf-border); border-radius: 6px; background: #fff; color: var(--tf-muted); font-size: .76rem; font-weight: 600; }
-.cer-raw-table th.mapped select { border-color: var(--tf-muted); background: var(--tf-green-soft); color: var(--tf-green); }
-.cer-raw-table th.mapped { background: var(--tf-green-soft); }
-.cer-raw-table td.mapped { color: var(--tf-text); }
-.cer-cell { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.cer-thumb.small { width: 32px; height: 32px; border-radius: 6px !important; }
-.cer-raw-table tr.cer-excluded td { color: var(--tf-border); background: var(--tf-chip); }
-.cer-raw-table tr.cer-excluded td.mapped .cer-cell { text-decoration: line-through; }
-.cer-raw-table tr.cer-excluded .cer-thumb img { opacity: .35; }
-.cer-raw-table .c-actions .cer-link { font-size: .76rem; font-weight: 500; opacity: 0; transition: opacity .12s; }
-.cer-raw-table tr:hover .c-actions .cer-link, .cer-raw-table .c-actions .cer-link:focus-visible { opacity: 1; }
 
-@media (max-width: 1100px) {
-  .cer-setup-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 1000px) {
-  .cer-details { grid-template-columns: 1fr; }
   .cer-form-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 640px) {
-  .cer-file-bar { flex-wrap: wrap; }
-  .cer-file-info { flex-basis: calc(100% - 50px); }
-  .cer-setup-fields { grid-template-columns: 1fr; }
   .cer-form-grid { grid-template-columns: 1fr; }
   .cer-form-grid .wide { grid-column: auto; }
 }
@@ -205,13 +184,11 @@
 /* Панель проверки: разбор китайского названия одной строкой, поля плотнее */
 .cer-terms { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 12px; color: var(--tf-text-2); font-size: .78rem; }
 .cer-terms b { color: var(--tf-text); font-weight: 600; }
-.cer-type-size { display: grid; grid-template-columns: minmax(0, 1fr) 80px 110px; gap: 8px; }
-.cer-name-price { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; align-items: start; }
-.cer-name-price input { font-weight: 600; }
-.cer-table th.c-price { color: var(--tf-muted); font-weight: 600; }
-.cer-file-info .cer-hint { color: var(--tf-muted); }
+.cer-edit-row { display: grid; grid-template-columns: minmax(0, 1fr) 80px 110px 120px; gap: 8px; }
+
 @media (max-width: 640px) {
-  .cer-type-size, .cer-name-price { grid-template-columns: 1fr; }
+  .cer-edit-row { grid-template-columns: 1fr 1fr; }
+  .cer-details { padding-left: 16px; }
 }
 
 /* База: строка открывает правку, «Удалить» — тихая ссылка при наведении */
@@ -219,4 +196,26 @@
 .cer-base .cer-delete { color: #a33232; opacity: 0; transition: opacity .12s; }
 .cer-base tr:hover .cer-delete, .cer-base .cer-delete:focus-visible { opacity: 1; }
 .cer-base .cer-delete:hover:not(:disabled) { color: #7d1f1f; }
-.cer-raw-table:not(.all) th.mapped { background: var(--tf-chip); }
+
+/* Тип товара: поле с поиском и свой список (TypeCombo в ResultDetails). */
+.cer-combo { position: relative; }
+.cer-combo input { box-sizing: border-box; width: 100%; height: 32px; margin: 0; padding: 0 30px 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 500; text-overflow: ellipsis; cursor: pointer; }
+.cer-combo input:hover { border-color: var(--tf-muted); }
+.cer-combo input:focus { outline: 2px solid rgba(30, 91, 60, .15); outline-offset: 0; border-color: var(--tf-green); }
+.cer-combo input:focus { cursor: text; }
+.cer-combo input::placeholder { color: var(--tf-muted); font-weight: 400; }
+.cer-combo svg { position: absolute; top: 50%; right: 11px; color: var(--tf-muted); pointer-events: none; transform: translateY(-50%); transition: transform .15s; }
+.cer-combo.open svg { transform: translateY(-50%) rotate(180deg); }
+.cer-combo-list { position: fixed; z-index: 70; overflow-y: auto; padding: 4px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); scrollbar-width: thin; }
+.cer-combo-list [role="option"] { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; padding: 6px 10px; border-radius: 6px; color: var(--tf-text); font-size: .86rem; font-weight: 400; line-height: 1.3; cursor: pointer; }
+.cer-combo-list [role="option"].active { background: var(--tf-chip); }
+.cer-combo-list [role="option"][aria-selected="true"] { background: var(--tf-green-soft); color: var(--tf-green); font-weight: 600; }
+.cer-combo-list [role="option"].last-hint { position: relative; margin-bottom: 9px; }
+.cer-combo-list [role="option"].last-hint::after { content: ''; position: absolute; right: 4px; bottom: -5px; left: 4px; border-bottom: 1px solid var(--tf-border-inner); }
+.cer-combo-list small { flex: none; color: var(--tf-muted); font-size: .74rem; font-weight: 600; }
+.cer-combo-list .cer-combo-hint { padding: 1px 7px; border-radius: 999px; background: #e7eefb; color: #274a86; }
+.cer-combo-empty { margin: 0; padding: 10px; color: var(--tf-muted); font-size: .82rem; }
+/* «Все типы» в фильтре — первым, отделён чертой от списка типов. */
+.cer-combo-list [role="option"].cer-combo-all { position: relative; margin-bottom: 9px; }
+.cer-combo-list [role="option"].cer-combo-all::after { content: ""; position: absolute; right: 4px; bottom: -5px; left: 4px; border-bottom: 1px solid var(--tf-border-inner); }
+

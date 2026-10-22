@@ -97,3 +97,8 @@
   font-size: 1.12rem;
   line-height: 1;
 }
+
+/* Увеличение по щелчку: рамка обрезает увеличенное фото, курсор подсказывает, что будет по щелчку. */
+.image-zoom { overflow: hidden; border-radius: 6px; }
+.image-lightbox-card .image-zoom img { cursor: zoom-in; transition: transform .15s ease-out; }
+.image-lightbox-card .image-zoom img.zoomed { cursor: zoom-out; transition: none; }

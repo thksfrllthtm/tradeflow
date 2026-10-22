@@ -4,6 +4,7 @@ import { ceramicsApi } from '../ceramicsApi'
 import { CeramicSize, CeramicsType, Evidence, PriceResult, Resolution, SizeUnit } from '../types'
 import { Draft, draftFromResolution, draftSize, MatchGroup } from '../lib/matchGroups'
 import { baseName, formatSize, normalizeNumber, sizeKey, sizeUnits } from '../lib/sizes'
+import { TypeCombo } from './TypeCombo'
 
 type Props = {
   group: MatchGroup
@@ -11,7 +12,8 @@ type Props = {
   types: CeramicsType[]
   onDraft: (change: Partial<Draft>) => void
   onDraftPrice: (price: PriceResult | undefined) => void
-  onSave: () => Promise<void>
+  // Строка проверена — отметить и перейти к следующей.
+  onDone: () => void
 }
 
 const fieldTitles: Record<Evidence['field'], string> = { type: 'Тип товара', size: 'Размер', price: 'Цена' }
@@ -25,13 +27,12 @@ const typeStatusText: Record<string, string> = {
 }
 
 // Причины решения и правка типа, размера и цены. В базу сохраняется только по кнопке.
-export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice, onSave }: Props) {
+export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice, onDone }: Props) {
   const { draft } = group
   const found = resolution.status === 'FOUND_BY_MARK'
   const [priceTouched, setPriceTouched] = useState(found)
   const [nameTouched, setNameTouched] = useState(found)
   const [loadingPrice, setLoadingPrice] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const priceInfo = group.draftPrice ?? resolution.price
   const lastLookup = useRef(`${draft.productType}|${draft.sizeValue}|${draft.sizeUnit}`)
@@ -64,24 +65,13 @@ export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice,
   const size = draftSize(draft)
   const sizeValid = !draft.sizeValue || (Boolean(normalizeNumber(draft.sizeValue)) && Number(normalizeNumber(draft.sizeValue)) > 0 && Boolean(draft.sizeUnit))
   const priceValid = Boolean(normalizeNumber(draft.price)) && Number(normalizeNumber(draft.price)) > 0
-  const mark = resolution.product?.mark ?? group.mark
-  const canSave = Boolean(mark) && Boolean(draft.name.trim()) && priceValid && !saving
-  const product = resolution.product
-  const unchanged = product && product.name === draft.name.trim() && product.price === normalizeNumber(draft.price)
   const typeNames = types.map((item) => item.name)
   if (draft.productType && !typeNames.includes(draft.productType)) typeNames.unshift(draft.productType)
 
-  async function submit(event: FormEvent) {
+  // Ничего не сохраняет: данные строки уходят в CSV, в базу их потом загружают сами.
+  function submit(event: FormEvent) {
     event.preventDefault()
-    if (!canSave) return
-    setSaving(true); setError('')
-    try {
-      await onSave()
-    } catch (reason) {
-      setError(errorMessage(reason))
-    } finally {
-      setSaving(false)
-    }
+    onDone()
   }
 
   // Варианты размера без повторов: один размер из нескольких источников — один вариант.
@@ -95,24 +85,11 @@ export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice,
   const isTermEvidence = (item: Evidence) => item.field === 'type' && item.source === 'chinese_name' && item.text.startsWith('Китайское название содержит')
   const evidenceByField = (['type', 'size', 'price'] as const).map((field) => ({ field, items: resolution.evidence.filter((item) => item.field === field && !isTermEvidence(item)) }))
 
+  // Чего не хватает в строке — подсказка рядом с «Готово»; отметить строку можно и так.
+  const missing = !draft.name.trim() ? 'нет наименования' : !priceValid ? 'нет цены' : ''
+
   return <div className="cer-details">
-    <section className="cer-why">
-      <h3>Откуда результат</h3>
-      {resolution.chineseTerms.length > 0 && <p className="cer-terms">
-        {resolution.chineseTerms.map((term) => <span key={term.text}><b>{term.text}</b> {term.meaning}</span>)}
-      </p>}
-      {evidenceByField.map(({ field, items }) => items.length > 0 && <div key={field} className="cer-why-group">
-        <h4>{fieldTitles[field]}</h4>
-        <ul>{items.map((item, index) => <li key={index}><span className={`cer-source-tag ${item.source}`}>{sourceLabels[item.source] ?? item.source}</span>{item.text}</li>)}</ul>
-      </div>)}
-      {resolution.warnings.length > 0 && <ul className="cer-warnings">{resolution.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
-      {!resolution.evidence.length && !resolution.warnings.length && <p className="muted">Нет данных.</p>}
-    </section>
-
-    <form className="cer-editor" onSubmit={(event) => void submit(event)}>
-      <h3>{found ? 'Запись в базе' : 'Проверка'}</h3>
-      {!mark && <p className="dir-warn">Без марки запись в базу не сохранить.</p>}
-
+    <form className="cer-editor" onSubmit={submit}>
       {!found && typeStatusText[resolution.typeStatus] && <p className="cer-review-text">{typeStatusText[resolution.typeStatus]}</p>}
       {!found && resolution.typeCandidates.length > 0 && resolution.typeStatus !== 'MATCHED' && <div className="cer-chips">
         {resolution.typeCandidates.map((candidate) => <button key={candidate.productType} type="button" title={candidate.reason}
@@ -120,13 +97,11 @@ export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice,
           {candidate.productType}{candidate.confidence > 0 && <small>{Math.round(candidate.confidence * 100)}%</small>}
         </button>)}
       </div>}
-      <div className="cer-type-size">
-        <label className="cer-field" title="Тип и размер нужны для подбора цены; в базу сохраняются наименование, марка и цена">Тип товара
-          <select value={draft.productType} onChange={(event) => onDraft({ productType: event.target.value })}>
-            <option value="">— выберите —</option>
-            {typeNames.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </label>
+      <div className="cer-edit-row">
+        <div className="cer-field" title="Тип и размер нужны для подбора цены; в базу сохраняются наименование, марка и цена">Тип товара
+          <TypeCombo label="Тип товара" value={draft.productType} names={typeNames} onChange={(productType) => onDraft({ productType })}
+            hints={new Map(resolution.typeCandidates.filter((candidate) => candidate.confidence > 0).map((candidate) => [candidate.productType, candidate.confidence]))} />
+        </div>
         <label className="cer-field">Размер
           <input value={draft.sizeValue} inputMode="decimal" placeholder="нет" onChange={(event) => onDraft({ sizeValue: event.target.value, sizeUnit: draft.sizeUnit || (event.target.value ? 'inch' : '') })} />
         </label>
@@ -135,6 +110,10 @@ export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice,
             {!draft.sizeValue && <option value="">—</option>}
             {sizeUnits.map((unit) => <option key={unit.value} value={unit.value}>{unit.label}</option>)}
           </select>
+        </label>
+        <label className="cer-field">Цена
+          <input value={draft.price} inputMode="decimal" placeholder={loadingPrice ? 'подбираем…' : 'введите'} className={priceValid ? undefined : 'cer-need'}
+            onChange={(event) => { setPriceTouched(true); onDraft({ price: event.target.value }) }} />
         </label>
       </div>
       {!found && sizeChoices.length > 1 && <div className="cer-chips">
@@ -153,18 +132,26 @@ export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice,
         </button>)}
       </div>}
 
-      <div className="cer-name-price">
-        <label className="cer-field">Наименование
-          <textarea value={draft.name} rows={2} placeholder="Керамическая фруктовница 7 дюймов для взрослых/ 成年人陶瓷盘7高脚水果盘" onChange={(event) => { setNameTouched(true); onDraft({ name: event.target.value }) }} />
-        </label>
-        <label className="cer-field">Цена
-          <input value={draft.price} inputMode="decimal" placeholder="0.00" onChange={(event) => { setPriceTouched(true); onDraft({ price: event.target.value }) }} />
-        </label>
-      </div>
+      <label className="cer-field">Наименование
+        <input value={draft.name} placeholder="Керамическая фруктовница 7 дюймов для взрослых/ 成年人陶瓷盘7高脚水果盘" onChange={(event) => { setNameTouched(true); onDraft({ name: event.target.value }) }} />
+      </label>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="cer-editor-actions">
+        <details className="cer-why">
+          <summary>Откуда результат</summary>
+          {resolution.chineseTerms.length > 0 && <p className="cer-terms">
+            {resolution.chineseTerms.map((term) => <span key={term.text}><b>{term.text}</b> {term.meaning}</span>)}
+          </p>}
+          {evidenceByField.map(({ field, items }) => items.length > 0 && <div key={field} className="cer-why-group">
+            <h4>{fieldTitles[field]}</h4>
+            <ul>{items.map((item, index) => <li key={index}><span className={`cer-source-tag ${item.source}`}>{sourceLabels[item.source] ?? item.source}</span>{item.text}</li>)}</ul>
+          </div>)}
+          {resolution.warnings.length > 0 && <ul className="cer-warnings">{resolution.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
+          {!resolution.evidence.length && !resolution.warnings.length && <p className="muted">Нет данных.</p>}
+        </details>
+        {missing && <span className="cer-missing">В строке {missing}</span>}
         {!found && <button type="button" className="cer-secondary" onClick={() => { setPriceTouched(false); setNameTouched(false); onDraftPrice(undefined); onDraft(draftFromResolution(resolution, group.chineseName)) }}>Сбросить</button>}
-        <button type="submit" disabled={!canSave || Boolean(unchanged)}>{saving ? 'Сохраняем…' : found ? 'Сохранить изменения' : 'Сохранить в базу'}</button>
+        <button type="submit" title="Отметить строку проверенной и открыть следующую">Готово <span aria-hidden="true">→</span></button>
       </div>
     </form>
   </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { MouseEvent, useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
@@ -11,6 +11,7 @@ import { DecisionStats, decisionSourceLabels, decisionsApi } from './decisionsAp
 import { DecisionDrawer } from './DecisionDrawer'
 import { DecisionImport } from './DecisionImport'
 import { DecisionManual } from './DecisionManual'
+import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import '@/shared/styles/list-page.css'
 import './decisions.css'
 import { formatCode } from '@/shared/tnved/codes'
@@ -46,6 +47,17 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
   const [openId, setOpenId] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get('id')) || null)
   const [importOpen, setImportOpen] = useState(false)
   const [manualOpen, setManualOpen] = useState(false)
+  // Фото записи: сразу миниатюра, следом — полные фото (в списке их нет, только в карточке записи).
+  const [photos, setPhotos] = useState<string[] | null>(null)
+  async function openPhotos(item: CodeDecision) {
+    setPhotos([item.thumb])
+    try {
+      const full = await decisionsApi.get(item.id)
+      if (full.photos.length) setPhotos((current) => current && current[0] === item.thumb ? full.photos : current)
+    } catch {
+      // Полные фото не загрузились — остаётся миниатюра.
+    }
+  }
 
   const params = () => ({ q: search, status: filter === 'agentWrong' ? '' : filter, agentWrong: filter === 'agentWrong' })
   useEffect(() => {
@@ -74,53 +86,101 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
     }
   }
 
-  const accuracy = stats && stats.agentChecked > 0 ? Math.round((stats.agentCorrect / stats.agentChecked) * 100) : null
+  const counts: Partial<Record<Filter, number>> = stats ? { '': stats.pending + stats.verified + stats.rejected, pending: stats.pending, verified: stats.verified, rejected: stats.rejected } : {}
+  // Как этапы 2–3 сметы: страница во всю ширину, таблица — карточка до низа окна со своей прокруткой; сверху в
+  // карточке — поиск, вкладки статуса со счётчиками, точность ИИ и кнопки; строки — в одну линию.
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="decisions" onLogout={onLogout} />
-    <section className="directory-page">
+    <section className="directory-page dc-page">
       <div className="dir-head">
         <div>
-          <h1>База решений{stats && <span className="dir-count">{stats.pending + stats.verified}</span>}</h1>
+          <h1>База решений</h1>
           <p>Проверенные примеры «товар из инвойса → код ТН ВЭД» с фото и обоснованием. На них опирается ИИ при подборе кода.</p>
         </div>
-        {admin && <div className="dir-head-actions"><button type="button" className="dir-add" onClick={() => setManualOpen(true)}>+ Добавить вручную</button><button type="button" className="dir-add" onClick={() => setImportOpen(true)}>Импорт старого инвойса</button></div>}
+        {admin && <div className="dc-actions">
+          <button type="button" className="dc-btn" onClick={() => setImportOpen(true)}>Импорт старого инвойса</button>
+          <button type="button" className="dc-btn primary" onClick={() => setManualOpen(true)}>+ Добавить вручную</button>
+        </div>}
       </div>
-      {stats && <div className="dc-stats">
-        <button type="button" className={stats.pending > 0 ? 'dc-stat warn' : 'dc-stat'} onClick={() => setFilter('pending')}><b>{stats.pending}</b> {plural(stats.pending, 'ждёт', 'ждут', 'ждут')} проверки</button>
-        <button type="button" className="dc-stat" onClick={() => setFilter('verified')}><b>{stats.verified}</b> проверено</button>
-        <span className="dc-stat" title="Решения из подбора ИИ, проверенные администратором за 90 дней">{accuracy === null ? 'Точность ИИ: проверенных подборов пока нет' : <>Точность ИИ: <b>{accuracy}%</b> ({stats.agentCorrect} из {stats.agentChecked} за 90 дней)</>}</span>
-      </div>}
       {notice && <p className="dir-transfer-ok" role="status">{notice}</p>}
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
-      <div className="dir-toolbar">
-        <label className="dir-search">
-          <SearchIcon />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по наименованию или коду" aria-label="Поиск по базе решений" />
-        </label>
-        <div className="dir-seg" role="radiogroup" aria-label="Статус">
-          {filters.map((item) => <button key={item.value} type="button" role="radio" aria-checked={filter === item.value} className={filter === item.value ? 'active' : undefined} onClick={() => setFilter(item.value)}>{item.label}</button>)}
+      <section className="dc-card" aria-label="Решения">
+        <div className="dc-filterbar">
+          <label className="dc-search">
+            <SearchIcon />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Наименование или код" aria-label="Поиск по базе решений" />
+          </label>
+          <div className="dc-tabs" role="radiogroup" aria-label="Статус">
+            {filters.map((item) => <button key={item.value} type="button" role="radio" aria-checked={filter === item.value}
+              className={`${filter === item.value ? 'active' : ''}${item.value === 'pending' && (stats?.pending ?? 0) > 0 ? ' warn' : ''}`} onClick={() => setFilter(item.value)}>
+              {item.label}{counts[item.value] !== undefined && <b>{counts[item.value]}</b>}
+            </button>)}
+          </div>
         </div>
-      </div>
-      <div className={loading ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-        <table className="sheet sheet-rownum dir-table dc-table">
-          <thead><tr><th className="dc-photo-col">Фото</th><th>Итог</th><th className="dc-code-col">Код</th><th className="dc-status-col">Статус</th><th className="dc-from-col">Откуда</th></tr></thead>
-          <tbody>
-            {items.length === 0 ? <tr><td colSpan={5} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
-              : items.map((item) => <tr key={item.id} onClick={() => setOpenId(item.id)}>
-                <td className="dc-photo-col">{item.thumb ? <img src={item.thumb} alt="" /> : <span className="dc-nophoto" aria-hidden="true" />}</td>
-                <td className="dc-names"><span>{item.finalName || item.invoiceName || item.supplierName || <span className="dir-none">—</span>}</span></td>
-                <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <small className="dc-warn">нет в номенклатуре</small>}</td>
-                <td className="dc-status-col"><span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>{item.agentCorrect === false && <small className="dc-warn" title={`ИИ предлагал ${formatCode(item.agentCode)}`}>ИИ ошибся</small>}{item.agentCorrect === true && <small className="dc-ok">ИИ верно</small>}</td>
-                <td className="dc-from-col"><span>{decisionSourceLabels[item.source]}</span><small>{item.createdByName || '—'} · {formatRuDate(item.createdAt.slice(0, 10))}</small></td>
-              </tr>)}
-          </tbody>
-        </table>
-        {items.length < total && <div className="nom-more dc-more">Показано {items.length} из {total}<button type="button" className="dir-transfer-button" onClick={() => void loadMore()}>Показать ещё</button></div>}
-      </div>
-      <p className="dir-foot">«Проверено» ставит администратор. Если при проверке код исправлен, запись отмечается «ИИ ошибся» — из этих отметок считается точность ИИ. Проверенное решение агент считает сильным доводом, а тот же товар (по фото или наименованию) находится сразу, без ИИ.</p>
+        <div className={loading ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
+          <table className="sheet sheet-rownum dir-table dc-table">
+            <thead><tr>
+              <th className="dc-photo-col">Фото</th><th>Наименование</th><th className="dc-code-col">Код ТН ВЭД</th><th className="dc-status-col">Статус</th>
+              <th className="dc-source-col">Источник</th><th className="dc-by-col">Добавил</th><th className="dc-date-col">Дата</th>
+            </tr></thead>
+            <tbody>
+              {items.length === 0 ? <tr><td colSpan={7} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
+                : items.map((item) => {
+                  const name = item.finalName || item.invoiceName || item.supplierName
+                  return <tr key={item.id} onClick={() => setOpenId(item.id)}>
+                    <td className="dc-photo-col">{item.thumb
+                      ? <button type="button" className="dc-thumb" title="Открыть фото" aria-label="Открыть фото" onClick={(event) => { event.stopPropagation(); void openPhotos(item) }}><img src={item.thumb} alt="" /></button>
+                      : <span className="dc-nophoto" aria-hidden="true" />}</td>
+                    <td className="dc-names" title={name}>{name ? <span className="dc-name"><span className="dc-name-text">{name}</span><CopyText text={name} /></span> : <span className="dir-none">—</span>}</td>
+                    <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <span className="dc-warn" title="Кода нет в номенклатуре ЕАЭС"> ⚠</span>}</td>
+                    <td className="dc-status-col">
+                      <span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>
+                      {item.agentCorrect === false && <span className="dc-warn" title={`ИИ предлагал ${formatCode(item.agentCode)}`}> · ИИ ошибся</span>}
+                      {item.agentCorrect === true && <span className="dc-ok"> · ИИ верно</span>}
+                    </td>
+                    <td className="dc-source-col">{decisionSourceLabels[item.source]}</td>
+                    <td className="dc-by-col">{item.createdByName || <span className="dir-none">—</span>}</td>
+                    <td className="dc-date-col">{formatRuDate(item.createdAt.slice(0, 10))}</td>
+                  </tr>
+                })}
+            </tbody>
+          </table>
+        </div>
+        {items.length < total && <div className="dc-more">Показано <b>{items.length}</b> из {total}<button type="button" className="dc-btn" onClick={() => void loadMore()}>Показать ещё</button></div>}
+      </section>
+      <p className="dc-disclaimer">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>
+        <span>«Проверено» ставит администратор. Исправленный при проверке код отмечается «ИИ ошибся». Проверенное решение агент считает сильным доводом, а тот же товар находится сразу, без ИИ.</span>
+      </p>
     </section>
+    {photos && <PhotoLightbox photos={photos} startIndex={0} onClose={() => setPhotos(null)} />}
     {openId && <DecisionDrawer id={openId} admin={admin} onClose={() => setOpenId(null)} onChanged={() => setRefreshKey((key) => key + 1)} />}
     {manualOpen && <DecisionManual onClose={() => setManualOpen(false)} onAdded={() => { setNotice('Решение добавлено в базу'); setRefreshKey((key) => key + 1) }} />}
     {importOpen && <DecisionImport onClose={() => setImportOpen(false)} onImported={(created, skipped) => { setNotice(`В базу добавлено ${created} ${plural(created, 'решение', 'решения', 'решений')}${skipped ? `, уже были в базе: ${skipped}` : ''}`); setRefreshKey((key) => key + 1) }} />}
   </main>
+}
+
+// Кнопка «копировать» у наименования: видна при наведении на строку, строку не открывает.
+function CopyText({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), 1400)
+    return () => window.clearTimeout(timer)
+  }, [copied])
+  async function copy(event: MouseEvent) {
+    event.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+    } catch {
+      // Буфер обмена недоступен — наименование можно выделить мышью.
+    }
+  }
+  return <button type="button" className={copied ? 'dc-copy copied' : 'dc-copy'} onClick={(event) => void copy(event)}
+    title={copied ? 'Скопировано' : 'Скопировать наименование'} aria-label="Скопировать наименование">
+    {copied
+      ? <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 8.5l3 3 6-7" /></svg>
+      : <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" /><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></svg>}
+  </button>
 }

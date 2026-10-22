@@ -7,6 +7,7 @@ import { CeramicsProduct, CeramicsType } from '../types'
 import { formatSize } from '../lib/sizes'
 import { ProductForm } from './ProductForm'
 import { BaseImport } from './BaseImport'
+import { TypeCombo } from './TypeCombo'
 
 const PAGE = 100
 
@@ -73,47 +74,57 @@ export function BaseTab({ user, types, onBaseChanged }: Props) {
 
   const togglePanel = (next: Panel) => { setNotice(''); setPanel(panel === next ? '' : next) }
 
+  // Как таблица этапа «Результат» сметы: карточка, в ней строка фильтров и кнопок, лист в одну строку на марку.
   return <div className="cer-base">
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
     {notice && <p className="banner ok" role="status">{notice}<button type="button" onClick={() => setNotice('')}>×</button></p>}
-    <div className="dir-toolbar">
-      <label className="dir-search"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Марка или наименование" aria-label="Поиск по базе" /></label>
-      <select className="cer-type-filter" value={type} onChange={(event) => setType(event.target.value)} aria-label="Тип товара">
-        <option value="">Все типы</option>
-        {types.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.productCount})</option>)}
-      </select>
-      {admin && <button type="button" className="cer-secondary" onClick={() => togglePanel('import')}>Загрузить из Excel</button>}
-      <button type="button" onClick={() => togglePanel('add')}>+ Добавить марку</button>
-    </div>
 
     {panel === 'add' && <ProductForm onCancel={() => setPanel('')} onSaved={(product) => changed(`Марка ${product.mark} добавлена`)} />}
     {typeof panel === 'object' && <ProductForm key={panel.edit.id} product={panel.edit} onCancel={() => setPanel('')} onSaved={(product) => changed(`Марка ${product.mark} сохранена`)} />}
     {panel === 'import' && <BaseImport onCancel={() => setPanel('')} onImported={(message) => changed(message)} />}
 
-    <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
-      <table className="sheet sheet-rownum dir-table cer-table">
-        <thead><tr>
-          <th>Наименование</th><th className="c-mark">Марка</th><th className="c-price">Цена</th><th className="c-actions" aria-label="Действия" />
-        </tr></thead>
-        <tbody>
-          {items.length === 0 && <tr><td colSpan={4} className="dir-empty">{loading ? 'Загрузка…' : query || type ? 'Ничего не найдено.' : 'База пуста. Добавьте марки вручную или загрузите прайс из Excel (наименование, марка, цена).'}</td></tr>}
-          {items.map((product) => {
-            const size = formatSize(product.sizeValue && product.sizeUnit ? { value: product.sizeValue, unit: product.sizeUnit } : null)
-            return <tr key={product.id} onClick={() => setPanel({ edit: product })}>
-              <td className="c-type">{product.name}<small>распознано: {product.productType}{size ? ` · ${size}` : ' · без размера'}</small></td>
-              <td className="c-mark"><code>{product.mark}</code></td>
-              <td className="c-price">{product.price}</td>
-              <td className="c-actions" onClick={(event) => event.stopPropagation()}>
-                {admin && <button type="button" className="cer-link cer-delete" onClick={() => void remove(product)}>Удалить</button>}
-              </td>
-            </tr>
-          })}
-        </tbody>
-      </table>
-    </div>
-    <div className="cer-card-row">
-      <p className="dir-foot">Показано {items.length} из {total}. В базе хранятся наименование, марка и цена; тип и размер для подбора цены система берёт из наименования.</p>
-      {items.length < total && <button type="button" className="cer-secondary" disabled={loading} onClick={() => void loadMore()}>Показать ещё</button>}
-    </div>
+    <section className="cer-sheet-card" aria-label="База марок">
+      <div className="cer-filterbar">
+        <label className="cer-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Марка или наименование" aria-label="Поиск по базе" />
+        </label>
+        <div className="cer-type-filter">
+          <TypeCombo label="Тип товара" value={type} onChange={setType} emptyLabel="Все типы" placeholder="Тип товара"
+            names={types.map((item) => item.name)} counts={new Map(types.map((item) => [item.name, item.productCount]))} />
+        </div>
+        <p className="cer-filter-count">Показано <b>{items.length}</b> из {total}</p>
+        <span className="cer-toolbar-spacer" />
+        {admin && <button type="button" className="cer-secondary" onClick={() => togglePanel('import')}>Загрузить из Excel</button>}
+        <button type="button" onClick={() => togglePanel('add')}>+ Добавить марку</button>
+      </div>
+      <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
+        <table className="sheet sheet-rownum dir-table cer-table">
+          <thead><tr>
+            <th className="c-name">Наименование</th><th className="c-type">Тип</th><th className="c-size">Размер</th><th className="c-mark">Марка</th><th className="c-price">Цена</th><th className="c-actions" aria-label="Действия" />
+          </tr></thead>
+          <tbody>
+            {items.length === 0 && <tr><td colSpan={6} className="dir-empty">{loading ? 'Загрузка…' : query || type ? 'Ничего не найдено.' : 'База пуста. Добавьте марки вручную или загрузите прайс из Excel (наименование, марка, цена).'}</td></tr>}
+            {items.map((product) => {
+              const size = formatSize(product.sizeValue && product.sizeUnit ? { value: product.sizeValue, unit: product.sizeUnit } : null)
+              return <tr key={product.id} onClick={() => setPanel({ edit: product })}>
+                <td className="c-name" title={product.name}>{product.name}</td>
+                <td className="c-type" title={product.productType}>{product.productType}</td>
+                <td className="c-size">{size || <span className="dir-none">—</span>}</td>
+                <td className="c-mark">{product.mark}</td>
+                <td className="c-price">{product.price}</td>
+                <td className="c-actions" onClick={(event) => event.stopPropagation()}>
+                  {admin && <button type="button" className="cer-link cer-delete" onClick={() => void remove(product)}>Удалить</button>}
+                </td>
+              </tr>
+            })}
+          </tbody>
+        </table>
+      </div>
+      {items.length < total && <div className="cer-sheet-foot">
+        <button type="button" className="cer-secondary" disabled={loading} onClick={() => void loadMore()}>Показать ещё {Math.min(PAGE, total - items.length)}</button>
+      </div>}
+    </section>
+    <p className="dir-foot">В базе хранятся наименование, марка и цена. Тип и размер система берёт из наименования — по ним подбирается цена.</p>
   </div>
 }
