@@ -1,4 +1,4 @@
-import { MouseEvent, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
@@ -12,6 +12,7 @@ import { DecisionDrawer } from './DecisionDrawer'
 import { DecisionImport } from './DecisionImport'
 import { DecisionManual } from './DecisionManual'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
+import { CopyButton } from '@/shared/components/CopyCode/CopyButton'
 import '@/shared/styles/list-page.css'
 import './decisions.css'
 import { formatCode } from '@/shared/tnved/codes'
@@ -131,12 +132,12 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
                     <td className="dc-photo-col">{item.thumb
                       ? <button type="button" className="dc-thumb" title="Открыть фото" aria-label="Открыть фото" onClick={(event) => { event.stopPropagation(); void openPhotos(item) }}><img src={item.thumb} alt="" /></button>
                       : <span className="dc-nophoto" aria-hidden="true" />}</td>
-                    <td className="dc-names" title={name}>{name ? <span className="dc-name"><span className="dc-name-text">{name}</span><CopyText text={name} /></span> : <span className="dir-none">—</span>}</td>
+                    <td className="dc-names" title={name}>{name ? <span className="dc-name"><span className="dc-name-text">{name}</span><CopyButton text={name} label="наименование" /></span> : <span className="dir-none">—</span>}</td>
                     <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <span className="dc-warn" title="Кода нет в номенклатуре ЕАЭС"> ⚠</span>}</td>
                     <td className="dc-status-col">
                       <span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>
-                      {item.agentCorrect === false && <span className="dc-warn" title={`ИИ предлагал ${formatCode(item.agentCode)}`}> · ИИ ошибся</span>}
-                      {item.agentCorrect === true && <span className="dc-ok"> · ИИ верно</span>}
+                      {item.agentCorrect === false && <span className="dc-ai bad" title={`ИИ ошибся: предлагал ${formatCode(item.agentCode)}`}>ИИ</span>}
+                      {item.agentCorrect === true && <span className="dc-ai ok" title="ИИ подобрал этот код верно">ИИ</span>}
                     </td>
                     <td className="dc-source-col">{decisionSourceLabels[item.source]}</td>
                     <td className="dc-by-col">{item.createdByName || <span className="dir-none">—</span>}</td>
@@ -158,29 +159,4 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
     {manualOpen && <DecisionManual onClose={() => setManualOpen(false)} onAdded={() => { setNotice('Решение добавлено в базу'); setRefreshKey((key) => key + 1) }} />}
     {importOpen && <DecisionImport onClose={() => setImportOpen(false)} onImported={(created, skipped) => { setNotice(`В базу добавлено ${created} ${plural(created, 'решение', 'решения', 'решений')}${skipped ? `, уже были в базе: ${skipped}` : ''}`); setRefreshKey((key) => key + 1) }} />}
   </main>
-}
-
-// Кнопка «копировать» у наименования: видна при наведении на строку, строку не открывает.
-function CopyText({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    if (!copied) return
-    const timer = window.setTimeout(() => setCopied(false), 1400)
-    return () => window.clearTimeout(timer)
-  }, [copied])
-  async function copy(event: MouseEvent) {
-    event.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-    } catch {
-      // Буфер обмена недоступен — наименование можно выделить мышью.
-    }
-  }
-  return <button type="button" className={copied ? 'dc-copy copied' : 'dc-copy'} onClick={(event) => void copy(event)}
-    title={copied ? 'Скопировано' : 'Скопировать наименование'} aria-label="Скопировать наименование">
-    {copied
-      ? <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 8.5l3 3 6-7" /></svg>
-      : <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" /><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></svg>}
-  </button>
 }

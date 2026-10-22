@@ -1,6 +1,7 @@
 import { ClipboardEvent, DragEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { LinkText } from '@/shared/components/LinkText/LinkText'
+import { CopyIcon } from '@/shared/components/CopyCode/CopyIcon'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { clipboardImages, clipboardText } from '@/shared/lib/clipboardImages'
@@ -488,7 +489,7 @@ function NameVariant({ sessionId, label, name }: { sessionId: number; label: str
     {label && <span className="rc-name-label">{label}</span>}
     <span className="rc-name-text">{shown}</span>
     <span className="rc-name-actions">
-      <button type="button" onClick={() => void copy()}>{copied ? 'Скопировано' : 'Копировать'}</button>
+      <button type="button" className={copied ? 'rc-copy copied' : 'rc-copy'} onClick={() => void copy()}><CopyIcon copied={copied} />{copied ? 'Скопировано' : 'Копировать'}</button>
       {!translated && sessionId > 0 && <button type="button" onClick={() => void translate()} disabled={busy}>{busy ? 'Перевод…' : 'Перевести на китайский'}</button>}
     </span>
     {error && <span className="rc-name-error" role="alert">{error}</span>}

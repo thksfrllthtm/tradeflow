@@ -69,10 +69,11 @@ type NomenclatureCode struct {
 	SIR *SIRRef `json:"sir"`
 }
 
-// SIRRef — индикатор СУР кода: USD за 1 кг и профиль риска, как берёт смета по СУР.
+// SIRRef — индикатор СУР кода: USD за 1 кг, профиль риска и файл, из которого он загружен (как берёт смета по СУР).
 type SIRRef struct {
 	PriceUSD string `json:"priceUsd"`
 	Profile  string `json:"profile"`
+	File     string `json:"file"`
 }
 
 // AntiDumpingRef — мера реестра ЕЭК для кода номенклатуры.
@@ -418,7 +419,7 @@ func (s *TNVEDNomenclatureService) withKZRates(ctx context.Context, rows []repos
 	for _, row := range rows {
 		var sir *SIRRef
 		if indicator, ok := indicators[row.Code]; ok {
-			sir = &SIRRef{PriceUSD: indicator.PriceUSD.String(), Profile: indicator.Profile}
+			sir = &SIRRef{PriceUSD: indicator.PriceUSD.String(), Profile: indicator.Profile, File: indicator.File}
 		}
 		items = append(items, NomenclatureCode{
 			SIR:  sir,

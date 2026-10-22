@@ -1,5 +1,6 @@
 import { ClipboardEvent, useEffect, useState } from 'react'
 import { formatCode } from '@/shared/tnved/codes'
+import { CopyIcon } from './CopyIcon'
 import './CopyCode.css'
 
 type Props = { code: string; className?: string; number?: boolean }
@@ -41,6 +42,6 @@ export function CopyCode({ code, className, number }: Props) {
   return <button type="button" className={['copy-code', number ? 'number' : '', copied ? 'copied' : '', className].filter(Boolean).join(' ')} onClick={(event) => { event.stopPropagation(); void copy() }} onCopy={onCopy}
     title={copied ? 'Скопировано' : `Скопировать без пробелов: ${digits}`} aria-label={`${number ? '' : 'Код '}${shown}, скопировать`}>
     <span>{shown}</span>
-    <i aria-hidden="true">{copied ? '✓' : '⧉'}</i>
+    <i className="copy-code-icon"><CopyIcon copied={copied} size={13} /></i>
   </button>
 }

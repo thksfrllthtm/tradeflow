@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { formatRuDate } from '@/shared/lib/dates'
@@ -7,6 +7,7 @@ import '@/shared/styles/drawer.css'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
 import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
+import { CopyButton } from '@/shared/components/CopyCode/CopyButton'
 
 type Props = {
   id: number
@@ -65,15 +66,20 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
   }
 
   const agentChanged = decision?.agentCode && decision.agentCode !== code.replace(/\D/g, '')
+  const invoiceMain = decision?.invoiceName || decision?.supplierName || ''
+  const supplierExtra = decision?.supplierName && decision.invoiceName && decision.supplierName !== decision.invoiceName ? decision.supplierName : ''
+  // Как этапы сметы: шапка — код крупно (копируется) и статус; ниже — фото, «Итог» и «Как было в инвойсе»
+  // строками «подпись — значение — копировать». Администратор правит значения в полях; остальные только
+  // читают и копируют (права проверяет сервер: правка, проверка и удаление — requireAdmin).
   return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
     <aside className="drawer dc-drawer" role="dialog" aria-modal="true" aria-labelledby="dc-title">
       <header className="drawer-head">
-        <div>
-          <h2 id="dc-title">Решение · {decision ? <code>{formatCode(decision.code)}</code> : '…'}</h2>
-          {decision && <p>
+        <div className="dc-head">
+          <h2 id="dc-title"><span className="dc-head-label">Решение</span>{decision ? <CopyCode code={decision.code} /> : '…'}</h2>
+          {decision && <p className="dc-head-meta">
             <span className={`dc-status ${decision.status}`}>{decisionStatusLabels[decision.status]}</span>
-            {' '}{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}
-            {decision.verifiedByName && decision.verifiedAt && ` · проверил ${decision.verifiedByName} ${formatRuDate(decision.verifiedAt.slice(0, 10))}`}
+            <span>{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}</span>
+            {decision.verifiedByName && decision.verifiedAt && <span>проверил {decision.verifiedByName} · {formatRuDate(decision.verifiedAt.slice(0, 10))}</span>}
           </p>}
         </div>
         <button type="button" className="drawer-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
@@ -82,49 +88,76 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
         {error && <p className="dc-error" role="alert">{error}</p>}
         {!decision && !error && <p className="dc-muted">Загрузка…</p>}
         {decision && <>
-          {decision.photos.length > 0 && <section className="drawer-section"><div className="dc-photos">{decision.photos.map((photo, index) => <button key={index} type="button" className="dc-photo" onClick={() => setPhotoIndex(index)} title="Открыть фото крупно"><img src={photo} alt={`Фото ${index + 1}`} /></button>)}</div>
-            <p className="dc-sub">{decision.photoDescription ? <>На фото (ИИ): {decision.photoDescription}</> : 'Описание фото для поиска похожих ИИ составит в течение нескольких минут.'}</p></section>}
-          <section className="drawer-section">
-            <h3>Как было в инвойсе</h3>
-            <p className="dc-text">{decision.invoiceName || '—'}</p>
-            {decision.supplierName && decision.supplierName !== decision.invoiceName && <p className="dc-sub">{decision.supplierName}</p>}
-            {(decision.unitNetKg || decision.unitPriceUsd) && <p className="dc-sub">{decision.unitNetKg && `1 шт: ${decision.unitNetKg} кг`}{decision.unitNetKg && decision.unitPriceUsd && ' · '}{decision.unitPriceUsd && `${decision.unitPriceUsd} $`}</p>}
-          </section>
+          {decision.photos.length > 0 && <section className="drawer-section dc-photo-section">
+            <div className="dc-photos">{decision.photos.map((photo, index) => <button key={index} type="button" className="dc-photo" onClick={() => setPhotoIndex(index)} title="Открыть фото крупно"><img src={photo} alt={`Фото ${index + 1}`} /></button>)}</div>
+            <p className="dc-sub">{decision.photoDescription ? <><b>На фото (ИИ):</b> {decision.photoDescription}</> : 'Описание фото для поиска похожих ИИ составит в течение нескольких минут.'}</p>
+          </section>}
+
           <section className="drawer-section">
             <h3>Итог</h3>
-            {admin ? <>
-              <label className="drawer-field"><span>Код ТН ВЭД</span><input className="mono" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" /></label>
-              <label className="drawer-field"><span>Наименование для декларации</span><textarea rows={2} value={finalName} onChange={(event) => setFinalName(event.target.value)} /></label>
-              <label className="drawer-field"><span>Почему этот код</span><textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-            </> : <>
-              <p className="dc-code"><CopyCode code={decision.code} /></p>
-              {decision.finalName && <p className="dc-text">{decision.finalName}</p>}
-              {decision.reason && <p className="dc-sub">{decision.reason}</p>}
-            </>}
-            {decision.nomenclature ? <p className="dc-sub">{nameParts(decision.nomenclature.name).slice(-2).join(' › ')} · пошлина ЕТТ {decision.nomenclature.tariffText || 'не указана'} · НДС {decision.nomenclature.vatPercent}%{decision.nomenclature.detailsUrl && <> · <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a></>}</p>
-              : <p className="dc-warn">Кода нет в текущей номенклатуре ТН ВЭД ЕАЭС.</p>}
+            {admin && <Field label="Код ТН ВЭД" copy={code.replace(/\D/g, '')} copyLabel="код">
+              <input className="mono" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" aria-label="Код ТН ВЭД" />
+              {!codeValid && <span className="dc-field-error">Код — 10 цифр</span>}
+            </Field>}
+            <Field label="Наименование для декларации" copy={admin ? finalName : decision.finalName} copyLabel="наименование" empty={!admin && !decision.finalName}>
+              {admin ? <textarea rows={2} value={finalName} onChange={(event) => setFinalName(event.target.value)} aria-label="Наименование для декларации" /> : <p className="dc-value">{decision.finalName}</p>}
+            </Field>
+            {(admin || decision.reason) && <Field label="Почему этот код" copy={admin ? reason : decision.reason} copyLabel="обоснование">
+              {admin ? <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Например: металлическая канистра для топлива, стенка 0,6 мм" aria-label="Почему этот код" /> : <p className="dc-value">{decision.reason}</p>}
+            </Field>}
+            {decision.nomenclature
+              ? <div className="dc-nomen">
+                <span className="dc-nomen-name">{nameParts(decision.nomenclature.name).slice(-2).join(' › ')}</span>
+                <span className="dc-nomen-rates">Пошлина ЕТТ <b>{decision.nomenclature.tariffText || 'не указана'}</b> · НДС <b>{decision.nomenclature.vatPercent}%</b>
+                  {decision.nomenclature.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}</span>
+              </div>
+              : <p className="dc-nomen warn">Кода нет в текущей номенклатуре ТН ВЭД ЕАЭС.</p>}
             {decision.quote && <blockquote className="dc-quote">{decision.quote}</blockquote>}
-            {decision.agentCode && <p className={decision.agentCorrect === false || agentChanged ? 'dc-warn' : 'dc-sub'}>
+            {decision.agentCode && <p className={decision.agentCorrect === false || agentChanged ? 'dc-warn dc-agent' : 'dc-sub dc-agent'}>
               ИИ предлагал <code>{formatCode(decision.agentCode)}</code>{decision.agentCorrect === true ? ' — верно' : decision.agentCorrect === false ? ' — администратор исправил' : agentChanged ? ' — при проверке будет отмечено, что ИИ ошибся' : ''}
             </p>}
           </section>
+
+          <section className="drawer-section">
+            <h3>Как было в инвойсе</h3>
+            <Field label="Наименование в инвойсе" copy={invoiceMain} copyLabel="наименование из инвойса" empty={!invoiceMain}>
+              <p className="dc-value">{invoiceMain}</p>
+            </Field>
+            {supplierExtra && <Field label="У поставщика" copy={supplierExtra} copyLabel="наименование поставщика"><p className="dc-value">{supplierExtra}</p></Field>}
+            {(decision.unitNetKg || decision.unitPriceUsd) && <div className="dc-facts">
+              {decision.unitNetKg && <span>Нетто 1 шт <b>{decision.unitNetKg} кг</b></span>}
+              {decision.unitPriceUsd && <span>Цена 1 шт <b>{decision.unitPriceUsd} $</b></span>}
+            </div>}
+          </section>
+
           {decision.rejectedCodes.length > 0 && <section className="drawer-section">
             <h3>Рассматривались и не подошли</h3>
-            {decision.rejectedCodes.map((item) => <p key={item.code} className="dc-sub"><code>{formatCode(item.code)}</code> — {item.why}</p>)}
+            <ul className="dc-rejected">{decision.rejectedCodes.map((item) => <li key={item.code}><code>{formatCode(item.code)}</code><span>{item.why}</span></li>)}</ul>
           </section>}
+
           {(admin || decision.note) && <section className="drawer-section">
-            <h3>Заметка</h3>
-            {admin ? <label className="drawer-field"><textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Например: подтверждено декларацией №…" /></label> : <p className="dc-sub">{decision.note}</p>}
+            <Field label="Заметка" copy={admin ? note : decision.note} copyLabel="заметку">
+              {admin ? <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Например: подтверждено декларацией №…" aria-label="Заметка" /> : <p className="dc-value">{decision.note}</p>}
+            </Field>
           </section>}
         </>}
       </div>
-      {admin && decision && <footer className="drawer-foot">
-        <button type="button" onClick={() => void run(() => decisionsApi.verify(decision.id, edit()))} disabled={busy || !codeValid}>{decision.status === 'verified' ? 'Сохранить' : 'Проверено'}</button>
-        {decision.status !== 'rejected' && <button type="button" className="secondary" onClick={() => void run(() => decisionsApi.reject(decision.id, note))} disabled={busy}>Отклонить</button>}
-        {decision.status !== 'verified' && <button type="button" className="secondary" onClick={() => void run(() => decisionsApi.update(decision.id, edit()))} disabled={busy || !codeValid}>Сохранить без проверки</button>}
-        <button type="button" className="dc-delete" onClick={() => { if (window.confirm('Удалить запись из базы решений?')) void run(() => decisionsApi.remove(decision.id), true) }} disabled={busy}>Удалить</button>
+      {admin && decision && <footer className="drawer-foot dc-foot">
+        <button type="button" className="dc-btn primary" onClick={() => void run(() => decisionsApi.verify(decision.id, edit()))} disabled={busy || !codeValid}>{decision.status === 'verified' ? 'Сохранить' : 'Отметить «Проверено»'}</button>
+        {decision.status !== 'verified' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.update(decision.id, edit()))} disabled={busy || !codeValid}>Сохранить без проверки</button>}
+        {decision.status !== 'rejected' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.reject(decision.id, note))} disabled={busy}>Отклонить</button>}
+        <button type="button" className="dc-btn danger" onClick={() => { if (window.confirm('Удалить запись из базы решений?')) void run(() => decisionsApi.remove(decision.id), true) }} disabled={busy}>Удалить</button>
       </footer>}
     </aside>
     {photoIndex !== null && decision && decision.photos.length > 0 && <PhotoLightbox photos={decision.photos} startIndex={photoIndex} onClose={() => setPhotoIndex(null)} />}
+  </div>
+}
+
+// Строка карточки: подпись и «копировать» сверху, под ними значение (текст или поле у администратора).
+// empty — значения нет: вместо него серый прочерк, копировать нечего.
+function Field({ label, copy, copyLabel, empty, children }: { label: string; copy: string; copyLabel: string; empty?: boolean; children: ReactNode }) {
+  return <div className="dc-field">
+    <div className="dc-field-head"><span>{label}</span>{!empty && copy.trim() && <CopyButton text={copy} label={copyLabel} />}</div>
+    {empty ? <p className="dc-value dc-none">—</p> : children}
   </div>
 }

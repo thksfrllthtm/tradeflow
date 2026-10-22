@@ -106,3 +106,35 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .nom-table tr.nom-heading td { height: 32px; padding: 4px 12px; background: var(--tf-bg); color: var(--tf-muted); font-size: .8rem; font-weight: 500; }
 .nom-table tr.nom-heading b { margin-left: 6px; color: var(--tf-text); font-size: .86rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
 .nom-table tbody tr.nom-heading:hover td { background: var(--tf-bg); box-shadow: none; }
+
+/* ── Как «База решений» и этапы сметы: страница во всю ширину, таблица — карточка до низа окна со своей
+   прокруткой, поиск — в верхней полосе карточки, строки 36px в одну линию. Открытые панели (проверка
+   кодов, антидемпинг, СУР, перечень РК) сдвигают карточку вниз — тогда прокручивается страница. ── */
+.directory-page.nom-page { width: 100%; padding: 16px 24px; overflow-y: auto; }
+@media (max-width: 900px) { .directory-page.nom-page { padding: 16px 12px; } }
+.nom-page > * { flex-shrink: 0; }
+.nom-page > .nom-card { flex: 1 1 0; min-height: 360px; }
+.nom-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.nom-card .dir-table-wrap { flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; }
+.nom-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
+.nom-filterbar .dir-search { flex: 0 1 560px; }
+.nom-more { padding: 8px; }
+.nom-disclaimer { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: .82rem; line-height: 1.4; }
+.nom-disclaimer svg { flex: none; margin-top: 2px; }
+.nom-disclaimer a { color: inherit; }
+
+/* Строки в одну линию: путь в дереве — серым перед наименованием, «0 · действует», антидемпинг — в ряд.
+   Длинное — с многоточием, целиком — в подсказке. */
+.nom-table td { height: 36px; padding: 3px 10px; white-space: nowrap; }
+.nom-table .nom-name { overflow: hidden; text-overflow: ellipsis; }
+.nom-table .nom-name small { display: inline; margin: 0; font-size: .82rem; }
+.nom-table .nom-name span { display: inline; }
+.nom-table .nom-rate { width: 120px; }
+.nom-table .nom-kz { width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.nom-table .nom-kz small { display: inline; margin: 0; font-size: .8rem; }
+.nom-table .nom-ad { width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.nom-table .nom-sir { width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.nom-table .nom-sir small { color: var(--tf-muted); font-size: .8rem; }
+.nom-table .nom-link { width: 110px; }
+.nom-ad-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 1px 7px; vertical-align: middle; }
+.nom-ad-chip + .nom-ad-chip { margin: 0 0 0 4px; }

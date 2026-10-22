@@ -28,10 +28,10 @@ table.dc-table .dc-status { font-size: .86rem; font-weight: 500; }
 .dc-actions { display: flex; flex: none; gap: 8px; }
 
 /* Кнопки — как на этапах сметы: 32px; зелёная — главная, белая с рамкой — вторичная. */
-.dc-page button.dc-btn { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; white-space: nowrap; }
-.dc-page button.dc-btn:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
-.dc-page button.dc-btn.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
-.dc-page button.dc-btn.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
+:is(.dc-page, .dc-drawer) button.dc-btn { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; white-space: nowrap; }
+:is(.dc-page, .dc-drawer) button.dc-btn:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+:is(.dc-page, .dc-drawer) button.dc-btn.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+:is(.dc-page, .dc-drawer) button.dc-btn.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
 .dc-more { display: flex; flex: none; align-items: center; justify-content: center; gap: 14px; padding: 8px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-text-2); font-size: .86rem; }
 .dc-more b { color: var(--tf-text); font-weight: 600; }
 
@@ -45,18 +45,20 @@ table.dc-table .dc-status { font-size: .86rem; font-weight: 500; }
 /* Наименование в одну строку с многоточием; справа — «копировать», видна при наведении на строку. */
 .dc-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .dc-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.dc-table button.dc-copy { display: grid; flex: none; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); opacity: 0; transition: opacity .12s; }
-.dc-table tr:hover button.dc-copy, .dc-table button.dc-copy:focus-visible, .dc-table button.dc-copy.copied { opacity: 1; }
-.dc-table button.dc-copy:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
-.dc-table button.dc-copy.copied { color: var(--tf-green); }
+.dc-table button.copy-btn { opacity: 0; transition: opacity .12s; }
+.dc-table tr:hover button.copy-btn, .dc-table button.copy-btn:focus-visible, .dc-table button.copy-btn.copied { opacity: 1; }
 /* Миниатюра — кнопка: открывает фото крупно, с увеличением. */
 .dc-table button.dc-thumb { display: block; width: auto; height: auto; padding: 0; border: 0; border-radius: 4px; background: none; cursor: zoom-in; }
 .dc-table button.dc-thumb:hover img { border-color: var(--tf-green); }
 .dc-table .dc-code-col { width: 160px; }
-.dc-table .dc-status-col { width: 210px; }
-.dc-table .dc-source-col { width: 110px; color: var(--tf-text-2); }
-.dc-table .dc-by-col { width: 130px; overflow: hidden; color: var(--tf-text-2); text-overflow: ellipsis; }
-.dc-table .dc-date-col { width: 110px; color: var(--tf-text-2); }
+.dc-table .dc-status-col { width: 150px; }
+/* Метка «ИИ» у статуса: красная — ИИ ошибся, зелёная — верно; подробности — в подсказке. */
+.dc-ai { display: inline-block; margin-left: 6px; padding: 0 4px; border-radius: 4px; font-size: .7rem; font-weight: 600; line-height: 16px; vertical-align: 1px; cursor: help; }
+.dc-ai.bad { background: #fdecea; color: #b42318; }
+.dc-ai.ok { background: var(--tf-green-soft); color: var(--tf-green); }
+.dc-table .dc-source-col { width: 100px; color: var(--tf-text-2); }
+.dc-table .dc-by-col { width: 110px; overflow: hidden; color: var(--tf-text-2); text-overflow: ellipsis; }
+.dc-table .dc-date-col { width: 104px; color: var(--tf-text-2); }
 
 .dc-disclaimer { display: flex; flex: none; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: .82rem; line-height: 1.4; }
 .dc-disclaimer svg { flex: none; margin-top: 2px; }
@@ -78,21 +80,60 @@ table.dc-table .dc-status { font-size: .86rem; font-weight: 500; }
 .dc-ok { color: var(--tf-green); }
 p.dc-warn { margin: 0; font-size: .78rem; }
 
-.dc-photos { display: flex; flex-wrap: wrap; gap: 8px; }
-.dc-photos button.dc-photo { display: block; height: auto; margin: 0; padding: 0; border: 0; border-radius: var(--tf-radius); background: none; cursor: zoom-in; }
-.dc-photos button.dc-photo:hover img { border-color: var(--tf-green); }
-.dc-photos img { display: block; width: 150px; height: 150px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); object-fit: cover; }
-.dc-text { margin: 0; color: var(--tf-text); font-size: .86rem; font-weight: 600; line-height: 1.4; }
 .dc-sub { margin: 0; color: var(--tf-text-2); font-size: .8rem; line-height: 1.45; }
 .dc-sub a { color: var(--tf-green); font-weight: 600; text-decoration: none; }
-.dc-code { margin: 0; color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: 1.12rem; font-weight: 500; letter-spacing: 0; }
 .dc-quote { margin: 0; padding: 6px 10px; border-left: 3px solid var(--tf-muted); border-radius: 0 6px 6px 0; background: var(--tf-green-soft); color: var(--tf-text-2); font-size: .8rem; font-style: italic; }
 .dc-error { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: #fff1ee; color: #9a3024; font-size: .8rem; font-weight: 600; }
 .dc-muted { color: var(--tf-muted); font-size: .82rem; }
-.drawer-foot button.dc-delete { margin-left: auto; height: 32px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: #b42318; font-size: .86rem; }
-.drawer-foot button.dc-delete:hover:not(:disabled) { border-color: #f0cccc; background: #fef3f2; }
 .dc-file { position: relative; display: inline-flex; align-items: center; justify-self: start; height: 34px; margin: 0; padding: 0 14px; border: 1px solid var(--tf-muted); border-radius: 8px; background: var(--tf-green-soft); color: var(--tf-green); font-size: .8rem; font-weight: 600; cursor: pointer; }
 .dc-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .dc-problems { margin: 8px 0 0; padding-left: 18px; color: #9a3024; font-size: .78rem; }
 .drawer-field.dc-check { display: flex; align-items: center; gap: 8px; align-self: end; min-height: 38px; cursor: pointer; }
 .drawer-field.dc-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); }
+
+/* ── Карточка решения (боковая панель) ── */
+.dc-drawer { width: min(600px, 100%); }
+.dc-head { display: grid; gap: 6px; min-width: 0; }
+.dc-drawer .drawer-head h2 { display: flex; align-items: baseline; gap: 10px; font-size: 1.2rem; }
+.dc-head-label { color: var(--tf-muted); font-size: .86rem; font-weight: 500; }
+.dc-head-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.dc-head-meta .dc-status { font-size: .86rem; }
+
+/* Фото — сеткой квадратов, щелчок открывает крупно с увеличением. */
+.dc-photo-section { gap: 10px; }
+.dc-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.dc-photos button.dc-photo { display: block; aspect-ratio: 1; height: auto; margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); cursor: zoom-in; }
+.dc-photos button.dc-photo:hover { border-color: var(--tf-green); }
+.dc-photos img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dc-sub b { color: var(--tf-text-2); font-weight: 600; }
+
+/* Строка «подпись — значение»: подпись серым, «копировать» справа от неё; значение — текст или поле. */
+.dc-field { display: grid; gap: 4px; min-width: 0; }
+.dc-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; }
+.dc-value { margin: 0; color: var(--tf-text); font-size: .9rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dc-value.dc-none { color: var(--tf-muted); }
+.dc-field :is(input, textarea) { box-sizing: border-box; width: 100%; min-height: 36px; margin: 0; padding: 7px 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .9rem; line-height: 1.4; }
+.dc-field textarea { resize: vertical; }
+.dc-field :is(input, textarea):focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
+.dc-field input.mono { font-size: 1rem; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.dc-field-error { color: #b42318; font-size: .78rem; }
+
+/* Справка по коду из номенклатуры — серой плашкой: где код в дереве, пошлина, НДС, ссылка. */
+.dc-nomen { display: grid; gap: 4px; margin: 0; padding: 10px 12px; border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text-2); font-size: .82rem; line-height: 1.45; }
+.dc-nomen.warn { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.dc-nomen-rates { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; }
+.dc-nomen-rates b { color: var(--tf-text); font-weight: 600; }
+.dc-nomen-rates a { margin-left: auto; color: var(--tf-green); font-weight: 600; text-decoration: none; }
+.dc-nomen-rates a:hover { text-decoration: underline; }
+.dc-agent { margin: 0; font-size: .82rem; }
+.dc-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--tf-text-2); font-size: .82rem; }
+.dc-facts b { color: var(--tf-text); font-weight: 600; }
+.dc-rejected { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; color: var(--tf-text-2); font-size: .82rem; line-height: 1.45; }
+.dc-rejected li { display: grid; grid-template-columns: auto 1fr; gap: 10px; }
+.dc-rejected code { color: var(--tf-text); }
+
+/* Кнопки внизу — как на этапах сметы: 32px, зелёная — одна, «Удалить» — справа красным текстом. */
+.dc-foot { flex-wrap: wrap; }
+.dc-drawer button.dc-btn.danger { margin-left: auto; color: #b42318; }
+.dc-drawer button.dc-btn.danger:hover:not(:disabled) { border-color: #f0cccc; background: #fef3f2; }
+.dc-drawer button.dc-btn:disabled { opacity: .5; cursor: default; }

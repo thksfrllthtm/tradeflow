@@ -16,6 +16,7 @@ import { SirControls } from './SirControls'
 import { SirCompareModal } from './SirCompareModal'
 import { commonProblems, plural, problemGroups, ProblemTone, rowProblems } from './errorGroups'
 import { calculatedRows, customsPaymentsUsd, displayNumber, fixedNumber, excelColumn, excelColumnHtml, hasAntiDumping, itemDisplayName, itemNames, parseCalculatorNumber, RowState, rowPaymentKzt, rowState, rowTotals, sirTitle, textColumn } from './resultValues'
+import { CopyIcon } from '@/shared/components/CopyCode/CopyIcon'
 import '../../goods.css'
 import './ResultStep.css'
 
@@ -108,7 +109,7 @@ function CopyColumn({ label, text, html }: { label: string; text: () => string; 
 
   return <button type="button" className={copied ? 'rs-copy-col copied' : 'rs-copy-col'} onClick={copy}
     title={copied ? 'Скопировано' : `Скопировать колонку «${label}» для вставки в Excel`} aria-label={`Скопировать колонку ${label}`}>
-    {copied ? '✓' : '⧉'}
+    <CopyIcon copied={copied} size={12} />
   </button>
 }
 

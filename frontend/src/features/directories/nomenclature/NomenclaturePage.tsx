@@ -102,7 +102,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
   const empty = !loading && total === 0
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="nomenclature" onLogout={onLogout} />
-    <section className="directory-page">
+    <section className="directory-page nom-page">
       <div className="dir-head">
         <div>
           <h1>Номенклатура ТН ВЭД ЕАЭС{source && <span className="dir-count">{formatDisplayNumber(source.codeCount)}</span>}</h1>
@@ -136,7 +136,9 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
       {error && <p className="dir-transfer-error nom-note" role="alert">{error}<button type="button" onClick={() => { setError(''); setRowErrors([]) }} aria-label="Закрыть">×</button></p>}
       {rowErrors.length > 0 && <ul className="dir-transfer-errors">{rowErrors.map((item) => <li key={`${item.row}-${item.message}`}><b>Строка {item.row}</b> {item.message}</li>)}</ul>}
 
-      <div className="dir-toolbar">
+      {/* Как «База решений» и этапы сметы: карточка до низа окна, в ней поиск, таблица и «Показать ещё». */}
+      <section className="nom-card" aria-label="Коды ТН ВЭД">
+      <div className="nom-filterbar">
         <label className="dir-search">
           <SearchIcon />
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Начало кода (4015 19) или слова из наименования (перчатки резиновые)" aria-label="Поиск по номенклатуре" autoFocus />
@@ -161,14 +163,16 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
                 return <Fragment key={item.code}>{headingRow}<tr>
                   <td className="c-code"><CopyCode code={item.code} /></td>
                   <td className="nom-name" title={parts.join(' ')}>
-                    {parts.length > 1 && <small>{parts.slice(0, -1).join(' ')}</small>}
-                    <span>{parts[parts.length - 1]}</span>
+                    {parts.length > 1 && <small>{parts.slice(0, -1).join(' ')} </small>}<span>{parts[parts.length - 1]}</span>
                   </td>
                   <td className="nom-rate">{item.tariffText || <span className="dir-none">не указана</span>}</td>
-                  <td className={item.kz?.active ? 'nom-kz active' : 'nom-kz'} title={item.kz?.notesText || undefined}>{item.kz ? <>{item.kz.rateText}<small>{item.kz.status}</small></> : <span className="dir-none">{kzSource ? '—' : ''}</span>}</td>
+                  <td className={item.kz?.active ? 'nom-kz active' : 'nom-kz'} title={item.kz?.notesText || undefined}>{item.kz ? <>{item.kz.rateText}<small> · {item.kz.status}</small></> : <span className="dir-none">{kzSource ? '—' : ''}</span>}</td>
                   <td className="nom-vat">{item.vatPercent ? `${item.vatPercent}%` : <span className="dir-none">—</span>}</td>
                   <td className="nom-ad">{item.antiDumping?.length ? item.antiDumping.map((ref) => <AntiDumpingCell key={ref.number} measure={ref} />) : <span className="dir-none">—</span>}</td>
-                  <td className="nom-sir" title={item.sir ? `Профиль ${item.sir.profile}` : undefined}>{item.sir ? formatDisplayNumber(item.sir.priceUsd) : <span className="dir-none">—</span>}</td>
+                  {/* Число и файл профиля СУР, из которого оно взято («24_прил CN»); полностью — в подсказке. */}
+                  <td className="nom-sir" title={item.sir ? [item.sir.file && `Файл: ${item.sir.file}`, `Профиль ${item.sir.profile}`].filter(Boolean).join(' · ') : undefined}>
+                    {item.sir ? <>{formatDisplayNumber(item.sir.priceUsd)}{item.sir.file && <small> · {item.sir.file.replace(/\.xlsx?$/i, '')}</small>}</> : <span className="dir-none">—</span>}
+                  </td>
                   <td className="nom-link">{item.detailsUrl && <a href={item.detailsUrl} target="_blank" rel="noreferrer" title={`Код ${item.code} на ${source?.source ?? 'сайте источника'}: примечания, документы, меры`}>Подробнее</a>}</td>
                 </tr></Fragment>
               })}
@@ -179,7 +183,11 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
           <button type="button" className="dir-transfer-button" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? 'Загружаем…' : `Показать ещё ${Math.min(pageSize, total - items.length)}`}</button>
         </div>}
       </div>
-      <p className="dir-foot">«Пошлина ЕТТ» — Единый таможенный тариф ЕАЭС. «Ставка РК» — ставка ниже ЕТТ по обязательствам Казахстана в ВТО (<a href="https://eec.eaeunion.org/comission/department/catr/ttr/stavki.php" target="_blank" rel="noreferrer">перечень РК</a>). НДС 16% — основная ставка Казахстана.</p>
+      </section>
+      <p className="nom-disclaimer">
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>
+        <span>«Пошлина ЕТТ» — Единый таможенный тариф ЕАЭС. «Ставка РК» — ставка ниже ЕТТ по обязательствам Казахстана в ВТО (<a href="https://eec.eaeunion.org/comission/department/catr/ttr/stavki.php" target="_blank" rel="noreferrer">перечень РК</a>). НДС 16% — основная ставка Казахстана.</span>
+      </p>
     </section>
   </main>
 }

@@ -62,11 +62,12 @@ func TestParseProfile(t *testing.T) {
 			}
 		}
 		encoded, _ := json.Marshal(prices)
-		rows = append(rows, repository.RiskIndicatorRow{ProfileNumber: book.Number, Groups: groups, Code: row.Code, Prices: encoded})
+		rows = append(rows, repository.RiskIndicatorRow{ProfileNumber: book.Number, ProfileFile: "25_прил CN.xlsx", Groups: groups, Code: row.Code, Prices: encoded})
 	}
 	// CN есть и в общей группе, и отдельной колонкой — берётся отдельная колонка.
 	china := Pick(rows, "cn")
-	if got := china["0701100000"]; got.PriceUSD.String() != "0.6" || got.Profile != "50100/190318/00025" {
+	// Файл профиля — чтобы в номенклатуре было видно, откуда взят индикатор.
+	if got := china["0701100000"]; got.PriceUSD.String() != "0.6" || got.Profile != "50100/190318/00025" || got.File != "25_прил CN.xlsx" {
 		t.Fatalf("CN = %+v", got)
 	}
 	if got := china["0701905000"]; got.PriceUSD.String() != "0.35" {

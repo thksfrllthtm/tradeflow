@@ -1,3 +1,4 @@
+import { CopyIcon } from '@/shared/components/CopyCode/CopyIcon'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useEffect, useRef, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -82,7 +83,7 @@ export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: bo
       <div className="code-check-summary" role="status">
         {unknown.length > 0 ? <span className="missing">Нет в ТН ВЭД ЕАЭС: {unknown.length}</span> : <span className="ok">Все коды есть в ТН ВЭД ЕАЭС</span>}
         {unknown.length > 0 && <span className="found">Есть в ТН ВЭД: {rows.length - unknown.length}</span>}
-        {unknown.length > 0 && <button type="button" className="code-check-secondary" onClick={() => void copyAbsent()}>{copied ? 'Скопировано' : 'Копировать отсутствующие'}</button>}
+        {unknown.length > 0 && <button type="button" className="code-check-secondary" onClick={() => void copyAbsent()}><CopyIcon copied={copied} />{copied ? 'Скопировано' : 'Копировать отсутствующие'}</button>}
       </div>
       <ul className="code-check-list">
         {rows.map((row) => {

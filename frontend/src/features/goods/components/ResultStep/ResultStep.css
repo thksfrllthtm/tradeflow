@@ -178,9 +178,9 @@
 .goods-page .rs-table .rs-price:disabled { color: var(--tf-muted); }
 
 /* Кнопка копирования колонки в заголовке: еле видна, ярче при наведении на заголовок. */
-.goods-page .rs-table button.rs-copy-col { display: inline-block; width: auto; height: auto; margin: 0 -4px 0 4px; padding: 0 4px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--tf-muted); font: inherit; line-height: inherit; cursor: copy; opacity: 0; transition: opacity .12s; }
+.goods-page .rs-table button.rs-copy-col { display: inline-grid; place-items: center; vertical-align: middle; width: 22px; height: 22px; margin: 0 -4px 0 4px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); font: inherit; line-height: inherit; cursor: copy; opacity: 0; transition: opacity .12s; }
 .goods-page .rs-table th:hover button.rs-copy-col, .goods-page .rs-table button.rs-copy-col:focus-visible, .goods-page .rs-table button.rs-copy-col.copied { opacity: 1; }
-.goods-page .rs-table button.rs-copy-col:hover { border-color: var(--tf-border); background: var(--tf-chip); color: var(--tf-text); }
+.goods-page .rs-table button.rs-copy-col:hover { background: var(--tf-chip); color: var(--tf-text); }
 .goods-page .rs-table button.rs-copy-col.copied { color: var(--tf-green); }
 
 .goods-page .rs-table .rs-empty td { padding: 28px 16px !important; color: var(--tf-text-2); text-align: center; white-space: normal; cursor: default; }

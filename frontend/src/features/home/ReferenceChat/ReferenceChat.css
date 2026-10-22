@@ -170,3 +170,6 @@
 @media (prefers-reduced-motion: reduce) {
   .rc-typing span { animation: none; }
 }
+/* «Копировать» — тот же значок, что у всех кнопок копирования сайта, после копирования — зелёная галочка. */
+.rc-name-actions button.rc-copy { display: inline-flex; align-items: center; gap: 5px; }
+.rc-name-actions button.rc-copy.copied { color: var(--tf-green); }

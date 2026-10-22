@@ -1,8 +1,18 @@
-/* Код ТН ВЭД, который копируется цифрами: шрифт кода, значок копирования при наведении. */
-button.copy-code { display: inline-flex; align-items: baseline; gap: 6px; width: auto; height: auto; margin: 0; padding: 0 4px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: inherit; font: inherit; font-family: var(--tf-mono); font-size: .95em; font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0; text-align: left; cursor: copy; user-select: text; }
-button.copy-code:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-green-soft); color: inherit; }
+/* Единый вид копирования на всём сайте: значок «два листа» (CopyIcon), после копирования — зелёная галочка;
+   при наведении — серый фон, без рамки. Два вида: сам код-кнопка (CopyCode) и значок рядом с текстом (CopyButton). */
+.copy-icon { display: block; flex: none; }
+
+/* Код ТН ВЭД, который копируется цифрами: шрифт кода, значок справа виден при наведении. */
+button.copy-code { display: inline-flex; align-items: center; gap: 6px; width: auto; height: auto; margin: 0; padding: 1px 4px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; font-family: var(--tf-mono); font-size: .95em; font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0; text-align: left; cursor: copy; user-select: text; }
+button.copy-code:hover:not(:disabled) { background: var(--tf-chip); color: inherit; }
 button.copy-code:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 1px; }
-button.copy-code i { color: var(--tf-muted); font-family: inherit; font-size: .7em; font-style: normal; display: inline-block; width: 1.2em; text-align: center; font-weight: 600; letter-spacing: 0; opacity: 0; transition: opacity .12s; }
-button.copy-code:hover i, button.copy-code.copied i { opacity: 1; }
-button.copy-code.copied i { color: var(--tf-green); }
+button.copy-code .copy-code-icon { display: inline-flex; color: var(--tf-muted); font-style: normal; opacity: 0; transition: opacity .12s; }
+button.copy-code:hover .copy-code-icon, button.copy-code:focus-visible .copy-code-icon, button.copy-code.copied .copy-code-icon { opacity: 1; }
+button.copy-code.copied .copy-code-icon { color: var(--tf-green); }
 button.copy-code.number { font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; }
+
+/* Значок рядом с текстом. */
+button.copy-btn { display: inline-grid; flex: none; place-items: center; width: 26px; height: 26px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); cursor: copy; }
+button.copy-btn:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+button.copy-btn:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 1px; }
+button.copy-btn.copied, button.copy-btn.copied:hover:not(:disabled) { color: var(--tf-green); }

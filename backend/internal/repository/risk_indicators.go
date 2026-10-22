@@ -37,6 +37,7 @@ func (RiskIndicator) TableName() string { return "risk_indicators" }
 type RiskIndicatorRow struct {
 	ProfileID     int64
 	ProfileNumber string
+	ProfileFile   string
 	Groups        JSON
 	Code          string
 	Prices        JSON
@@ -92,7 +93,7 @@ func (r *Repository) RiskIndicatorsByCodes(ctx context.Context, codes []string) 
 		return rows, nil
 	}
 	err := r.db.WithContext(ctx).Table("risk_indicators AS i").
-		Select("i.profile_id, p.number AS profile_number, p.groups, i.code, i.prices").
+		Select("i.profile_id, p.number AS profile_number, p.file_name AS profile_file, p.groups, i.code, i.prices").
 		Joins("JOIN risk_indicator_profiles p ON p.id = i.profile_id").
 		Where("i.code IN ?", codes).Order("p.number").Scan(&rows).Error
 	return rows, err

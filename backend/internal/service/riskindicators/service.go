@@ -45,11 +45,12 @@ type ImportResult struct {
 	Errors              []RowError `json:"errors"`
 }
 
-// Indicator — индикатор кода для страны: USD за 1 кг и профиль, из которого он взят.
+// Indicator — индикатор кода для страны: USD за 1 кг, профиль и файл, из которых он взят.
 type Indicator struct {
 	Code     string
 	Country  string
 	Profile  string
+	File     string
 	PriceUSD decimal.Decimal
 }
 
@@ -158,7 +159,7 @@ func Pick(rows []repository.RiskIndicatorRow, country string) map[string]Indicat
 		if current, exists := result[row.Code]; exists && !price.GreaterThan(current.PriceUSD) {
 			continue
 		}
-		result[row.Code] = Indicator{Code: row.Code, Country: country, Profile: row.ProfileNumber, PriceUSD: price}
+		result[row.Code] = Indicator{Code: row.Code, Country: country, Profile: row.ProfileNumber, File: row.ProfileFile, PriceUSD: price}
 	}
 	return result
 }
