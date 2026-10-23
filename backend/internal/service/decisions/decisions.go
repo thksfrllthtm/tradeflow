@@ -81,6 +81,8 @@ type CodeDecisionView struct {
 	Nomenclature       *directory.NomenclatureCode `json:"nomenclature"`
 	// Описание фото от ИИ одной строкой; пусто — ещё не составлено.
 	PhotoDescription string `json:"photoDescription"`
+	// То же по полям — для карточки записи; nil — описания нет.
+	PhotoFeatures *PhotoFeatures `json:"photoFeatures,omitempty"`
 	// Duplicate — этот товар сметы уже был в базе: возвращена прежняя запись, новая не создана.
 	Duplicate bool `json:"duplicate,omitempty"`
 }
@@ -197,6 +199,7 @@ func (s *CodeDecisionService) views(ctx context.Context, rows []repository.CodeD
 		}
 		if features, ok := ParsePhotoFeatures(row.PhotoFeatures); ok {
 			view.PhotoDescription = features.Summary()
+			view.PhotoFeatures = &features
 		}
 		_ = json.Unmarshal(row.RejectedCodes, &view.RejectedCodes)
 		_ = json.Unmarshal(row.Photos, &view.Photos)

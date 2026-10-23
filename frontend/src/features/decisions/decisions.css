@@ -94,28 +94,40 @@ p.dc-warn { margin: 0; font-size: .78rem; }
 /* ── Карточка решения (боковая панель) ── */
 .dc-drawer { width: min(600px, 100%); }
 .dc-head { display: grid; gap: 6px; min-width: 0; }
-.dc-drawer .drawer-head h2 { display: flex; align-items: baseline; gap: 10px; font-size: 1.2rem; }
-.dc-head-label { color: var(--tf-muted); font-size: .86rem; font-weight: 500; }
+/* Шапка — наименование из инвойса (как в строке таблицы), рядом «копировать»; ниже статус и кто/когда. */
+.dc-drawer .drawer-head h2.dc-title { display: flex; align-items: flex-start; gap: 4px; min-width: 0; font-size: 1.05rem; line-height: 1.35; }
+.dc-title > span { min-width: 0; overflow-wrap: anywhere; }
+.dc-title button.copy-btn { margin-top: -2px; }
 .dc-head-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .dc-head-meta .dc-status { font-size: .86rem; }
 
+/* Описание фото от ИИ и факты из инвойса — таблицей «подпись — значение», чтобы читалось по строкам. */
+.dc-desc-wrap { display: grid; gap: 6px; }
+.dc-desc, .dc-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: .84rem; line-height: 1.45; }
+:is(.dc-desc, .dc-facts) > div { display: contents; }
+:is(.dc-desc, .dc-facts) dt { color: var(--tf-muted); font-weight: 500; white-space: nowrap; }
+:is(.dc-desc, .dc-facts) dd { display: flex; align-items: center; gap: 2px; min-width: 0; margin: 0; color: var(--tf-text); overflow-wrap: anywhere; }
+.dc-desc-note { margin: 0; color: var(--tf-muted); font-size: .76rem; }
+
 /* Фото — сеткой квадратов, щелчок открывает крупно с увеличением. */
-.dc-photo-section { gap: 10px; }
 .dc-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .dc-photos button.dc-photo { display: block; aspect-ratio: 1; height: auto; margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); cursor: zoom-in; }
 .dc-photos button.dc-photo:hover { border-color: var(--tf-green); }
 .dc-photos img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.dc-sub b { color: var(--tf-text-2); font-weight: 600; }
 
 /* Строка «подпись — значение»: подпись серым, «копировать» справа от неё; значение — текст или поле. */
 .dc-field { display: grid; gap: 4px; min-width: 0; }
 .dc-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; }
+.dc-field-head small { margin-left: 6px; color: var(--tf-muted); font-size: .76rem; font-weight: 400; }
 .dc-value { margin: 0; color: var(--tf-text); font-size: .9rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dc-value.dc-none { color: var(--tf-muted); }
 .dc-field :is(input, textarea) { box-sizing: border-box; width: 100%; min-height: 36px; margin: 0; padding: 7px 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .9rem; line-height: 1.4; }
 .dc-field textarea { resize: vertical; }
 .dc-field :is(input, textarea):focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
-.dc-field input.mono { font-size: 1rem; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+/* Код — главное в карточке: крупно, цифрами с пробелами; у администратора — поле той же величины. */
+.dc-drawer button.copy-code.dc-code-big { justify-self: start; margin-left: -4px; font-size: 1.3rem; font-weight: 600; letter-spacing: .02em; }
+.dc-field input.dc-code-input { max-width: 240px; font-size: 1.2rem; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.dc-value.dc-note { color: var(--tf-text-2); font-size: .82rem; }
 .dc-field-error { color: #b42318; font-size: .78rem; }
 
 /* Справка по коду из номенклатуры — серой плашкой: где код в дереве, пошлина, НДС, ссылка. */
@@ -126,8 +138,6 @@ p.dc-warn { margin: 0; font-size: .78rem; }
 .dc-nomen-rates a { margin-left: auto; color: var(--tf-green); font-weight: 600; text-decoration: none; }
 .dc-nomen-rates a:hover { text-decoration: underline; }
 .dc-agent { margin: 0; font-size: .82rem; }
-.dc-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--tf-text-2); font-size: .82rem; }
-.dc-facts b { color: var(--tf-text); font-weight: 600; }
 .dc-rejected { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; color: var(--tf-text-2); font-size: .82rem; line-height: 1.45; }
 .dc-rejected li { display: grid; grid-template-columns: auto 1fr; gap: 10px; }
 .dc-rejected code { color: var(--tf-text); }

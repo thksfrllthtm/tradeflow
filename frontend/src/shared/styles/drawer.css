@@ -2,7 +2,8 @@
    Вид — как у этапов сметы: токены --tf-* (base.css), кнопки 32px, поля 36px, переключатель как rv-seg.
    Кнопки с двумя классами — чтобы перебить общий стиль button / button:hover. */
 
-.drawer-backdrop { position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end; background: rgba(23, 32, 27, .28); }
+/* Выше шапки сайта (app-header, 60): иначе заголовок панели уходит под неё; ниже просмотра фото (90). */
+.drawer-backdrop { position: fixed; inset: 0; z-index: 70; display: flex; justify-content: flex-end; background: rgba(23, 32, 27, .28); }
 .drawer {
   display: flex;
   flex-direction: column;

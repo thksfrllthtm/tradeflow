@@ -35,6 +35,19 @@ export type CodeDecision = {
   nomenclature: NomenclatureCode | null
   // Описание фото от ИИ одной строкой; пусто — ещё не составлено.
   photoDescription: string
+  // То же по полям — для карточки записи.
+  photoFeatures?: PhotoFeatures
+}
+
+export type PhotoFeatures = {
+  kind: string
+  synonyms?: string[]
+  purpose?: string
+  material: string[]
+  shape: string[]
+  color: string[]
+  features: string[]
+  keywords?: string[]
 }
 
 export const decisionStatusLabels: Record<DecisionStatus, string> = { pending: 'Не проверено', verified: 'Проверено', rejected: 'Отклонено' }
