@@ -70,3 +70,39 @@ func TestPhotoFeaturesSummaryAndParse(t *testing.T) {
 		t.Fatalf("parsed %+v %v", parsed, ok)
 	}
 }
+
+// Синонимы — тот же вид товара: «кельма» в одном описании и «мастерок» в другом совпадают по виду.
+func TestFeatureSimilarityMatchesKindThroughSynonyms(t *testing.T) {
+	trowel := PhotoFeatures{Kind: "кельма", Synonyms: []string{"мастерок", "trowel"}, Material: []string{"сталь"}}
+	other := PhotoFeatures{Kind: "мастерок", Material: []string{"сталь", "пластик"}}
+	if score := FeatureSimilarity(trowel, other); score < sameKindBase {
+		t.Fatalf("synonym kind must count as the same kind: %.2f", score)
+	}
+	spoon := PhotoFeatures{Kind: "ложка", Material: []string{"сталь"}}
+	if score := FeatureSimilarity(trowel, spoon); score >= sameKindBase {
+		t.Fatalf("different kind: %.2f", score)
+	}
+}
+
+func TestPhotoFeaturesSearchTextAndSummaryWithSynonyms(t *testing.T) {
+	features := PhotoFeatures{Kind: "кельма", Synonyms: []string{"мастерок", " "}, Purpose: "нанесение штукатурки", Material: []string{"сталь"},
+		Color: []string{"серый"}, Keywords: []string{"инструмент штукатура"}}
+	if got := features.SearchText(); got != "кельма, мастерок, нанесение штукатурки, сталь, инструмент штукатура" {
+		t.Fatalf("search text %q", got)
+	}
+	if got := features.Summary(); got != "кельма (мастерок) · нанесение штукатурки · сталь · серый" {
+		t.Fatalf("summary %q", got)
+	}
+}
+
+// Косинусная близость Gemini: один вид товара 0.81+, разные — до 0.68; порог показа — 0.745.
+func TestVectorScore(t *testing.T) {
+	for cosine, want := range map[float64]float64{0.5: 0, 0.62: 0, 0.745: 0.5, 0.87: 1, 0.95: 1} {
+		if got := VectorScore(cosine); got < want-0.01 || got > want+0.01 {
+			t.Fatalf("VectorScore(%.3f) = %.3f, want %.2f", cosine, got, want)
+		}
+	}
+	if VectorScore(0.68)*100 >= SimilarMinScore || VectorScore(0.81)*100 < SimilarMinScore {
+		t.Fatal("kettle vs mug must stay below the threshold, same kind above")
+	}
+}

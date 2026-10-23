@@ -35,14 +35,18 @@ type Config struct {
 	TNVEDAIPriceInput  decimal.Decimal
 	TNVEDAIPriceCached decimal.Decimal
 	TNVEDAIPriceOutput decimal.Decimal
-	// Модель для фото (TNVED_AI_VISION_MODEL, например deepseek-flash): описание фото, вопросы по фото,
-	// похожие товары, перевод наименования. Пусто — всё делает модель TNVED_AI_MODEL, как раньше.
+	// Модель для фото (TNVED_AI_VISION_MODEL, на проде gemini-3.8-flash через OpenAI-совместимый адрес
+	// Gemini): описание фото, вопросы по фото, похожие товары, перевод наименования. Пусто — всё делает
+	// модель TNVED_AI_MODEL, как раньше.
 	TNVEDAIVisionModel       string
 	TNVEDAIVisionAPIKey      string
 	TNVEDAIVisionBaseURL     string
 	TNVEDAIVisionPriceInput  decimal.Decimal
 	TNVEDAIVisionPriceCached decimal.Decimal
 	TNVEDAIVisionPriceOutput decimal.Decimal
+	// TNVEDAIEmbedModel — модель эмбеддингов на адресе и ключе модели для фото (TNVED_AI_EMBED_MODEL,
+	// gemini-embedding-001): поиск похожих товаров и записей базы решений по смыслу. Пусто — только по словам.
+	TNVEDAIEmbedModel string
 	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
 	TNVEDAIEffort string
 	// «Переводчик» (.docx): OpenAI-совместимый API, по умолчанию DeepSeek с ключом DEEPSEEK_API_KEY.
@@ -137,6 +141,7 @@ func Load() (Config, error) {
 		TNVEDAIVisionPriceInput:  prices["TNVED_AI_VISION_PRICE_INPUT"],
 		TNVEDAIVisionPriceCached: prices["TNVED_AI_VISION_PRICE_CACHED"],
 		TNVEDAIVisionPriceOutput: prices["TNVED_AI_VISION_PRICE_OUTPUT"],
+		TNVEDAIEmbedModel:        strings.TrimSpace(os.Getenv("TNVED_AI_EMBED_MODEL")),
 		RegistrationDisabled:     !allowRegistration,
 	}, nil
 }

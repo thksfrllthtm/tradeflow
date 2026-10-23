@@ -99,7 +99,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
           <p>Проверенные примеры «товар из инвойса → код ТН ВЭД» с фото и обоснованием. На них опирается ИИ при подборе кода.</p>
         </div>
         {admin && <div className="dc-actions">
-          <button type="button" className="dc-btn" onClick={() => setImportOpen(true)}>Импорт старого инвойса</button>
+          <button type="button" className="dc-btn" onClick={() => setImportOpen(true)}>Импорт базы из Excel</button>
           <button type="button" className="dc-btn primary" onClick={() => setManualOpen(true)}>+ Добавить вручную</button>
         </div>}
       </div>
@@ -157,6 +157,6 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
     {photos && <PhotoLightbox photos={photos} startIndex={0} onClose={() => setPhotos(null)} />}
     {openId && <DecisionDrawer id={openId} admin={admin} onClose={() => setOpenId(null)} onChanged={() => setRefreshKey((key) => key + 1)} />}
     {manualOpen && <DecisionManual onClose={() => setManualOpen(false)} onAdded={() => { setNotice('Решение добавлено в базу'); setRefreshKey((key) => key + 1) }} />}
-    {importOpen && <DecisionImport onClose={() => setImportOpen(false)} onImported={(created, skipped) => { setNotice(`В базу добавлено ${created} ${plural(created, 'решение', 'решения', 'решений')}${skipped ? `, уже были в базе: ${skipped}` : ''}`); setRefreshKey((key) => key + 1) }} />}
+    {importOpen && <DecisionImport onClose={() => setImportOpen(false)} onImported={(created, skipped, replaced) => { setNotice(`${replaced ? 'База заменена: ' : 'В базу добавлено '}${created} ${plural(created, 'решение', 'решения', 'решений')}${skipped ? `, повторов пропущено: ${skipped}` : ''}`); setRefreshKey((key) => key + 1) }} />}
   </main>
 }

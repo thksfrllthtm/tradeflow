@@ -47,5 +47,7 @@ export const decisionsApi = {
   verify: (id: number, edit: DecisionEdit = {}) => request<CodeDecision>(`/api/code-decisions/${id}/verify`, { method: 'POST', body: JSON.stringify(edit) }),
   reject: (id: number, note = '') => request<CodeDecision>(`/api/code-decisions/${id}/reject`, { method: 'POST', body: JSON.stringify({ note }) }),
   remove: (id: number) => request<void>(`/api/code-decisions/${id}`, { method: 'DELETE' }),
-  importRows: (rows: DecisionInput[]) => request<{ created: number; skipped: number; errors: { row: number; message: string }[] }>('/api/code-decisions/import', { method: 'POST', body: JSON.stringify({ rows }) }),
+  // replace — удалить всю базу перед этой порцией (только первая порция импорта с заменой);
+  // keepDuplicates — не пропускать повторы (каждая порция импорта с заменой: файл загружается как есть).
+  importRows: (rows: DecisionInput[], options: { replace?: boolean; keepDuplicates?: boolean } = {}) => request<{ created: number; skipped: number; errors: { row: number; message: string }[] }>('/api/code-decisions/import', { method: 'POST', body: JSON.stringify({ rows, ...options }) }),
 }

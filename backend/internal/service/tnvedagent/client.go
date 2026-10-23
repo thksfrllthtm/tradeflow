@@ -29,6 +29,9 @@ type AgentModelConfig struct {
 	Effort string
 	// Provider — "" (OpenAI-совместимый API) или "anthropic" (Claude, только прогон eval, см. claude.go).
 	Provider string
+	// EmbedModel — модель эмбеддингов на том же адресе и ключе (gemini-embedding-001): поиск похожих
+	// товаров и записей по смыслу описания. "" — эмбеддинги выключены.
+	EmbedModel string
 	// Цены: обычный ввод, ввод из кэша, вывод.
 	PriceInput  decimal.Decimal
 	PriceCached decimal.Decimal
@@ -190,8 +193,17 @@ func (c *AgentModelClient) CompleteText(ctx context.Context, messages []agentMes
 	return c.send(ctx, map[string]any{"model": c.config.Model, "messages": messages, "max_tokens": maxTokens, "temperature": 0.1}, false)
 }
 
+// geminiThinkingHeadroom — запас токенов на размышления Gemini 3: выключить их нельзя, и они входят в
+// max_tokens; без запаса короткие ответы (описание фото, JSON) обрезаются.
+const geminiThinkingHeadroom = 2048
+
+func isGemini(baseURL string) bool {
+	return strings.Contains(baseURL, "generativelanguage.googleapis.com")
+}
+
 func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thinking bool) (agentReply, error) {
-	if strings.Contains(c.config.BaseURL, "deepseek.com") {
+	switch {
+	case strings.Contains(c.config.BaseURL, "deepseek.com"):
 		// Режим размышлений DeepSeek включён по умолчанию и в разы медленнее: только для цикла агента
 		// с заданным уровнем размышлений, остальные запросы — без него.
 		mode := "disabled"
@@ -199,6 +211,14 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 			mode = "enabled"
 		}
 		request["thinking"] = map[string]string{"type": mode}
+	case isGemini(c.config.BaseURL):
+		// Gemini 3 размышляет всегда: вне цикла агента — минимально, и с запасом токенов на размышления.
+		if !thinking {
+			request["reasoning_effort"] = "low"
+		}
+		if limit, ok := request["max_tokens"].(int); ok {
+			request["max_tokens"] = limit + geminiThinkingHeadroom
+		}
 	}
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -227,21 +247,8 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 		}
 		return agentReply{}, ai.ErrAIBadResponse
 	}
-	switch {
-	case resp.StatusCode == http.StatusUnauthorized, resp.StatusCode == http.StatusForbidden, resp.StatusCode == http.StatusPaymentRequired:
-		return agentReply{}, ai.ErrAIUnauthorized
-	case resp.StatusCode == http.StatusTooManyRequests:
-		return agentReply{}, ai.ErrAIRateLimited
-	case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity:
-		return agentReply{}, ai.ErrAIRequestRejected
-	case resp.StatusCode == http.StatusNotFound:
-		return agentReply{}, ai.ErrAIModelUnavailable
-	case resp.StatusCode == http.StatusRequestTimeout:
-		return agentReply{}, ai.ErrAITimeout
-	case resp.StatusCode >= 500:
-		return agentReply{}, ai.ErrAIUnavailable
-	case resp.StatusCode < 200 || resp.StatusCode >= 300:
-		return agentReply{}, ai.ErrAIBadResponse
+	if err := statusError(resp.StatusCode); err != nil {
+		return agentReply{}, err
 	}
 	var parsed struct {
 		Choices []struct {
@@ -274,4 +281,77 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 	}
 	reply.Usage = agentUsage{PromptTokens: parsed.Usage.PromptTokens, CachedTokens: cached, CompletionTokens: parsed.Usage.CompletionTokens}
 	return reply, nil
+}
+
+// statusError — ошибка ИИ по коду ответа провайдера; nil — успех.
+func statusError(code int) error {
+	switch {
+	case code == http.StatusUnauthorized, code == http.StatusForbidden, code == http.StatusPaymentRequired:
+		return ai.ErrAIUnauthorized
+	case code == http.StatusTooManyRequests:
+		return ai.ErrAIRateLimited
+	case code == http.StatusBadRequest, code == http.StatusUnprocessableEntity:
+		return ai.ErrAIRequestRejected
+	case code == http.StatusNotFound:
+		return ai.ErrAIModelUnavailable
+	case code == http.StatusRequestTimeout:
+		return ai.ErrAITimeout
+	case code >= 500:
+		return ai.ErrAIUnavailable
+	case code < 200 || code >= 300:
+		return ai.ErrAIBadResponse
+	}
+	return nil
+}
+
+// Размерность эмбеддингов: столько же в колонке code_decisions.photo_embedding (миграция 000042).
+// Gemini по умолчанию даёт 3072, но для сотен записей хватает 768, и индекс pgvector выше 2000 не строится.
+const embeddingDimensions = 768
+
+const embedTimeout = 30 * time.Second
+
+// Embeds — есть модель эмбеддингов.
+func (c *AgentModelClient) Embeds() bool { return c.Configured() && c.config.EmbedModel != "" }
+
+// Embed — вектор текста (OpenAI-совместимый /embeddings) для поиска по смыслу.
+func (c *AgentModelClient) Embed(ctx context.Context, text string) ([]float32, error) {
+	if !c.Embeds() {
+		return nil, ai.ErrAINotConfigured
+	}
+	body, err := json.Marshal(map[string]any{"model": c.config.EmbedModel, "input": text, "dimensions": embeddingDimensions})
+	if err != nil {
+		return nil, ai.ErrAIBadResponse
+	}
+	requestCtx, cancel := context.WithTimeout(ctx, embedTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, c.config.BaseURL+"/embeddings", bytes.NewReader(body))
+	if err != nil {
+		return nil, ai.ErrAIBadResponse
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		if errors.Is(requestCtx.Err(), context.DeadlineExceeded) {
+			return nil, ai.ErrAITimeout
+		}
+		return nil, ai.ErrAIUnavailable
+	}
+	data, readErr := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	resp.Body.Close()
+	if readErr != nil {
+		return nil, ai.ErrAIBadResponse
+	}
+	if err := statusError(resp.StatusCode); err != nil {
+		return nil, err
+	}
+	var parsed struct {
+		Data []struct {
+			Embedding []float32 `json:"embedding"`
+		} `json:"data"`
+	}
+	if json.Unmarshal(data, &parsed) != nil || len(parsed.Data) == 0 || len(parsed.Data[0].Embedding) != embeddingDimensions {
+		return nil, ai.ErrAIBadResponse
+	}
+	return parsed.Data[0].Embedding, nil
 }

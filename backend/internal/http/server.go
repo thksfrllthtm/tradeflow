@@ -79,11 +79,15 @@ func newAgentService(database *repository.Repository, decisions *decisions.CodeD
 		vision = tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
 			APIKey: cfg.TNVEDAIVisionAPIKey, BaseURL: cfg.TNVEDAIVisionBaseURL, Model: cfg.TNVEDAIVisionModel, Vision: cfg.TNVEDAIVision,
 			PriceInput: cfg.TNVEDAIVisionPriceInput, PriceCached: cfg.TNVEDAIVisionPriceCached, PriceOutput: cfg.TNVEDAIVisionPriceOutput,
+			EmbedModel: cfg.TNVEDAIEmbedModel,
 		})
 	}
-	return tnvedagent.NewTNVEDAgentService(database, model, vision, decisions, tnvedagent.AgentSettings{
+	agent := tnvedagent.NewTNVEDAgentService(database, model, vision, decisions, tnvedagent.AgentSettings{
 		DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true,
 	})
+	// Поиск по смыслу в базе решений — той же моделью эмбеддингов, что у агента.
+	decisions.SetEmbedder(agent.Embedder())
+	return agent
 }
 
 // StartBackground запускает фоновые задачи: антидемпинговые меры из файла программы (если их ещё

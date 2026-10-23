@@ -501,9 +501,18 @@ func sameProductHint(matches []decisions.SameProductMatch) string {
 		if match.Decision.Status == "verified" {
 			status = "проверено администратором"
 		}
-		lines = append(lines, fmt.Sprintf("- %s (%s): «%s» → %s, «%s»", by, status, firstNonEmpty(match.Decision.InvoiceName, match.Decision.SupplierName), match.Decision.Code, match.Decision.FinalName))
+		lines = append(lines, fmt.Sprintf("- %s (%s): «%s» → %s%s", by, status, firstNonEmpty(match.Decision.InvoiceName, match.Decision.SupplierName), match.Decision.Code, finalNameSuffix(match.Decision.FinalName)))
 	}
 	return "\n\nВ базе решений есть записи о похожем товаре:\n" + strings.Join(lines, "\n")
+}
+
+// finalNameSuffix — «, «итоговое наименование»» для подсказки о записи базы; у записей из Excel
+// итогового наименования нет — тогда ничего.
+func finalNameSuffix(finalName string) string {
+	if strings.TrimSpace(finalName) == "" {
+		return ""
+	}
+	return ", «" + finalName + "»"
 }
 
 func firstNonEmpty(values ...string) string {

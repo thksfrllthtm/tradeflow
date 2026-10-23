@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -31,11 +32,18 @@ const (
 
 var tnvedCodePattern = regexp.MustCompile(`^\d{10}$`)
 
-type CodeDecisionService struct{ repository *repository.Repository }
+type CodeDecisionService struct {
+	repository *repository.Repository
+	// embedder — модель эмбеддингов для поиска по смыслу; nil — только по словам.
+	embedder Embedder
+}
 
 func NewCodeDecisionService(r *repository.Repository) *CodeDecisionService {
 	return &CodeDecisionService{repository: r}
 }
+
+// SetEmbedder включает поиск по смыслу (похожие по фото и поиск текстом в базе решений).
+func (s *CodeDecisionService) SetEmbedder(embedder Embedder) { s.embedder = embedder }
 
 type RejectedCode struct {
 	Code string `json:"code"`
@@ -134,6 +142,12 @@ func (s *CodeDecisionService) List(ctx context.Context, filter repository.CodeDe
 	case "", "pending", "verified", "rejected":
 	default:
 		filter.Status = ""
+	}
+	// Текстовый запрос — ещё и по смыслу описания фото: «ключ для труб» найдёт «газовый ключ».
+	if text := strings.TrimSpace(filter.Query); strings.ContainsFunc(text, unicode.IsLetter) {
+		for id := range s.nearestByMeaning(ctx, text) {
+			filter.AlsoIDs = append(filter.AlsoIDs, id)
+		}
 	}
 	rows, total, err := s.repository.ListCodeDecisions(ctx, filter)
 	if err != nil {
@@ -328,14 +342,29 @@ type DecisionImportError struct {
 	Message string `json:"message"`
 }
 
-// Import — строки старых инвойсов с правильными кодами: сразу «Проверено» администратором.
+// ImportOptions — режим импорта. Импорт идёт порциями: Replace ставится только на первой (удалить
+// всю базу), KeepDuplicates — на каждой порции замены: файл загружается как есть, повторы (тот же
+// код, наименование и похожее фото) не пропускаются — их уже свернул сборщик файла.
+type ImportOptions struct {
+	Replace        bool `json:"replace"`
+	KeepDuplicates bool `json:"keepDuplicates"`
+}
+
+// Import — строки Excel базы решений с правильными кодами: сразу «Проверено» администратором.
 // Строки с ошибками пропускаются и возвращаются с номером.
-func (s *CodeDecisionService) Import(ctx context.Context, adminID int64, rows []CodeDecisionInput) (int, int, []DecisionImportError, error) {
+func (s *CodeDecisionService) Import(ctx context.Context, adminID int64, rows []CodeDecisionInput, options ImportOptions) (int, int, []DecisionImportError, error) {
 	if len(rows) == 0 {
 		return 0, 0, nil, &service.ValidationError{Field: "rows", Message: "Нет строк для импорта"}
 	}
 	if len(rows) > maxDecisionImportRows {
 		return 0, 0, nil, &service.ValidationError{Field: "rows", Message: fmt.Sprintf("Не больше %d строк за раз", maxDecisionImportRows)}
+	}
+	if options.Replace {
+		deleted, err := s.repository.DeleteAllCodeDecisions(ctx)
+		if err != nil {
+			return 0, 0, nil, err
+		}
+		log.Printf("decisions: base cleared before import by user %d, %d records deleted", adminID, deleted)
 	}
 	keys, err := s.repository.CodeDecisionKeys(ctx)
 	if err != nil {
@@ -367,7 +396,7 @@ func (s *CodeDecisionService) Import(ctx context.Context, adminID int64, rows []
 		key := decisionImportKey(row.Code, row.FinalName, row.InvoiceName, row.SupplierName)
 		var hashes []string
 		_ = json.Unmarshal(row.PhotoHashes, &hashes)
-		if importDuplicate(known[key], hashes) {
+		if !options.KeepDuplicates && importDuplicate(known[key], hashes) {
 			skipped++
 			continue
 		}

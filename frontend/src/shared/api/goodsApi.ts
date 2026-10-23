@@ -9,7 +9,7 @@ type ParseXlsxResponse = Omit<GoodsParseResult, 'images'> & {
 
 // Как goods.MaxGoodsXLSXBytes на сервере. Больший файл сервер обрывает на середине загрузки,
 // и браузер показывает «Failed to fetch» вместо понятной ошибки — поэтому проверяем до отправки.
-const maxXlsxMB = 100
+const maxXlsxMB = 200
 
 // Разбор Excel, расчёт и экспорт смет товаров (/api/goods/*).
 export const goodsApi = {

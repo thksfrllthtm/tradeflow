@@ -118,10 +118,11 @@ const (
 	verifyCandidates    = 3
 )
 
-const describePhotoPrompt = `Ты описываешь товар на фото, чтобы таможенный декларант нашёл похожие товары в своей базе.
+const describePhotoPrompt = `Ты описываешь товар на фото, чтобы таможенный декларант нашёл похожие товары в своей базе — поиском по словам и по смыслу.
+Сначала прочитай надписи на товаре и упаковке: они часто прямо называют товар. Не выдумывай надписи, которые не читаются.
 Ответь только JSON:
-{"kind":"вид товара 1–2 словами (перчатки, кружка, отвертка)","material":["основные материалы"],"shape":["форма и устройство: 2–4 коротких признака"],"color":["основные цвета"],"features":["другие заметные особенности: покрытие, назначение, комплектность — до 4"]}
-Пиши по-русски, коротко, без бренда, артикулов и надписей с упаковки. Если товара на фото нет или его не разобрать — оставь kind пустым.`
+{"kind":"вид товара 1–2 словами (перчатки, кружка, кельма)","synonyms":["как ещё называют этот товар: 2–5 вариантов, в том числе по-английски, как пишут в инвойсах (мастерок, шпатель штукатурный, trowel)"],"purpose":"для чего товар, 3–7 слов","material":["основные материалы"],"shape":["форма и устройство: 2–4 коротких признака"],"color":["основные цвета"],"features":["другие заметные особенности: покрытие, механизм, комплектность — до 4"],"keywords":["5–10 коротких запросов, которыми сотрудник искал бы этот товар (кельма финишная, инструмент штукатура, plastering trowel)"]}
+Правила: по-русски (кроме английских синонимов), единственное число, именительный падеж, строчные буквы; без бренда, артикулов, размеров и цифр с упаковки. Материалы — общими словами: сталь, металл, пластик, резина, текстиль, дерево, стекло, керамика, бумага. Если товара на фото нет или его не разобрать — оставь kind пустым.`
 
 const verifyPhotosPrompt = `Первое фото — новый товар, следующие — кандидаты из базы (кандидат 1, 2, …). Для каждого кандидата реши:
 same — тот же товар (та же модель; могут отличаться ракурс, фон, свет, упаковка);
@@ -166,6 +167,8 @@ func (s *TNVEDAgentService) describePhoto(ctx context.Context, photo string) (de
 	features = decisions.PhotoFeatures{
 		Kind: service.TruncateRunes(strings.TrimSpace(features.Kind), 60), Material: cleanList(features.Material, 4),
 		Shape: cleanList(features.Shape, 5), Color: cleanList(features.Color, 4), Features: cleanList(features.Features, 5),
+		Synonyms: cleanList(features.Synonyms, 5), Purpose: service.TruncateRunes(strings.TrimSpace(features.Purpose), 100),
+		Keywords: cleanList(features.Keywords, 10),
 	}
 	return features, reply.Usage, nil
 }
@@ -307,8 +310,8 @@ func (s *TNVEDAgentService) similarByPhoto(ctx, store context.Context, session r
 		case "similar":
 			verdict = ", по фото — похожий товар"
 		}
-		lines = append(lines, fmt.Sprintf("- похожесть %d%% (%s%s): «%s» → %s, «%s»", match.Score, status, verdict,
-			firstNonEmpty(match.Decision.InvoiceName, match.Decision.SupplierName, match.Decision.FinalName), match.Decision.Code, match.Decision.FinalName))
+		lines = append(lines, fmt.Sprintf("- похожесть %d%% (%s%s): «%s» → %s%s", match.Score, status, verdict,
+			firstNonEmpty(match.Decision.InvoiceName, match.Decision.SupplierName, match.Decision.FinalName), match.Decision.Code, finalNameSuffix(match.Decision.FinalName)))
 	}
 	hint := "Похожие по фото товары из базы решений (подсказка, проверь сам):\n" + strings.Join(lines, "\n")
 	if description != "" {
@@ -337,6 +340,7 @@ func (s *TNVEDAgentService) StartPhotoWorker(ctx context.Context) {
 		defer ticker.Stop()
 		for {
 			s.describeDecisionPhotos(ctx)
+			s.embedDecisionPhotos(ctx)
 			select {
 			case <-ctx.Done():
 				return
@@ -378,5 +382,44 @@ func (s *TNVEDAgentService) describeDecisionPhotos(ctx context.Context) {
 	}
 	if described > 0 {
 		log.Printf("photo features: described %d decision photos, $%s", described, cost.StringFixed(4))
+	}
+}
+
+// Embedder — модель эмбеддингов для базы решений; nil — не задана (поиск только по словам).
+func (s *TNVEDAgentService) Embedder() decisions.Embedder {
+	if !s.visionModel.Embeds() {
+		return nil
+	}
+	return s.visionModel
+}
+
+// embedDecisionPhotos — векторы описаний, у которых их ещё нет (новые описания и записи до включения
+// эмбеддингов). Ошибка ИИ — повтор в следующий раз. Описание без вида товара пропускается: в базе оно
+// не считается описанием (ParsePhotoFeatures), а вектор пустого текста бесполезен.
+func (s *TNVEDAgentService) embedDecisionPhotos(ctx context.Context) {
+	if !s.visionModel.Embeds() {
+		return
+	}
+	rows, err := s.repository.DecisionsNeedingEmbedding(ctx, photoWorkerBatch*2)
+	if err != nil || len(rows) == 0 {
+		return
+	}
+	embedded := 0
+	for _, row := range rows {
+		features, ok := decisions.ParsePhotoFeatures(row.PhotoFeatures)
+		if !ok {
+			continue
+		}
+		vector, err := s.visionModel.Embed(ctx, features.SearchText())
+		if err != nil {
+			log.Printf("photo embeddings: %v", err)
+			break
+		}
+		if s.repository.SaveDecisionEmbedding(ctx, row.ID, vector) == nil {
+			embedded++
+		}
+	}
+	if embedded > 0 {
+		log.Printf("photo embeddings: embedded %d decision descriptions", embedded)
 	}
 }

@@ -210,7 +210,12 @@ type chatRequest struct {
 	Temperature    float64           `json:"temperature"`
 	// DeepSeek only: its separate reasoning mode is slow and not needed here.
 	Thinking map[string]string `json:"thinking,omitempty"`
+	// Gemini 3 only: thinking cannot be disabled, so keep it minimal (it also counts against MaxTokens).
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
+
+// geminiThinkingHeadroom — extra MaxTokens for Gemini 3 thinking, which counts against the limit.
+const geminiThinkingHeadroom = 2048
 
 func (c *CeramicsAIClient) complete(ctx context.Context, systemPrompt string, payload any, photo string) (string, error) {
 	data, err := json.Marshal(payload)
@@ -235,8 +240,12 @@ func (c *CeramicsAIClient) complete(ctx context.Context, systemPrompt string, pa
 		MaxTokens:      ceramicsAIMaxTokens,
 		Temperature:    0.1,
 	}
-	if strings.Contains(c.config.BaseURL, "deepseek.com") {
+	switch {
+	case strings.Contains(c.config.BaseURL, "deepseek.com"):
 		request.Thinking = map[string]string{"type": "disabled"}
+	case strings.Contains(c.config.BaseURL, "generativelanguage.googleapis.com"):
+		request.ReasoningEffort = "low"
+		request.MaxTokens += geminiThinkingHeadroom
 	}
 	body, err := json.Marshal(request)
 	if err != nil {

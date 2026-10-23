@@ -82,7 +82,7 @@ p.dc-warn { margin: 0; font-size: .78rem; }
 
 .dc-sub { margin: 0; color: var(--tf-text-2); font-size: .8rem; line-height: 1.45; }
 .dc-sub a { color: var(--tf-green); font-weight: 600; text-decoration: none; }
-.dc-quote { margin: 0; padding: 6px 10px; border-left: 3px solid var(--tf-muted); border-radius: 0 6px 6px 0; background: var(--tf-green-soft); color: var(--tf-text-2); font-size: .8rem; font-style: italic; }
+.dc-quote { margin: 0; padding: 6px 10px; border-radius: 6px; background: var(--tf-green-soft); color: var(--tf-text-2); font-size: .8rem; font-style: italic; }
 .dc-error { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: #fff1ee; color: #9a3024; font-size: .8rem; font-weight: 600; }
 .dc-muted { color: var(--tf-muted); font-size: .82rem; }
 .dc-file { position: relative; display: inline-flex; align-items: center; justify-self: start; height: 34px; margin: 0; padding: 0 14px; border: 1px solid var(--tf-muted); border-radius: 8px; background: var(--tf-green-soft); color: var(--tf-green); font-size: .8rem; font-weight: 600; cursor: pointer; }

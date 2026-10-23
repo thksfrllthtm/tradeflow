@@ -7,6 +7,7 @@ package decisions
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"math"
 	"sort"
 	"strings"
@@ -21,16 +22,34 @@ const (
 	similarMaxResults = 5
 )
 
-// PhotoFeatures — описание фото товара от ИИ.
+// PhotoFeatures — описание фото товара от ИИ. Synonyms, Purpose и Keywords — для поиска: как ещё
+// называют товар (в том числе по-английски, как в инвойсах), для чего он и что набрал бы сотрудник.
 type PhotoFeatures struct {
 	Kind     string   `json:"kind"`
+	Synonyms []string `json:"synonyms,omitempty"`
+	Purpose  string   `json:"purpose,omitempty"`
 	Material []string `json:"material"`
 	Shape    []string `json:"shape"`
 	Color    []string `json:"color"`
 	Features []string `json:"features"`
+	Keywords []string `json:"keywords,omitempty"`
 }
 
-// Summary — описание одной строкой: «перчатки · трикотаж, полиуретан · серый».
+// SearchText — текст для эмбеддинга: всё, что определяет товар по смыслу; без цвета (у одного
+// товара бывают разные цвета, а разные товары — один цвет).
+func (f PhotoFeatures) SearchText() string {
+	parts := []string{}
+	for _, value := range [][]string{{f.Kind}, f.Synonyms, {f.Purpose}, f.Material, f.Shape, f.Features, f.Keywords} {
+		for _, item := range value {
+			if item = strings.TrimSpace(item); item != "" {
+				parts = append(parts, item)
+			}
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// Summary — описание одной строкой: «перчатки (work gloves) · защита рук · трикотаж, полиуретан · серый».
 func (f PhotoFeatures) Summary() string {
 	parts := []string{}
 	add := func(values ...string) {
@@ -44,12 +63,27 @@ func (f PhotoFeatures) Summary() string {
 			parts = append(parts, strings.Join(clean, ", "))
 		}
 	}
-	add(f.Kind)
+	kind := strings.TrimSpace(f.Kind)
+	if synonyms := strings.Join(trimAll(f.Synonyms), ", "); kind != "" && synonyms != "" {
+		kind += " (" + synonyms + ")"
+	}
+	add(kind)
+	add(f.Purpose)
 	add(f.Material...)
 	add(f.Shape...)
 	add(f.Features...)
 	add(f.Color...)
 	return strings.Join(parts, " · ")
+}
+
+func trimAll(values []string) []string {
+	clean := []string{}
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value != "" {
+			clean = append(clean, value)
+		}
+	}
+	return clean
 }
 
 // Empty — описания нет (ИИ не понял, что на фото).
@@ -106,10 +140,14 @@ func featureWords(f PhotoFeatures) []featureWord {
 			}
 		}
 	}
+	// Синонимы — тот же вид товара другими словами: «кельма» в одном описании и «мастерок» в другом.
 	add(featureWeights.kind, true, f.Kind)
+	add(featureWeights.kind, true, f.Synonyms...)
 	add(featureWeights.material, false, f.Material...)
 	add(featureWeights.shape, false, f.Shape...)
 	add(featureWeights.features, false, f.Features...)
+	add(featureWeights.features, false, f.Purpose)
+	add(featureWeights.features, false, f.Keywords...)
 	add(featureWeights.color, false, f.Color...)
 	words := make([]featureWord, 0, len(order))
 	for _, word := range order {
@@ -220,12 +258,57 @@ type SimilarMatch struct {
 	Why     string `json:"why"`
 }
 
-// FindSimilar — похожие товары по фото: мягкий отпечаток и описание фото. Записи из skip (уже
-// найденные точно) не повторяются. Лучшие — первыми, проверенные выше непроверенных при равенстве.
+// Embedder — вектор текста для поиска по смыслу (модель эмбеддингов); nil — поиск только по словам.
+type Embedder interface {
+	Embed(ctx context.Context, text string) ([]float32, error)
+}
+
+// Сколько ближайших по вектору записей смотреть.
+const nearestLimit = 20
+
+// VectorScore — похожесть по смыслу 0…1 из косинусной близости эмбеддингов Gemini. Замер 2026-10-23
+// (gemini-embedding-001, 768): один вид товара — 0.81–0.85, разные товары — 0.55–0.68 (чайник и
+// кружка — 0.68). Порог показа SimilarMinScore (0.5) соответствует близости 0.745.
+func VectorScore(cosine float64) float64 {
+	return math.Max(0, math.Min(1, (cosine-0.62)/0.25))
+}
+
+// nearestByMeaning — записи, близкие по смыслу описания: id → похожесть 0…1. Без модели
+// эмбеддингов, без описания или при ошибке ИИ — пусто (поиск идёт по словам, как раньше).
+func (s *CodeDecisionService) nearestByMeaning(ctx context.Context, text string) map[int64]float64 {
+	scores := map[int64]float64{}
+	if s.embedder == nil || strings.TrimSpace(text) == "" {
+		return scores
+	}
+	vector, err := s.embedder.Embed(ctx, text)
+	if err != nil {
+		log.Printf("decisions: embedding failed: %v", err)
+		return scores
+	}
+	neighbors, err := s.repository.NearestDecisions(ctx, vector, nearestLimit)
+	if err != nil {
+		log.Printf("decisions: nearest by vector failed: %v", err)
+		return scores
+	}
+	for _, neighbor := range neighbors {
+		if score := VectorScore(neighbor.Similarity); score*100 >= SimilarMinScore {
+			scores[neighbor.ID] = score
+		}
+	}
+	return scores
+}
+
+// FindSimilar — похожие товары по фото: мягкий отпечаток, описание фото (по словам и по смыслу через
+// эмбеддинги). Записи из skip (уже найденные точно) не повторяются. Лучшие — первыми, проверенные
+// выше непроверенных при равенстве.
 func (s *CodeDecisionService) FindSimilar(ctx context.Context, photoHashes []string, features *PhotoFeatures, skip map[int64]bool) ([]SimilarMatch, error) {
 	keys, err := s.repository.CodeDecisionKeys(ctx)
 	if err != nil {
 		return nil, err
+	}
+	byMeaning := map[int64]float64{}
+	if features != nil {
+		byMeaning = s.nearestByMeaning(ctx, features.SearchText())
 	}
 	type hit struct {
 		score         float64
@@ -248,6 +331,8 @@ func (s *CodeDecisionService) FindSimilar(ctx context.Context, photoHashes []str
 				fxScore = FeatureSimilarity(*features, stored)
 			}
 		}
+		// По смыслу надёжнее, чем по словам: синонимы и другой язык не мешают.
+		fxScore = math.Max(fxScore, byMeaning[key.ID])
 		score := math.Max(photoScore, fxScore)
 		// Совпали и снимок, и описание — увереннее.
 		if photoScore > 0 && fxScore > 0 {

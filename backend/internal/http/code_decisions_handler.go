@@ -198,13 +198,14 @@ func (s *Server) deleteCodeDecision(c *gin.Context) {
 func (s *Server) importCodeDecisions(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 60<<20)
 	var input struct {
+		decisions.ImportOptions
 		Rows []decisions.CodeDecisionInput `json:"rows"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		badRequest(c, "Некорректные строки импорта", "rows")
 		return
 	}
-	created, skipped, problems, err := s.decisions.Import(c.Request.Context(), currentUser(c).ID, input.Rows)
+	created, skipped, problems, err := s.decisions.Import(c.Request.Context(), currentUser(c).ID, input.Rows, input.ImportOptions)
 	if err != nil {
 		decisionError(c, err)
 		return

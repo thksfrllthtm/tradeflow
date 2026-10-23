@@ -375,3 +375,20 @@ func TestAnalyzeSizeFromMarkSeriesIsAssumption(t *testing.T) {
 		t.Fatalf("8\" has no price in the base: %+v", result.Price)
 	}
 }
+
+// Gemini 3: thinking cannot be disabled, so the request asks for minimal reasoning and leaves room for it.
+func TestCeramicsAIGeminiRequest(t *testing.T) {
+	var request chatRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&request)
+		_ = json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{"message": map[string]string{"content": "{}"}}}})
+	}))
+	t.Cleanup(server.Close)
+	client := NewCeramicsAIClient(CeramicsAIConfig{APIKey: "test", Model: "gemini-3.8-flash", BaseURL: server.URL + "/generativelanguage.googleapis.com"})
+	if _, err := client.complete(context.Background(), "system", map[string]any{}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if request.ReasoningEffort != "low" || request.MaxTokens != ceramicsAIMaxTokens+geminiThinkingHeadroom || request.Thinking != nil {
+		t.Fatalf("request = %+v", request)
+	}
+}

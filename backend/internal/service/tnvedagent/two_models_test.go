@@ -7,6 +7,7 @@ package tnvedagent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
 	"github.com/shopspring/decimal"
 )
 
@@ -299,5 +301,62 @@ func TestOpenDetailsSendsRepeatedNotesOnce(t *testing.T) {
 	next.restoreOpened(context.Background())
 	if source := next.toolbox.quoteSource("4015190000", fakeCodes[1].Name, "перчатки трикотажные с покрытием из резины включаются в группу 61"); source != "page" {
 		t.Fatalf("цитата из пояснений второй страницы после ответа сотрудника: %q", source)
+	}
+}
+
+// Gemini 3 (OpenAI-совместимый адрес generativelanguage.googleapis.com): размышления не выключаются —
+// вне цикла агента reasoning_effort low, max_tokens с запасом на размышления; параметр thinking DeepSeek не шлём.
+func TestClientGeminiRequests(t *testing.T) {
+	provider, server := newFakeProvider(t, textReply("кельма"))
+	gemini := NewAgentModelClient(AgentModelConfig{APIKey: "test", BaseURL: server.URL + "/generativelanguage.googleapis.com", Model: "gemini-3.8-flash", Vision: true})
+	if _, err := gemini.CompleteText(context.Background(), []agentMessage{{Role: "user", Content: "x"}}, 100); err != nil {
+		t.Fatal(err)
+	}
+	request := provider.requests[0]
+	if request["reasoning_effort"] != "low" || request["max_tokens"] != float64(100+geminiThinkingHeadroom) || request["thinking"] != nil {
+		t.Fatalf("запрос к Gemini: %v", request)
+	}
+	if _, err := gemini.CompleteJSON(context.Background(), []agentMessage{{Role: "user", Content: "x"}}); err != nil {
+		t.Fatal(err)
+	}
+	if request := provider.requests[1]; request["reasoning_effort"] != "low" || request["max_tokens"] != float64(1024+geminiThinkingHeadroom) {
+		t.Fatalf("JSON-запрос к Gemini: %v", request)
+	}
+
+	thinking := NewAgentModelClient(AgentModelConfig{APIKey: "test", BaseURL: server.URL + "/generativelanguage.googleapis.com", Model: "gemini-3.8-flash", Effort: "high"})
+	if _, err := thinking.Complete(context.Background(), []agentMessage{{Role: "user", Content: "x"}}, agentTools(false, false), "finish"); err != nil {
+		t.Fatal(err)
+	}
+	if request := provider.requests[2]; request["reasoning_effort"] != "high" || request["max_tokens"] != float64(32768+geminiThinkingHeadroom) {
+		t.Fatalf("цикл агента на Gemini сохраняет свой уровень размышлений: %v", request)
+	}
+}
+
+// Эмбеддинги: запрос на /embeddings того же адреса с размерностью колонки; без модели — не настроено.
+func TestClientEmbed(t *testing.T) {
+	vector := make([]float64, embeddingDimensions)
+	vector[0], vector[1] = 0.25, -0.5
+	provider, server := newFakeProvider(t, map[string]any{"data": []map[string]any{{"embedding": vector}}})
+	client := NewAgentModelClient(AgentModelConfig{APIKey: "test", BaseURL: server.URL + "/generativelanguage.googleapis.com", Model: "gemini-3.8-flash", EmbedModel: "gemini-embedding-001"})
+	got, err := client.Embed(context.Background(), "кельма, мастерок")
+	if err != nil || len(got) != embeddingDimensions || got[0] != 0.25 || got[1] != -0.5 {
+		t.Fatalf("embedding: %v %v", len(got), err)
+	}
+	request := provider.requests[0]
+	if request["model"] != "gemini-embedding-001" || request["input"] != "кельма, мастерок" || request["dimensions"] != float64(embeddingDimensions) {
+		t.Fatalf("request: %v", request)
+	}
+	plain := NewAgentModelClient(AgentModelConfig{APIKey: "test", BaseURL: server.URL, Model: "gemini-3.8-flash"})
+	if plain.Embeds() {
+		t.Fatal("no embed model — embeddings off")
+	}
+	if _, err := plain.Embed(context.Background(), "x"); !errors.Is(err, ai.ErrAINotConfigured) {
+		t.Fatalf("err = %v", err)
+	}
+	short, shortServer := newFakeProvider(t, map[string]any{"data": []map[string]any{{"embedding": []float64{1, 2}}}})
+	_ = short
+	bad := NewAgentModelClient(AgentModelConfig{APIKey: "test", BaseURL: shortServer.URL, Model: "m", EmbedModel: "e"})
+	if _, err := bad.Embed(context.Background(), "x"); !errors.Is(err, ai.ErrAIBadResponse) {
+		t.Fatalf("wrong dimensions must be a bad response: %v", err)
 	}
 }

@@ -21,13 +21,14 @@ import (
 )
 
 // Ограничения на Excel и строки сметы. Разбор Excel не сохраняет файл, поэтому допускает
-// большие файлы: фото из них браузер сжимает до сохранения сметы.
+// большие файлы: фото из них браузер сжимает до сохранения сметы. 200 МБ — под «База решений.xlsx»
+// (1 074 фото, 107 МБ: разбор держит около 190 МБ памяти; на Render 512 МБ с GOMEMLIMIT=400MiB).
 const (
 	MaxRowsPerSheet         = 5000
 	MaxWorkbookRows         = 10000
 	MaxColumns              = 100
 	MaxImageBytes           = 5 << 20
-	MaxGoodsXLSXBytes       = 100 << 20
+	MaxGoodsXLSXBytes       = 200 << 20
 	MaxGoodsParseImageBytes = 25 << 20
 )
 
