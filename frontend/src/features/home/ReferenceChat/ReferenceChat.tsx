@@ -6,6 +6,7 @@ import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { clipboardImages, clipboardText } from '@/shared/lib/clipboardImages'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
+import { sameAnswer } from './answerText'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
@@ -349,7 +350,12 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProp
         case 'documents': return <div key={message.id} className="rc-user"><p>Документы для ввоза · <code>{formatCode(message.content.code)}</code></p></div>
         case 'question': return <div key={message.id} className="rc-bot rc-question"><b>Уточните</b>{message.content.text}</div>
         case 'match': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.byPhoto ? 'то же фото' : 'то же наименование', verified: match.decision.status === 'verified' }))} title="Этот товар уже оформляли" /> : null
-        case 'similar': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.verdict === 'same' ? `тот же товар · ${match.score}%` : `похожий · ${match.score}%`, verified: match.decision.status === 'verified' }))} title="Похожие товары в базе решений" /> : null
+        // Только записи, которые сверка фото подтвердила («тот же», «похожий»): похожесть по описанию без
+        // сверки приводила мультиметр к салфеткам.
+        case 'similar': {
+          const confirmed = message.content.matches.filter((match) => match.verdict === 'same' || match.verdict === 'similar')
+          return confirmed.length > 0 ? <BaseHits key={message.id} items={confirmed.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.verdict === 'same' ? `тот же товар · ${match.score}%` : `похожий · ${match.score}%`, verified: match.decision.status === 'verified' }))} title="Похожие товары в базе решений" /> : null
+        }
         case 'result': return message.content.documentsCode ? <DocumentsAnswer key={message.id} result={message.content} />
           : <Answer key={message.id} sessionId={session?.id ?? 0} result={message.content} previous={block.previous} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
         case 'notice': return <p key={message.id} className="rc-notice">{message.content.text}</p>
@@ -433,7 +439,8 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
   const rejected = result.candidates.filter((candidate) => candidate.verdict === 'no')
   if (previous && main.length > 0 && mainCodes(previous) === mainCodes(result)) {
     return <div className="rc-answer rc-answer-short">
-      {result.description && <p className="rc-answer-text"><LinkText text={result.description} /></p>}
+      {sameAnswer(result.description, previous.description) ? <p className="rc-answer-text rc-muted">Ответ тот же.</p>
+        : result.description && <p className="rc-answer-text"><LinkText text={result.description} /></p>}
       {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
       <p className="rc-same-code">
         <span>{main.length > 1 ? 'Коды без изменений' : 'Код без изменений'}</span>

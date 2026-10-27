@@ -180,6 +180,7 @@ func TestDocumentsRunReadsHelpAndActs(t *testing.T) {
 				{"measure": "Санитарно-эпидемиологический надзор", "act": "Решение КТС №299 от 28.05.2010", "url": testActURL, "requirement": "Только для изделий, контактирующих с пищей.", "applies": "maybe"},
 				{"measure": "Декларация соответствия ТР ТС 019/2011", "act": "Решение Коллегии ЕЭК №79", "url": testPDFURL, "requirement": "Декларация о соответствии.", "applies": "yes", "basis": "Требуется декларация соответствия ТР ТС 019/2011"},
 				{"measure": "Выдуманная мера", "act": "Акт", "url": "https://evil.example.com/act", "requirement": "—", "applies": "странно"},
+				{"kind": "conditional", "measure": "Условный выпуск", "act": "Правила РК об условно выпущенных товарах (2018)", "url": conditionalReleaseURL, "requirement": "ДС представляется после выпуска в срок по Правилам.", "applies": "maybe"},
 			},
 		})}},
 	}}
@@ -222,11 +223,18 @@ func TestDocumentsRunReadsHelpAndActs(t *testing.T) {
 		}
 	}
 	result := outcome.result
-	if result.DocumentsCode != "6116102000" || len(result.Documents) != 3 || result.LinksRemoved != 1 {
+	if result.DocumentsCode != "6116102000" || len(result.Documents) != 4 || result.LinksRemoved != 1 {
 		t.Fatalf("result: %+v", result)
 	}
 	if result.Documents[0].URL != testActURL || result.Documents[1].URL != testPDFURL || result.Documents[2].URL != "" || result.Documents[2].Applies != "maybe" {
 		t.Fatalf("documents: %+v", result.Documents)
+	}
+	// Вид документа: от модели или по словам меры; ссылка на Правила об условном выпуске — со справки.
+	if kinds := result.Documents[0].Kind + "," + result.Documents[1].Kind + "," + result.Documents[2].Kind + "," + result.Documents[3].Kind; kinds != "other,dc,other,conditional" {
+		t.Fatalf("kinds: %s", kinds)
+	}
+	if result.Documents[3].URL != conditionalReleaseURL || !strings.Contains(help["text"].(string), conditionalReleaseURL) {
+		t.Fatalf("conditional release link: %+v", result.Documents[3])
 	}
 	// В шагах чата — адрес открытой страницы.
 	urls := 0
@@ -283,7 +291,7 @@ func TestDocumentsRestoreAfterAskUser(t *testing.T) {
 		t.Fatalf("result after restore: %+v", outcome.result)
 	}
 	// Цитата из справки, открытой в первом запуске, засчитывается как «help».
-	if source := runner2.toolbox.quoteSource("6116102000", fakeCodes[0].Name, "Входит в перечень продукции, подлежащей государственному санитарно-эпидемиологическому надзору"); source != "help" {
+	if source := runner2.toolbox.quoteSource("6116102000", "Входит в перечень продукции, подлежащей государственному санитарно-эпидемиологическому надзору"); source != "help" {
 		t.Fatalf("quote source %q", source)
 	}
 }
@@ -355,5 +363,23 @@ func TestDocumentsBasisAndNameHint(t *testing.T) {
 	result, problem = finish("мера применяется ко всем перчаткам без исключения")
 	if result.Documents[0].Basis != "" || result.QuotesRemoved != 1 || !strings.Contains(problem, "нет основания") {
 		t.Fatalf("выдуманное основание: %+v %s", result.Documents, problem)
+	}
+}
+
+func TestDocumentKind(t *testing.T) {
+	for _, tc := range []struct{ kind, text, want string }{
+		{"sgr", "что угодно", "sgr"},
+		{"CC ", "", "cc"},
+		{"", "Входит в перечень продукции, в отношении которой подача ДТ должна сопровождаться представлением там. органу сертификата соответствия согласно ТР ТС 004/2011", "cc"},
+		{"", "подача ДТ должна сопровождаться представлением там. органу декларации о соответствии", "dc"},
+		{"", "Государственная регистрация специализированной пищевой продукции", "sgr"},
+		{"", "Требуется СГР", "sgr"},
+		{"", "Условный выпуск по Правилам РК", "conditional"},
+		{"", "Входит в перечень продукции, подлежащей государственному санитарно-эпидемиологическому надзору", "other"},
+		{"странно", "Ветеринарный контроль", "other"},
+	} {
+		if got := documentKind(tc.kind, tc.text); got != tc.want {
+			t.Errorf("documentKind(%q, %q) = %q, want %q", tc.kind, tc.text, got, tc.want)
+		}
 	}
 }

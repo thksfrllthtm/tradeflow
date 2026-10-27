@@ -110,12 +110,14 @@ type CodeDecisionInput struct {
 
 // CodeDecisionEdit — правка администратора; nil-поля не меняются.
 type CodeDecisionEdit struct {
-	Code               *string `json:"code"`
-	FinalName          *string `json:"finalName"`
-	InvoiceName        *string `json:"invoiceName"`
-	SupplierName       *string `json:"supplierName"`
-	Reason             *string `json:"reason"`
-	Note               *string `json:"note"`
+	Code         *string `json:"code"`
+	FinalName    *string `json:"finalName"`
+	InvoiceName  *string `json:"invoiceName"`
+	SupplierName *string `json:"supplierName"`
+	Reason       *string `json:"reason"`
+	Note         *string `json:"note"`
+	// Цена за 1 шт, USD; пустая строка стирает цену.
+	UnitPriceUSD       *string `json:"unitPriceUsd"`
 	ProductDirectoryID *int64  `json:"productDirectoryId"`
 }
 
@@ -223,6 +225,10 @@ func NormalizeCode(value string) string {
 	return strings.NewReplacer(" ", "", ".", "", " ", "").Replace(strings.TrimSpace(value))
 }
 
+// decimalLimit — потолок для цены и нетто. Нетто хранится в NUMERIC(14,6), туда влезает меньше 10^8;
+// число больше — ошибка ввода, а не 500 от базы.
+var decimalLimit = decimal.New(1, 8)
+
 func optionalDecimalText(value string, field string) (*decimal.Decimal, error) {
 	text := strings.ReplaceAll(strings.TrimSpace(value), ",", ".")
 	if text == "" {
@@ -231,6 +237,9 @@ func optionalDecimalText(value string, field string) (*decimal.Decimal, error) {
 	parsed, err := decimal.NewFromString(text)
 	if err != nil || parsed.IsNegative() {
 		return nil, &service.ValidationError{Field: field, Message: "Число должно быть неотрицательным"}
+	}
+	if parsed.GreaterThanOrEqual(decimalLimit) {
+		return nil, &service.ValidationError{Field: field, Message: "Слишком большое число"}
 	}
 	return &parsed, nil
 }
@@ -473,6 +482,17 @@ func (s *CodeDecisionService) edit(ctx context.Context, adminID, id int64, edit 
 	}
 	if edit.Note != nil {
 		changes["note"] = cleanText(*edit.Note, maxDecisionTextRunes)
+	}
+	if edit.UnitPriceUSD != nil {
+		price, err := optionalDecimalText(*edit.UnitPriceUSD, "unitPriceUsd")
+		if err != nil {
+			return CodeDecisionView{}, err
+		}
+		if price == nil {
+			changes["unit_price_usd"] = nil
+		} else {
+			changes["unit_price_usd"] = *price
+		}
 	}
 	if edit.ProductDirectoryID != nil {
 		if *edit.ProductDirectoryID > 0 {

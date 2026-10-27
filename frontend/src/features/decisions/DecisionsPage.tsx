@@ -121,11 +121,11 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
         <div className={loading ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
           <table className="sheet sheet-rownum dir-table dc-table">
             <thead><tr>
-              <th className="dc-photo-col">Фото</th><th>Наименование</th><th className="dc-code-col">Код ТН ВЭД</th><th className="dc-status-col">Статус</th>
+              <th className="dc-photo-col">Фото</th><th>Наименование</th><th className="dc-code-col">Код ТН ВЭД</th><th className="dc-price-col">Цена за 1 шт</th><th className="dc-status-col">Статус</th>
               <th className="dc-source-col">Источник</th><th className="dc-by-col">Добавил</th><th className="dc-date-col">Дата</th>
             </tr></thead>
             <tbody>
-              {items.length === 0 ? <tr><td colSpan={7} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
+              {items.length === 0 ? <tr><td colSpan={8} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
                 : items.map((item) => {
                   const name = item.finalName || item.invoiceName || item.supplierName
                   return <tr key={item.id} onClick={() => setOpenId(item.id)}>
@@ -134,6 +134,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
                       : <span className="dc-nophoto" aria-hidden="true" />}</td>
                     <td className="dc-names" title={name}>{name ? <span className="dc-name"><span className="dc-name-text">{name}</span><CopyButton text={name} label="наименование" /></span> : <span className="dir-none">—</span>}</td>
                     <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <span className="dc-warn" title="Кода нет в номенклатуре ЕАЭС"> ⚠</span>}</td>
+                    <td className="dc-price-col">{item.unitPriceUsd ? <><CopyCode code={item.unitPriceUsd.replace('.', ',')} number /> $</> : <span className="dir-none">—</span>}</td>
                     <td className="dc-status-col">
                       <span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>
                       {item.agentCorrect === false && <span className="dc-ai bad" title={`ИИ ошибся: предлагал ${formatCode(item.agentCode)}`}>ИИ</span>}

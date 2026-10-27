@@ -22,7 +22,7 @@ export type DecisionInput = {
   note?: string
 }
 
-type DecisionEdit = Partial<{ code: string; finalName: string; invoiceName: string; supplierName: string; reason: string; note: string }>
+type DecisionEdit = Partial<{ code: string; finalName: string; invoiceName: string; supplierName: string; unitPriceUsd: string; reason: string; note: string }>
 
 
 export const decisionSourceLabels: Record<CodeDecision['source'], string> = { agent: 'подбор ИИ', manual: 'вручную', import: 'импорт' }

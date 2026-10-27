@@ -52,6 +52,7 @@ export type AgentResult = {
   quotesRemoved: number
   // Уверенность в лучшем коде и страницы из интернета, на которые опирался агент.
   confidence?: 'high' | 'medium' | 'low'
+  confidenceReason?: string
   sources?: { title: string; url: string }[]
   // Код из файла поставщика, если подобран другой: пошлины обоих (считает сервер).
   fileCode?: { code: string; found: boolean; duty: string; bestCode: string; bestDuty: string; dutyDiffers: boolean }
@@ -64,7 +65,12 @@ export type AgentResult = {
 // Мера или документ для ввоза: applies — относится ли мера к товару по пояснению под актом.
 // basis — дословная цитата из справки, акта или страницы кода, на которой основан вывод (проверена сервером);
 // nameHint — при каком реальном признаке товара мера не применяется и какое наименование тогда указать.
-export type AgentDocument = { measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no'; basis?: string; basisSource?: string; nameHint?: string }
+// kind — вид документа: cc — сертификат соответствия, dc — декларация соответствия, sgr — СГР, conditional — условный выпуск.
+export type DocumentKind = 'cc' | 'dc' | 'sgr' | 'conditional' | 'other'
+export type AgentDocument = { kind?: DocumentKind; measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no'; basis?: string; basisSource?: string; nameHint?: string }
+
+// Последний сохранённый ответ «Документы для ввоза» по коду: product — для какого товара он был получен.
+export type SavedDocuments = AgentResult & { product: string; savedAt: string }
 
 // photoDiffers — совпало наименование, но фото другое: фото главнее, это может быть другой товар.
 export type SameProductMatch = { decision: CodeDecision; byPhoto: boolean; byName: boolean; photoDiffers?: boolean }
@@ -121,6 +127,7 @@ export const agentApi = {
   message: (id: number, text: string) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
   // «Документы для ввоза» для кода из ответа агента (ответ для того же кода повторно не запрашивается).
   documents: (id: number, code: string) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/documents`, { method: 'POST', body: JSON.stringify({ code }) }),
+  savedDocuments: (code: string) => request<SavedDocuments>(`/api/tnved-agent/documents/${code}`),
   rerun: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/rerun`, { method: 'POST' }),
   cancel: (id: number) => request<AgentSession>(`/api/tnved-agent/sessions/${id}/cancel`, { method: 'POST' }),
   // Наименование: перевод русской части на китайский — только по «Применить наименование».

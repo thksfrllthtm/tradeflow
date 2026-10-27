@@ -9,3 +9,5 @@
 .ag-sources li::before { content: '↗'; color: #68766e; }
 .ag-sources a { overflow: hidden; color: #146c43; text-overflow: ellipsis; white-space: nowrap; }
 .ag-sources small { flex: none; color: #68766e; font-size: .74rem; }
+/* Почему такая уверенность: фраза агента под плашкой. */
+.ag-confidence-why { margin: 0; font-size: .82rem; color: #68766e; }

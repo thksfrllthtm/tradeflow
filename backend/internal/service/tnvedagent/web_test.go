@@ -11,7 +11,7 @@ const (
 	testMakerURL  = "https://maker.example.com/pruner"
 	testSpecURL   = "https://maker.example.com/pruner/spec"
 	testScriptURL = "https://spa.example.com/decision/1"
-	test1688URL   = "https://detail.1688.com/offer/1.html"
+	testAltaURL   = "https://www.alta.ru/tamdoc/decision/1/"
 )
 
 // testMakerText — страница производителя на три части по webPageRunes.
@@ -21,17 +21,13 @@ func testMakerText() string {
 
 type fakeSearcher struct {
 	queries   []string
-	domains   [][]string
-	excluded  [][]string
 	extracted []string
 }
 
-func (f *fakeSearcher) Search(_ context.Context, query string, include, exclude []string) ([]webResult, error) {
+func (f *fakeSearcher) Search(_ context.Context, query string) ([]webResult, error) {
 	f.queries = append(f.queries, query)
-	f.domains = append(f.domains, include)
-	f.excluded = append(f.excluded, exclude)
 	return []webResult{
-		{Title: "Формочки для пластилина", URL: test1688URL, Content: "пластиковые формочки"},
+		{Title: "Решение по формочкам для пластилина", URL: testAltaURL, Content: "пластиковые формочки"},
 		{Title: "Ножницы садовые", URL: testMakerURL, Content: "секатор с пружиной"},
 		{Title: "Решение", URL: testScriptURL, Content: "предварительное решение"},
 	}, nil
@@ -63,14 +59,14 @@ func decode(t *testing.T, content string) map[string]any {
 	return answer
 }
 
-// Интернет: поиск товара и решений таможни, источник принимается, только если агент видел страницу;
-// первый итог уходит на самопроверку, принимается второй. Изменено: в поиске товара маркетплейсы
-// исключены (exclude_domains), а результат с 1688 остаётся допустимым источником — по краткому тексту.
+// Интернет: поиск решений таможни, источник принимается, только если агент видел страницу; первый
+// итог уходит на самопроверку, принимается второй. Изменено: поиска «что за товар» (focus product)
+// нет, web_search ищет только по сайтам решений.
 func TestAgentWebSearchSourcesAndReview(t *testing.T) {
 	search := &fakeSearcher{}
-	sources := []map[string]string{{"title": "карточка 1688", "url": test1688URL}, {"title": "выдумка", "url": "https://example.com/fake"}}
+	sources := []map[string]string{{"title": "решение alta.ru", "url": testAltaURL}, {"title": "выдумка", "url": "https://example.com/fake"}}
 	model := &scriptedModel{replies: []agentReply{
-		{ToolCalls: []agentToolCall{call("w1", "web_search", map[string]string{"query": "动物模具", "focus": "product"}), call("w2", "web_search", map[string]string{"query": "классификация формочки", "focus": "customs"})}},
+		{ToolCalls: []agentToolCall{call("w1", "web_search", map[string]string{"query": "классификация формочки"})}},
 		{ToolCalls: []agentToolCall{finishWith(sources)}},
 		{ToolCalls: []agentToolCall{finishWith(sources)}},
 	}}
@@ -81,14 +77,11 @@ func TestAgentWebSearchSourcesAndReview(t *testing.T) {
 	if outcome.result == nil || model.calls != 3 {
 		t.Fatalf("итог после самопроверки: %+v, вызовов модели %d", outcome.result, model.calls)
 	}
-	if outcome.result.Confidence != "high" || len(outcome.result.Sources) != 1 || outcome.result.Sources[0].URL != test1688URL {
+	if outcome.result.Confidence != "high" || len(outcome.result.Sources) != 1 || outcome.result.Sources[0].URL != testAltaURL {
 		t.Fatalf("уверенность и источники: %+v", outcome.result)
 	}
-	if search.domains[0] != nil || len(search.domains[1]) == 0 {
-		t.Fatalf("product — везде, customs — сайты решений: %v", search.domains)
-	}
-	if !strings.Contains(strings.Join(search.excluded[0], ","), "1688.com") || search.excluded[1] != nil {
-		t.Fatalf("product — без маркетплейсов, customs — без исключений: %v", search.excluded)
+	if len(search.queries) != 1 || search.queries[0] != "классификация формочки" {
+		t.Fatalf("запрос к поиску: %v", search.queries)
 	}
 	names := toolNames(model.lastTools)
 	for _, name := range []string{"web_search", "web_page", "search_in_document"} {
@@ -111,7 +104,7 @@ func TestAgentWebSearchSourcesAndReview(t *testing.T) {
 // обращения к Tavily (поиск и запасное чтение), а не все открытые страницы.
 func TestAgentWebLimitAndDisabled(t *testing.T) {
 	toolbox := newAgentToolbox(&fakeAgentData{})
-	if content, _ := toolbox.run(context.Background(), "web_search", `{"query":"x","focus":"product"}`); !strings.Contains(content, "не подключён") {
+	if content, _ := toolbox.run(context.Background(), "web_search", `{"query":"x"}`); !strings.Contains(content, "не подключён") {
 		t.Fatalf("без ключа: %s", content)
 	}
 	if content, _ := toolbox.run(context.Background(), "web_page", `{"url":"https://tnved.info/x"}`); !strings.Contains(content, "Нет такого инструмента") {
@@ -122,9 +115,9 @@ func TestAgentWebLimitAndDisabled(t *testing.T) {
 	}
 	toolbox.search = &fakeSearcher{}
 	for index := 0; index < agentMaxWebCalls; index++ {
-		toolbox.run(context.Background(), "web_search", `{"query":"x","focus":"product"}`)
+		toolbox.run(context.Background(), "web_search", `{"query":"x"}`)
 	}
-	if content, event := toolbox.run(context.Background(), "web_search", `{"query":"x","focus":"product"}`); !strings.Contains(content, "лимит") || !event.Failed {
+	if content, event := toolbox.run(context.Background(), "web_search", `{"query":"x"}`); !strings.Contains(content, "лимит") || !event.Failed {
 		t.Fatalf("лимит: %s", content)
 	}
 	model := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{finishWith(nil)}}}}
@@ -138,7 +131,7 @@ func TestAgentWebLimitAndDisabled(t *testing.T) {
 // сайт и не тратит лимит; части за пределами — ошибка.
 func TestWebPageReadsInParts(t *testing.T) {
 	toolbox, data, _ := webToolbox()
-	toolbox.run(context.Background(), "web_search", `{"query":"секатор","focus":"product"}`)
+	toolbox.run(context.Background(), "web_search", `{"query":"секатор"}`)
 	first := decode(t, mustContent(toolbox.run(context.Background(), "web_page", `{"url":"`+testMakerURL+`"}`)))
 	if first["part"] != float64(1) || first["parts"] != float64(3) || first["links"] == nil || len([]rune(first["text"].(string))) != webPageRunes {
 		t.Fatalf("первая часть: part %v parts %v links %v", first["part"], first["parts"], first["links"])
@@ -168,7 +161,7 @@ func TestWebPageOnlyAllowedAddresses(t *testing.T) {
 	if content, _ := toolbox.run(context.Background(), "web_page", `{"url":"`+testSpecURL+`"}`); !strings.Contains(content, "Можно открывать только") {
 		t.Fatalf("ссылка с непрочитанной страницы: %s", content)
 	}
-	toolbox.run(context.Background(), "web_search", `{"query":"секатор","focus":"product"}`)
+	toolbox.run(context.Background(), "web_search", `{"query":"секатор"}`)
 	toolbox.run(context.Background(), "web_page", `{"url":"`+testMakerURL+`"}`)
 	if content, _ := toolbox.run(context.Background(), "web_page", `{"url":"`+testSpecURL+`"}`); strings.Contains(content, "error") {
 		t.Fatalf("ссылка с прочитанной страницы: %s", content)
@@ -185,7 +178,7 @@ func TestWebPageOnlyAllowedAddresses(t *testing.T) {
 // лимит Tavily; лимит разных страниц, а части уже открытых страниц — после лимита тоже.
 func TestWebPageTavilyFallbackAndLimits(t *testing.T) {
 	toolbox, _, search := webToolbox()
-	toolbox.run(context.Background(), "web_search", `{"query":"решение","focus":"customs"}`)
+	toolbox.run(context.Background(), "web_search", `{"query":"решение"}`)
 	content, event := toolbox.run(context.Background(), "web_page", `{"url":"`+testScriptURL+`"}`)
 	if !strings.Contains(content, "текст через Tavily") || !strings.Contains(event.Detail, "через Tavily") || toolbox.webCalls != 2 {
 		t.Fatalf("SPA через Tavily: %s %+v обращений %d", content, event, toolbox.webCalls)
@@ -231,31 +224,6 @@ func TestDocumentsModeDoesNotUseTavily(t *testing.T) {
 	}
 }
 
-// Маркетплейсы не открываются (с поддоменами), в результатах поиска — пометка.
-func TestMarketplacesAreNotRead(t *testing.T) {
-	toolbox, data, _ := webToolbox()
-	content, _ := toolbox.run(context.Background(), "web_search", `{"query":"секатор","focus":"product"}`)
-	if !strings.Contains(content, marketplaceMessage) {
-		t.Fatalf("пометка у результата маркетплейса: %s", content)
-	}
-	for _, name := range []string{"web_page", "search_in_document"} {
-		if content, event := toolbox.run(context.Background(), name, `{"url":"`+test1688URL+`","query":"формочки"}`); !strings.Contains(content, marketplaceMessage) || !event.Failed {
-			t.Fatalf("%s 1688: %s", name, content)
-		}
-	}
-	if len(data.webOpened) != 0 {
-		t.Fatalf("маркетплейс не скачивается: %v", data.webOpened)
-	}
-	for address, want := range map[string]bool{
-		"https://item.taobao.com/item.htm?id=1": true, "https://m.aliexpress.ru/item/1": true, "https://www.alibaba.com/x": true,
-		"https://tmall.com/": true, "https://not1688.com/x": false, "https://alibaba.com.evil.org/x": false, "https://tks.ru/x": false,
-	} {
-		if marketplaceURL(address) != want {
-			t.Errorf("%s: want %v", address, want)
-		}
-	}
-}
-
 // search_in_document в обычном подборе (с интернетом): нужное место длинной страницы; текст — не
 // источник цитат «справки».
 func TestSearchInDocumentInNormalMode(t *testing.T) {
@@ -271,7 +239,7 @@ func TestSearchInDocumentInNormalMode(t *testing.T) {
 func TestRestoreOpenedWebPageLinks(t *testing.T) {
 	data := &fakeAgentData{}
 	model := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
-		call("s", "web_search", map[string]string{"query": "секатор", "focus": "product"}),
+		call("s", "web_search", map[string]string{"query": "секатор"}),
 		call("p", "web_page", map[string]string{"url": testMakerURL}),
 		call("q", "ask_user", map[string]string{"question": "Лезвия из стали?"}),
 	}}}}

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
@@ -261,4 +262,18 @@ func (s *Server) deleteReference(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// savedCodeDocuments — последний сохранённый ответ «Документы для ввоза» по коду (карточка базы решений).
+func (s *Server) savedCodeDocuments(c *gin.Context) {
+	saved, err := s.agent.SavedDocuments(c.Request.Context(), c.Param("code"))
+	if errors.Is(err, repository.ErrNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "Документов по этому коду ещё нет"}})
+		return
+	}
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, saved)
 }

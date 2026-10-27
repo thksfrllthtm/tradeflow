@@ -227,6 +227,7 @@ func (s *Server) Router() *gin.Engine {
 	agent.POST("/sessions/:id/messages", s.messageAgentSession)
 	agent.POST("/sessions/:id/rerun", s.requireNotTranslator, s.rerunAgentSession)
 	agent.POST("/sessions/:id/documents", s.documentsAgentSession)
+	agent.GET("/documents/:code", s.savedCodeDocuments)
 	agent.POST("/sessions/:id/cancel", s.requireNotTranslator, s.cancelAgentSession)
 	agent.POST("/sessions/:id/apply", s.requireNotTranslator, s.applyAgentSession)
 	agent.POST("/sessions/:id/name", s.applyAgentName)

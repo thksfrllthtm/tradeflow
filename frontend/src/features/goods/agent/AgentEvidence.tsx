@@ -9,6 +9,7 @@ export function AgentEvidence({ result }: { result: AgentResult }) {
   if (!result.confidence && !result.sources?.length) return null
   return <div className="ag-evidence">
     {result.confidence && <span className={`ag-confidence ${result.confidence}`}>Уверенность: {confidenceLabels[result.confidence]}</span>}
+    {result.confidence && result.confidenceReason && <p className="ag-confidence-why">{result.confidenceReason}</p>}
     {result.sources?.length ? <ul className="ag-sources" aria-label="Источники">
       {result.sources.map((source) => <li key={source.url}>
         <a href={source.url} target="_blank" rel="noreferrer">{source.title || new URL(source.url).hostname}</a>

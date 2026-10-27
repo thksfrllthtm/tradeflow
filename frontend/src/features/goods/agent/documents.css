@@ -18,6 +18,7 @@
 .dl-item.no { border-left-color: #b9c3bd; background: #f7f8f7; }
 .dl-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .dl-top b { color: #1f2d25; font-size: .82rem; font-weight: 650; }
+.dl-kind { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 4px; background: #1b6b43; color: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .02em; vertical-align: 1px; }
 .dl-pill { flex: none; padding: 1px 7px; border-radius: 999px; font-size: .7rem; font-style: normal; font-weight: 650; }
 .dl-pill.yes { background: #e4f3ea; color: #1d6b40; }
 .dl-pill.maybe { background: #fbf1d6; color: #8a6510; }

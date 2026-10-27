@@ -21,6 +21,9 @@ type fakeAgentData struct {
 	// declarations — запросы примеров декларирования; declarationsDown — сайт не отвечает.
 	declarations     []string
 	declarationsDown bool
+	// tksNotes — резервные пояснения tks.ru для позиции 4015 ("" — сайт недоступен); tksOpened — запросы к нему.
+	tksNotes  string
+	tksOpened []string
 }
 
 var fakeCodes = []directory.NomenclatureCode{
@@ -62,9 +65,18 @@ func (d *fakeAgentData) LookupCodes(_ context.Context, codes []string) ([]direct
 func (d *fakeAgentData) DetailsPage(_ context.Context, code, _ string) (string, bool, error) {
 	d.pagesOpened = append(d.pagesOpened, code)
 	if code == "6116102000" {
-		return "Дерево кода:\n6116 10 200 0 перчатки, пропитанные или покрытые резиной\nПояснения к ТНВЭД: В данную субпозицию включаются трикотажные перчатки с покрытием ладони из резины или полиуретана.", false, nil
+		return "Дерево кода:\n6116 10 200 0 перчатки, пропитанные или покрытые резиной\n" + notesHeading + "\nПояснения к ТН ВЭД: В данную субпозицию включаются трикотажные перчатки с покрытием ладони из резины или полиуретана.", false, nil
 	}
 	return "", false, directory.ErrDetailsUnavailable
+}
+
+// TKSNotes — резервные пояснения tks.ru: только для позиции 4015, если tksNotes задан.
+func (d *fakeAgentData) TKSNotes(_ context.Context, code string) (string, bool, error) {
+	d.tksOpened = append(d.tksOpened, code)
+	if d.tksNotes != "" && strings.HasPrefix(code, "4015") {
+		return d.tksNotes, false, nil
+	}
+	return "", false, directory.ErrTKSNotesUnavailable
 }
 
 func (d *fakeAgentData) SearchDecisions(context.Context, string, int) ([]repository.CodeDecision, error) {
@@ -256,19 +268,24 @@ func TestAgentRunnerRetriesFinishWithoutValidCodes(t *testing.T) {
 	}
 }
 
+// Изменено: цитата — только из пояснений и классификационных решений страницы; дерево кода и
+// наименование из номенклатуры доказательством не считаются.
 func TestQuoteSourceNeedsVerbatimText(t *testing.T) {
 	toolbox := newAgentToolbox(&fakeAgentData{})
-	toolbox.opened["6116102000"] = "В данную субпозицию включаются трикотажные перчатки с покрытием ладони."
-	name := fakeCodes[0].Name
+	toolbox.opened["6116102000"] = "Дерево кода:\n6116 10 200 0 перчатки, пропитанные или покрытые резиной\nМеры нетарифного регулирования\nСертификат соответствия на перчатки защитные\n" +
+		decisionsHeading + "\nРешение ЕЭК № 12: перчатки хозяйственные с латексным покрытием — 6116 10 200 0\n" +
+		notesHeading + "\nВ данную субпозицию включаются трикотажные перчатки с покрытием ладони."
 	cases := map[string]string{
-		"«трикотажные перчатки, с покрытием ладони»": "page", // знаки и регистр не важны
-		"перчатки, пропитанные или покрытые резиной": "name",
-		"перчатки из нитрила для медицины":           "",
-		"прочие":                 "", // коротко и нет в наименовании
+		"«трикотажные перчатки, с покрытием ладони»":   "page", // знаки и регистр не важны
+		"перчатки хозяйственные с латексным покрытием": "page", // классификационное решение
+		"перчатки, пропитанные или покрытые резиной":   "",     // наименование и дерево — не доказательство
+		"сертификат соответствия на перчатки защитные": "",     // меры — тоже
+		"перчатки из нитрила для медицины":             "",
+		"прочие":                 "", // коротко
 		"6116 10 200 0 перчатки": "", // номер кода и одно слово ничего не подтверждают
 	}
 	for quote, want := range cases {
-		if got := toolbox.quoteSource("6116102000", name, strings.Trim(quote, "«»")); got != want {
+		if got := toolbox.quoteSource("6116102000", strings.Trim(quote, "«»")); got != want {
 			t.Errorf("%q: got %q, want %q", quote, got, want)
 		}
 	}

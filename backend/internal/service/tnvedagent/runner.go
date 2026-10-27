@@ -195,6 +195,14 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	}
 	nudged, finishRetried, forced := false, false, false
 	reviewed := !r.review
+	canAsk := false
+	for _, tool := range tools {
+		canAsk = canAsk || tool.Function.Name == "ask_user"
+	}
+	nudge := "Продолжай: пользуйся инструментами и в конце обязательно вызови finish."
+	if canAsk {
+		nudge = "Продолжай: пользуйся инструментами и в конце обязательно вызови finish (или ask_user, если без ответа сотрудника не обойтись)."
+	}
 	for step := 0; ; step++ {
 		if err := ctx.Err(); err != nil {
 			return agentOutcome{err: err}
@@ -224,7 +232,7 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 				return agentOutcome{status: "done"}
 			}
 			nudged = true
-			r.append(agentMessage{Role: "user", Content: "Продолжай: пользуйся инструментами и в конце обязательно вызови finish (или ask_user, если без ответа сотрудника не обойтись)."})
+			r.append(agentMessage{Role: "user", Content: nudge})
 			continue
 		}
 		var finishCall, askCall *agentToolCall
@@ -238,6 +246,10 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 				}
 				r.toolMessage(call.ID, `{"status":"ignored"}`)
 			case "ask_user":
+				if !canAsk {
+					r.toolMessage(call.ID, `{"error":"В справочнике вопросов сотруднику нет: дай лучший код по умолчанию, второй вариант с verdict doubtful, а что уточнить — в check; затем finish."}`)
+					continue
+				}
 				if askCall == nil {
 					askCall = &reply.ToolCalls[index]
 					continue

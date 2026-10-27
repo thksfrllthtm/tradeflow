@@ -47,6 +47,8 @@ type agentData interface {
 	SearchNomenclature(ctx context.Context, query string, limit int) ([]directory.NomenclatureCode, int64, error)
 	LookupCodes(ctx context.Context, codes []string) ([]directory.NomenclatureCode, error)
 	DetailsPage(ctx context.Context, code, url string) (string, bool, error)
+	// TKSNotes — резерв: пояснения к группе и позиции с tks.ru, когда страницы TWS нет или она не открылась.
+	TKSNotes(ctx context.Context, code string) (string, bool, error)
 	SearchDecisions(ctx context.Context, query string, limit int) ([]repository.CodeDecision, error)
 	SearchDirectories(ctx context.Context, query string, limit int) ([]repository.DirectoryHint, error)
 	GoodsHelp(ctx context.Context, code string) (directory.WebPage, error)
@@ -75,6 +77,10 @@ func (d repositoryAgentData) LookupCodes(ctx context.Context, codes []string) ([
 
 func (d repositoryAgentData) DetailsPage(ctx context.Context, code, url string) (string, bool, error) {
 	return d.details.Page(ctx, code, url)
+}
+
+func (d repositoryAgentData) TKSNotes(ctx context.Context, code string) (string, bool, error) {
+	return d.web.TKSNotes(ctx, code)
 }
 
 func (d repositoryAgentData) SearchDecisions(ctx context.Context, query string, limit int) ([]repository.CodeDecision, error) {
@@ -120,15 +126,16 @@ func agentTools(reference, documents bool) []agentTool {
 		"candidates": map[string]any{"type": "array", "description": "1–4 кандидата, лучший первым", "items": objectSchema(map[string]any{
 			"code":    stringProperty("Код, 10 цифр"),
 			"verdict": map[string]any{"type": "string", "enum": []string{"fits", "doubtful", "no"}},
-			"quote":   stringProperty("Дословная цитата из open_details этого кода или из его наименования; пусто, если нет"),
+			"quote":   stringProperty("Дословная цитата из пояснений к ТН ВЭД или классификационного решения на странице open_details этого кода; не из наименования и дерева; пусто, если нет"),
 			"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
 			"check":   stringProperty("Что уточнить; пусто, если нечего"),
 		}, "code", "verdict", "reason")},
-		"name":       stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
-		"notes":      stringProperty("Замечания сотруднику; пусто, если нет"),
-		"confidence": map[string]any{"type": "string", "enum": []string{"high", "medium", "low"}, "description": "Уверенность в лучшем коде"},
+		"name":             stringProperty("Наименование для декларации по правилу — только русская часть, без перевода на китайский"),
+		"notes":            stringProperty("Замечания сотруднику; пусто, если нет"),
+		"confidence":       map[string]any{"type": "string", "enum": []string{"high", "medium", "low"}, "description": "Уверенность в лучшем коде"},
+		"confidenceReason": stringProperty("Почему такая уверенность, одна фраза: что подтверждает код (решение таможни, текст позиции, дерево, пояснения, база компании, декларации) и что остаётся под вопросом"),
 		"sources": map[string]any{"type": "array", "description": "Страницы из интернета, на которые опирался (адреса из web_search или web_page); без интернета — пусто", "items": objectSchema(map[string]any{
-			"title": stringProperty("Что это за страница: «страница производителя», «предварительное решение ФТС»"),
+			"title": stringProperty("Что это за страница: «предварительное решение ФТС», «разъяснение ЕЭК»"),
 			"url":   stringProperty("Адрес страницы"),
 		}, "url")},
 	}, "description", "candidates", "name", "confidence"))
@@ -138,16 +145,17 @@ func agentTools(reference, documents bool) []agentTool {
 			"candidates": map[string]any{"type": "array", "description": "1–4 кода: подходящие первыми, затем 1–2 соседних неподходящих (verdict no) с объяснением", "items": objectSchema(map[string]any{
 				"code":    stringProperty("Код, 10 цифр"),
 				"verdict": map[string]any{"type": "string", "enum": []string{"fits", "doubtful", "no"}},
-				"quote":   stringProperty("Дословная цитата из open_details этого кода или из его наименования; пусто, если нет"),
+				"quote":   stringProperty("Дословная цитата из пояснений к ТН ВЭД или классификационного решения на странице open_details этого кода; не из наименования и дерева; пусто, если нет"),
 				"reason":  stringProperty("Почему подходит или не подходит, 1–2 предложения"),
 				"check":   stringProperty("Что уточнить; пусто, если нечего"),
 			}, "code", "verdict", "reason")},
-			"name":       stringProperty("Краткое наименование для декларации по правилу — только русская часть, без перевода на китайский"),
-			"nameFull":   stringProperty("Подробное наименование для декларации: краткое плюс признаки, от которых зависит код (материал, устройство, назначение, комплектность), до 200 символов; только русская часть"),
-			"notes":      stringProperty("Короткое дополнение, которого нет в description; пусто, если нечего добавить. Не повторяй description"),
-			"confidence": map[string]any{"type": "string", "enum": []string{"high", "medium", "low"}, "description": "Уверенность в лучшем коде"},
+			"name":             stringProperty("Краткое наименование для декларации по правилу — только русская часть, без перевода на китайский"),
+			"nameFull":         stringProperty("Подробное наименование для декларации: краткое плюс признаки, от которых зависит код (материал, устройство, назначение, комплектность), до 200 символов; только русская часть"),
+			"notes":            stringProperty("Короткое дополнение, которого нет в description; пусто, если нечего добавить. Не повторяй description"),
+			"confidence":       map[string]any{"type": "string", "enum": []string{"high", "medium", "low"}, "description": "Уверенность в лучшем коде"},
+			"confidenceReason": stringProperty("Почему такая уверенность, одна фраза: что подтверждает код (решение таможни, текст позиции, дерево, пояснения, база компании, декларации) и что остаётся под вопросом"),
 			"sources": map[string]any{"type": "array", "description": "Страницы из интернета, на которые опирался (адреса из web_search или web_page); без интернета — пусто", "items": objectSchema(map[string]any{
-				"title": stringProperty("Что это за страница: «страница производителя», «предварительное решение ФТС»"),
+				"title": stringProperty("Что это за страница: «предварительное решение ФТС», «разъяснение ЕЭК»"),
 				"url":   stringProperty("Адрес страницы"),
 			}, "url")},
 		}, "description", "candidates", "name", "nameFull", "confidence"))
@@ -156,7 +164,8 @@ func agentTools(reference, documents bool) []agentTool {
 	if documents {
 		finish = tool("finish", "Итог по документам для ввоза. Вызывается один раз в конце.", objectSchema(map[string]any{
 			"description": stringProperty("Короткое резюме сотруднику, 2–4 предложения: какие документы и разрешения нужны для ввоза этого товара; если справка недоступна — скажи об этом"),
-			"documents": map[string]any{"type": "array", "description": "По одной записи на меру из справки (и из прочитанных актов)", "items": objectSchema(map[string]any{
+			"documents": map[string]any{"type": "array", "description": "По одной записи на меру из справки (и из прочитанных актов), плюс одна запись conditional — условный выпуск", "items": objectSchema(map[string]any{
+				"kind":        map[string]any{"type": "string", "enum": []string{"cc", "dc", "sgr", "conditional", "other"}, "description": "Вид документа: cc — сертификат соответствия (СС), dc — декларация соответствия (ДС), sgr — свидетельство о государственной регистрации (СГР), conditional — условный выпуск, other — прочие меры (санэпиднадзор без СГР, лицензия, квота, ветеринарный контроль…)"},
 				"measure":     stringProperty("Вид меры: санитарно-эпидемиологический надзор, ветеринарный контроль, декларация соответствия ТР ТС, лицензия, тарифная квота, экспортный контроль и т. п."),
 				"act":         stringProperty("Акт, например «Решение КТС №299 от 28.05.2010»"),
 				"url":         stringProperty("Ссылка на акт или документ — только адрес с открытых страниц; пусто, если нет"),
@@ -164,7 +173,7 @@ func agentTools(reference, documents bool) []agentTool {
 				"applies":     map[string]any{"type": "string", "enum": []string{"yes", "maybe", "no"}, "description": "Относится ли мера к этому товару по пояснению под актом"},
 				"basis":       stringProperty("Дословная цитата (5–40 слов) из справки tnved.info, акта или страницы кода, на которой основан вывод applies: пояснение под мерой («Относится к товарам: …») или пункт перечня. Программа проверит цитату; без неё «нужно» не принимается"),
 				"nameHint":    stringProperty("Если мера зависит от признака товара (бытовое или промышленное назначение, контакт с пищей, напряжение, детский товар): при каком реальном признаке она не применяется, какое наименование тогда указать в декларации и какими документами поставщика это подтвердить. Пусто, если от наименования не зависит"),
-			}, "measure", "act", "requirement", "applies", "basis")},
+			}, "kind", "measure", "act", "requirement", "applies", "basis")},
 			"notes": stringProperty("Короткое дополнение; пусто, если нечего добавить"),
 		}, "description", "documents"))
 		extra = []agentTool{
@@ -186,7 +195,7 @@ func agentTools(reference, documents bool) []agentTool {
 			objectSchema(map[string]any{"codes": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "До 10 кодов по 10 цифр"}}, "codes")),
 		tool("list_heading", "Все коды, начинающиеся с данных цифр (4–8 цифр): соседние коды товарной позиции или субпозиции, включая «прочие».",
 			objectSchema(map[string]any{"prefix": stringProperty("Начало кода, 4–8 цифр, например «6116» или «611610»")}, "prefix")),
-		tool("open_details", "Открыть страницу кода (TWS.BY) целиком: дерево кода, дополнительная единица, обязательные сведения, меры нетарифного регулирования, классификационные решения, пояснения к ТН ВЭД — к позиции, общие положения группы и раздела (что включается и что исключается). Цитаты для итога бери отсюда.",
+		tool("open_details", "Открыть страницу кода (TWS.BY) целиком: дерево кода, дополнительная единица, обязательные сведения, меры нетарифного регулирования, классификационные решения, пояснения к ТН ВЭД — к позиции, общие положения группы и раздела (что включается и что исключается). Если страницы TWS.BY нет — пояснения к группе и позиции с tks.ru (без дерева и решений). Цитаты для итога бери отсюда.",
 			objectSchema(map[string]any{"code": stringProperty("Код, 10 цифр")}, "code")),
 		tool("search_decisions", "База решений компании: товары, которые раньше оформляли, с итоговым кодом и наименованием; проверенные администратором — первыми.",
 			objectSchema(map[string]any{"query": stringProperty("Слова наименования (по-русски или по-китайски)")}, "query")),
@@ -197,10 +206,17 @@ func agentTools(reference, documents bool) []agentTool {
 				"query":  stringProperty("1–3 слова вида товара по-русски, например «ключ газовый», или 10-значный код"),
 				"within": stringProperty("Пусто, товарная позиция (4 цифры) или код (10 цифр) — искать внутри"),
 			}, "query")),
-		tool("ask_user", "Задать сотруднику один короткий вопрос, если без ответа код не определить. После вызова жди ответа.",
-			objectSchema(map[string]any{"question": stringProperty("Вопрос по-русски, одно предложение")}, "question")),
-		finish,
-	}, extra...)
+	}, append(askUserTools(reference), append([]agentTool{finish}, extra...)...)...)
+}
+
+// askUserTools — вопрос сотруднику есть только в подборе для строки сметы: в справочнике сотрудник ждёт
+// ответ сразу, а что уточнить, агент пишет в check.
+func askUserTools(reference bool) []agentTool {
+	if reference {
+		return nil
+	}
+	return []agentTool{{Type: "function", Function: agentToolFunction{Name: "ask_user", Description: "Задать сотруднику один короткий вопрос, если без ответа код не определить. После вызова жди ответа.",
+		Parameters: objectSchema(map[string]any{"question": stringProperty("Вопрос по-русски, одно предложение")}, "question")}}}
 }
 
 // lookPhotoTool — вопрос модели для фото: есть, только когда модель рассуждений фото не видит.
@@ -245,6 +261,8 @@ type AgentResult struct {
 	Notes    string `json:"notes"`
 	// Confidence — уверенность агента в лучшем коде: high, medium, low ("" — не указал).
 	Confidence string `json:"confidence,omitempty"`
+	// ConfidenceReason — почему такая уверенность: что подтверждает код и что под вопросом, одна фраза.
+	ConfidenceReason string `json:"confidenceReason,omitempty"`
 	// Sources — страницы из интернета, на которые опирался агент; только адреса, которые он видел.
 	Sources []AgentSource `json:"sources,omitempty"`
 	// FileCode — код из файла поставщика, если лучший код агента другой: с пошлинами обоих (считает
@@ -267,6 +285,9 @@ type AgentSource struct {
 // AgentDocument — мера или документ для ввоза. Applies: yes — относится к товару, maybe — зависит от
 // признака товара, no — по пояснению под актом мера для других товаров.
 type AgentDocument struct {
+	// Kind — вид документа: cc — сертификат соответствия, dc — декларация соответствия, sgr — свидетельство
+	// о государственной регистрации, conditional — условный выпуск, other — прочие меры.
+	Kind        string `json:"kind"`
 	Measure     string `json:"measure"`
 	Act         string `json:"act"`
 	URL         string `json:"url"`
@@ -454,14 +475,11 @@ func (t *agentToolbox) rememberPage(address, text string, links []directory.WebL
 }
 
 // allowedURL — адрес для web_page, open_link и search_in_document: из результатов поиска, ссылка с
-// открытой страницы или tnved.info, tws.by; маркетплейсы — нельзя.
+// открытой страницы или tnved.info, tws.by.
 func (t *agentToolbox) allowedURL(raw string) (string, string) {
 	address, ok := directory.CanonicalWebURL(raw)
 	if !ok {
 		return "", "Нужен полный адрес https://…"
-	}
-	if marketplaceURL(address) {
-		return address, marketplaceMessage
 	}
 	// Результаты поиска запомнены как прислал Tavily — сверяем и исходный адрес.
 	if !t.links[address] && !t.links[strings.TrimSpace(raw)] && !directory.TrustedWebHost(address) {
@@ -607,7 +625,6 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		Prefix   string   `json:"prefix"`
 		Code     string   `json:"code"`
 		URL      string   `json:"url"`
-		Focus    string   `json:"focus"`
 		Part     int      `json:"part"`
 		Question string   `json:"question"`
 		Within   string   `json:"within"`
@@ -617,7 +634,7 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 	}
 	switch name {
 	case "web_search":
-		return t.webSearch(ctx, args.Query, args.Focus)
+		return t.webSearch(ctx, args.Query)
 	case "web_page":
 		if t.search != nil {
 			return t.webPage(ctx, args.URL, args.Part)
@@ -719,11 +736,11 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 			return toolJSON(map[string]any{"code": code, "error": "Кода нет в номенклатуре"}), agentToolEvent{Tool: name, Label: label, Detail: "кода нет в номенклатуре", Failed: true}
 		}
 		if items[0].DetailsURL == "" {
-			return toolJSON(map[string]any{"code": code, "error": "У кода нет страницы"}), agentToolEvent{Tool: name, Label: label, Detail: "у кода нет страницы", Failed: true}
+			return t.tksNotesFallback(ctx, code, label, "у кода нет страницы TWS.BY")
 		}
 		text, cached, err := t.data.DetailsPage(ctx, code, items[0].DetailsURL)
 		if err != nil || text == "" {
-			return toolJSON(map[string]any{"code": code, "error": "Страница не открылась; опирайся на наименование кода"}), agentToolEvent{Tool: name, Label: label, Detail: "не открылась", URL: items[0].DetailsURL, Failed: true}
+			return t.tksNotesFallback(ctx, code, label, "страница TWS.BY не открылась")
 		}
 		t.opened[code] = text
 		detail := fmt.Sprintf("с TWS.BY, %d символов", utf8.RuneCountInString(text))
@@ -779,6 +796,10 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 			return toolJSON(map[string]any{"code": code, "error": "Справка не открылась. Возьми меры со страницы кода (open_details, TWS.BY), белорусские нормы отбрось."}),
 				agentToolEvent{Tool: name, Label: label, Detail: "не открылась", URL: page.URL, Failed: true}
 		}
+		// Условный выпуск по Правилам РК: ссылка на текст Правил — вместе со справкой, чтобы агент мог
+		// открыть их (open_link, search_in_document) и указать в итоге.
+		page.Text += "\n\nУсловный выпуск (РК):\n" + conditionalReleaseTitle + " — " + conditionalReleaseURL
+		page.Links = append(page.Links, directory.WebLink{URL: conditionalReleaseURL, Text: conditionalReleaseTitle})
 		t.rememberPage(page.URL, page.Text, page.Links)
 		detail := "tnved.info"
 		if page.FromCache {
@@ -935,25 +956,64 @@ const (
 	sameNotesPrefix = "Пояснения к ТН ВЭД — те же, что на странице кода "
 )
 
+// tksNotesPrefix — начало резервного текста open_details: он целиком пояснения, цитаты из него принимаются.
+const tksNotesPrefix = "Резерв: "
+
+// tksNotesFallback — open_details без страницы TWS.BY: пояснения к группе и позиции с tks.ru (без дерева,
+// мер и решений). Текст запоминается в opened — цитаты из него проверяются как со страницы кода.
+func (t *agentToolbox) tksNotesFallback(ctx context.Context, code, label, reason string) (string, agentToolEvent) {
+	const name = "open_details"
+	notes, cached, err := t.data.TKSNotes(ctx, code)
+	if err != nil || notes == "" {
+		return toolJSON(map[string]any{"code": code, "error": "Страница не открылась (" + reason + ", пояснения tks.ru недоступны); опирайся на наименование кода"}),
+			agentToolEvent{Tool: name, Label: label, Detail: reason + ", пояснения tks.ru недоступны", Failed: true}
+	}
+	text := tksNotesPrefix + reason + ". Ниже пояснения к ТН ВЭД с tks.ru — без дерева кода, мер и классификационных решений; дерево и ветки уровня смотри в get_codes и list_heading.\n\n" + notes
+	t.opened[code] = text
+	detail := fmt.Sprintf("%s · пояснения tks.ru, %d символов", reason, utf8.RuneCountInString(notes))
+	if cached {
+		detail += ", сохранённая копия"
+	}
+	return toolJSON(map[string]any{"code": code, "text": text}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: directory.TKSNotesURL(code[:4])}
+}
+
 // decisionsHeading — блок страницы кода TWS.BY с классификационными решениями ЕЭК и таможни.
 const decisionsHeading = "Классификационные решения"
 
 // decisionsFirst — страница кода для модели: блок классификационных решений (старший источник) — в
 // начало, чтобы он не терялся в десятках тысяч символов; остальной текст — без изменений.
 func decisionsFirst(page string) (string, bool) {
-	start := strings.Index(page, decisionsHeading)
+	start, end := decisionsBounds(page)
 	if start < 0 {
 		return page, false
 	}
-	end := len(page)
+	block := strings.TrimSpace(page[start:end])
+	return "Классификационные решения ЕЭК и таможни по коду и позиции — сверь с товаром в первую очередь (дата «с …» — с какого дня действует):\n" +
+		block + "\n\n" + strings.TrimSpace(page[:start]) + "\n" + strings.TrimSpace(page[end:]), true
+}
+
+// decisionsBounds — границы блока классификационных решений на странице кода (start < 0 — блока нет).
+func decisionsBounds(page string) (start, end int) {
+	start = strings.Index(page, decisionsHeading)
+	if start < 0 {
+		return -1, -1
+	}
+	end = len(page)
 	for _, stop := range []string{"Реестр объектов интеллектуальной собственности", notesHeading} {
 		if index := strings.Index(page[start+len(decisionsHeading):], stop); index >= 0 && start+len(decisionsHeading)+index < end {
 			end = start + len(decisionsHeading) + index
 		}
 	}
-	block := strings.TrimSpace(page[start:end])
-	return "Классификационные решения ЕЭК и таможни по коду и позиции — сверь с товаром в первую очередь (дата «с …» — с какого дня действует):\n" +
-		block + "\n\n" + strings.TrimSpace(page[:start]) + "\n" + strings.TrimSpace(page[end:]), true
+	return start, end
+}
+
+// decisionsBlock — блок классификационных решений ("" — нет).
+func decisionsBlock(page string) string {
+	start, end := decisionsBounds(page)
+	if start < 0 {
+		return ""
+	}
+	return page[start:end]
 }
 
 // notesOf — пояснения к ТН ВЭД со страницы кода ("" — нет).
@@ -989,15 +1049,17 @@ type finishArgs struct {
 		Reason  string `json:"reason"`
 		Check   string `json:"check"`
 	} `json:"candidates"`
-	Name       string `json:"name"`
-	NameFull   string `json:"nameFull"`
-	Notes      string `json:"notes"`
-	Confidence string `json:"confidence"`
-	Sources    []struct {
+	Name             string `json:"name"`
+	NameFull         string `json:"nameFull"`
+	Notes            string `json:"notes"`
+	Confidence       string `json:"confidence"`
+	ConfidenceReason string `json:"confidenceReason"`
+	Sources          []struct {
 		Title string `json:"title"`
 		URL   string `json:"url"`
 	} `json:"sources"`
 	Documents []struct {
+		Kind        string `json:"kind"`
 		Measure     string `json:"measure"`
 		Act         string `json:"act"`
 		URL         string `json:"url"`
@@ -1061,7 +1123,7 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 		quote := service.TruncateRunes(strings.TrimSpace(strings.Trim(candidate.Quote, "«»\"' ")), 600)
 		source := ""
 		if quote != "" {
-			source = t.quoteSource(code, item.Name, quote)
+			source = t.quoteSource(code, quote)
 			if source == "" {
 				quote = ""
 				result.QuotesRemoved++
@@ -1085,6 +1147,7 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	}
 	if args.Confidence == "high" || args.Confidence == "medium" || args.Confidence == "low" {
 		result.Confidence = args.Confidence
+		result.ConfidenceReason = service.TruncateRunes(strings.TrimSpace(args.ConfidenceReason), 300)
 	}
 	// Источник — только страница, которую агент действительно видел в этом подборе.
 	for _, source := range args.Sources {
@@ -1124,6 +1187,7 @@ func (t *agentToolbox) finishDocuments(args finishArgs) (*AgentResult, string) {
 		if item.Measure == "" && item.Act == "" {
 			continue
 		}
+		item.Kind = documentKind(document.Kind, item.Measure+" "+item.Act)
 		if item.Applies != "yes" && item.Applies != "maybe" && item.Applies != "no" {
 			item.Applies = "maybe"
 		}
@@ -1158,6 +1222,42 @@ func (t *agentToolbox) finishDocuments(args finishArgs) (*AgentResult, string) {
 		return result, fmt.Sprintf("У %d мер «нужно» нет основания: в basis — дословная цитата пояснения под мерой из справки, пункта акта или страницы кода (цитаты, которой нет в тексте, программа убирает). Нет цитаты — поставь maybe. Вызови finish снова.", unfounded)
 	}
 	return result, ""
+}
+
+// Виды документов для ввоза. Правила РК об условном выпуске (совместный приказ МФ РК и МИР РК, 2018 г.):
+// товары, которым нужен СС или ДС по ТР, выпускаются условно без документа с обязательством представить
+// его в срок по Правилам. Текст — на alta.ru, добавляется к справке в режиме «Документы».
+const (
+	documentKindCertificate  = "cc"
+	documentKindDeclaration  = "dc"
+	documentKindRegistration = "sgr"
+	documentKindConditional  = "conditional"
+	documentKindOther        = "other"
+
+	conditionalReleaseURL   = "https://www.alta.ru/tamdoc/18kz0287/"
+	conditionalReleaseTitle = "Правила подтверждения соответствия требованиям ТР в отношении условно выпущенных товаров (совместный приказ МФ РК и МИР РК, 2018)"
+)
+
+// documentKind — вид документа из ответа модели; если модель его не поставила или поставила неизвестный,
+// по словам меры: «сертификат соответствия» — cc, «декларация о соответствии» — dc, «государственная
+// регистрация» — sgr, «условный выпуск» — conditional, иначе other.
+func documentKind(kind, text string) string {
+	switch kind = strings.ToLower(strings.TrimSpace(kind)); kind {
+	case documentKindCertificate, documentKindDeclaration, documentKindRegistration, documentKindConditional, documentKindOther:
+		return kind
+	}
+	text = decisions.NormalizeDecisionName(text)
+	switch {
+	case strings.Contains(text, "условн") && strings.Contains(text, "выпуск"):
+		return documentKindConditional
+	case strings.Contains(text, "сгр") || (strings.Contains(text, "государственн") && strings.Contains(text, "регистрац")):
+		return documentKindRegistration
+	case strings.Contains(text, "сертификат") && strings.Contains(text, "соответств"):
+		return documentKindCertificate
+	case strings.Contains(text, "деклараци") && strings.Contains(text, "соответств"):
+		return documentKindDeclaration
+	}
+	return documentKindOther
 }
 
 // quoteOrigin — где агент видел цитату дословно (без учёта регистра и знаков): в акте этой меры, справке
@@ -1202,7 +1302,9 @@ func (t *agentToolbox) quoteOrigin(quote, actURL, act string) string {
 
 // quoteSource ищет цитату дословно (без учёта регистра и знаков препинания) на открытой странице
 // кода, затем в наименовании кода.
-func (t *agentToolbox) quoteSource(code, name, quote string) string {
+// quoteSource — где цитата есть дословно: в пояснениях или классификационных решениях страницы кода
+// («page») или в справке tnved.info («help»). Наименование кода, дерево и меры — не доказательство.
+func (t *agentToolbox) quoteSource(code, quote string) string {
 	normalized := decisions.NormalizeDecisionName(quote)
 	// Цифры кода («6116 10 800 0 прочие») ничего не подтверждают: нужны хотя бы три слова.
 	words := 0
@@ -1212,13 +1314,9 @@ func (t *agentToolbox) quoteSource(code, name, quote string) string {
 		}
 	}
 	if len([]rune(normalized)) < agentMinQuoteRunes || words < agentMinQuoteWords {
-		// Слишком короткая цитата («прочие») ничего не подтверждает, если это не наименование кода.
-		if normalized != "" && strings.Contains(decisions.NormalizeDecisionName(name), normalized) {
-			return "name"
-		}
 		return ""
 	}
-	if page, ok := t.opened[code]; ok && strings.Contains(decisions.NormalizeDecisionName(page), normalized) {
+	if page, ok := t.opened[code]; ok && strings.Contains(decisions.NormalizeDecisionName(evidenceText(page)), normalized) {
 		return "page"
 	}
 	for _, text := range t.web {
@@ -1226,10 +1324,16 @@ func (t *agentToolbox) quoteSource(code, name, quote string) string {
 			return "help"
 		}
 	}
-	if strings.Contains(decisions.NormalizeDecisionName(name), normalized) {
-		return "name"
-	}
 	return ""
+}
+
+// evidenceText — часть страницы кода, откуда принимаются цитаты: классификационные решения и
+// пояснения к ТН ВЭД («Дополнительная информация»). Резервный текст tks.ru — пояснения целиком.
+func evidenceText(page string) string {
+	if strings.HasPrefix(page, tksNotesPrefix) {
+		return page
+	}
+	return decisionsBlock(page) + "\n" + notesOf(page)
 }
 
 // antiDumpingNotes — антидемпинговые меры ЕАЭС для кода коротко: агент упоминает их в замечаниях.

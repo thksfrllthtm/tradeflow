@@ -8,6 +8,8 @@ import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
 import { CodeDecision, PhotoFeatures, decisionStatusLabels } from '@/shared/tnved/decisions'
 import { CopyButton } from '@/shared/components/CopyCode/CopyButton'
+import { agentApi, SavedDocuments } from '@/features/goods/agent/agentApi'
+import { DocumentsAnswer } from '@/features/goods/agent/DocumentsAnswer'
 
 type Props = {
   id: number
@@ -17,26 +19,39 @@ type Props = {
 }
 
 // Карточка записи базы решений читается сверху вниз как ответ на вопрос «что это за товар и какой у него
-// код»: в шапке — наименование из инвойса и статус; «Товар» — фото, описание ИИ по полям, поставщик,
-// цена; «Код ТН ВЭД» — код крупно, строка номенклатуры со ставками, наименование для декларации и
-// обоснование; затем отвергнутые коды и заметка (откуда запись). Администратор правит поля прямо в
+// код»: в шапке — статус и кто/когда; сводка — фото, справа наименование, код, цена и нетто (каждое значение
+// один раз); «Номенклатура и декларация» — строка номенклатуры со ставками, наименование для декларации и
+// обоснование; затем отвергнутые коды, заметка и в самом низу описание фото от ИИ. Администратор правит поля прямо в
 // карточке, остальные читают и копируют (права проверяет сервер: requireAdmin).
 export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
   const [decision, setDecision] = useState<CodeDecision | null>(null)
   const [code, setCode] = useState('')
   const [finalName, setFinalName] = useState('')
+  const [invoiceName, setInvoiceName] = useState('')
+  const [price, setPrice] = useState('')
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   // Фото открываются здесь же: data:-адрес Chrome не даёт открыть в новой вкладке.
   const [photoIndex, setPhotoIndex] = useState<number | null>(null)
+  // Последний ответ «Документы для ввоза» по коду записи (null — ответа по коду ещё не было).
+  const [savedDocuments, setSavedDocuments] = useState<SavedDocuments | null>(null)
+
+  const decisionCode = decision?.code ?? ''
+  useEffect(() => {
+    let active = true
+    setSavedDocuments(null)
+    if (!decisionCode) return
+    agentApi.savedDocuments(decisionCode).then((value) => { if (active) setSavedDocuments(value) }).catch(() => undefined)
+    return () => { active = false }
+  }, [decisionCode])
 
   useEffect(() => {
     let active = true
     decisionsApi.get(id).then((value) => {
       if (!active) return
-      setDecision(value); setCode(formatCode(value.code)); setFinalName(value.finalName); setReason(value.reason); setNote(value.note)
+      setDecision(value); setCode(formatCode(value.code)); setFinalName(value.finalName); setInvoiceName(value.invoiceName); setPrice(value.unitPriceUsd); setReason(value.reason); setNote(value.note)
     }).catch((reason) => { if (active) setError(errorMessage(reason)) })
     return () => { active = false }
   }, [id])
@@ -49,15 +64,18 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose, photoIndex])
 
-  const edit = () => ({ code: code.replace(/\D/g, ''), finalName, reason, note })
+  const edit = () => ({ code: code.replace(/\D/g, ''), finalName, invoiceName, unitPriceUsd: price, reason, note })
   const codeValid = /^\d{10}$/.test(code.replace(/\D/g, ''))
+  // Цена — неотрицательное число с точкой или запятой; пусто — цены нет. Окончательно проверяет сервер.
+  const priceValid = /^\s*(\d+([.,]\d+)?)?\s*$/.test(price)
+  const canSave = codeValid && priceValid
 
   async function run(action: () => Promise<CodeDecision | void>, closeAfter = false) {
     setBusy(true); setError('')
     try {
       const result = await action()
       if (result) {
-        setDecision(result); setCode(formatCode(result.code))
+        setDecision(result); setCode(formatCode(result.code)); setPrice(result.unitPriceUsd)
       }
       onChanged(result ?? null)
       if (closeAfter) onClose()
@@ -70,47 +88,57 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
 
   const agentChanged = decision?.agentCode && decision.agentCode !== code.replace(/\D/g, '')
   const title = decision?.invoiceName || decision?.supplierName || decision?.finalName || ''
-  const supplierExtra = decision?.supplierName && decision.invoiceName && decision.supplierName !== decision.invoiceName ? decision.supplierName : ''
-  const hasFacts = Boolean(supplierExtra || decision?.unitNetKg || decision?.unitPriceUsd)
 
   return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <aside className="drawer dc-drawer" role="dialog" aria-modal="true" aria-labelledby="dc-title">
+    <aside className="drawer dc-drawer" role="dialog" aria-modal="true" aria-label={title || 'Запись базы решений'}>
+      {/* В шапке только статус и кто/когда: наименование и код — в сводке ниже, без повторов. */}
       <header className="drawer-head">
-        <div className="dc-head">
-          <h2 id="dc-title" className="dc-title">{decision ? <><span>{title || 'Без наименования'}</span>{title && <CopyButton text={title} label="наименование" />}</> : 'Загрузка…'}</h2>
-          {decision && <p className="dc-head-meta">
+        {decision
+          ? <p className="dc-head-meta">
             <span className={`dc-status ${decision.status}`}>{decisionStatusLabels[decision.status]}</span>
             <span>{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}</span>
             {decision.verifiedByName && decision.verifiedAt && <span>проверил {decision.verifiedByName} · {formatRuDate(decision.verifiedAt.slice(0, 10))}</span>}
-          </p>}
-        </div>
+          </p>
+          : <p className="dc-head-meta">Загрузка…</p>}
         <button type="button" className="drawer-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
       </header>
       <div className="drawer-body">
         {error && <p className="dc-error" role="alert">{error}</p>}
-        {!decision && !error && <p className="dc-muted">Загрузка…</p>}
         {decision && <>
-          {(decision.photos.length > 0 || hasFacts) && <section className="drawer-section">
-            <h3>Товар</h3>
+          {/* Сводка: фото, справа наименование, под ним код, цена и нетто — всё копируется.
+              Наименование, код и цену администратор правит здесь же, сохраняется кнопкой внизу. */}
+          <section className="drawer-section dc-product">
             {decision.photos.length > 0 && <div className="dc-photos">{decision.photos.map((photo, index) => <button key={index} type="button" className="dc-photo" onClick={() => setPhotoIndex(index)} title="Открыть фото крупно"><img src={photo} alt={`Фото ${index + 1}`} /></button>)}</div>}
-            {decision.photos.length > 0 && (decision.photoFeatures
-              ? <PhotoDescription features={decision.photoFeatures} />
-              : <p className="dc-muted">Описание фото для поиска похожих ИИ составит в течение нескольких минут.</p>)}
-            {hasFacts && <dl className="dc-facts">
-              {supplierExtra && <div><dt>У поставщика</dt><dd>{supplierExtra}<CopyButton text={supplierExtra} label="наименование поставщика" /></dd></div>}
-              {decision.unitPriceUsd && <div><dt>Цена за 1 шт</dt><dd>{decision.unitPriceUsd} $</dd></div>}
-              {decision.unitNetKg && <div><dt>Нетто 1 шт</dt><dd>{decision.unitNetKg} кг</dd></div>}
-            </dl>}
-          </section>}
+            <div className="dc-summary">
+              <div className="dc-summary-name">
+                {admin
+                  ? <textarea className="dc-inline-input" rows={2} value={invoiceName} onChange={(event) => setInvoiceName(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault() }}
+                    placeholder={decision.supplierName || decision.finalName || 'Наименование не заполнено'} aria-label="Наименование из инвойса" />
+                  : <span>{title || 'Без наименования'}</span>}
+                {(admin ? invoiceName : title).trim() && <CopyButton text={admin ? invoiceName : title} label="наименование" />}
+              </div>
+              <dl className="dc-stats">
+                <div><dt>Код ТН ВЭД</dt><dd>
+                  {admin
+                    ? <><input className="dc-inline-input dc-code-inline" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" aria-label="Код ТН ВЭД" aria-invalid={!codeValid} />
+                      {codeValid && <CopyButton text={code.replace(/\D/g, '')} label="код" />}</>
+                    : <CopyCode code={decision.code} />}
+                </dd>{!codeValid && <span className="dc-field-error">Код — 10 цифр</span>}</div>
+                <div><dt>Цена за 1 шт</dt><dd>
+                  {admin
+                    ? <input className="dc-inline-input dc-price-input" value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" placeholder="—" aria-label="Цена за 1 шт, USD" aria-invalid={!priceValid} />
+                    : <span>{decision.unitPriceUsd.replace('.', ',') || '—'}</span>}
+                  <span className="dc-unit">$</span>
+                  {price.trim() && priceValid && <CopyButton text={price.trim().replace('.', ',')} label="цену" />}
+                </dd>{!priceValid && <span className="dc-field-error">Число, например 0.5</span>}</div>
+                {decision.unitNetKg && <div><dt>Нетто 1 шт</dt><dd>{decision.unitNetKg}<span className="dc-unit">кг</span></dd></div>}
+              </dl>
+            </div>
+          </section>
 
           <section className="drawer-section">
-            <h3>Код ТН ВЭД</h3>
-            {admin
-              ? <div className="dc-field">
-                <input className="dc-code-input" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" aria-label="Код ТН ВЭД" />
-                {!codeValid && <span className="dc-field-error">Код — 10 цифр</span>}
-              </div>
-              : <CopyCode code={decision.code} className="dc-code-big" />}
+            <h3>Номенклатура и декларация</h3>
             {decision.nomenclature
               ? <div className="dc-nomen">
                 <span className="dc-nomen-name">{nameParts(decision.nomenclature.name).slice(-2).join(' › ')}</span>
@@ -135,17 +163,31 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
             <ul className="dc-rejected">{decision.rejectedCodes.map((item) => <li key={item.code}><code>{formatCode(item.code)}</code><span>{item.why}</span></li>)}</ul>
           </section>}
 
+          {savedDocuments && <section className="drawer-section">
+            <h3>Документы для ввоза</h3>
+            <p className="dc-sub">Ответ агента от {formatRuDate(savedDocuments.savedAt)}{savedDocuments.product ? ` по товару «${savedDocuments.product}»` : ''} — для другого товара под этим кодом меры могут отличаться.</p>
+            <DocumentsAnswer result={savedDocuments} />
+          </section>}
+
           {(admin || decision.note) && <section className="drawer-section">
             <h3>Заметка</h3>
             <Field label="" hint={admin ? 'откуда запись, чем подтверждён код' : ''} copy={admin ? note : decision.note} copyLabel="заметку">
               {admin ? <textarea rows={4} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Не заполнено" aria-label="Заметка" /> : <p className="dc-value dc-note">{decision.note}</p>}
             </Field>
           </section>}
+
+          {/* Справочное: нужно для поиска похожих товаров, поэтому в самом низу. */}
+          {decision.photos.length > 0 && <section className="drawer-section">
+            <h3>Описание фото от ИИ</h3>
+            {decision.photoFeatures
+              ? <PhotoDescription features={decision.photoFeatures} />
+              : <p className="dc-muted">ИИ составит описание в течение нескольких минут.</p>}
+          </section>}
         </>}
       </div>
       {admin && decision && <footer className="drawer-foot dc-foot">
-        <button type="button" className="dc-btn primary" onClick={() => void run(() => decisionsApi.verify(decision.id, edit()))} disabled={busy || !codeValid}>{decision.status === 'verified' ? 'Сохранить' : 'Отметить «Проверено»'}</button>
-        {decision.status !== 'verified' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.update(decision.id, edit()))} disabled={busy || !codeValid}>Сохранить без проверки</button>}
+        <button type="button" className="dc-btn primary" onClick={() => void run(() => decisionsApi.verify(decision.id, edit()))} disabled={busy || !canSave}>{decision.status === 'verified' ? 'Сохранить' : 'Отметить «Проверено»'}</button>
+        {decision.status !== 'verified' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.update(decision.id, edit()))} disabled={busy || !canSave}>Сохранить без проверки</button>}
         {decision.status !== 'rejected' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.reject(decision.id, note))} disabled={busy}>Отклонить</button>}
         <button type="button" className="dc-btn danger" onClick={() => { if (window.confirm('Удалить запись из базы решений?')) void run(() => decisionsApi.remove(decision.id), true) }} disabled={busy}>Удалить</button>
       </footer>}
@@ -170,7 +212,7 @@ function PhotoDescription({ features }: { features: PhotoFeatures }) {
     <dl className="dc-desc" aria-label="Описание фото от ИИ">
       {rows.filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl>
-    <p className="dc-desc-note">Составил ИИ по фото, для поиска похожих товаров</p>
+    <p className="dc-desc-note">Нужно для поиска похожих товаров</p>
   </div>
 }
 

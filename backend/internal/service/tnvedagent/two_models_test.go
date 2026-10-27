@@ -299,7 +299,7 @@ func TestOpenDetailsSendsRepeatedNotesOnce(t *testing.T) {
 	next.toolbox = newAgentToolbox(&longPagesData{})
 	next.transcript = restored
 	next.restoreOpened(context.Background())
-	if source := next.toolbox.quoteSource("4015190000", fakeCodes[1].Name, "перчатки трикотажные с покрытием из резины включаются в группу 61"); source != "page" {
+	if source := next.toolbox.quoteSource("4015190000", "перчатки трикотажные с покрытием из резины включаются в группу 61"); source != "page" {
 		t.Fatalf("цитата из пояснений второй страницы после ответа сотрудника: %q", source)
 	}
 }

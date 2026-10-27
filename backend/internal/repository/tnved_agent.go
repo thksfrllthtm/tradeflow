@@ -276,3 +276,34 @@ func (r *Repository) ReferenceSessions(ctx context.Context, userID int64, limit 
 func (r *Repository) DeleteAgentSession(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&TNVEDAgentSession{}).Error
 }
+
+// CodeDocuments — сохранённый ответ «Документы для ввоза» по коду: описание товара, резюме и меры
+// (записи AgentDocument с видом документа). Показывается последний по коду.
+type CodeDocuments struct {
+	ID          int64     `gorm:"primaryKey"`
+	Code        string    `gorm:"size:10;not null"`
+	Product     string    `gorm:"not null"`
+	Description string    `gorm:"not null"`
+	Documents   JSON      `gorm:"type:jsonb;not null"`
+	SessionID   *int64    `gorm:"column:session_id"`
+	UserID      *int64    `gorm:"column:user_id"`
+	CreatedAt   time.Time `gorm:"not null"`
+}
+
+func (CodeDocuments) TableName() string { return "tnved_code_documents" }
+
+func (r *Repository) SaveCodeDocuments(ctx context.Context, row CodeDocuments) error {
+	return r.db.WithContext(ctx).Create(&row).Error
+}
+
+// LatestCodeDocuments — последний сохранённый ответ по коду; ErrNotFound — ответа ещё не было.
+func (r *Repository) LatestCodeDocuments(ctx context.Context, code string) (CodeDocuments, error) {
+	var rows []CodeDocuments
+	if err := r.db.WithContext(ctx).Where("code = ?", code).Order("created_at DESC, id DESC").Limit(1).Find(&rows).Error; err != nil {
+		return CodeDocuments{}, err
+	}
+	if len(rows) == 0 {
+		return CodeDocuments{}, ErrNotFound
+	}
+	return rows[0], nil
+}

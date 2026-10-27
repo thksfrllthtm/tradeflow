@@ -1,9 +1,11 @@
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { LinkText } from '@/shared/components/LinkText/LinkText'
-import { AgentDocument, AgentMessage, AgentResult } from './agentApi'
+import { AgentDocument, AgentMessage, AgentResult, DocumentKind } from './agentApi'
 import './documents.css'
 
 const appliesLabels: Record<AgentDocument['applies'], string> = { yes: 'нужно', maybe: 'возможно', no: 'не относится' }
+// Вид документа коротко, как говорят в компании; other — без метки (мера названа в measure).
+export const documentKindLabels: Record<DocumentKind, string> = { cc: 'СС', dc: 'ДС', sgr: 'СГР', conditional: 'Условный выпуск', other: '' }
 
 // Кнопка «Документы для ввоза» на карточке кода (подходит / возможно) — в чате строки и справочнике.
 export function DocumentsButton({ code, disabled, onClick }: { code: string; disabled: boolean; onClick: (code: string) => void }) {
@@ -62,7 +64,7 @@ export function DocumentsAnswer({ result }: { result: AgentResult }) {
 function DocumentRow({ item }: { item: AgentDocument }) {
   return <li className={`dl-item ${item.applies}`}>
     <div className="dl-top">
-      <b>{item.measure || item.act}</b>
+      <b>{item.kind && documentKindLabels[item.kind] && <span className="dl-kind">{documentKindLabels[item.kind]}</span>}{item.measure || item.act}</b>
       <i className={`dl-pill ${item.applies}`}>{appliesLabels[item.applies]}</i>
     </div>
     {item.act && item.measure && (item.url

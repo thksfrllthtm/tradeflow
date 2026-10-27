@@ -118,3 +118,19 @@ func TestAgreedVerifiedCodeIgnoresNameMatchWithOtherPhoto(t *testing.T) {
 		t.Fatalf("a name match without a photo conflict skips the agent: %q %v", code, ok)
 	}
 }
+
+func TestOptionalDecimalTextForPriceEdit(t *testing.T) {
+	price, err := optionalDecimalText(" 0,5 ", "unitPriceUsd")
+	if err != nil || price == nil || price.String() != "0.5" {
+		t.Fatalf("price %v err %v", price, err)
+	}
+	// Пустая строка — цену стёрли.
+	if price, err := optionalDecimalText("  ", "unitPriceUsd"); err != nil || price != nil {
+		t.Fatalf("empty: %v %v", price, err)
+	}
+	for _, bad := range []string{"-1", "abc", "100000000"} {
+		if _, err := optionalDecimalText(bad, "unitPriceUsd"); err == nil {
+			t.Fatalf("%q accepted", bad)
+		}
+	}
+}

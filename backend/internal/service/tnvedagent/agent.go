@@ -613,13 +613,59 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 		changes["status"] = "waiting"
 	default:
 		changes["status"] = "done"
-		// Ответ про документы — только в чате: итог подбора (код строки, история) остаётся прежним.
+		// Ответ про документы — в чате и в таблице документов по коду: итог подбора (код строки,
+		// история) остаётся прежним.
 		if outcome.result != nil && !documents {
 			data, _ := json.Marshal(outcome.result)
 			changes["result"] = repository.JSON(data)
 		}
+		if outcome.result != nil && documents {
+			s.saveCodeDocuments(store, session, outcome.result)
+		}
 	}
 	_ = s.repository.UpdateAgentSession(store, sessionID, changes)
+}
+
+// saveCodeDocuments — ответ «Документы для ввоза» в базу по коду: что за товар (из подбора или
+// наименования строки), резюме и меры с видом документа.
+func (s *TNVEDAgentService) saveCodeDocuments(ctx context.Context, session repository.TNVEDAgentSession, result *AgentResult) {
+	var item AgentItemInput
+	_ = json.Unmarshal(session.Item, &item)
+	product := item.Name
+	var previous AgentResult
+	if len(session.Result) > 0 && json.Unmarshal(session.Result, &previous) == nil && previous.Description != "" {
+		product = previous.Description
+	}
+	documents, _ := json.Marshal(result.Documents)
+	sessionID, userID := session.ID, session.UserID
+	_ = s.repository.SaveCodeDocuments(ctx, repository.CodeDocuments{
+		Code: result.DocumentsCode, Product: service.TruncateRunes(strings.TrimSpace(product), 600), Description: result.Description,
+		Documents: repository.JSON(documents), SessionID: &sessionID, UserID: &userID, CreatedAt: time.Now().UTC(),
+	})
+}
+
+// SavedDocuments — последний сохранённый ответ «Документы для ввоза» по коду (для карточек, где агент
+// не запускался: база решений). ErrNotFound — ответа по коду ещё не было.
+type SavedDocuments struct {
+	AgentResult
+	Product string    `json:"product"`
+	SavedAt time.Time `json:"savedAt"`
+}
+
+func (s *TNVEDAgentService) SavedDocuments(ctx context.Context, code string) (SavedDocuments, error) {
+	code = nonDigits.ReplaceAllString(code, "")
+	if len(code) != 10 {
+		return SavedDocuments{}, &service.ValidationError{Field: "code", Message: "Код — 10 цифр"}
+	}
+	row, err := s.repository.LatestCodeDocuments(ctx, code)
+	if err != nil {
+		return SavedDocuments{}, err
+	}
+	saved := SavedDocuments{Product: row.Product, SavedAt: row.CreatedAt}
+	saved.DocumentsCode, saved.Description = row.Code, row.Description
+	saved.Candidates, saved.DroppedCodes, saved.Documents = []AgentCandidate{}, []string{}, []AgentDocument{}
+	_ = json.Unmarshal(row.Documents, &saved.Documents)
+	return saved, nil
 }
 
 // systemPrompt — подсказка запуска: подбор или справочник, плюс режим «Документы», интернет и вопросы по фото.
@@ -634,7 +680,11 @@ func (s *TNVEDAgentService) systemPrompt(reference, documents, photoQuestions bo
 		prompt += "\n\n" + tnvedWebPrompt
 	}
 	if photoQuestions {
-		prompt += "\n\n" + tnvedPhotoPrompt
+		photo := tnvedPhotoPrompt
+		if reference {
+			photo = strings.Replace(photo, "- Сотрудника (ask_user) спрашивай только о том, чего на фото не видно: состав, мощность, назначение.", "- Чего на фото не видно (состав, мощность, назначение) — не спрашивай сотрудника, а напиши в check.", 1)
+		}
+		prompt += "\n\n" + photo
 	}
 	return prompt
 }
