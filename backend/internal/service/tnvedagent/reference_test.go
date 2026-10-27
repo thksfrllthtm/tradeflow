@@ -41,6 +41,9 @@ func TestReferenceModeHasTwoDeclarationNames(t *testing.T) {
 	if referenceTitle("  ") != "Фото товара" || referenceTitle("Перчатки   трикотажные") != "Перчатки трикотажные" {
 		t.Fatal("заголовок вопроса")
 	}
+	if resultTitle(result) != "Перчатки трикотажные" || resultTitle(&AgentResult{Name: "  "}) != "" {
+		t.Fatal("заголовок по ответу — краткое наименование агента")
+	}
 }
 
 // Уточнение в справочнике: вопрос сотрудника передаётся модели, прежний ответ не пересказывается.

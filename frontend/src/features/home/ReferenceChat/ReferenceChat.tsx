@@ -7,6 +7,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { clipboardImages, clipboardText } from '@/shared/lib/clipboardImages'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { sameAnswer } from './answerText'
+import { Command, documentsCode, menuCommands, parseCommand } from './commands'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
@@ -61,6 +62,9 @@ export function ReferenceChat() {
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // История — одна остановка Tab: по вопросам — стрелками (roving tabindex).
   const [historyFocus, setHistoryFocus] = useState(0)
+  const [menuIndex, setMenuIndex] = useState(0)
+  const menu = menuCommands(text)
+  const menuActive = menu[Math.min(menuIndex, menu.length - 1)]
   const historyRef = useRef<HTMLUListElement>(null)
   const lastId = useRef(0)
   const threadRef = useRef<HTMLDivElement>(null)
@@ -140,6 +144,8 @@ export function ReferenceChat() {
     const onWindowKey = (event: globalThis.KeyboardEvent) => {
       if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented || editable(event.target) || dialogOpen()) return
       event.preventDefault()
+      // Пустое поле — сразу меню команд.
+      setText((current) => current || '/')
       inputRef.current?.focus()
     }
     window.addEventListener('paste', onWindowPaste)
@@ -166,14 +172,33 @@ export function ReferenceChat() {
     if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files)
   }
 
-  // Фото или нет активного вопроса — новый вопрос; иначе уточнение к текущему (агент помнит разговор).
+  // Команда «/…» — её действие; иначе обычный вопрос.
   async function send(event?: FormEvent) {
     event?.preventDefault()
     const value = text.trim()
     if ((!value && photos.length === 0) || busy) return
+    const parsed = parseCommand(value)
+    if (parsed === 'unknown') { setError('Нет такой команды — наберите «/», чтобы увидеть список'); return }
+    if (!parsed) return submit(value, false)
+    const { command, arg } = parsed
+    if (command.name === 'новый') return startNew()
+    if (command.name === 'документы') {
+      if (!session) { setError('Документы смотрятся по коду из ответа — сначала спросите о товаре'); return }
+      const code = documentsCode(arg, session.messages)
+      if (code.length !== 10) { setError(code ? 'Код — 10 цифр' : 'В ответе нет подходящего кода — укажите его: /документы 8205 59 100 0'); return }
+      setText('')
+      return requestDocuments(code)
+    }
+    const question = command.name === 'сравнить' ? arg && `Чем отличаются коды ТН ВЭД ${arg} и когда какой применять?` : arg
+    if (!question && photos.length === 0) { setError(command.name === 'сравнить' ? 'Укажите коды: /сравнить 6116 10 200 0 и 6116 10 800 0' : 'Опишите товар после /подбор или добавьте фото'); return }
+    return submit(question, true)
+  }
+
+  // Новый вопрос (fresh, фото или нет активного) — или уточнение к текущему (агент помнит разговор).
+  async function submit(value: string, fresh: boolean) {
     setBusy(true); setError('')
     try {
-      if (!session || photos.length > 0) {
+      if (fresh || !session || photos.length > 0) {
         accept(await agentApi.ask({ text: value, photos }), true)
         setPhotos([])
       } else {
@@ -204,7 +229,20 @@ export function ReferenceChat() {
     }
   }
 
+  // Выбор в меню: команда с аргументом — в поле, дописать; без аргумента — сразу.
+  function pick(command: Command) {
+    if (command.name === 'новый') { startNew(); return }
+    setText(`/${command.name} `)
+    inputRef.current?.focus()
+  }
+
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (menuActive) {
+      const step = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+      if (step) { event.preventDefault(); setMenuIndex((menu.indexOf(menuActive) + step + menu.length) % menu.length); return }
+      if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Tab') { event.preventDefault(); pick(menuActive); return }
+      if (event.key === 'Escape') { event.preventDefault(); setText(''); return }
+    }
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() }
   }
 
@@ -307,19 +345,27 @@ export function ReferenceChat() {
             <img src={photo} alt="" />
             <button type="button" onClick={() => setPhotos((current) => current.filter((_, at) => at !== index))} aria-label="Убрать фото">×</button>
           </span>)}</div>}
+          {menuActive && <ul id="rc-commands" className="rc-commands" role="listbox" aria-label="Команды">{menu.map((command) =>
+            <li key={command.name} id={`rc-command-${command.name}`} role="option" aria-selected={command === menuActive}
+              onMouseDown={(event) => { event.preventDefault(); pick(command) }} onMouseEnter={() => setMenuIndex(menu.indexOf(command))}>
+              <code>/{command.name}{command.arg && <i> {command.arg}</i>}</code>
+              <b>{command.label}</b>
+              <small>{command.hint}</small>
+            </li>)}</ul>}
           <div className="rc-input-row">
             <label className="rc-attach" title="Добавить фото (JPG, PNG)">
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m15.5 9.5-5.6 5.6a3.4 3.4 0 0 1-4.8-4.8l6-6a2.3 2.3 0 0 1 3.2 3.2l-6 6a1.1 1.1 0 0 1-1.6-1.6l5.3-5.3" /></svg>
               <input type="file" accept="image/jpeg,image/png" multiple onChange={(event) => { if (event.target.files) void addFiles(event.target.files); event.target.value = '' }} disabled={busy || photos.length >= maxPhotos} />
             </label>
-            <textarea ref={inputRef} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={onKeyDown} onPaste={onPaste} rows={1} maxLength={2000}
-              placeholder={placeholder} aria-label="Вопрос о товаре" disabled={!configured || (working && photos.length === 0)} />
+            <textarea ref={inputRef} value={text} onChange={(event) => { setText(event.target.value); setMenuIndex(0) }} onKeyDown={onKeyDown} onPaste={onPaste} rows={1} maxLength={2000}
+              placeholder={placeholder} aria-label="Вопрос о товаре" aria-autocomplete="list" aria-expanded={Boolean(menuActive)}
+              aria-controls={menuActive ? 'rc-commands' : undefined} aria-activedescendant={menuActive ? `rc-command-${menuActive.name}` : undefined} disabled={!configured || (working && photos.length === 0)} />
             <button type="submit" className="rc-send" disabled={busy || !configured || (!text.trim() && photos.length === 0) || (working && photos.length === 0)} aria-label="Отправить">
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M10 16V4M5 9l5-5 5 5" /></svg>
             </button>
           </div>
           <p className="rc-hint">
-            {!configured ? 'ИИ не настроен на сервере.' : <span>Enter — отправить, Shift+Enter — новая строка, <kbd>/</kbd> — к вопросу{status && status.dailyLimit > 0 && <> · <b className={nearLimit ? 'rc-limit near' : 'rc-limit'}>сегодня {status.usedToday} из {status.dailyLimit}</b></>}</span>}
+            {!configured ? 'ИИ не настроен на сервере.' : <span>Enter — отправить, Shift+Enter — новая строка, <kbd>/</kbd> — команды{status && status.dailyLimit > 0 && <> · <b className={nearLimit ? 'rc-limit near' : 'rc-limit'}>сегодня {status.usedToday} из {status.dailyLimit}</b></>}</span>}
             <span className="rc-disclaimer">Подсказка ИИ — код выбирает декларант</span>
           </p>
         </form>

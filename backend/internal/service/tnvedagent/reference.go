@@ -48,6 +48,12 @@ func referenceTitle(text string) string {
 	return service.TruncateRunes(title, 80)
 }
 
+// resultTitle — заголовок по ответу агента: краткое наименование товара ("" — агент не назвал,
+// заголовок остаётся прежним). Уточнение с другим товаром даёт новое имя — заголовок тоже меняется.
+func resultTitle(result *AgentResult) string {
+	return service.TruncateRunes(strings.Join(strings.Fields(result.Name), " "), 80)
+}
+
 // initialReferenceMessage — первое сообщение модели: вопрос сотрудника, фото и записи базы решений
 // о том же товаре.
 func initialReferenceMessage(text string, photoCount int, matches []decisions.SameProductMatch) map[string]any {

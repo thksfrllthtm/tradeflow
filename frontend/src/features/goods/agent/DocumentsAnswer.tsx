@@ -57,7 +57,7 @@ export function DocumentsAnswer({ result }: { result: AgentResult }) {
     {result.notes && <p className="dl-note"><LinkText text={result.notes} /></p>}
     {(result.linksRemoved ?? 0) > 0 && <p className="dl-notice">Программа убрала ссылки, которых не было на открытых страницах: {result.linksRemoved}.</p>}
     {result.quotesRemoved > 0 && <p className="dl-notice">Программа убрала основания-цитаты, которых нет в справке и актах: {result.quotesRemoved}.</p>}
-    <p className="dl-disclaimer">Подсказка ИИ по справке tnved.info и актам — перед оформлением сверьте с актом.</p>
+    <p className="dl-disclaimer">Подсказка по справке tnved.info, перечням и актам — перед оформлением сверьте с актом.</p>
   </section>
 }
 

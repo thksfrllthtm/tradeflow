@@ -618,6 +618,9 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 		if outcome.result != nil && !documents {
 			data, _ := json.Marshal(outcome.result)
 			changes["result"] = repository.JSON(data)
+			if title := resultTitle(outcome.result); session.Mode == modeReference && title != "" {
+				changes["title"] = title
+			}
 		}
 		if outcome.result != nil && documents {
 			s.saveCodeDocuments(store, session, outcome.result)
@@ -863,6 +866,9 @@ func (s *TNVEDAgentService) Documents(ctx context.Context, user repository.User,
 	if documentsAnswered(messages, code) {
 		return s.Get(ctx, user, id, 0)
 	}
+	if err := s.checkLimit(ctx, user.ID); errors.Is(err, ErrAgentDailyLimit) {
+		return s.documentsFromBase(ctx, user, session, code, items[0].DetailsURL)
+	}
 	var item AgentItemInput
 	_ = json.Unmarshal(session.Item, &item)
 	product := item.Name
@@ -871,6 +877,40 @@ func (s *TNVEDAgentService) Documents(ctx context.Context, user repository.User,
 		product = previous.Description
 	}
 	return s.resume(ctx, user, id, "documents", map[string]string{"code": code}, documentsRequest(code, items[0].Name, product), code)
+}
+
+// documentsFromBase — дневной лимит подборов исчерпан: в чат кладётся сохранённый ответ агента по этому
+// коду, а если его нет — проверка программой по общей базе (generalDocuments).
+func (s *TNVEDAgentService) documentsFromBase(ctx context.Context, user repository.User, session repository.TNVEDAgentSession, code, detailsURL string) (AgentSessionView, error) {
+	if session.Status == "running" || session.Status == "searching" {
+		return AgentSessionView{}, ErrAgentBusy
+	}
+	row, err := s.repository.LatestCodeDocuments(ctx, code)
+	switch {
+	case err == nil:
+		s.emit(ctx, session.ID, "result", savedDocumentsResult(row))
+	case errors.Is(err, repository.ErrNotFound):
+		page := ""
+		if detailsURL != "" {
+			page, _, _ = s.data.DetailsPage(ctx, code, detailsURL)
+		}
+		s.emit(ctx, session.ID, "result", generalDocuments(code, page))
+	default:
+		return AgentSessionView{}, err
+	}
+	return s.Get(ctx, user, session.ID, 0)
+}
+
+// savedDocumentsResult — сохранённый ответ агента как итог в чате.
+func savedDocumentsResult(row repository.CodeDocuments) AgentResult {
+	result := AgentResult{DocumentsCode: row.Code, Description: row.Description, Candidates: []AgentCandidate{}, DroppedCodes: []string{}, Documents: []AgentDocument{}}
+	_ = json.Unmarshal(row.Documents, &result.Documents)
+	result.Notes = "Дневной лимит подборов исчерпан — ответ агента из базы от " + row.CreatedAt.Format("02.01.2006")
+	if row.Product != "" {
+		result.Notes += " по товару «" + row.Product + "»"
+	}
+	result.Notes += "."
+	return result
 }
 
 // documentsAnswered — в разговоре уже есть ответ «Документы для ввоза» для кода.
