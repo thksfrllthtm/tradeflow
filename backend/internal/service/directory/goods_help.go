@@ -112,7 +112,12 @@ func (f *WebPageFetcher) fetchGoodsHelp(ctx context.Context, code string, date t
 	if response.StatusCode != http.StatusOK {
 		return WebPage{}, ErrWebPageUnavailable
 	}
-	return parseGoodsHelp(code, body)
+	page, err := parseGoodsHelp(code, body)
+	if err == nil {
+		// Перечни СС/ДС из справки — в общую базу.
+		f.saveGeneralActs(ctx, body)
+	}
+	return page, err
 }
 
 // newSessionID — GUID для API (сайт создаёт его в браузере; без него запрос отклоняется).

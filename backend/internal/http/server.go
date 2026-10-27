@@ -99,6 +99,7 @@ func (s *Server) StartBackground(ctx context.Context) {
 	}
 	go s.decisions.FillMissingThumbs(ctx)
 	s.agent.StartPhotoWorker(ctx)
+	go s.agent.WarmGeneralActs(ctx)
 	if err := s.translator.ResumeInterrupted(ctx); err != nil {
 		log.Printf("translator: resume interrupted translations: %v", err)
 	}

@@ -216,3 +216,27 @@ func TestWebFetcherFilesAndRedirects(t *testing.T) {
 		t.Errorf("pdf by extension: %v", err)
 	}
 }
+
+// Перечни СС/ДС из справки — в общую базу, решения Коллегии — сводной редакцией adilet; санэпиднадзор и
+// экспортный контроль — не перечни СС/ДС.
+func TestConformityActsFromGoodsHelp(t *testing.T) {
+	acts := conformityActs(readTestdata(t, "goodshelp_8471300000.json"))
+	urls := map[string]bool{}
+	for _, act := range acts {
+		urls[act.URL] = true
+	}
+	for _, want := range []string{"https://adilet.zan.kz/rus/docs/H13EK000091", "https://adilet.zan.kz/rus/docs/H14EK000002", "https://adilet.zan.kz/rus/docs/H18EK000167"} {
+		if !urls[want] {
+			t.Errorf("no %s in %+v", want, acts)
+		}
+	}
+	if urls[SGRActURL] || len(acts) != 3 {
+		t.Errorf("acts %+v", acts)
+	}
+	if got := AdiletURL("Решение Коллегии ЕЭК №28  от 05.03.2013"); got != "https://adilet.zan.kz/rus/docs/H13EK000028" {
+		t.Errorf("adilet %s", got)
+	}
+	if got := AdiletURL("Решение Комиссии Таможенного Союза №299 от 28.05.2010"); got != "" {
+		t.Errorf("not a college decision: %s", got)
+	}
+}

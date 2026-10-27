@@ -10,6 +10,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TNVEDAgentSession struct {
@@ -306,4 +307,27 @@ func (r *Repository) LatestCodeDocuments(ctx context.Context, code string) (Code
 		return CodeDocuments{}, ErrNotFound
 	}
 	return rows[0], nil
+}
+
+// GeneralAct — перечень СС/ДС общей базы «Документов для ввоза», добавленный из справки tnved.info.
+type GeneralAct struct {
+	URL     string    `gorm:"primaryKey;size:1000"`
+	Title   string    `gorm:"not null"`
+	AddedAt time.Time `gorm:"not null"`
+}
+
+func (GeneralAct) TableName() string { return "general_acts" }
+
+// SaveGeneralActs — новые перечни; уже известные адреса не меняются.
+func (r *Repository) SaveGeneralActs(ctx context.Context, acts []GeneralAct) error {
+	if len(acts) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&acts).Error
+}
+
+// GeneralActs — все перечни, добавленные из справок, в порядке добавления.
+func (r *Repository) GeneralActs(ctx context.Context) ([]GeneralAct, error) {
+	var acts []GeneralAct
+	return acts, r.db.WithContext(ctx).Order("added_at, url").Find(&acts).Error
 }

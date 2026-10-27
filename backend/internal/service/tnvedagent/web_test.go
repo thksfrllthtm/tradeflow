@@ -214,12 +214,12 @@ func TestWebPageTavilyFallbackAndLimits(t *testing.T) {
 	}
 }
 
-// В режиме «Документы» файл отдаётся сотруднику, Tavily не тратится.
-func TestDocumentsModeDoesNotUseTavily(t *testing.T) {
+// В режиме «Документы» PDF решения ЕЭК читается через Tavily (текст сохраняется в базе).
+func TestDocumentsModeReadsPDF(t *testing.T) {
 	toolbox, _, search := webToolbox()
 	toolbox.documentsCode = "6116102000"
 	toolbox.links[testPDFURL] = true
-	if content, _ := toolbox.run(context.Background(), "open_link", `{"url":"`+testPDFURL+`"}`); !strings.Contains(content, "Дай эту ссылку сотруднику") || len(search.extracted) != 0 {
+	if content, _ := toolbox.run(context.Background(), "open_link", `{"url":"`+testPDFURL+`"}`); !strings.Contains(content, "текст через Tavily") || len(search.extracted) != 1 {
 		t.Fatalf("документы: %s, Tavily %v", content, search.extracted)
 	}
 }

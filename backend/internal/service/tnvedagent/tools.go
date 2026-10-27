@@ -52,6 +52,8 @@ type agentData interface {
 	SearchDecisions(ctx context.Context, query string, limit int) ([]repository.CodeDecision, error)
 	SearchDirectories(ctx context.Context, query string, limit int) ([]repository.DirectoryHint, error)
 	GoodsHelp(ctx context.Context, code string) (directory.WebPage, error)
+	// GeneralActs — общая база «Документов для ввоза»: перечни СС/ДС и Решение КТС №299.
+	GeneralActs(ctx context.Context) ([]directory.WebLink, error)
 	WebPage(ctx context.Context, url string) (directory.WebPage, error)
 	// ExtractedPage — страница текстом внешнего сервиса (extract вызывается, только если её нет в базе).
 	ExtractedPage(ctx context.Context, url string, extract func(context.Context, string) (string, error)) (directory.WebPage, error)
@@ -93,6 +95,10 @@ func (d repositoryAgentData) SearchDirectories(ctx context.Context, query string
 
 func (d repositoryAgentData) GoodsHelp(ctx context.Context, code string) (directory.WebPage, error) {
 	return d.web.GoodsHelp(ctx, code)
+}
+
+func (d repositoryAgentData) GeneralActs(ctx context.Context) ([]directory.WebLink, error) {
+	return d.web.GeneralActs(ctx)
 }
 
 func (d repositoryAgentData) WebPage(ctx context.Context, url string) (directory.WebPage, error) {
@@ -524,7 +530,9 @@ func (t *agentToolbox) documentText(ctx context.Context, address string) (direct
 		t.pages[address] = true
 	}
 	page, err := t.data.WebPage(ctx, address)
-	if err != nil && web && t.search != nil &&
+	// PDF, страница скриптом или сайт не отдал страницу — текст через Tavily (и в «Документах для ввоза»:
+	// решения ЕЭК на docs.eaeunion.org — PDF), сохраняется в базе.
+	if err != nil && t.search != nil &&
 		(errors.Is(err, directory.ErrWebPageScript) || errors.Is(err, directory.ErrWebPageUnavailable) || errors.Is(err, directory.ErrWebPageFile)) {
 		page, err = t.data.ExtractedPage(ctx, address, t.webPageText)
 	}
@@ -789,12 +797,10 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		}
 		page, err := t.data.GoodsHelp(ctx, code)
 		if errors.Is(err, directory.ErrGoodsHelpLimit) {
-			return toolJSON(map[string]any{"code": code, "error": "Лимит запросов к справке tnved.info на сегодня исчерпан. Возьми меры нетарифного регулирования со страницы кода (open_details, TWS.BY), белорусские нормы отбрось и скажи сотруднику, что справка tnved.info сегодня недоступна."}),
-				agentToolEvent{Tool: name, Label: label, Detail: "лимит tnved.info на сегодня исчерпан — справку можно открыть в браузере", URL: page.URL, Failed: true}
+			return t.generalAnswer(ctx, code, label, "лимит tnved.info на сегодня исчерпан", page.URL)
 		}
 		if err != nil || page.Text == "" {
-			return toolJSON(map[string]any{"code": code, "error": "Справка не открылась. Возьми меры со страницы кода (open_details, TWS.BY), белорусские нормы отбрось."}),
-				agentToolEvent{Tool: name, Label: label, Detail: "не открылась", URL: page.URL, Failed: true}
+			return t.generalAnswer(ctx, code, label, "справка tnved.info не открылась", page.URL)
 		}
 		// Условный выпуск по Правилам РК: ссылка на текст Правил — вместе со справкой, чтобы агент мог
 		// открыть их (open_link, search_in_document) и указать в итоге.

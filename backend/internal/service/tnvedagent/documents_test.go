@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -47,6 +48,9 @@ func testActText() string {
 func (d *fakeAgentData) WebPage(_ context.Context, url string) (directory.WebPage, error) {
 	d.webOpened = append(d.webOpened, url)
 	switch url {
+	case testGeneralActURL:
+		text, err := os.ReadFile("testdata/act_019.txt")
+		return directory.WebPage{URL: url, Text: string(text)}, err
 	case testActURL:
 		return directory.WebPage{URL: url, Title: "О применении санитарных мер", Text: testActText(), Links: []directory.WebLink{{URL: "https://adilet.zan.kz/rus/docs/H10T0000317", Text: "Решение №317"}}}, nil
 	case testPDFURL:
@@ -245,16 +249,6 @@ func TestDocumentsRunReadsHelpAndActs(t *testing.T) {
 	}
 	if urls < 4 {
 		t.Fatalf("tool events without url: %+v", *events)
-	}
-}
-
-func TestDocumentsHelpLimitFallsBackToTWS(t *testing.T) {
-	data := &fakeAgentData{helpLimit: true}
-	toolbox := newAgentToolbox(data)
-	toolbox.documentsCode = "6116102000"
-	content, event := toolbox.run(context.Background(), "open_goods_help", `{"code":"6116102000"}`)
-	if !strings.Contains(content, "Лимит запросов") || !strings.Contains(content, "open_details") || !event.Failed || event.URL != testHelpURL {
-		t.Fatalf("limit answer %s event %+v", content, event)
 	}
 }
 

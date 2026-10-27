@@ -208,6 +208,13 @@ func (u sessionUsage) changes() map[string]any {
 	}
 }
 
+// WarmGeneralActs — тексты перечней общей базы «Документов для ввоза» в базу заранее (в фоне при запуске).
+func (s *TNVEDAgentService) WarmGeneralActs(ctx context.Context) {
+	if data, ok := s.data.(repositoryAgentData); ok {
+		data.web.WarmGeneralActs(ctx)
+	}
+}
+
 // RecoverInterrupted — подборы, прерванные перезапуском сервера, помечаются ошибкой.
 func (s *TNVEDAgentService) RecoverInterrupted(ctx context.Context) error {
 	const message = "Подбор прерван перезапуском сервера. Нажмите «Подобрать заново»."
@@ -867,7 +874,7 @@ func (s *TNVEDAgentService) Documents(ctx context.Context, user repository.User,
 		return s.Get(ctx, user, id, 0)
 	}
 	if err := s.checkLimit(ctx, user.ID); errors.Is(err, ErrAgentDailyLimit) {
-		return s.documentsFromBase(ctx, user, session, code, items[0].DetailsURL)
+		return s.documentsFromBase(ctx, user, session, code)
 	}
 	var item AgentItemInput
 	_ = json.Unmarshal(session.Item, &item)
@@ -881,7 +888,7 @@ func (s *TNVEDAgentService) Documents(ctx context.Context, user repository.User,
 
 // documentsFromBase — дневной лимит подборов исчерпан: в чат кладётся сохранённый ответ агента по этому
 // коду, а если его нет — проверка программой по общей базе (generalDocuments).
-func (s *TNVEDAgentService) documentsFromBase(ctx context.Context, user repository.User, session repository.TNVEDAgentSession, code, detailsURL string) (AgentSessionView, error) {
+func (s *TNVEDAgentService) documentsFromBase(ctx context.Context, user repository.User, session repository.TNVEDAgentSession, code string) (AgentSessionView, error) {
 	if session.Status == "running" || session.Status == "searching" {
 		return AgentSessionView{}, ErrAgentBusy
 	}
@@ -890,11 +897,10 @@ func (s *TNVEDAgentService) documentsFromBase(ctx context.Context, user reposito
 	case err == nil:
 		s.emit(ctx, session.ID, "result", savedDocumentsResult(row))
 	case errors.Is(err, repository.ErrNotFound):
-		page := ""
-		if detailsURL != "" {
-			page, _, _ = s.data.DetailsPage(ctx, code, detailsURL)
-		}
-		s.emit(ctx, session.ID, "result", generalDocuments(code, page))
+		toolbox := newAgentToolbox(s.data)
+		toolbox.documentsCode, toolbox.search = code, s.search
+		matches, unread, total := toolbox.generalMatches(ctx, code)
+		s.emit(ctx, session.ID, "result", generalDocuments(code, matches, unread, total))
 	default:
 		return AgentSessionView{}, err
 	}

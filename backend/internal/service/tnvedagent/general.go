@@ -1,155 +1,338 @@
 package tnvedagent
 
-// «Документы для ввоза» по общей базе, без ИИ: дневной лимит подборов исчерпан, а ответа агента по коду
-// в базе нет. Программа проверяет код по перечням: СС и ДС — перечни к ТР ТС на странице кода TWS.BY
-// («Требуется документ …»), СГР — только раздел II Решения КТС №299 (sgr299.go), утильсбор — перечень
-// приказа № 689 (utilfee). Подходит ли товар под позицию перечня, программа не решает: позиция есть —
-// «возможно» с её названием, кода нет в перечне — «не нужно».
+// Общая база «Документов для ввоза» (directory.GeneralActs): код ищется прямо в текстах перечней СС/ДС
+// и раздела II Решения КТС №299. Нужна, когда справки tnved.info по коду нет (лимит) — тогда находки
+// получает агент и решает по товару, — и когда исчерпан дневной лимит подборов, а ответа агента по коду
+// в базе нет — тогда ответ собирает программа без ИИ (generalDocuments).
+//
+// Перечень в тексте — строки таблицы подряд: пункт («3. Оборудование гаражное…»), наименование продукции,
+// строки кодов («из 8467», «8418 10 200 1», «из 5208, из 5209,», «из 61»), документ («сертификат
+// соответствия», «декларация о соответствии / или сертификат соответствия») и примечание («кроме …»).
+// Документ обычно после кодов, в перечне к ТР ТС 004 — под пунктом, перед кодами.
 
 import (
+	"context"
 	"fmt"
+	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/utilfee"
 )
 
-// twsRegulation — запись «Требование соответствия Техническому Регламенту» со страницы кода TWS.BY.
-type twsRegulation struct {
-	code, act, document string
-	items               []string
+// actMatch — позиция перечня, в которой встретился код.
+type actMatch struct {
+	act      directory.WebLink
+	kind     string // cc, dc, sgr
+	heading  string // пункт перечня
+	product  string // наименование продукции над кодами
+	codes    string // строки кодов позиции
+	document string // документ об оценке соответствия
+	note     string // примечание после документа
+	partial  bool   // позиция «из …»: только названная часть
 }
 
-// twsRegulations — записи ТР ТС из блока «Меры нетарифного регулирования» (без утративших силу).
-// Санитарные меры, лицензирование и белорусское «Сертифицирование» пропускаются.
-func twsRegulations(page string) []twsRegulation {
-	var found []twsRegulation
-	var current *twsRegulation
-	inBlock := false
-	for _, line := range strings.Split(page, "\n") {
-		line = strings.TrimSpace(line)
-		switch {
-		case line == "Меры нетарифного регулирования":
-			inBlock = true
+var (
+	actCodeToken = regexp.MustCompile(`^(?i:(из)\s+)?(\d{2}[\d\s]*?)(?:\s*[-–]\s*(\d{4}))?$`)
+	actHeading   = regexp.MustCompile(`^([0-9]+|[IVXLC]+)\.\s`)
+	actSubitem   = regexp.MustCompile(`^[0-9]+\)\s`)
+)
+
+type actCode struct {
+	digits, rangeEnd string
+	partial          bool
+}
+
+// actCodes — строка состоит только из кодов ТН ВЭД (через запятую или точку с запятой). Без «из» код —
+// от 4 цифр: «10», «2018» и номера колонок кодами не считаются.
+func actCodes(line string) ([]actCode, bool) {
+	var codes []actCode
+	for _, part := range strings.FieldsFunc(line, func(r rune) bool { return r == ',' || r == ';' }) {
+		part = strings.TrimSpace(part)
+		if part == "" {
 			continue
-		case !inBlock:
-			continue
-		case strings.HasPrefix(line, "Меры нетарифного регулирования, утратившие"), strings.HasPrefix(line, "Классификационные решения"),
-			strings.HasPrefix(line, "Дополнительная информация"), strings.HasPrefix(line, "Реестр объектов"):
-			return found
-		case strings.HasPrefix(line, "Требование соответствия Техническому Регламенту"):
-			current = &twsRegulation{}
-		case current == nil || line == "" || strings.HasPrefix(line, "- "):
-		case strings.HasPrefix(line, "Требуется документ"):
-			document := strings.TrimSpace(strings.TrimPrefix(line, "Требуется документ"))
-			if strings.Contains(strings.ToLower(document), "соответств") && current.act != "" {
-				current.document = document
-				found = append(found, *current)
-			}
-			current = nil
-		case twsOtherMeasure(line):
-			current = nil
-		case current.code == "":
-			current.code = strings.ReplaceAll(line, " ", "")
-		case current.act == "":
-			current.act = line
-		default:
-			current.items = append(current.items, line)
 		}
+		match := actCodeToken.FindStringSubmatch(part)
+		if match == nil {
+			return nil, false
+		}
+		code := actCode{digits: strings.Join(strings.Fields(match[2]), ""), rangeEnd: match[3], partial: match[1] != ""}
+		if len(code.digits) > 10 || (!code.partial && len(code.digits) < 4) || (code.rangeEnd != "" && len(code.digits) != 4) {
+			return nil, false
+		}
+		codes = append(codes, code)
+	}
+	return codes, len(codes) > 0
+}
+
+// covers — код товара входит в позицию перечня; partial — позиция «из».
+func (c actCode) covers(code string) bool {
+	if c.rangeEnd != "" {
+		return len(code) >= 4 && code[:4] >= c.digits && code[:4] <= c.rangeEnd
+	}
+	return strings.HasPrefix(code, c.digits)
+}
+
+func isDocumentLine(line string) bool {
+	lower := strings.ToLower(line)
+	return len([]rune(line)) < 120 && (strings.Contains(lower, "сертификат соответствия") || strings.Contains(lower, "декларация о соответствии") || strings.Contains(lower, "декларация соответствия"))
+}
+
+// sgrSection — раздел II Решения №299 (государственная регистрация): остальные разделы — санэпиднадзор без СГР.
+func sgrSection(lines []string) []string {
+	start := -1
+	for index, line := range lines {
+		switch {
+		case start < 0 && strings.HasPrefix(line, "Раздел II ") && !strings.HasPrefix(line, "Раздел III"):
+			start = index
+		case start >= 0 && strings.HasPrefix(line, "Раздел III"):
+			return lines[start:index]
+		}
+	}
+	if start < 0 {
+		return nil
+	}
+	return lines[start:]
+}
+
+// findInAct — позиции перечня с кодом товара.
+func findInAct(code string, act directory.WebLink, text string) []actMatch {
+	lines := strings.Split(text, "\n")
+	for index := range lines {
+		lines[index] = strings.TrimSpace(lines[index])
+	}
+	sgr := act.URL == directory.SGRActURL
+	if sgr {
+		lines = sgrSection(lines)
+	}
+	isCode := func(index int) bool { _, ok := actCodes(lines[index]); return ok }
+	var found []actMatch
+	for start := 0; start < len(lines); start++ {
+		if !isCode(start) {
+			continue
+		}
+		end := start
+		for end+1 < len(lines) && isCode(end+1) {
+			end++
+		}
+		hit, partial := false, false
+		for index := start; index <= end; index++ {
+			codes, _ := actCodes(lines[index])
+			for _, item := range codes {
+				if item.covers(code) {
+					hit, partial = true, partial || item.partial
+				}
+			}
+		}
+		if !hit {
+			start = end
+			continue
+		}
+		match := actMatch{act: act, partial: partial, codes: service.TruncateRunes(strings.Join(lines[start:end+1], " "), 300)}
+		// Наименование — строки над кодами до документа, других кодов или пункта.
+		var product []string
+		for index := start - 1; index >= 0 && len(product) < 12; index-- {
+			line := lines[index]
+			if line == "" || isCode(index) || isDocumentLine(line) || actHeading.MatchString(line) || actSubitem.MatchString(line) {
+				break
+			}
+			product = append([]string{line}, product...)
+		}
+		match.product = strings.Join(product, " ")
+		for index := start - 1; index >= 0; index-- {
+			if actHeading.MatchString(lines[index]) {
+				match.heading = lines[index]
+				break
+			}
+		}
+		if sgr {
+			// В разделе II наименование — строка под кодом.
+			match.kind, match.document = documentKindRegistration, "свидетельство о государственной регистрации"
+			if end+1 < len(lines) {
+				match.product = lines[end+1]
+			}
+		} else {
+			match.document, match.note = actDocument(lines, start, end)
+			match.kind = documentKindCertificate
+			if strings.Contains(strings.ToLower(match.document), "деклараци") {
+				match.kind = documentKindDeclaration
+			}
+		}
+		found = append(found, match)
+		start = end
 	}
 	return found
 }
 
-// twsOtherMeasure — заголовок другой меры в блоке: запись ТР ТС закончилась без «Требуется документ».
-func twsOtherMeasure(line string) bool {
-	for _, prefix := range []string{"Санитарные меры", "Ветеринарно", "Лицензирование", "Сертифицирование", "Возможно", "Возможность", "Код в перечне", "Организация сбора", "Обязательность"} {
-		if strings.HasPrefix(line, prefix) {
-			return true
+// actDocument — документ позиции: после кодов (до следующей позиции), иначе ближайший выше (ТР ТС 004).
+func actDocument(lines []string, start, end int) (document, note string) {
+	for index := end + 1; index < len(lines) && index <= end+15; index++ {
+		line := lines[index]
+		if isDocumentLine(line) {
+			document = line
+			if index+1 < len(lines) && strings.HasPrefix(strings.ToLower(lines[index+1]), "или ") {
+				index++
+				document += " " + lines[index]
+			}
+			if index+1 < len(lines) {
+				lower := strings.ToLower(lines[index+1])
+				if strings.HasPrefix(lower, "кроме") || strings.HasPrefix(lower, "за исключением") {
+					note = service.TruncateRunes(lines[index+1], 300)
+				}
+			}
+			return document, note
+		}
+		if _, ok := actCodes(line); ok || actHeading.MatchString(line) || actSubitem.MatchString(line) {
+			break
 		}
 	}
-	return false
+	for index := start - 1; index >= 0; index-- {
+		if isDocumentLine(lines[index]) {
+			return lines[index], ""
+		}
+	}
+	return "", ""
 }
 
-// generalDocuments — ответ по общей базе. twsPage пустая — страница кода не открылась (СС/ДС не проверены).
-func generalDocuments(code, twsPage string) AgentResult {
-	result := AgentResult{DocumentsCode: code, Candidates: []AgentCandidate{}, DroppedCodes: []string{}, Documents: []AgentDocument{}}
-	var summary []string
-
-	// СС и ДС.
-	regulations := twsRegulations(twsPage)
-	seen := map[string]bool{}
-	for _, regulation := range regulations {
-		key := regulation.act + "|" + regulation.document + "|" + strings.Join(regulation.items, "|")
-		if seen[key] || len(result.Documents) == agentMaxDocuments-3 {
+// generalMatches — код в перечнях общей базы. Тексты — из базы (сводные редакции adilet), карточка
+// решения docs.eaeunion.org — через её PDF «Рус». unread — перечни, текст которых не прочитан. Акты
+// запоминаются как открытые страницы: агент может искать в них и цитировать.
+func (t *agentToolbox) generalMatches(ctx context.Context, code string) (matches []actMatch, unread []string, total int) {
+	acts, _ := t.data.GeneralActs(ctx)
+	for _, act := range acts {
+		page, err := t.actText(ctx, act.URL)
+		if err != nil || strings.TrimSpace(page.Text) == "" {
+			unread = append(unread, act.Text)
 			continue
 		}
-		seen[key] = true
-		kind := documentKindCertificate
-		if strings.Contains(strings.ToLower(regulation.document), "деклараци") {
-			kind = documentKindDeclaration
-		}
-		requirement := "Нужно, если товар входит в позицию перечня для кода " + FormatTNVEDCode(regulation.code)
-		if len(regulation.items) > 0 {
-			requirement += ": " + service.TruncateRunes(strings.Join(regulation.items, "; "), 500)
-		}
-		result.Documents = append(result.Documents, AgentDocument{Kind: kind, Measure: "Требуется документ: " + regulation.document,
-			Act: service.TruncateRunes(regulation.act, 300), Requirement: requirement, Applies: "maybe", BasisSource: "страница кода (TWS.BY)"})
+		total++
+		t.rememberPage(act.URL, page.Text, nil)
+		matches = append(matches, findInAct(code, act, page.Text)...)
 	}
-	switch {
-	case twsPage == "":
-		summary = append(summary, "СС/ДС: страница кода TWS.BY не открылась — проверьте вручную")
-		result.Documents = append(result.Documents, AgentDocument{Kind: documentKindCertificate, Measure: "СС и ДС не проверены: страница кода TWS.BY не открылась", Applies: "maybe"})
-	case len(regulations) == 0:
-		summary = append(summary, "СС/ДС: не нужны — кода нет в перечнях к ТР ТС")
-	default:
-		summary = append(summary, fmt.Sprintf("СС/ДС: возможно нужны — код есть в перечнях к ТР ТС (%d), нужны, если товар подходит под позицию", len(seen)))
+	return matches, unread, total
+}
+
+// actText — текст акта; у карточки docs.eaeunion.org (сам текст в PDF) — текст PDF «Рус».
+func (t *agentToolbox) actText(ctx context.Context, address string) (directory.WebPage, error) {
+	page, err := t.documentText(ctx, address)
+	if err != nil {
+		return page, err
+	}
+	if parsed, _ := url.Parse(address); parsed != nil && parsed.Hostname() == "docs.eaeunion.org" {
+		for _, link := range page.Links {
+			if link.Text == "Рус" && strings.HasSuffix(strings.ToLower(link.URL), ".pdf") {
+				t.rememberPage(address, "", page.Links)
+				return t.documentText(ctx, link.URL)
+			}
+		}
+	}
+	return page, nil
+}
+
+// generalAnswer — open_goods_help без справки: находки общей базы для агента.
+func (t *agentToolbox) generalAnswer(ctx context.Context, code, label, reason, helpURL string) (string, agentToolEvent) {
+	matches, unread, total := t.generalMatches(ctx, code)
+	t.rememberPage(conditionalReleaseURL, "", []directory.WebLink{{URL: conditionalReleaseURL, Text: conditionalReleaseTitle}})
+	positions := make([]map[string]any, 0, len(matches))
+	for _, match := range matches {
+		positions = append(positions, map[string]any{"act": match.act.Text, "url": match.act.URL, "kind": match.kind, "item": match.heading,
+			"product": match.product, "codes": match.codes, "document": match.document, "note": match.note, "partial": match.partial})
+	}
+	answer := map[string]any{"code": code, "error": reason, "general": positions, "actsRead": total,
+		"links": []directory.WebLink{{URL: conditionalReleaseURL, Text: conditionalReleaseTitle}},
+		"hint": "Справки tnved.info нет — ниже общая база: позиции перечней СС/ДС и раздела II Решения КТС №299, где встречается код. " +
+			"Реши по товару, относится ли каждая позиция; partial — позиция «из …»: только названная продукция. Кода нет в перечне — этот документ не нужен."}
+	if len(unread) > 0 {
+		answer["unread"] = unread
+	}
+	detail := fmt.Sprintf("%s — общая база: позиций %d в %d перечнях", reason, len(matches), total)
+	return toolJSON(answer), agentToolEvent{Tool: "open_goods_help", Label: label, Detail: detail, URL: helpURL, Failed: true}
+}
+
+// generalDocuments — ответ по общей базе без ИИ: позиции перечней «возможно» (подходит ли товар,
+// решает сотрудник по наименованию), кода нет в перечнях — документ не нужен; утильсбор — перечень № 689.
+func generalDocuments(code string, matches []actMatch, unread []string, total int) AgentResult {
+	result := AgentResult{DocumentsCode: code, Candidates: []AgentCandidate{}, DroppedCodes: []string{}, Documents: []AgentDocument{}}
+	conformity, sgr := []string{}, []string{}
+	for _, match := range matches {
+		name := firstNonEmpty(match.product, match.heading)
+		if match.kind == documentKindRegistration {
+			sgr = append(sgr, service.TruncateRunes(name, 120))
+		} else {
+			conformity = append(conformity, actShortTitle(match.act.Text))
+		}
+		if len(result.Documents) >= agentMaxDocuments-3 {
+			continue
+		}
+		requirement := "Нужно, если товар — " + service.TruncateRunes(name, 300)
+		if match.partial {
+			requirement += " (позиция «из»: только эта продукция)"
+		}
+		if match.note != "" {
+			requirement += ". " + match.note
+		}
+		measure := "Позиция перечня: " + service.TruncateRunes(name, 200)
+		if document := []rune(match.document); len(document) > 0 {
+			measure = strings.ToUpper(string(document[:1])) + string(document[1:]) + " — " + service.TruncateRunes(name, 200)
+		}
+		result.Documents = append(result.Documents, AgentDocument{Kind: match.kind, Measure: measure, Act: match.act.Text, URL: match.act.URL,
+			Requirement: requirement, Applies: "maybe", Basis: match.codes, BasisSource: match.act.Text})
+	}
+	var summary []string
+	if len(conformity) == 0 {
+		summary = append(summary, fmt.Sprintf("СС/ДС: не нужны — кода нет в перечнях общей базы (прочитано %d)", total))
+	} else {
+		summary = append(summary, "СС/ДС: нужны, если товар подходит под позицию — "+strings.Join(unique(conformity), ", "))
 		result.Documents = append(result.Documents, AgentDocument{Kind: documentKindConditional, Measure: "Условный выпуск без СС/ДС",
 			Act: conditionalReleaseTitle, URL: conditionalReleaseURL, Applies: "maybe",
 			Requirement: "Если товару нужен СС или ДС, а документа нет — выпуск условно, с обязательством представить документ в срок по Правилам."})
 	}
-
-	// СГР — только раздел II Решения №299.
-	sgr, partialNames := 0, []string{}
-	for _, position := range sgrPositions {
-		if !strings.HasPrefix(code, position.code) {
-			continue
-		}
-		sgr++
-		if position.partial {
-			partialNames = append(partialNames, service.TruncateRunes(position.name, 150))
-		}
-		requirement := "Нужно для продукции пунктов 6–11 раздела II (дезсредства, бытовая химия, опасные химические вещества, водоподготовка, гигиена, контакт с пищей) этой позиции."
-		if position.partial {
-			requirement = "Позиция «из»: нужно, только если товар — " + position.name
-		}
-		result.Documents = append(result.Documents, AgentDocument{Kind: documentKindRegistration, Measure: "СГР: позиция раздела II " + FormatTNVEDCode(position.code) + " — " + service.TruncateRunes(position.name, 200),
-			Act: sgrActTitle, URL: sgrActURL, Requirement: requirement, Applies: "maybe"})
-	}
-	switch {
-	case sgr == 0:
+	if len(sgr) == 0 {
 		summary = append(summary, "СГР: не нужно — кода нет в разделе II Решения КТС №299")
-	case len(partialNames) == sgr:
-		summary = append(summary, "СГР: только если товар — "+strings.Join(partialNames, "; ")+" (раздел II Решения КТС №299)")
-	default:
-		summary = append(summary, "СГР: возможно — код есть в разделе II Решения КТС №299")
-	}
-
-	// Утильсбор.
-	matches, _ := utilfee.Lookup(code)
-	for _, match := range matches {
-		result.Documents = append(result.Documents, AgentDocument{Kind: documentKindOther,
-			Measure: fmt.Sprintf("Утилизационный платёж: раздел %d «%s», пункт %s", match.Section, match.Title, match.Item),
-			Act:     "Приказ МЭГПР РК № 689 от 09.11.2022 (перечень продукции)", Requirement: match.Note, Applies: "yes"})
-	}
-	if len(matches) == 0 {
-		summary = append(summary, "утильсбор: кода нет в перечне")
 	} else {
-		summary = append(summary, "утильсбор: код в перечне — платёж нужен")
+		summary = append(summary, "СГР: только если товар — "+strings.Join(unique(sgr), "; "))
 	}
-
+	if fees, _ := utilfee.Lookup(code); len(fees) > 0 {
+		summary = append(summary, "утильсбор: код в перечне — платёж нужен")
+		for _, fee := range fees {
+			result.Documents = append(result.Documents, AgentDocument{Kind: documentKindOther,
+				Measure: fmt.Sprintf("Утилизационный платёж: раздел %d «%s», пункт %s", fee.Section, fee.Title, fee.Item),
+				Act:     "Приказ МЭГПР РК № 689 от 09.11.2022 (перечень продукции)", Requirement: fee.Note, Applies: "yes"})
+		}
+	} else {
+		summary = append(summary, "утильсбор: кода нет в перечне")
+	}
 	result.Description = strings.Join(summary, "; ") + "."
 	result.Notes = "Дневной лимит подборов исчерпан, ответа агента по этому коду в базе нет — проверено программой по общей базе, без ИИ: " +
-		"СС/ДС — перечни к ТР ТС на странице кода TWS.BY, СГР — раздел II Решения КТС №299, утильсбор — перечень приказа № 689. " +
-		"Подходит ли товар под позицию перечня, сверьте по наименованию."
+		"перечни СС/ДС к техрегламентам, раздел II Решения КТС №299, перечень утильсбора № 689. Подходит ли товар под позицию, сверьте по наименованию."
+	if len(unread) > 0 {
+		result.Notes += " Не удалось прочитать: " + strings.Join(unread, "; ") + "."
+	}
 	return result
+}
+
+// actShortTitle — «Решение Коллегии ЕЭК №6 от 16.01.2018 (ТР ТС 010/2011)» → «№6 (ТР ТС 010/2011)».
+func actShortTitle(title string) string {
+	if index := strings.Index(title, "№"); index >= 0 {
+		short := strings.TrimSpace(title[index:])
+		if open, close := strings.Index(short, " от "), strings.Index(short, "("); open > 0 && close > open {
+			return short[:open] + " " + short[close:]
+		}
+		return short
+	}
+	return title
+}
+
+func unique(values []string) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, value := range values {
+		if !seen[value] {
+			seen[value] = true
+			out = append(out, value)
+		}
+	}
+	return out
 }

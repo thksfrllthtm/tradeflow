@@ -1,13 +1,105 @@
 package tnvedagent
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
+
+const testGeneralActURL = "https://adilet.zan.kz/rus/docs/H12EK000079"
+
+var testGeneralActs = []directory.WebLink{{URL: testGeneralActURL, Text: "Решение Коллегии ЕЭК №79 от 13.06.2012 (ТР ТС 019/2011)"}}
+
+func (d *fakeAgentData) GeneralActs(context.Context) ([]directory.WebLink, error) {
+	return testGeneralActs, nil
+}
+
+func readAct(t *testing.T, name string) string {
+	t.Helper()
+	data, err := os.ReadFile("testdata/" + name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+// Выдержки из настоящих сводных текстов adilet: документ после кодов (ТР ТС 010), перед кодами (004),
+// коды через запятую, документ в две строки и примечание (017), «из 61» и наименование в несколько строк (019).
+func TestFindInAct(t *testing.T) {
+	act := directory.WebLink{URL: "https://adilet.zan.kz/rus/docs/H18EK000006", Text: "Решение Коллегии ЕЭК №6"}
+	garage := findInAct("8467292000", act, readAct(t, "act_010.txt"))
+	if len(garage) != 1 || !strings.HasPrefix(garage[0].heading, "3. Оборудование гаражное") || !garage[0].partial ||
+		garage[0].document != "сертификат соответствия" || garage[0].kind != documentKindCertificate {
+		t.Fatalf("010: %+v", garage)
+	}
+	if none := findInAct("8471300000", act, readAct(t, "act_010.txt")); len(none) != 0 {
+		t.Fatalf("010 other code: %+v", none)
+	}
+
+	dishwasher := findInAct("8422110000", act, readAct(t, "act_004.txt"))
+	if len(dishwasher) != 1 || dishwasher[0].product != "машины посудомоечные" || dishwasher[0].document != "сертификат соответствия" ||
+		dishwasher[0].partial || !strings.HasPrefix(dishwasher[0].heading, "1. Электрические аппараты") {
+		t.Fatalf("004: %+v", dishwasher)
+	}
+
+	cotton := findInAct("5208110000", act, readAct(t, "act_017.txt"))
+	if len(cotton) < 2 || !strings.HasPrefix(cotton[0].product, "бельевые") || cotton[0].kind != documentKindDeclaration ||
+		cotton[0].document != "декларация о соответствии или сертификат соответствия" || !strings.HasPrefix(cotton[0].note, "кроме суровых") {
+		t.Fatalf("017: %+v", cotton)
+	}
+
+	coat := findInAct("6201300000", act, readAct(t, "act_019.txt"))
+	if len(coat) == 0 || !strings.Contains(coat[0].product, "Костюмы мужские и женские для защиты от общих") || coat[0].document != "декларация о соответствии" {
+		t.Fatalf("019: %+v", coat)
+	}
+}
+
+// №299: только раздел II (СГР); код из раздела III не находится.
+func TestFindInActSGRSectionOnly(t *testing.T) {
+	act := directory.WebLink{URL: directory.SGRActURL, Text: "Решение КТС №299"}
+	acids := findInAct("2915900000", act, readAct(t, "act_299.txt"))
+	if len(acids) != 1 || acids[0].kind != documentKindRegistration || !acids[0].partial || !strings.HasPrefix(acids[0].product, "Кислоты ациклические") {
+		t.Fatalf("299: %+v", acids)
+	}
+	if paint := findInAct("3208109000", act, readAct(t, "act_299.txt")); len(paint) != 0 {
+		t.Fatalf("section III matched: %+v", paint)
+	}
+}
+
+func TestGeneralDocuments(t *testing.T) {
+	act := directory.WebLink{URL: "https://adilet.zan.kz/rus/docs/H18EK000006", Text: "Решение Коллегии ЕЭК №6 от 16.01.2018 (ТР ТС 010/2011)"}
+	garage := generalDocuments("8467292000", findInAct("8467292000", act, readAct(t, "act_010.txt")), nil, 14)
+	if !strings.Contains(garage.Description, "СС/ДС: нужны, если товар подходит под позицию — №6 (ТР ТС 010/2011)") ||
+		!strings.Contains(garage.Description, "СГР: не нужно") || garage.Documents[0].Measure != "Сертификат соответствия — 3. Оборудование гаражное для автотранспортных средств и прицепов" ||
+		garage.Documents[0].Applies != "maybe" || garage.Documents[1].Kind != documentKindConditional {
+		t.Fatalf("garage %+v", garage)
+	}
+	// Шины: в перечнях СС/ДС кода нет, утильсбор нужен; непрочитанный перечень — в примечании.
+	tyres := generalDocuments("4011100003", nil, []string{"Решение №77"}, 13)
+	if !strings.Contains(tyres.Description, "СС/ДС: не нужны — кода нет в перечнях общей базы (прочитано 13)") ||
+		!strings.Contains(tyres.Description, "утильсбор: код в перечне") || !strings.Contains(tyres.Notes, "Не удалось прочитать: Решение №77") {
+		t.Fatalf("tyres %+v", tyres)
+	}
+}
+
+// Лимит tnved.info: open_goods_help отдаёт агенту позиции общей базы; перечень открыт — цитаты из него проходят.
+func TestDocumentsHelpLimitFallsBackToGeneralBase(t *testing.T) {
+	toolbox := newAgentToolbox(&fakeAgentData{helpLimit: true})
+	toolbox.documentsCode = "6116102000"
+	content, event := toolbox.run(context.Background(), "open_goods_help", `{"code":"6116102000"}`)
+	if !strings.Contains(content, "общая база") || !strings.Contains(content, "из 61, из 62") || !event.Failed || event.URL != testHelpURL ||
+		!strings.Contains(event.Detail, "лимит tnved.info") || !strings.Contains(event.Detail, "в 1 перечнях") {
+		t.Fatalf("limit answer %s event %+v", content, event)
+	}
+	if origin := toolbox.quoteOrigin("декларация о соответствии", testGeneralActURL, ""); origin == "" {
+		t.Fatal("quote from general act not accepted")
+	}
+}
 
 // Лимит подборов, ответ агента по коду есть — он и показывается, с датой и товаром.
 func TestSavedDocumentsResult(t *testing.T) {
@@ -16,64 +108,5 @@ func TestSavedDocumentsResult(t *testing.T) {
 	result := savedDocumentsResult(row)
 	if result.DocumentsCode != "8467292000" || len(result.Documents) != 1 || result.Documents[0].Kind != "cc" || !strings.Contains(result.Notes, "от 20.10.2026 по товару «дрель»") {
 		t.Fatalf("saved %+v", result)
-	}
-}
-
-// Настоящая страница TWS.BY (пульверизаторы): записи ТР ТС с документом; утратившие силу, белорусское
-// «Сертифицирование», санитарные меры и ТР ТС 003/2011 без «Требуется документ» не берутся.
-func TestTWSRegulations(t *testing.T) {
-	page, err := os.ReadFile("testdata/tws_8424200000.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	regulations := twsRegulations(string(page))
-	if len(regulations) != 8 {
-		t.Fatalf("regulations %d: %+v", len(regulations), regulations)
-	}
-	first := regulations[0]
-	if first.code != "8424200000" || !strings.Contains(first.act, "№ 2") || first.document != "Сертификат соответствия" ||
-		len(first.items) != 2 || !strings.Contains(first.items[1], "пистолеты") {
-		t.Fatalf("first %+v", first)
-	}
-	for _, regulation := range regulations {
-		if strings.Contains(regulation.act, "№ 91") || strings.Contains(regulation.act, "003/2011") {
-			t.Fatalf("expired or without document: %+v", regulation)
-		}
-	}
-}
-
-func TestGeneralDocuments(t *testing.T) {
-	page, _ := os.ReadFile("testdata/tws_8424200000.txt")
-	result := generalDocuments("8424200000", string(page))
-	kinds := map[string]int{}
-	for _, document := range result.Documents {
-		kinds[document.Kind]++
-	}
-	// Пульверизаторы: СС и ДС возможны, условный выпуск; СГР по №299 нет; утильсбора нет.
-	if kinds["cc"] == 0 || kinds["dc"] == 0 || kinds["conditional"] != 1 || kinds["sgr"] != 0 || kinds["other"] != 0 ||
-		!strings.Contains(result.Description, "СС/ДС: возможно нужны") || !strings.Contains(result.Description, "СГР: не нужно") ||
-		!strings.Contains(result.Description, "утильсбор: кода нет") {
-		t.Fatalf("sprayers %+v", result)
-	}
-	// Краски 3208: СГР по разделу II (позиция без «из»), утильсбора нет; ТР ТС на странице нет — СС/ДС не нужны.
-	paint := generalDocuments("3208109000", "Меры нетарифного регулирования\nСанитарные меры\n32\n- Экстракты\nРешение Комиссии Таможенного Союза № 299\n")
-	if !strings.Contains(paint.Description, "СС/ДС: не нужны") || !strings.Contains(paint.Description, "СГР: возможно") || paint.Documents[0].Kind != "sgr" {
-		t.Fatalf("paint %+v", paint)
-	}
-	// 7326 — позиция «из» (скребки для языка): СГР только для них.
-	if hooks := generalDocuments("7326909807", ""); !strings.Contains(hooks.Description, "СГР: только если товар — Скребки для языка") {
-		t.Fatalf("7326 %+v", hooks)
-	}
-	// Шины 4011: утильсбор нужен; страница не открылась — СС/ДС под вопросом.
-	tyres := generalDocuments("4011100003", "")
-	if !strings.Contains(tyres.Description, "утильсбор: код в перечне") || !strings.Contains(tyres.Description, "страница кода TWS.BY не открылась") {
-		t.Fatalf("tyres %+v", tyres)
-	}
-}
-
-// Раздел II Решения №299 перенесён целиком: 94 позиции (диапазон 3901–3911 развёрнут).
-func TestSGRPositionsCount(t *testing.T) {
-	if len(sgrPositions) != 94 {
-		t.Fatalf("sgr positions %d", len(sgrPositions))
 	}
 }
