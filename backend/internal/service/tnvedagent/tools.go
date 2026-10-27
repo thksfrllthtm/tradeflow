@@ -403,6 +403,10 @@ type agentToolbox struct {
 	docs  map[string]directory.WebPage
 	// documentsCode — запуск по кнопке «Документы для ввоза» для этого кода ("" — обычный подбор).
 	documentsCode string
+	// general — поиск кода по общей базе за этот запуск (nil — ещё не искали); generalAsked — пропущенные
+	// перечни уже возвращались агенту.
+	general      *generalSearch
+	generalAsked bool
 	// search — поиск в интернете (nil — не подключён); webCalls — обращений к Tavily за этот запуск,
 	// pages — разные страницы, открытые в обычном подборе.
 	search   webSearcher
@@ -535,6 +539,15 @@ func (t *agentToolbox) documentText(ctx context.Context, address string) (direct
 	if err != nil && t.search != nil &&
 		(errors.Is(err, directory.ErrWebPageScript) || errors.Is(err, directory.ErrWebPageUnavailable) || errors.Is(err, directory.ErrWebPageFile)) {
 		page, err = t.data.ExtractedPage(ctx, address, t.webPageText)
+	}
+	// Карточка решения Коллегии на docs.eaeunion.org — только описание, текст в PDF: читаем сводную
+	// редакцию на adilet (адрес по номеру и году с карточки). Не открылась — остаётся карточка.
+	if adilet := directory.EECCardAdiletURL(page); err == nil && adilet != "" {
+		if full, fullErr := t.data.WebPage(ctx, adilet); fullErr == nil && strings.TrimSpace(full.Text) != "" {
+			t.links[adilet] = true
+			full.Links = append(full.Links, directory.WebLink{URL: adilet, Text: "Сводная редакция на adilet.zan.kz"})
+			page = full
+		}
 	}
 	if err == nil {
 		t.docs[address] = page
@@ -802,6 +815,8 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		if err != nil || page.Text == "" {
 			return t.generalAnswer(ctx, code, label, "справка tnved.info не открылась", page.URL)
 		}
+		// Решения Коллегии ЕЭК — текстом с adilet, а не карточкой docs.eaeunion.org с PDF.
+		page = directory.WithAdiletLinks(page)
 		// Условный выпуск по Правилам РК: ссылка на текст Правил — вместе со справкой, чтобы агент мог
 		// открыть их (open_link, search_in_document) и указать в итоге.
 		page.Text += "\n\nУсловный выпуск (РК):\n" + conditionalReleaseTitle + " — " + conditionalReleaseURL
@@ -1084,6 +1099,9 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	}
 	if t.documentsCode != "" {
 		result, problem := t.finishDocuments(args)
+		if result != nil {
+			problem = t.checkGeneral(ctx, result, problem)
+		}
 		return result, problem, nil
 	}
 	codes := []string{}

@@ -16,7 +16,7 @@ function saveRecord(value: number) {
 
 // Игра, пока ИИ ищет код: грузовик с контейнером прыгает через шлагбаумы таможни (как динозаврик Chrome).
 // Пробел, ↑ или щелчок по полю — прыжок. Всё рисуется в браузере, сервер не нагружается.
-export function RoadGame() {
+export function RoadGame({ onClose }: { onClose: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const state = useRef<RoadState>(newRoad())
   const [record, setRecord] = useState(readRecord)
@@ -67,6 +67,9 @@ export function RoadGame() {
     <div className="rc-game-head">
       <span>Пока ИИ ищет код — сыграйте: <kbd>Пробел</kbd> или щелчок — прыжок</span>
       {record > 0 && <b>Рекорд {record}</b>}
+      <button type="button" className="rc-game-close" onClick={onClose} aria-label="Закрыть игру" title="Закрыть игру">
+        <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+      </button>
     </div>
     <canvas ref={canvas} height={HEIGHT} onPointerDown={(event) => { event.preventDefault(); press() }}
       role="img" aria-label="Грузовик с контейнером прыгает через шлагбаумы" />

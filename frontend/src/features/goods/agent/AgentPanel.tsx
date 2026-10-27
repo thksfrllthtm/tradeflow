@@ -402,7 +402,7 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
             </div>
             : <AgentChecks messages={stepMessages} searching={searching} running={running} baseFound={baseFound} />}
         {stepMessages.length > 0 && <StepsGroup messages={stepMessages} live={running} />}
-        {running && <div className="ag-typing" aria-live="polite"><span /><span /><span /> {documentsRequested(messages) ? 'агент читает справку tnved.info и акты' : 'агент работает'} — панель можно закрыть</div>}
+        {running && <div className="ag-typing" aria-live="polite"><span /><span /><span /> {documentsRequested(messages) ? 'агент разбирает справку и перечни' : 'агент работает'} — панель можно закрыть</div>}
       </section>
 
       {stream.map((message) => <MessageView key={message.id} message={message} applied={applied} busy={busy} fileCode={agentItem.code}

@@ -48,6 +48,10 @@ func testActText() string {
 func (d *fakeAgentData) WebPage(_ context.Context, url string) (directory.WebPage, error) {
 	d.webOpened = append(d.webOpened, url)
 	switch url {
+	case testEECCardURL:
+		return directory.WebPage{URL: url, Text: "Информация о документе\nКороткий заголовок документа\nРешение Коллегии ЕЭК № 137\nДата принятия документа\n11.10.2021\npdf"}, nil
+	case testEECAdiletURL:
+		return directory.WebPage{URL: url, Title: "О внесении изменений в Решение Коллегии ЕЭК от 21 апреля 2015 г. № 30", Text: "Список F\nCH2FCF3\nГФУ-134а\nиз 2903 45 000 0"}, nil
 	case testGeneralActURL:
 		text, err := os.ReadFile("testdata/act_019.txt")
 		return directory.WebPage{URL: url, Text: string(text)}, err

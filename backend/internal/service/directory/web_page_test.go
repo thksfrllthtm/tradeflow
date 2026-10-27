@@ -240,3 +240,26 @@ func TestConformityActsFromGoodsHelp(t *testing.T) {
 		t.Errorf("not a college decision: %s", got)
 	}
 }
+
+// Решения Коллегии ЕЭК — сводной редакцией adilet: по названию из справки (в том числе «№30 (2015)») и по
+// карточке docs.eaeunion.org (сам текст там в PDF).
+func TestAdiletLinks(t *testing.T) {
+	if got := AdiletURL("Решение Коллегии ЕЭК №30 (2015) от 21.04.2015"); got != "https://adilet.zan.kz/rus/docs/H15EK000030" {
+		t.Errorf("№30: %s", got)
+	}
+	card := WebPage{Text: "Информация о документе\nНомер документа\n137\nКороткий заголовок документа\nРешение Коллегии ЕЭК № 137\nВид документа\nАкты\nДата принятия документа\n11.10.2021\nДата опубликования\n12.10.2021"}
+	if got := EECCardAdiletURL(card); got != "https://adilet.zan.kz/rus/docs/H21EK000137" {
+		t.Errorf("card: %s", got)
+	}
+	if got := AdiletURL("Решение Совета ЕЭК №11  от 22.01.2025"); got != "https://adilet.zan.kz/rus/docs/H25EV000011" {
+		t.Errorf("council: %s", got)
+	}
+	if got := EECCardAdiletURL(WebPage{Text: "Решение Совета ЕЭК № 46"}); got != "" {
+		t.Errorf("no card fields: %s", got)
+	}
+	card6 := "https://docs.eaeunion.org/docs/ru-ru/01515803/clcd_19012018_6"
+	help := WithAdiletLinks(WebPage{Text: "1. Решение Коллегии ЕЭК №6 от 16.01.2018 — " + card6, Links: []WebLink{{URL: card6, Text: "Решение Коллегии ЕЭК №6 от 16.01.2018"}}})
+	if !strings.Contains(help.Text, "https://adilet.zan.kz/rus/docs/H18EK000006") || strings.Contains(help.Text, card6) || len(help.Links) != 2 {
+		t.Errorf("help %+v", help)
+	}
+}

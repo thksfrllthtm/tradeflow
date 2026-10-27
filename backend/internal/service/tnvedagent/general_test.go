@@ -11,11 +11,29 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
 
-const testGeneralActURL = "https://adilet.zan.kz/rus/docs/H12EK000079"
+const (
+	testGeneralActURL = "https://adilet.zan.kz/rus/docs/H12EK000079"
+	testEECCardURL    = "https://docs.eaeunion.org/docs/ru-ru/01530000/clcd_12102021_137"
+	testEECAdiletURL  = "https://adilet.zan.kz/rus/docs/H21EK000137"
+)
+
+// Карточка решения Коллегии на docs.eaeunion.org — агент получает сводный текст с adilet, а не описание.
+func TestEECCardOpensAdiletText(t *testing.T) {
+	toolbox := newAgentToolbox(&fakeAgentData{})
+	toolbox.documentsCode = "2903450000"
+	toolbox.links[testEECCardURL] = true
+	content, event := toolbox.run(context.Background(), "open_link", `{"url":"`+testEECCardURL+`"}`)
+	if !strings.Contains(content, "из 2903 45 000 0") || event.Failed || !toolbox.links[testEECAdiletURL] {
+		t.Fatalf("card: %s %+v", content, event)
+	}
+}
 
 var testGeneralActs = []directory.WebLink{{URL: testGeneralActURL, Text: "Решение Коллегии ЕЭК №79 от 13.06.2012 (ТР ТС 019/2011)"}}
 
 func (d *fakeAgentData) GeneralActs(context.Context) ([]directory.WebLink, error) {
+	if !d.generalActs {
+		return nil, nil
+	}
 	return testGeneralActs, nil
 }
 
@@ -89,7 +107,7 @@ func TestGeneralDocuments(t *testing.T) {
 
 // Лимит tnved.info: open_goods_help отдаёт агенту позиции общей базы; перечень открыт — цитаты из него проходят.
 func TestDocumentsHelpLimitFallsBackToGeneralBase(t *testing.T) {
-	toolbox := newAgentToolbox(&fakeAgentData{helpLimit: true})
+	toolbox := newAgentToolbox(&fakeAgentData{helpLimit: true, generalActs: true})
 	toolbox.documentsCode = "6116102000"
 	content, event := toolbox.run(context.Background(), "open_goods_help", `{"code":"6116102000"}`)
 	if !strings.Contains(content, "общая база") || !strings.Contains(content, "из 61, из 62") || !event.Failed || event.URL != testHelpURL ||
@@ -98,6 +116,30 @@ func TestDocumentsHelpLimitFallsBackToGeneralBase(t *testing.T) {
 	}
 	if origin := toolbox.quoteOrigin("декларация о соответствии", testGeneralActURL, ""); origin == "" {
 		t.Fatal("quote from general act not accepted")
+	}
+}
+
+// Сверка с общей базой: перечень №79 есть, а в ответе его нет — первый итог возвращается агенту, после
+// повтора без него — предупреждение «⚠» в ответе; учтённый перечень (по номеру решения) — без предупреждений.
+func TestDocumentsGeneralCheck(t *testing.T) {
+	toolbox := newAgentToolbox(&fakeAgentData{generalActs: true})
+	toolbox.documentsCode = "6116102000"
+	without := `{"description":"Нужен санэпиднадзор.","documents":[{"kind":"other","measure":"Санэпиднадзор","act":"Решение КТС №299","requirement":"Уточнить контакт с пищей.","applies":"maybe"}]}`
+	result, problem, err := toolbox.finish(context.Background(), without)
+	if err != nil || !strings.Contains(problem, "Сверка с общей базой") || !strings.Contains(problem, testGeneralActURL) {
+		t.Fatalf("first finish: %q %v", problem, err)
+	}
+	result, problem, _ = toolbox.finish(context.Background(), without)
+	last := result.Documents[len(result.Documents)-1]
+	if problem != "" || !strings.HasPrefix(last.Measure, "⚠ Код есть в перечне №79 (ТР ТС 019/2011)") || last.Applies != "maybe" || last.URL != testGeneralActURL {
+		t.Fatalf("second finish: %q %+v", problem, result.Documents)
+	}
+	with := `{"description":"Декларация по ТР ТС 019.","documents":[{"kind":"dc","measure":"Декларация соответствия ТР ТС 019/2011","act":"Решение Коллегии ЕЭК №79","requirement":"Только если перчатки защитные.","applies":"maybe"}]}`
+	fresh := newAgentToolbox(&fakeAgentData{generalActs: true})
+	fresh.documentsCode = "6116102000"
+	result, problem, _ = fresh.finish(context.Background(), with)
+	if problem != "" || len(result.Documents) != 1 {
+		t.Fatalf("covered: %q %+v", problem, result.Documents)
 	}
 }
 

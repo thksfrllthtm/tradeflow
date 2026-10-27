@@ -39,18 +39,52 @@ var generalActs = []WebLink{
 	{URL: "https://adilet.zan.kz/rus/docs/H22EK000023", Text: "Решение Коллегии ЕЭК №23 от 08.02.2022 (ТР ЕАЭС 048/2019)"},
 }
 
-// collegeDecision — «Решение Коллегии ЕЭК №6 от 16.01.2018»: номер и год.
-var collegeDecision = regexp.MustCompile(`Решение Коллегии ЕЭК\s*№\s*(\d+)\s+от\s+\d{2}\.\d{2}\.(\d{4})`)
+var (
+	// eecDecision — «Решение Коллегии ЕЭК №6 от 16.01.2018», «№30 (2015) от 21.04.2015», «Решение Совета ЕЭК №11
+	// от 22.01.2025»: орган, номер и год.
+	eecDecision = regexp.MustCompile(`Решение (Коллегии|Совета) ЕЭК\s*№\s*(\d+)(?:\s*\(\d{4}\))?\s+от\s+\d{2}\.\d{2}\.(\d{4})`)
+	// Карточка решения на docs.eaeunion.org: короткий заголовок и дата принятия.
+	eecCardTitle = regexp.MustCompile(`Короткий заголовок документа\s*\n\s*(Решение (?:Коллегии|Совета) ЕЭК\s*№\s*\d+)`)
+	eecCardDate  = regexp.MustCompile(`Дата принятия документа\s*\n\s*(\d{2}\.\d{2}\.\d{4})`)
+)
 
-// AdiletURL — сводная редакция решения Коллегии ЕЭК на adilet.zan.kz по названию из справки
-// (H<год>EK<номер из 6 цифр>, как у всех решений основного списка); не решение Коллегии — "".
+// EECCardAdiletURL — карточка решения Коллегии или Совета на docs.eaeunion.org (сам текст там в PDF, который не
+// читается) → сводная редакция на adilet; не карточка решения ЕЭК — "".
+func EECCardAdiletURL(page WebPage) string {
+	title, date := eecCardTitle.FindStringSubmatch(page.Text), eecCardDate.FindStringSubmatch(page.Text)
+	if title == nil || date == nil {
+		return ""
+	}
+	return AdiletURL(title[1] + " от " + date[1])
+}
+
+// WithAdiletLinks — в справке ссылки на решения Коллегии и Совета ЕЭК (docs.eaeunion.org, PDF) заменены на
+// сводные редакции adilet; прежние ссылки остаются среди разрешённых.
+func WithAdiletLinks(page WebPage) WebPage {
+	links := append([]WebLink{}, page.Links...)
+	for _, link := range page.Links {
+		if address := AdiletURL(link.Text); address != "" && address != link.URL {
+			page.Text = strings.ReplaceAll(page.Text, link.URL, address)
+			links = append(links, WebLink{URL: address, Text: link.Text})
+		}
+	}
+	page.Links = links
+	return page
+}
+
+// AdiletURL — сводная редакция решения Коллегии или Совета ЕЭК на adilet.zan.kz по названию из справки:
+// H<год>EK<номер из 6 цифр> у Коллегии, H<год>EV… у Совета; не решение ЕЭК — "".
 func AdiletURL(title string) string {
-	match := collegeDecision.FindStringSubmatch(title)
+	match := eecDecision.FindStringSubmatch(title)
 	if match == nil {
 		return ""
 	}
-	number, _ := strconv.Atoi(match[1])
-	return fmt.Sprintf("https://adilet.zan.kz/rus/docs/H%sEK%06d", match[2][2:], number)
+	body := "EK"
+	if match[1] == "Совета" {
+		body = "EV"
+	}
+	number, _ := strconv.Atoi(match[2])
+	return fmt.Sprintf("https://adilet.zan.kz/rus/docs/H%s%s%06d", match[3][2:], body, number)
 }
 
 // conformityActs — перечни СС/ДС из ответа справки: мера «подача ДТ … сопровождается … сертификатом или

@@ -58,6 +58,8 @@ export function ReferenceChat() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
+  // Игра, пока агент работает: только по кнопке «Сыграть», закрывается крестиком.
+  const [gameOpen, setGameOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // История — одна остановка Tab: по вопросам — стрелками (roving tabindex).
@@ -229,6 +231,20 @@ export function ReferenceChat() {
     }
   }
 
+  // Остановить агента: на сервере запуск прерывается, в чате — «Подбор остановлен.».
+  async function stop() {
+    if (!session || busy) return
+    setBusy(true); setError('')
+    try {
+      accept(await agentApi.cancel(session.id), false)
+      void loadHistory()
+    } catch (reason) {
+      setError(errorMessage(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // Выбор в меню: команда с аргументом — в поле, дописать; без аргумента — сразу.
   function pick(command: Command) {
     if (command.name === 'новый') { startNew(); return }
@@ -287,7 +303,8 @@ export function ReferenceChat() {
 
   return <section className={dragging ? 'rc dragging' : 'rc'} aria-label="Подбор кода ТН ВЭД"
     onDragOver={(event) => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true) } }}
-    onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false) }} onDrop={onDrop}>
+    // Ушёл за пределы чата (с любого вложенного элемента, из окна, Esc) — рамка снимается.
+    onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false) }} onDrop={onDrop}>
     <header className="rc-head">
       <div className="rc-title">
         <span className="rc-logo" aria-hidden="true">
@@ -332,13 +349,17 @@ export function ReferenceChat() {
             <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент сверит примеры декларирования и пояснения к ТН ВЭД, найдёт код в номенклатуре и объяснит выбор.</p>
             <div className="rc-examples">{examples.map((example) => <button key={example} type="button" onClick={() => { setText(example); inputRef.current?.focus() }}>{example}</button>)}</div>
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
-            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />}
+            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)}
+            stopping={busy} onStop={() => void stop()} />}
           {error && <p className="rc-error" role="alert">{error}</p>}
         </div>
 
         {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
             Только пока агент ищет код; ответ готов — игра уходит. Сервер не нагружает. */}
-        {session?.status === 'running' && <div className="rc-game-dock"><RoadGame /></div>}
+        {session?.status === 'running' && <div className="rc-game-dock">
+          {gameOpen ? <RoadGame onClose={() => setGameOpen(false)} />
+            : <button type="button" className="rc-game-open" onClick={() => setGameOpen(true)}>Сыграть, пока ИИ ищет код</button>}
+        </div>}
 
         <form className="rc-composer" onSubmit={(event) => void send(event)}>
           {photos.length > 0 && <div className="rc-attachments">{photos.map((photo, index) => <span key={index} className="rc-attachment">
@@ -377,9 +398,9 @@ export function ReferenceChat() {
 }
 
 // Разговор: вопрос сотрудника, что нашлось в базе, ход поиска, вопросы агента, ответ.
-type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void }
+type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void; stopping: boolean; onStop: () => void }
 
-function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProps) {
+function Thread({ session, onPhoto, documentsDisabled, onDocuments, stopping, onStop }: ThreadProps) {
   const photos = session.photos ?? []
   const blocks = useMemo(() => threadBlocks(session.messages), [session.messages])
   const working = isWorking(session)
@@ -405,23 +426,34 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProp
         case 'result': return message.content.documentsCode ? <DocumentsAnswer key={message.id} result={message.content} />
           : <Answer key={message.id} sessionId={session?.id ?? 0} result={message.content} previous={block.previous} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
         case 'notice': return <p key={message.id} className="rc-notice">{message.content.text}</p>
-        case 'error': return <p key={message.id} className="rc-error">{message.content.message}</p>
+        case 'error': return <p key={message.id} className="rc-error">{message.content.message}
+          {block.retryDocuments && <button type="button" className="rc-retry" onClick={() => onDocuments(block.retryDocuments!)} disabled={documentsDisabled}>Повторить</button>}
+        </p>
         case 'rerun': return <p key={message.id} className="rc-divider"><span>заново</span></p>
         default: return null
       }
     })}
     {session.status === 'searching' && <p className="rc-typing"><span /><span /><span /> ищу в базе решений…</p>}
-    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агент читает справку tnved.info и акты…' : 'агент ищет код…'}</p>}
+    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агент разбирает справку и перечни…' : 'агент ищет код…'}
+      <button type="button" className="rc-stop" onClick={onStop} disabled={stopping}>Остановить</button></p>}
   </>
 }
 
-// previous — прошлый ответ в разговоре: с ним сравниваются коды ответа на уточнение.
-type Block = { type: 'steps'; messages: AgentMessage[] } | { type: 'message'; message: AgentMessage; previous?: AgentResult }
+// previous — прошлый ответ в разговоре: с ним сравниваются коды ответа на уточнение. retryDocuments — у
+// ошибки запроса «Документы для ввоза»: код для кнопки «Повторить».
+type Block = { type: 'steps'; messages: AgentMessage[] } | { type: 'message'; message: AgentMessage; previous?: AgentResult; retryDocuments?: string }
 
 function threadBlocks(messages: AgentMessage[]): Block[] {
   const blocks: Block[] = []
   let previous: AgentResult | undefined
+  let documents = ''
   for (const message of messages) {
+    if (message.kind === 'documents') documents = message.content.code
+    else if (message.kind === 'user' || message.kind === 'rerun' || message.kind === 'result') documents = ''
+    if (message.kind === 'error') {
+      blocks.push({ type: 'message', message, retryDocuments: documents || undefined })
+      continue
+    }
     if (message.kind === 'result') {
       blocks.push({ type: 'message', message, previous })
       // Ответ про документы — не ответ о коде: следующее уточнение сравнивается с прежним.

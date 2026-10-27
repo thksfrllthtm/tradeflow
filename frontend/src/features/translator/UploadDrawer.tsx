@@ -80,7 +80,7 @@ export function UploadDrawer({ onClose, onUploaded }: { onClose: () => void; onU
         <section className="drawer-section">
           <label className={dragging ? 'tr-drop dragging' : 'tr-drop'}
             onDragOver={(event) => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true) } }}
-            onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false) }} onDrop={onDrop}>
+            onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false) }} onDrop={onDrop}>
             <input type="file" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={(event) => { pick(event.target.files?.[0]); event.target.value = '' }} />
             {file ? <><b>{file.name}</b><small>{(file.size / 1024 / 1024).toFixed(1)} МБ · выбрать другой</small></>
               : <><b>Перетащите .docx или .xlsx сюда</b><small>или нажмите, чтобы выбрать файл</small></>}

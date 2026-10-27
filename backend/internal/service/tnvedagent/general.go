@@ -199,7 +199,24 @@ func actDocument(lines []string, start, end int) (document, note string) {
 // generalMatches — код в перечнях общей базы. Тексты — из базы (сводные редакции adilet), карточка
 // решения docs.eaeunion.org — через её PDF «Рус». unread — перечни, текст которых не прочитан. Акты
 // запоминаются как открытые страницы: агент может искать в них и цитировать.
-func (t *agentToolbox) generalMatches(ctx context.Context, code string) (matches []actMatch, unread []string, total int) {
+func (t *agentToolbox) generalMatches(ctx context.Context, code string) ([]actMatch, []string, int) {
+	if t.general == nil || t.general.code != code {
+		search := generalSearch{code: code}
+		search.matches, search.unread, search.total = t.readGeneral(ctx, code)
+		t.general = &search
+	}
+	return t.general.matches, t.general.unread, t.general.total
+}
+
+// generalSearch — результат поиска кода по общей базе (один раз за запуск: тексты актов большие).
+type generalSearch struct {
+	code    string
+	matches []actMatch
+	unread  []string
+	total   int
+}
+
+func (t *agentToolbox) readGeneral(ctx context.Context, code string) (matches []actMatch, unread []string, total int) {
 	acts, _ := t.data.GeneralActs(ctx)
 	for _, act := range acts {
 		page, err := t.actText(ctx, act.URL)
@@ -229,6 +246,88 @@ func (t *agentToolbox) actText(ctx context.Context, address string) (directory.W
 		}
 	}
 	return page, nil
+}
+
+var (
+	actNumber     = regexp.MustCompile(`№\s*(\d+)`)
+	actRegulation = regexp.MustCompile(`\d{3}/\d{4}`)
+)
+
+// covered — перечень учтён в ответе агента: та же ссылка, номер решения или номер техрегламента в акте
+// или мере. Раздел II №299 учтён, только если в ответе есть СГР (санэпиднадзор по разделу I — не то).
+func covered(match actMatch, documents []AgentDocument) bool {
+	if match.kind == documentKindRegistration {
+		for _, document := range documents {
+			if document.Kind == documentKindRegistration {
+				return true
+			}
+		}
+		return false
+	}
+	var patterns []*regexp.Regexp
+	if number := actNumber.FindStringSubmatch(match.act.Text); number != nil {
+		patterns = append(patterns, regexp.MustCompile(`№\s*`+number[1]+`\b`))
+	}
+	if regulation := actRegulation.FindString(match.act.Text); regulation != "" {
+		patterns = append(patterns, regexp.MustCompile(regexp.QuoteMeta(regulation)))
+	}
+	for _, document := range documents {
+		if document.URL == match.act.URL {
+			return true
+		}
+		for _, pattern := range patterns {
+			if pattern.MatchString(document.Act + " " + document.Measure) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// missingActs — перечни общей базы с кодом, которых нет в ответе: по первой позиции на перечень.
+func missingActs(matches []actMatch, documents []AgentDocument) []actMatch {
+	var missing []actMatch
+	seen := map[string]bool{}
+	for _, match := range matches {
+		key := match.act.URL + "|" + match.kind
+		if seen[key] || covered(match, documents) {
+			continue
+		}
+		seen[key] = true
+		missing = append(missing, match)
+	}
+	return missing
+}
+
+// checkGeneral — сверка ответа «Документы для ввоза» с общей базой (программой, без ИИ). Пропущенные
+// перечни — в ответ строкой «⚠ …»; первый раз ещё и агенту на проверку (problem — finish снова, тогда
+// ответ пересобирается и предупреждения остаются только у того, что агент так и не учёл).
+func (t *agentToolbox) checkGeneral(ctx context.Context, result *AgentResult, problem string) string {
+	matches, _, _ := t.generalMatches(ctx, t.documentsCode)
+	missing := missingActs(matches, result.Documents)
+	if len(missing) == 0 {
+		return problem
+	}
+	var lines []string
+	for index, match := range missing {
+		if index < 5 {
+			name := service.TruncateRunes(firstNonEmpty(match.product, match.heading), 150)
+			result.Documents = append(result.Documents, AgentDocument{Kind: match.kind,
+				Measure: "⚠ Код есть в перечне " + actShortTitle(match.act.Text) + ", позиция «" + name + "» — проверьте, подходит ли товар",
+				Act:     match.act.Text, URL: match.act.URL, Applies: "maybe", Basis: match.codes, BasisSource: match.act.Text,
+				Requirement: "Агент эту позицию не учёл. Документ по перечню: " + firstNonEmpty(match.document, "—") + "."})
+		}
+		if index < 8 {
+			lines = append(lines, fmt.Sprintf("%d) %s — позиция «%s», коды: %s; документ: %s; url: %s", index+1, match.act.Text,
+				service.TruncateRunes(firstNonEmpty(match.product, match.heading), 200), match.codes, firstNonEmpty(match.document, "—"), match.act.URL))
+		}
+	}
+	if t.generalAsked {
+		return problem
+	}
+	t.generalAsked = true
+	return strings.TrimSpace(problem + " Сверка с общей базой: код есть в перечнях, которых нет в documents:\n" + strings.Join(lines, "\n") +
+		"\nЭти перечни открыты (search_in_document по url). Реши по товару, относится ли позиция, и добавь по записи на каждый перечень: applies yes, maybe или no, basis — строка позиции, url — адрес перечня. Вызови finish снова.")
 }
 
 // generalAnswer — open_goods_help без справки: находки общей базы для агента.

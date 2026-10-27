@@ -18,6 +18,8 @@ type fakeAgentData struct {
 	pagesOpened []string
 	webOpened   []string
 	helpLimit   bool
+	// generalActs — в общей базе есть перечень №79 (ТР ТС 019), куда попадают перчатки.
+	generalActs bool
 	// declarations — запросы примеров декларирования; declarationsDown — сайт не отвечает.
 	declarations     []string
 	declarationsDown bool

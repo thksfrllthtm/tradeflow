@@ -19,8 +19,14 @@ export function menuCommands(text: string): Command[] {
   return match ? prefixed(match[1]) : []
 }
 
+// Текст как в пузыре запроса — «Документы для ввоза · 3827 61 000 0» (после ошибки его вставляют
+// повторно) — та же команда, а не вопрос агенту.
+const documentsText = /^документы(?:\s+для\s+ввоза)?(?:\s*[·:—–-]?\s*([\d\s]+))?\.?$/i
+
 // «/имя аргумент» → команда; null — текст не команда; unknown — после «/» нет такой команды.
 export function parseCommand(text: string): { command: Command; arg: string } | 'unknown' | null {
+  const documents = documentsText.exec(text.trim())
+  if (documents) return { command: commands.find((command) => command.name === 'документы')!, arg: (documents[1] ?? '').trim() }
   const match = /^\/(\S+)\s*([\s\S]*)$/.exec(text.trim())
   if (!match) return null
   const found = prefixed(match[1])

@@ -131,6 +131,11 @@
 @keyframes rc-dot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
 .rc-notice { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .86rem; }
 .rc-error { margin: 0; padding: 8px 12px; border-radius: var(--tf-radius); background: #fff1ee; color: #8f2a1f; font-size: .86rem; font-weight: 600; }
+.rc-retry { margin-left: 10px; padding: 3px 10px; border: 1px solid currentColor; border-radius: var(--tf-radius); background: none; color: inherit; font: inherit; cursor: pointer; }
+.rc-retry:disabled { opacity: .5; cursor: default; }
+.rc-stop { margin-left: 8px; padding: 2px 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: none; color: var(--tf-text); font: inherit; cursor: pointer; }
+.rc-stop:hover:not(:disabled) { border-color: var(--tf-text); }
+.rc-stop:disabled { opacity: .5; cursor: default; }
 .rc-divider { display: flex; align-items: center; gap: 8px; margin: 4px 0; color: var(--tf-muted); font-size: .82rem; }
 .rc-divider::before, .rc-divider::after { content: ''; flex: 1; border-top: 1px solid var(--tf-border); }
 
@@ -190,6 +195,10 @@
 .rc-game-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; color: var(--tf-muted); font-size: .8rem; }
 .rc-game-head b { color: var(--tf-text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
 .rc-game-head kbd { padding: 0 5px; border: 1px solid var(--tf-border); border-radius: 4px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; }
+.rc-game-close { display: grid; place-items: center; width: 24px; height: 24px; margin-left: auto; padding: 0; border: 0; border-radius: var(--tf-radius); background: none; color: var(--tf-muted); cursor: pointer; }
+.rc-game-close:hover { background: var(--tf-chip); color: var(--tf-text); }
+.rc-game-open { padding: 4px 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-muted); font: inherit; font-size: .8rem; cursor: pointer; }
+.rc-game-open:hover { border-color: var(--tf-text); color: var(--tf-text); }
 .rc-game canvas { display: block; width: 100%; height: 150px; cursor: pointer; touch-action: manipulation; }
 /* Место игры — между лентой и полем ввода, не прокручивается вместе с шагами агента. */
 .rc-game-dock { flex: none; padding: 8px 20px 0; background: var(--tf-bg); }

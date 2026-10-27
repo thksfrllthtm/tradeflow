@@ -19,6 +19,13 @@ describe('commands', () => {
     expect(parseCommand('лопата / черенок')).toBeNull()
   })
 
+  it('текст пузыря «Документы для ввоза · код» — команда документов, а не вопрос', () => {
+    expect(parseCommand('Документы для ввоза · 3827 61 000 0')).toMatchObject({ command: { name: 'документы' }, arg: '3827 61 000 0' })
+    expect(parseCommand('документы 2903450000')).toMatchObject({ command: { name: 'документы' }, arg: '2903450000' })
+    expect(parseCommand('Документы для ввоза')).toMatchObject({ command: { name: 'документы' }, arg: '' })
+    expect(parseCommand('какие документы для ввоза нужны?')).toBeNull()
+  })
+
   it('код документов — указанный или лучший из последнего ответа о коде', () => {
     const messages = [
       result({ candidates: [{ code: '1111111111', verdict: 'fits' }, { code: '2222222222', verdict: 'no' }] as AgentResult['candidates'] }),
