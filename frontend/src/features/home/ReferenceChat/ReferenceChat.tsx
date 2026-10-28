@@ -7,7 +7,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { clipboardImages, clipboardText } from '@/shared/lib/clipboardImages'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { sameAnswer } from './answerText'
-import { Command, documentsCode, menuCommands, parseCommand } from './commands'
+import { Command, documentsCode, menuCommands, parseCommand, splitDocumentsArg } from './commands'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
@@ -29,6 +29,24 @@ const editable = (target: EventTarget | null) => target instanceof HTMLElement &
 const dialogOpen = () => document.querySelector('[role="dialog"][aria-modal="true"]') !== null
 
 // Строка под вопросом в истории: что с ним сейчас, затем код.
+// Открытый вопрос и прокрутка ленты — в sessionStorage вкладки (может быть недоступен — тогда просто не помним).
+const openQuestionKey = 'rc-open-question'
+type OpenQuestion = { id: number; scroll: number }
+
+function readOpenQuestion(): OpenQuestion | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(openQuestionKey) ?? 'null') as Partial<OpenQuestion> | null
+    return value && Number.isInteger(value.id) && value.id! > 0 ? { id: value.id!, scroll: Number(value.scroll) || 0 } : null
+  } catch { return null }
+}
+
+function saveOpenQuestion(value: OpenQuestion | null) {
+  try {
+    if (value) sessionStorage.setItem(openQuestionKey, JSON.stringify(value))
+    else sessionStorage.removeItem(openQuestionKey)
+  } catch { /* хранилище недоступно */ }
+}
+
 function historyState(item: ReferenceSummary) {
   if (item.status === 'running' || item.status === 'searching') return 'ищет…'
   if (item.status === 'waiting') return 'ждёт ответа'
@@ -104,9 +122,31 @@ export function ReferenceChat() {
     return () => { active = false; window.clearInterval(timer) }
   }, [sessionId, working, accept, loadHistory])
 
+  // Обновили страницу — тот же вопрос и то же место в ленте (только в этой вкладке: новая открывается пустой).
+  const restoreScroll = useRef<number | null>(null)
+  useEffect(() => {
+    const saved = readOpenQuestion()
+    if (!saved) return
+    restoreScroll.current = saved.scroll
+    agentApi.get(saved.id).then((next) => accept(next, true)).catch(() => { restoreScroll.current = null; saveOpenQuestion(null) })
+  }, [accept])
+  useEffect(() => {
+    const save = () => saveOpenQuestion(sessionId ? { id: sessionId, scroll: threadRef.current?.scrollTop ?? 0 } : null)
+    if (sessionId || restoreScroll.current === null) save() // пока вопрос восстанавливается — запись не стираем
+    window.addEventListener('pagehide', save)
+    return () => window.removeEventListener('pagehide', save)
+  }, [sessionId])
+
   const messageCount = session?.messages.length ?? 0
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
+    const thread = threadRef.current
+    if (!thread) return
+    if (restoreScroll.current !== null && messageCount > 0) {
+      thread.scrollTop = restoreScroll.current
+      restoreScroll.current = null
+      return
+    }
+    thread.scrollTo({ top: thread.scrollHeight, behavior: 'smooth' })
   }, [messageCount, session?.status])
 
   async function addFiles(files: FileList | File[]) {
@@ -185,7 +225,14 @@ export function ReferenceChat() {
     const { command, arg } = parsed
     if (command.name === 'новый') return startNew()
     if (command.name === 'документы') {
-      if (!session) { setError('Документы смотрятся по коду из ответа — сначала спросите о товаре'); return }
+      // Нет чата или указаны и код, и товар (текст/фото) — новый чат сразу с документами, без подбора.
+      const typed = splitDocumentsArg(arg)
+      if (!session || (typed.code && (typed.product || photos.length > 0))) {
+        const example = ': /документы Наждачный круг 6804 22 500 0'
+        if (typed.code.length !== 10) { setError((typed.code ? 'Код — 10 цифр' : 'Укажите код') + example); return }
+        if (!typed.product && photos.length === 0) { setError('Опишите товар или добавьте фото' + example); return }
+        return submit(typed.product, true, typed.code)
+      }
       const code = documentsCode(arg, session.messages)
       if (code.length !== 10) { setError(code ? 'Код — 10 цифр' : 'В ответе нет подходящего кода — укажите его: /документы 8205 59 100 0'); return }
       setText('')
@@ -197,11 +244,11 @@ export function ReferenceChat() {
   }
 
   // Новый вопрос (fresh, фото или нет активного) — или уточнение к текущему (агент помнит разговор).
-  async function submit(value: string, fresh: boolean) {
+  async function submit(value: string, fresh: boolean, documentsCode?: string) {
     setBusy(true); setError('')
     try {
       if (fresh || !session || photos.length > 0) {
-        accept(await agentApi.ask({ text: value, photos }), true)
+        accept(await agentApi.ask({ text: value, photos, documentsCode }), true)
         setPhotos([])
       } else {
         accept(await agentApi.message(session.id, value), false)
@@ -351,7 +398,6 @@ export function ReferenceChat() {
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
             documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)}
             stopping={busy} onStop={() => void stop()} />}
-          {error && <p className="rc-error" role="alert">{error}</p>}
         </div>
 
         {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
@@ -362,6 +408,8 @@ export function ReferenceChat() {
         </div>}
 
         <form className="rc-composer" onSubmit={(event) => void send(event)}>
+          {/* Ошибка — в поле ввода, а не в ленте: фото увеличивает поле, и конец ленты уходит из вида. */}
+          {error && <p className="rc-error" role="alert">{error}</p>}
           {photos.length > 0 && <div className="rc-attachments">{photos.map((photo, index) => <span key={index} className="rc-attachment">
             <img src={photo} alt="" />
             <button type="button" onClick={() => setPhotos((current) => current.filter((_, at) => at !== index))} aria-label="Убрать фото">×</button>

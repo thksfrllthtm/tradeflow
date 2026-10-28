@@ -851,16 +851,9 @@ func (s *TNVEDAgentService) Continue(ctx context.Context, user repository.User, 
 // Documents — кнопка «Документы для ввоза» на карточке кода: агент читает справку tnved.info и акты
 // по ссылкам. Ответ для этого кода уже есть в разговоре — он и остаётся, без нового запуска.
 func (s *TNVEDAgentService) Documents(ctx context.Context, user repository.User, id int64, code string) (AgentSessionView, error) {
-	code = nonDigits.ReplaceAllString(code, "")
-	if len(code) != 10 {
-		return AgentSessionView{}, &service.ValidationError{Field: "code", Message: "Код — 10 цифр"}
-	}
-	items, err := s.data.LookupCodes(ctx, []string{code})
+	code, codeName, err := s.documentsCodeName(ctx, code)
 	if err != nil {
 		return AgentSessionView{}, err
-	}
-	if len(items) == 0 {
-		return AgentSessionView{}, &service.ValidationError{Field: "code", Message: "Кода нет в номенклатуре"}
 	}
 	session, err := s.ownedSession(ctx, user, id)
 	if err != nil {
@@ -883,7 +876,23 @@ func (s *TNVEDAgentService) Documents(ctx context.Context, user repository.User,
 	if len(session.Result) > 0 && json.Unmarshal(session.Result, &previous) == nil && previous.Description != "" {
 		product = previous.Description
 	}
-	return s.resume(ctx, user, id, "documents", map[string]string{"code": code}, documentsRequest(code, items[0].Name, product), code)
+	return s.resume(ctx, user, id, "documents", map[string]string{"code": code}, documentsRequest(code, codeName, product), code)
+}
+
+// documentsCodeName — код для «Документов для ввоза» (только цифры) и его наименование в номенклатуре.
+func (s *TNVEDAgentService) documentsCodeName(ctx context.Context, code string) (string, string, error) {
+	code = nonDigits.ReplaceAllString(code, "")
+	if len(code) != 10 {
+		return "", "", &service.ValidationError{Field: "code", Message: "Код — 10 цифр"}
+	}
+	items, err := s.data.LookupCodes(ctx, []string{code})
+	if err != nil {
+		return "", "", err
+	}
+	if len(items) == 0 {
+		return "", "", &service.ValidationError{Field: "code", Message: "Кода нет в номенклатуре"}
+	}
+	return code, items[0].Name, nil
 }
 
 // documentsFromBase — дневной лимит подборов исчерпан: в чат кладётся сохранённый ответ агента по этому

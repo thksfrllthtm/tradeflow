@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AgentMessage, AgentResult } from '@/features/goods/agent/agentApi'
-import { documentsCode, menuCommands, parseCommand } from './commands'
+import { documentsCode, menuCommands, parseCommand, splitDocumentsArg } from './commands'
 
 const result = (content: Partial<AgentResult>) => ({ id: 1, kind: 'result', createdAt: '', content: { description: '', name: '', notes: '', candidates: [], ...content } }) as unknown as AgentMessage
 
@@ -35,5 +35,13 @@ describe('commands', () => {
     expect(documentsCode('', messages)).toBe('4444444444')
     expect(documentsCode('8205 59 100 0', messages)).toBe('8205591000')
     expect(documentsCode('', [])).toBe('')
+    expect(documentsCode('Наждачный круг P120 6804 22 500 0', [])).toBe('6804225000')
+  })
+
+  it('/документы товар и код — код отдельно от товара', () => {
+    expect(splitDocumentsArg('Наждачный шлифовальный круг / 砂布 6804225000')).toEqual({ code: '6804225000', product: 'Наждачный шлифовальный круг / 砂布' })
+    expect(splitDocumentsArg('6804 22 500 0 круг P120')).toEqual({ code: '6804225000', product: 'круг P120' })
+    expect(splitDocumentsArg('круг 125 мм')).toEqual({ code: '125', product: 'круг 125 мм' })
+    expect(splitDocumentsArg('')).toEqual({ code: '', product: '' })
   })
 })

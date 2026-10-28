@@ -334,6 +334,14 @@ func TestDocumentsRejectsUnknownCode(t *testing.T) {
 		if !errors.As(err, &validation) || validation.Field != "code" {
 			t.Errorf("%q: expected validation error, got %v", code, err)
 		}
+		// «/документы <товар> <код>» без чата: код проверяется до создания чата (repository nil — паника бы).
+		if code == "" {
+			continue
+		}
+		_, err = agent.AskReference(context.Background(), repository.User{ID: 1}, ReferenceInput{Text: "Наждачный круг", DocumentsCode: code})
+		if !errors.As(err, &validation) || validation.Field != "code" {
+			t.Errorf("ask %q: expected validation error, got %v", code, err)
+		}
 	}
 	if !strings.Contains(documentsRequest("6116102000", fakeCodes[0].Name, "Перчатки трикотажные с покрытием"), "6116 10 200 0") {
 		t.Error("documents request without code")

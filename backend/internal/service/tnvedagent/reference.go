@@ -26,6 +26,8 @@ const (
 type ReferenceInput struct {
 	Text   string   `json:"text"`
 	Photos []string `json:"photos"`
+	// DocumentsCode — «/документы <товар> <код>» без открытого чата: сразу «Документы для ввоза» по коду, без подбора.
+	DocumentsCode string `json:"documentsCode"`
 }
 
 // ReferenceSummary — вопрос в списке прошлых.
@@ -104,6 +106,9 @@ func (s *TNVEDAgentService) AskReference(ctx context.Context, user repository.Us
 	if text == "" && len(photos) == 0 {
 		return AgentSessionView{}, &service.ValidationError{Field: "text", Message: "Опишите товар или добавьте фото"}
 	}
+	if input.DocumentsCode != "" {
+		return s.askDocuments(ctx, user, text, photos, input.DocumentsCode)
+	}
 	if err := s.checkLimit(ctx, user.ID); err != nil {
 		return AgentSessionView{}, err
 	}
@@ -132,6 +137,29 @@ func (s *TNVEDAgentService) AskReference(ctx context.Context, user repository.Us
 	return s.Get(ctx, user, session.ID, 0)
 }
 
+// askDocuments — новый чат сразу с «Документами для ввоза»: товар и фото — как у вопроса, дальше тот же
+// запуск, что по кнопке (лимит исчерпан — ответ из базы).
+func (s *TNVEDAgentService) askDocuments(ctx context.Context, user repository.User, text string, photos []string, code string) (AgentSessionView, error) {
+	code, _, err := s.documentsCodeName(ctx, code)
+	if err != nil {
+		return AgentSessionView{}, err
+	}
+	item := AgentItemInput{Name: text}
+	itemJSON, _ := json.Marshal(item)
+	photosJSON, _ := json.Marshal(photos)
+	now := time.Now().UTC()
+	session, err := s.repository.CreateAgentSession(ctx, repository.TNVEDAgentSession{
+		UserID: user.ID, Mode: modeReference, Title: referenceTitle(text), Status: "done",
+		Item: repository.JSON(itemJSON), Photos: repository.JSON(photosJSON), Transcript: repository.JSON("[]"),
+		Result: repository.JSON("null"), CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero, Model: s.modelName(), CreatedAt: now, UpdatedAt: now,
+	})
+	if err != nil {
+		return AgentSessionView{}, err
+	}
+	s.emit(ctx, session.ID, "input", map[string]any{"item": item, "photos": len(photos), "ai": true})
+	return s.Documents(ctx, user, session.ID, code)
+}
+
 // ReferenceHistory — прошлые вопросы сотрудника, последние — первыми.
 func (s *TNVEDAgentService) ReferenceHistory(ctx context.Context, user repository.User) ([]ReferenceSummary, error) {
 	rows, err := s.repository.ReferenceSessions(ctx, user.ID, referenceHistoryLimit)
@@ -146,6 +174,9 @@ func (s *TNVEDAgentService) ReferenceHistory(ctx context.Context, user repositor
 			if best := result.Best(); best != nil {
 				item.BestCode = best.Code
 			}
+		}
+		if item.BestCode == "" {
+			item.BestCode = row.DocumentsCode // чат только с «Документами для ввоза»
 		}
 		items = append(items, item)
 	}

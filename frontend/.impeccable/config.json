@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-10-22T11:39:04.347Z",
         "reason": "Claude: L98 is a blockquote quotation rule (cited excerpt in agent answer), conventional quote styling, not a card side-tab; predates this session (commit 5b3b5d28)"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/features/goods/agent/documents.css"
+        ],
+        "createdAt": "2026-10-28T07:07:34.395Z",
+        "reason": "user confirmed: цветная полоса слева у карточек мер — статус меры, оставить (2026-10-28)"
       }
     ]
   }

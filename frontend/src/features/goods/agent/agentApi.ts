@@ -133,7 +133,7 @@ export const agentApi = {
   // Наименование: перевод русской части на китайский — только по «Применить наименование».
   name: (id: number, name: string) => request<{ name: string }>(`/api/tnved-agent/sessions/${id}/name`, { method: 'POST', body: JSON.stringify({ name }) }),
   // Чат-справочник: вопрос о товаре (текст и/или фото), история и удаление вопроса.
-  ask: (input: { text: string; photos: string[] }) => request<AgentSession>('/api/tnved-agent/reference', { method: 'POST', body: JSON.stringify(input) }),
+  ask: (input: { text: string; photos: string[]; documentsCode?: string }) => request<AgentSession>('/api/tnved-agent/reference', { method: 'POST', body: JSON.stringify(input) }),
   history: () => request<{ items: ReferenceSummary[] }>('/api/tnved-agent/reference'),
   removeQuestion: (id: number) => request<void>(`/api/tnved-agent/reference/${id}`, { method: 'DELETE' }),
   apply: (id: number, code: string, name: string) => request<CodeDecision>(`/api/tnved-agent/sessions/${id}/apply`, { method: 'POST', body: JSON.stringify({ code, name }) }),

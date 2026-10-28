@@ -256,19 +256,20 @@ func (r *Repository) SaveWebPage(ctx context.Context, page WebPageCache) error {
 
 // ReferenceSession — вопрос чата-справочника для списка прошлых вопросов.
 type ReferenceSession struct {
-	ID        int64
-	Title     string
-	Status    string
-	Result    JSON
-	Photos    JSON
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            int64
+	Title         string
+	Status        string
+	Result        JSON
+	Photos        JSON
+	DocumentsCode string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // ReferenceSessions — вопросы сотрудника в чате-справочнике, последние — первыми.
 func (r *Repository) ReferenceSessions(ctx context.Context, userID int64, limit int) ([]ReferenceSession, error) {
 	var rows []ReferenceSession
-	err := r.db.WithContext(ctx).Table("tnved_agent_sessions").Select("id, title, status, result, photos, created_at, updated_at").
+	err := r.db.WithContext(ctx).Table("tnved_agent_sessions").Select("id, title, status, result, photos, documents_code, created_at, updated_at").
 		Where("user_id = ? AND mode = 'reference'", userID).Order("updated_at DESC, id DESC").Limit(limit).Scan(&rows).Error
 	return rows, err
 }
