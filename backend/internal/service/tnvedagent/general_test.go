@@ -9,6 +9,7 @@ import (
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/utilfee"
 )
 
 const (
@@ -150,5 +151,17 @@ func TestSavedDocumentsResult(t *testing.T) {
 	result := savedDocumentsResult(row)
 	if result.DocumentsCode != "8467292000" || len(result.Documents) != 1 || result.Documents[0].Kind != "cc" || !strings.Contains(result.Notes, "от 20.10.2026 по товару «дрель»") {
 		t.Fatalf("saved %+v", result)
+	}
+}
+
+func TestUtilFeeObject(t *testing.T) {
+	for code, want := range map[string]string{"0401100000": "за упаковку", "4011100003": "за товар", "8703231981": "за товар", "8418102001": "за товар и упаковку", "7308100000": ""} {
+		fees, _ := utilfee.Lookup(code)
+		if got := utilFeeObject(fees); got != want {
+			t.Errorf("%s: %q, want %q", code, got, want)
+		}
+	}
+	if !isUtilFeeMeasure("Расширенные обязательства производителей (импортеров) — утилизация отходов (РОП)") || isUtilFeeMeasure("Санэпиднадзор") {
+		t.Fatal("utilfee measure detection")
 	}
 }

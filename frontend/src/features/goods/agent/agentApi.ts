@@ -67,7 +67,8 @@ export type AgentResult = {
 // nameHint — при каком реальном признаке товара мера не применяется и какое наименование тогда указать.
 // kind — вид документа: cc — сертификат соответствия, dc — декларация соответствия, sgr — СГР, conditional — условный выпуск.
 export type DocumentKind = 'cc' | 'dc' | 'sgr' | 'conditional' | 'other'
-export type AgentDocument = { kind?: DocumentKind; measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no'; basis?: string; basisSource?: string; nameHint?: string }
+// utilFee — у меры утильсбора: «за товар», «за упаковку» или «за товар и упаковку» (по перечню № 689).
+export type AgentDocument = { kind?: DocumentKind; utilFee?: string; measure: string; act: string; url: string; requirement: string; applies: 'yes' | 'maybe' | 'no'; basis?: string; basisSource?: string; nameHint?: string }
 
 // Последний сохранённый ответ «Документы для ввоза» по коду: product — для какого товара он был получен.
 export type SavedDocuments = AgentResult & { product: string; savedAt: string }

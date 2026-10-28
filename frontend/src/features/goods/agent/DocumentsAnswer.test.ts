@@ -8,5 +8,7 @@ describe('documentBadge', () => {
     expect(documentBadge({ measure: 'санитарно-эпидемиологический надзор' })).toBe('Санэпиднадзор')
     expect(documentBadge({ kind: 'sgr', measure: 'Санитарно-эпидемиологический надзор (раздел II, СГР)' })).toBe('СГР')
     expect(documentBadge({ kind: 'other', measure: 'Ветеринарный контроль' })).toBe('')
+    expect(documentBadge({ kind: 'other', measure: 'Расширенные обязательства производителей (импортеров) — утилизация отходов (РОП)', utilFee: 'за упаковку' })).toBe('Утильсбор за упаковку')
+    expect(documentBadge({ kind: 'other', measure: 'Утилизационный платёж: раздел 2' })).toBe('Утильсбор')
   })
 })

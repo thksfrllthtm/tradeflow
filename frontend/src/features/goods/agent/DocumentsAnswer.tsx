@@ -66,10 +66,13 @@ export function DocumentsAnswer({ result }: { result: AgentResult }) {
 // Заголовок меры — полностью, с большой буквы (и в сохранённых ответах).
 const measureTitle = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
-// Зелёная метка слева — коротко: вид документа (СС, ДС, СГР, условный выпуск) или «Санэпиднадзор».
-export function documentBadge(item: Pick<AgentDocument, 'kind' | 'measure'>) {
+// Зелёная метка слева — коротко: вид документа (СС, ДС, СГР, условный выпуск), «Санэпиднадзор»
+// или «Утильсбор» с тем, за что платёж (товар или упаковка).
+export function documentBadge(item: Pick<AgentDocument, 'kind' | 'measure' | 'utilFee'>) {
   if (item.kind && documentKindLabels[item.kind]) return documentKindLabels[item.kind]
-  return /санитарно[-\s]*эпидемиолог|санэпид/i.test(item.measure) ? 'Санэпиднадзор' : ''
+  if (/санитарно[-\s]*эпидемиолог|санэпид/i.test(item.measure)) return 'Санэпиднадзор'
+  if (item.utilFee || /утилиз|утильсбор|расширенн\S* обязательств/i.test(item.measure)) return item.utilFee ? `Утильсбор ${item.utilFee}` : 'Утильсбор'
+  return ''
 }
 
 // Мера свёрнута до заголовка и акта; по нажатию — пояснение, цитата-основание и подсказка по наименованию.

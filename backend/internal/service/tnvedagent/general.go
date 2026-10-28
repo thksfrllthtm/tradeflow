@@ -396,7 +396,7 @@ func generalDocuments(code string, matches []actMatch, unread []string, total in
 	if fees, _ := utilfee.Lookup(code); len(fees) > 0 {
 		summary = append(summary, "утильсбор: код в перечне — платёж нужен")
 		for _, fee := range fees {
-			result.Documents = append(result.Documents, AgentDocument{Kind: documentKindOther,
+			result.Documents = append(result.Documents, AgentDocument{Kind: documentKindOther, UtilFee: utilFeeObject([]utilfee.Match{fee}),
 				Measure: fmt.Sprintf("Утилизационный платёж: раздел %d «%s», пункт %s", fee.Section, fee.Title, fee.Item),
 				Act:     "Приказ МЭГПР РК № 689 от 09.11.2022 (перечень продукции)", Requirement: fee.Note, Applies: "yes"})
 		}
@@ -412,7 +412,37 @@ func generalDocuments(code string, matches []actMatch, unread []string, total in
 	return result
 }
 
-// actShortTitle — «Решение Коллегии ЕЭК №6 от 16.01.2018 (ТР ТС 010/2011)» → «№6 (ТР ТС 010/2011)».
+// isUtilFeeMeasure — мера про утильсбор: «утилизационный платёж», «утилизация отходов (РОП)»,
+// «расширенные обязательства производителей».
+func isUtilFeeMeasure(text string) bool {
+	text = strings.ToLower(text)
+	return strings.Contains(text, "утилиз") || strings.Contains(text, "утильсбор") ||
+		(strings.Contains(text, "расширенн") && strings.Contains(text, "обязательств"))
+}
+
+// utilFeeObject — за что утильсбор по позициям перечня № 689: раздел 18 — за упаковку, остальные
+// (товар, транспорт) — за сам товар.
+func utilFeeObject(fees []utilfee.Match) string {
+	product, packaging := false, false
+	for _, fee := range fees {
+		if fee.Kind == utilfee.KindPackaging {
+			packaging = true
+		} else {
+			product = true
+		}
+	}
+	switch {
+	case product && packaging:
+		return "за товар и упаковку"
+	case packaging:
+		return "за упаковку"
+	case product:
+		return "за товар"
+	}
+	return ""
+}
+
+// actShortTitle —«Решение Коллегии ЕЭК №6 от 16.01.2018 (ТР ТС 010/2011)» → «№6 (ТР ТС 010/2011)».
 func actShortTitle(title string) string {
 	if index := strings.Index(title, "№"); index >= 0 {
 		short := strings.TrimSpace(title[index:])

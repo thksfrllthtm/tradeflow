@@ -21,6 +21,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/utilfee"
 )
 
 const (
@@ -293,7 +294,10 @@ type AgentSource struct {
 type AgentDocument struct {
 	// Kind — вид документа: cc — сертификат соответствия, dc — декларация соответствия, sgr — свидетельство
 	// о государственной регистрации, conditional — условный выпуск, other — прочие меры.
-	Kind        string `json:"kind"`
+	Kind string `json:"kind"`
+	// UtilFee — у меры утильсбора (РОП): за что платёж по перечню № 689 — «за товар», «за упаковку»,
+	// «за товар и упаковку»; "" — не утильсбор или кода нет в перечне.
+	UtilFee     string `json:"utilFee,omitempty"`
 	Measure     string `json:"measure"`
 	Act         string `json:"act"`
 	URL         string `json:"url"`
@@ -1212,6 +1216,10 @@ func (t *agentToolbox) finishDocuments(args finishArgs) (*AgentResult, string) {
 			continue
 		}
 		item.Kind = documentKind(document.Kind, item.Measure+" "+item.Act)
+		if isUtilFeeMeasure(item.Measure + " " + item.Act) {
+			fees, _ := utilfee.Lookup(t.documentsCode)
+			item.UtilFee = utilFeeObject(fees)
+		}
 		if item.Applies != "yes" && item.Applies != "maybe" && item.Applies != "no" {
 			item.Applies = "maybe"
 		}
