@@ -583,10 +583,11 @@ export function ResultStep({
                   {allColumns && (sirMode ? <>
                     <th className="rs-w" scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС' : 'Вес нетто — по нему считается ТС'}>{sirGross ? 'Брутто' : 'Нетто'}, кг{copyCol(sirGross ? 'Брутто' : 'Нетто', (item) => sirGross ? item.grossKg : item.netKg)}</th>
                   </> : <th className="rs-w" scope="col">Нетто, кг{copyCol('Нетто', (item) => item.netKg)}</th>)}
+                  {/* Главная колонка СУР — цена со снижением, по ней считается ТС; исходный индикатор — только во «Всех колонках». */}
+                  {allColumns && sirMode && sirDiscount > 0 && <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СУР, $/кг{copyCol('СУР', (item) => item.sir?.priceUsd)}</th>}
                   {sirMode
-                    ? <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СУР, $/кг{copyCol('СУР', (item) => item.sir?.priceUsd)}</th>
+                    ? <th scope="col" className="rs-sir-col" title={sirDiscount > 0 ? `Индикатор со снижением: берётся ${100 - sirDiscount} %` : 'Стоимостной индикатор риска из файла профиля, USD за 1 кг'}>{sirDiscount > 0 ? `СУР −${displayNumber(sir.sirDiscountPercent)}%` : 'СУР'}, $/кг{copyCol(sirDiscount > 0 ? 'СУР со снижением' : 'СУР', (item) => item.sir?.pricePerKgUsd)}</th>
                     : <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена, ${copyCol('Цена ед.', (_item, index) => priceOf(index))}</th>}
-                  {allColumns && sirMode && sirDiscount > 0 && <th scope="col" className="rs-sir-col" title={`Индикатор со снижением: берётся ${100 - sirDiscount} %`}>−{displayNumber(sir.sirDiscountPercent)}%, $/кг{copyCol('СУР со снижением', (item) => item.sir?.pricePerKgUsd)}</th>}
                   {sirMode
                     ? <th className="rs-usd" scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD{copyCol('ТС, USD', (item) => item.sir ? item.sir.valueUsd : item.goodsCost || item.costInput)}</th>
                     : <th className="rs-usd" scope="col">Стоимость, USD{copyCol('Стоимость', (item) => item.goodsCost || item.costInput)}</th>}
@@ -631,10 +632,10 @@ export function ResultStep({
                       <td className="rs-code">{code ? <CopyCode code={code} /> : '—'}</td>
                       <td>{displayNumber(item.pairs)}</td>
                       {allColumns && <td>{fixedNumber(sirMode && sirGross ? item.grossKg : item.netKg, 1)}</td>}
+                      {allColumns && sirMode && sirDiscount > 0 && <td className="rs-sir-col">{item.sir ? fixedNumber(item.sir.priceUsd, 2) : '—'}</td>}
                       {sirMode
-                        ? <td className="rs-sir-col" title={item.sir ? `Профиль риска ${item.sir.profile}, страна ${item.sir.country}` : 'Для кода индикатора нет — строка считается по инвойсу'}>{item.sir ? fixedNumber(item.sir.priceUsd, 2) : <span className="rs-sir-none">нет</span>}</td>
+                        ? <td className="rs-sir-col" title={item.sir ? `Профиль риска ${item.sir.profile}, страна ${item.sir.country}` : 'Для кода индикатора нет — строка считается по инвойсу'}>{item.sir ? fixedNumber(item.sir.pricePerKgUsd, 2) : <span className="rs-sir-none">нет</span>}</td>
                         : <td className="rs-price-col"><span className="price-field"><AiDot note={aiNote} />{priceInput(index, true, `Цена за единицу, USD, строка ${index + 1}: ${names.main}`)}</span></td>}
-                      {allColumns && sirMode && sirDiscount > 0 && <td className="rs-sir-col">{item.sir ? fixedNumber(item.sir.pricePerKgUsd, 2) : '—'}</td>}
                       {sirMode
                         ? <td>{item.sir ? displayNumber(item.sir.valueUsd) : <>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</>}</td>
                         : <td>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</td>}
