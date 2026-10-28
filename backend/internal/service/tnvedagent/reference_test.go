@@ -28,6 +28,10 @@ func TestReferenceModeHasTwoDeclarationNames(t *testing.T) {
 	if !strings.Contains(prompt, "Правило наименования:\nПравило компании: образцы.") || strings.Contains(prompt, "{naming_rule}") || !strings.Contains(prompt, "nameFull — подробное") || !strings.Contains(prompt, "быстрый справочник") {
 		t.Fatal("справочнику — правило наименования и два варианта")
 	}
+	// Объяснение — по шаблону «Код X, потому что …; если бы … — код Y», соседи — с условием «Этот код, если …».
+	if !strings.Contains(prompt, "«Если бы [противоположный признак] — был бы код Y.»") || !strings.Contains(prompt, "«Этот код, если …»") {
+		t.Fatal("справочнику — шаблон объяснения выбора")
+	}
 	toolbox := newAgentToolbox(&fakeAgentData{})
 	result, problem, _ := toolbox.finish(context.Background(), `{"description":"Перчатки","name":"Перчатки трикотажные","nameFull":"Перчатки трикотажные покрытые резиной / 手套","confidence":"high","candidates":[{"code":"6116102000","verdict":"fits","reason":"Да."}]}`)
 	if problem != "" || result.Name != "Перчатки трикотажные" || result.NameFull != "Перчатки трикотажные покрытые резиной" {

@@ -579,7 +579,7 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
     <AgentEvidence result={result} />
     {main.map((candidate) => <Candidate key={candidate.code} candidate={candidate} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />)}
     {rejected.length > 0 && <div className="rc-rejected">
-      <p>Почему не эти коды</p>
+      <p>Когда был бы другой код</p>
       {rejected.map((candidate) => <div key={candidate.code} className="rc-rejected-row">
         <CopyCode code={candidate.code} className="rc-code small" />
         <span><LinkText text={candidate.reason} /> <DeclarationsLink candidate={candidate} className="rc-more" /></span>
