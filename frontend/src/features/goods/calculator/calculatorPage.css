@@ -17,7 +17,6 @@
 }
 /* Отступы сверху и снизу — минимальные: каждый пиксель уходит таблице строк (она до низа окна). */
 .goods-calculator-embedded.is-result .goods-page { padding: 12px 24px 8px; }
-.goods-calculator-embedded.is-result .goods-disclaimer { margin-top: 8px; }
 @media (max-width: 760px) {
   .goods-calculator-embedded.is-result .goods-page { padding: 16px; }
 }
@@ -119,3 +118,11 @@
     padding: 2px 3px !important;
   }
 }
+
+/* Подпись «Предварительный расчёт» на всех этапах — внизу окна: страница растянута на высоту окна
+   (колонка flex), подпись прижата вниз (margin-top: auto) и прилипает к низу при прокрутке.
+   Листы и таблица при подгонке к окну это пустое место не считают (lib/spaceBelow). */
+.goods-estimates-app:has(.goods-calculator-embedded) .estimates-content { display: flex; flex-direction: column; }
+.goods-calculator-embedded { display: flex; flex: 1 0 auto; flex-direction: column; }
+.goods-calculator-embedded .goods-page { display: flex; flex: 1 0 auto; flex-direction: column; }
+.goods-estimates-app .goods-calculator-embedded .goods-disclaimer { position: sticky; bottom: 0; z-index: 3; margin-top: auto; padding: 8px 2px; background: var(--tf-bg); }

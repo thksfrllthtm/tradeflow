@@ -17,6 +17,7 @@ import { SirCompareModal } from './SirCompareModal'
 import { commonProblems, plural, problemGroups, ProblemTone, rowProblems } from './errorGroups'
 import { calculatedRows, customsPaymentsUsd, displayNumber, fixedNumber, excelColumn, excelColumnHtml, hasAntiDumping, itemDisplayName, itemNames, parseCalculatorNumber, RowState, rowPaymentKzt, rowState, rowTotals, sirTitle, textColumn } from './resultValues'
 import { CopyIcon } from '@/shared/components/CopyCode/CopyIcon'
+import { spaceBelow } from '../../lib/spaceBelow'
 import '../../goods.css'
 import './ResultStep.css'
 
@@ -179,8 +180,7 @@ export function ResultStep({
   // Таблица и панель строки — до низа окна, как лист этапа проверки: строки прокручиваются внутри, шапка
   // и «Итого» всегда на виду. Мерим блок «таблица + панель» (.rs-layout): --rs-top — где он начинается,
   // --rs-after — что под ним (подпись «Предварительный расчёт» и нижний отступ страницы), --rs-around —
-  // строка фильтров и рамка карточки вокруг прокрутки. Низ страницы и низ блока не годятся: страница
-  // растянута на высоту окна, а открытая панель выше таблицы — их пустота сама себя бы сохраняла.
+  // строка фильтров и рамка карточки вокруг прокрутки.
   const tableWrapRef = useRef<HTMLDivElement | null>(null)
   const measureTable = useCallback(() => {
     const wrap = tableWrapRef.current
@@ -190,11 +190,8 @@ export function ResultStep({
     const box = wrap.getBoundingClientRect()
     const area = layout.getBoundingClientRect()
     const frame = card.getBoundingClientRect()
-    const page = layout.closest<HTMLElement>('.goods-page')
-    const last = page?.querySelector('.goods-disclaimer')?.getBoundingClientRect().bottom ?? area.bottom
-    const padding = page ? parseFloat(getComputedStyle(page).paddingBottom) || 0 : 0
     layout.style.setProperty('--rs-top', `${area.top + window.scrollY}px`)
-    layout.style.setProperty('--rs-after', `${Math.max(0, last - area.bottom) + padding}px`)
+    layout.style.setProperty('--rs-after', `${spaceBelow(layout)}px`)
     layout.style.setProperty('--rs-around', `${box.top - frame.top + frame.bottom - box.bottom}px`)
   }, [])
   useLayoutEffect(measureTable)

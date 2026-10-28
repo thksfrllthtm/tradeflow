@@ -8,7 +8,6 @@
   .goods-estimates-app:has(.is-import) .estimates-workspace { background: linear-gradient(to right, var(--tf-card) 0 60px, var(--tf-border) 60px 61px, var(--tf-bg) 61px); }
 }
 .goods-calculator-embedded.is-import .goods-page { padding: 12px 20px 8px; }
-.goods-calculator-embedded.is-import .goods-disclaimer { margin-top: 8px; }
 @media (max-width: 760px) {
   .goods-calculator-embedded.is-import .goods-page { padding: 16px; }
 }

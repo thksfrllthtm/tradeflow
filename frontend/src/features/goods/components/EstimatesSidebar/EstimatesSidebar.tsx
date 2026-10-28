@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@/shared/router/Link'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
+import { estimateSubtitle } from '@/shared/lib/estimateTitle'
 import { formatRuDate } from '@/shared/lib/dates'
 import './EstimatesSidebar.css'
 
@@ -66,8 +67,8 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
                 <i className={calculated ? 'es-status done' : 'es-status'}>{estimate.status}</i>
               </span>
               <span className="es-item-sub">
-                <span className={estimate.client ? undefined : 'es-none'}>{estimate.client || 'Без клиента'}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
-                {/* Дата уже в названии по умолчанию («Смета товаров · 21.10.2026») — второй раз не пишем. */}
+                <span className={estimate.client.trim() ? undefined : 'es-none'}>{estimateSubtitle(estimate)}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
+                {/* Дата уже в своём названии («Поставка · 21.10.2026») — второй раз не пишем. */}
                 {!name.includes(date) && <span>{date}</span>}
               </span>
             </Link>

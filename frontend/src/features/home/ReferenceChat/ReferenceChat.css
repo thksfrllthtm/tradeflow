@@ -41,9 +41,6 @@
 .rc-empty-icon { display: grid; place-items: center; width: 60px; height: 60px; border-radius: var(--tf-radius-card); background: var(--tf-green-soft); color: var(--tf-green); }
 .rc-empty h3 { margin: 6px 0 0; color: var(--tf-text); font-size: 1.12rem; font-weight: 600; letter-spacing: -.02em; }
 .rc-empty p { margin: 0; color: var(--tf-text-2); font-size: .86rem; line-height: 1.55; }
-.rc-examples { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
-.rc .rc-examples button { height: auto; padding: 7px 12px; border: 1px solid var(--tf-border); border-radius: 999px; background: #fff; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; white-space: normal; }
-.rc .rc-examples button:hover { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
 
 .rc-user { align-self: flex-end; display: grid; justify-items: end; gap: 6px; max-width: 78%; }
 .rc-user p { margin: 0; padding: 9px 13px; border-radius: 16px 16px 4px 16px; background: var(--tf-green); color: #fff; font-size: .86rem; line-height: 1.45; white-space: pre-wrap; }

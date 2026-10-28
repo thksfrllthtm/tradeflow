@@ -34,9 +34,8 @@
 .home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .home .home-retry:hover:not(:disabled) { background: transparent; color: var(--tf-green-hover); }
 
-.home-error { margin: 0; padding: 9px 12px; border: 1px solid #efcaca; border-radius: 10px; background: #fff4f2; color: #8d2929; font-size: .86rem; font-weight: 600; }
 
-/* Быстрые действия. «Новая смета» — кнопка, создающая черновик; две другие — переходы. */
+/* Быстрые действия — переходы; «Новая смета» — основная (зелёная). */
 .home-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 /* Быстрые действия — одной высоты, в одну строку: иконка и название; пояснение — в подсказке. */
 .home .home-action {
@@ -102,7 +101,6 @@
 .home-row:first-child { border-top: 0; }
 a.home-row:hover { background: var(--tf-chip); }
 .home-row strong { overflow: hidden; font-size: .93rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.home-row strong.untitled { color: var(--home-ink-2); font-weight: 500; }
 .home-row small { overflow: hidden; color: var(--home-muted); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
 .home-row time { color: var(--home-muted); font-size: .86rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 /* Статус — цветной точкой и словом, как статусы в таблицах сайта. */

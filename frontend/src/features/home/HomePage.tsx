@@ -1,16 +1,15 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
 import { Link } from '@/shared/router/Link'
-import { navigate, paths } from '@/shared/router/router'
+import { paths } from '@/shared/router/router'
 import { canEstimate, isAdmin, User } from '@/shared/types/user'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { goodsEstimatesApi } from '@/features/goods/goodsEstimatesApi'
-import { estimateTitle } from '@/shared/lib/estimateTitle'
-import { todayIso } from '@/shared/lib/dates'
+import { estimateName, estimateSubtitle } from '@/shared/lib/estimateTitle'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
-import { estimateLabel, greeting, longDate, updatedText } from './homeText'
+import { greeting, longDate, updatedText } from './homeText'
 import { ReferenceChat } from './ReferenceChat/ReferenceChat'
 import './HomePage.css'
 
@@ -20,7 +19,7 @@ const recentLimit = 30
 const icon = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
 const PlusIcon = () => <svg {...icon}><path d="M10 4.5v11M4.5 10h11" /></svg>
 const CodesIcon = () => <svg {...icon}><rect x="3.5" y="3" width="13" height="14" rx="2" /><path d="M7 7h6M7 10h6M7 13h3.5" /></svg>
-const CeramicsIcon = () => <svg {...icon}><path d="M4 8.5h12l-1.3 6.2a2 2 0 0 1-2 1.6H7.3a2 2 0 0 1-2-1.6z" /><path d="M7.5 8.5a2.5 2.5 0 0 1 5 0" /></svg>
+const UtilFeeIcon = () => <svg {...icon}><rect x="4.5" y="3" width="11" height="14" rx="2" /><path d="M7.5 6.5h5M7.5 10h1M11.5 10h1M7.5 13.5h1M11.5 13.5h1" /></svg>
 const ArrowIcon = () => <svg {...icon} width={16} height={16}><path d="M7 5l5 5-5 5" /></svg>
 
 
@@ -29,14 +28,11 @@ const ArrowIcon = () => <svg {...icon} width={16} height={16}><path d="M7 5l5 5-
 // первыми: с клавиатуры «Новая смета» — первая остановка после шапки.
 export function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const admin = isAdmin(user)
-  // Переводчику — только проверка кодов и справка: без смет и керамики.
+  // Переводчику — номенклатура, утильсбор и справка: без смет.
   const estimator = canEstimate(user)
   const [estimates, setEstimates] = useState<GoodsEstimateSummary[] | null>(null)
   const [listError, setListError] = useState('')
   const [decisionCount, setDecisionCount] = useState(0)
-  const [creating, setCreating] = useState(false)
-  const creatingRef = useRef(false)
-  const [createError, setCreateError] = useState('')
   const now = new Date()
   const firstName = user.name?.trim().split(/\s+/)[0]
 
@@ -58,22 +54,6 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
     return () => { active = false }
   }, [admin])
 
-  // Повторное нажатие, пока запрос идёт, второй сметы не создаёт.
-  async function create() {
-    if (creatingRef.current) return
-    creatingRef.current = true
-    setCreating(true); setCreateError('')
-    try {
-      const estimate = await goodsEstimatesApi.create({ name: `Смета товаров · ${todayIso()}`, client: '', assessmentDate: todayIso() })
-      // ?new=1 — на странице сметы сразу откроется поле названия и клиента.
-      navigate(`${paths.goods(estimate.id)}?new=1`)
-    } catch (reason) {
-      setCreateError(errorMessage(reason))
-      creatingRef.current = false
-      setCreating(false)
-    }
-  }
-
   const recent = estimates?.slice(0, recentLimit) ?? []
   return <div className="app-shell home-shell">
     <AppHeader user={user} section="home" onLogout={onLogout} />
@@ -89,17 +69,16 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
         <div className="home-grid">
           <aside className="home-side" aria-label="Действия и последние сметы">
             <div className="home-actions">
-              {estimator && <button type="button" className="home-action primary" onClick={() => void create()} disabled={creating} aria-busy={creating} title="Создаст черновик сметы: загрузите инвойс Excel и получите расчёт растаможки">
-                <ActionBody icon={<PlusIcon />} title={creating ? 'Создаём черновик…' : 'Новая смета'} text="Создаст черновик сметы: загрузите инвойс Excel и получите расчёт растаможки" />
-              </button>}
-              <Link className="home-action" href={`${paths.nomenclature}?check=1`} title="Вставьте колонку из Excel — покажем, каких кодов нет в номенклатуре ТН ВЭД ЕАЭС">
-                <ActionBody icon={<CodesIcon />} title="Проверить коды ТН ВЭД" text="Вставьте колонку из Excel — покажем, каких кодов нет в номенклатуре" />
-              </Link>
-              {estimator && <Link className="home-action" href={paths.ceramics} title="Наименование и цена по марке и фото">
-                <ActionBody icon={<CeramicsIcon />} title="Подобрать керамику" text="Наименование и цена по марке и фото" />
+              {estimator && <Link className="home-action primary" href={paths.goods()} title="Загрузите инвойс Excel и получите расчёт растаможки">
+                <ActionBody icon={<PlusIcon />} title="Новая смета" text="Загрузите инвойс Excel и получите расчёт растаможки" />
               </Link>}
+              <Link className="home-action" href={paths.nomenclature} title="Полная номенклатура ТН ВЭД ЕАЭС: поиск кода, ставки пошлины и НДС">
+                <ActionBody icon={<CodesIcon />} title="Номенклатура ТН ВЭД" text="Поиск кода, ставки пошлины и НДС" />
+              </Link>
+              <Link className="home-action" href={paths.utilFee} title="Расчёт утильсбора за товар или упаковку">
+                <ActionBody icon={<UtilFeeIcon />} title="Утильсбор" text="Расчёт утильсбора за товар или упаковку" />
+              </Link>
             </div>
-            {createError && <p className="home-error" role="alert">Смета не создана: {createError}</p>}
 
             {admin && decisionCount > 0 && <Link className="home-notice" href={`${paths.decisions}?status=pending`}>
               <span className="home-notice-dot" aria-hidden="true" />
@@ -119,15 +98,14 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
                 : estimates === null ? <div className="home-list" aria-busy="true" aria-label="Загружаем сметы">{[0, 1, 2].map((key) => <div key={key} className="home-row skeleton" />)}</div>
                 : recent.length === 0 ? <div className="home-state">Смет пока нет. Нажмите «Новая смета» — она появится здесь.</div>
                 : <div className="home-list">
-                  {recent.map((estimate) => {
-                    const label = estimateLabel(estimate, estimateTitle(estimate.name))
-                    return <Link key={estimate.id} className="home-row" href={paths.goods(estimate.id)} title={estimateTitle(estimate.name)}>
-                      <strong className={label.untitled ? 'untitled' : undefined}>{label.title}</strong>
+                  {recent.map((estimate) =>
+                    <Link key={estimate.id} className="home-row" href={paths.goods(estimate.id)} title={estimateName(estimate)}>
+                      <strong>{estimateName(estimate)}</strong>
                       <span className={estimate.status === 'Рассчитано' ? 'home-status done' : 'home-status'}>{estimate.status}</span>
-                      <small>{[label.detail, estimate.ownerName].filter(Boolean).join(' · ')}</small>
+                      <small>{[estimateSubtitle(estimate), estimate.ownerName].filter(Boolean).join(' · ')}</small>
                       <time dateTime={estimate.updatedAt}>{updatedText(estimate.updatedAt, now)}</time>
                     </Link>
-                  })}
+                  )}
                 </div>}
             </section>}
           </aside>

@@ -14,7 +14,7 @@
 .es-sidebar :is(button, a, input):focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
 
 /* Узкая полоса: «Сметы» и «+» */
-.es-sidebar.es-rail { position: relative; z-index: 30; flex-basis: 60px; align-items: center; gap: 8px; padding: 12px 0; }
+.es-sidebar.es-rail { position: relative; z-index: 45; flex-basis: 60px; align-items: center; gap: 8px; padding: 12px 0; }
 .es-sidebar .es-rail-button { position: relative; display: grid; justify-items: center; gap: 4px; width: 48px; padding: 8px 0 7px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 1; }
 .es-sidebar .es-rail-button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
 .es-sidebar.es-rail.open .es-rail-button { background: var(--tf-green-soft); color: var(--tf-text); }

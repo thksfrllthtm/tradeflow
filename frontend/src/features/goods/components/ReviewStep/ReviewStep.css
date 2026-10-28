@@ -186,7 +186,6 @@
 }
 /* Снизу — минимальный отступ: каждый пиксель уходит листу (он до низа окна). */
 .goods-calculator-embedded.is-review .goods-page { padding: 12px 20px 8px; }
-.goods-calculator-embedded.is-review .goods-disclaimer { margin-top: 8px; }
 @media (max-width: 760px) {
   .goods-calculator-embedded.is-review .goods-page { padding: 16px; }
 }

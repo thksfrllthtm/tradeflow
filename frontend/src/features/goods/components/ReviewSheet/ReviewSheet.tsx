@@ -12,6 +12,7 @@ import { dutyRateText, fixedNumber, itemNames } from '../ResultStep/resultValues
 import { AgentRowStatus } from '../../agent/agentApi'
 import { canSaveRowDecision, RowDecisionState } from '../../hooks/useRowDecisions'
 import { columnIndex, copyValue, NUMBER_FIELDS, SHEET_COLUMNS, SheetChange, SheetKey, sheetRow } from './sheetModel'
+import { spaceBelow } from '../../lib/spaceBelow'
 import './ReviewSheet.css'
 
 export type SheetRowView = {
@@ -218,9 +219,8 @@ export function ReviewSheet(props: Props) {
         // появляются строки («Строка удалена», сумма выделенного), и лист должен под них ужаться.
         resized = new ResizeObserver(() => {
           const box = element.getBoundingClientRect()
-          const page = element.closest('.goods-page')?.getBoundingClientRect()
           element.style.setProperty('--xs-top', `${box.top + window.scrollY}px`)
-          element.style.setProperty('--xs-below', `${page ? Math.max(0, page.bottom - box.bottom) : 0}px`)
+          element.style.setProperty('--xs-below', `${spaceBelow(element)}px`)
           const cell = ws.selectedCell
           if (cell) ws.updateSelectionFromCoords(Number(cell[0]), Number(cell[1]), Number(cell[2]), Number(cell[3]))
         })

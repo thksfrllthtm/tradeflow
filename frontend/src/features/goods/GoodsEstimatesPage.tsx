@@ -4,7 +4,7 @@ import { GoodsEstimateInput, GoodsEstimateSummary } from '@/shared/types/goods'
 import { isAdmin, User } from '@/shared/types/user'
 import { Link } from '@/shared/router/Link'
 import { GoodsCalculator } from './calculator/GoodsCalculator'
-import { estimateDisplayTitle, estimateTitle } from '@/shared/lib/estimateTitle'
+import { estimateName, estimateSubtitle, estimateTitle, hasOwnName } from '@/shared/lib/estimateTitle'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuDate, todayIso } from '@/shared/lib/dates'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
@@ -59,26 +59,16 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
 
   useEffect(() => {
     if (!selected) return
-    setMeta({ name: estimateTitle(selected.name), client: selected.client, assessmentDate: selected.assessmentDate })
-  }, [selected])
-
-  // Новая смета с главной (?new=1): сразу открыть поля названия и клиента, курсор — в название.
-  useEffect(() => {
-    if (!selected || new URLSearchParams(window.location.search).get('new') !== '1') return
-    window.history.replaceState(window.history.state, '', window.location.pathname)
-    const editor = document.querySelector<HTMLDetailsElement>('.estimate-bar-editor')
-    if (!editor) return
-    editor.open = true
-    const input = editor.querySelector<HTMLInputElement>('input')
-    input?.focus()
-    input?.select()
+    // Стандартное название в поле не показываем: пустое поле — смета называется по клиенту или номеру.
+    setMeta({ name: hasOwnName(selected.name) ? estimateTitle(selected.name) : '', client: selected.client, assessmentDate: selected.assessmentDate })
   }, [selected])
 
   async function create() {
     setError('')
     try {
       const estimate = await goodsEstimatesApi.create({ name: `Смета товаров · ${todayIso()}`, client: '', assessmentDate: todayIso() })
-      setEstimates((current) => [estimate, ...current])
+      // Сервер мог взять заново пустую смету и удалить другие пустые — список перечитываем.
+      setEstimates(await goodsEstimatesApi.list().catch(() => [estimate, ...estimates.filter((item) => item.id !== estimate.id)]))
       navigate(paths.goods(estimate.id), { replace: fresh })
     } catch (reason) {
       setError(errorMessage(reason))
@@ -86,12 +76,11 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
   }
 
   async function saveMeta() {
-    if (!selected || !meta.name.trim() || savingMeta) return false
+    if (!selected || savingMeta) return false
     setSavingMeta(true); setError('')
     try {
-      const normalizedMeta = { ...meta, name: estimateTitle(meta.name) }
+      const normalizedMeta = { ...meta, name: meta.name.trim() ? estimateTitle(meta.name) : 'Смета товаров' }
       const saved = await goodsEstimatesApi.update(selected.id, normalizedMeta)
-      setMeta(normalizedMeta)
       setEstimates((current) => current.map((item) => item.id === saved.id ? saved : item))
       setForeign((current) => current?.id === saved.id ? { ...current, ...saved, ownerId: current.ownerId, ownerName: current.ownerName } : current)
       return true
@@ -104,7 +93,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
   }
 
   async function remove(estimate: GoodsEstimateSummary) {
-    if (!window.confirm(`Удалить смету «${estimateTitle(estimate.name)}»? Все строки и результат будут удалены.`)) return
+    if (!window.confirm(`Удалить смету «${estimateName(estimate)}»? Все строки и результат будут удалены.`)) return
     try {
       await goodsEstimatesApi.remove(estimate.id)
       const remaining = estimates.filter((item) => item.id !== estimate.id)
@@ -132,7 +121,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     <AppHeader user={user} section="estimates" onLogout={onLogout} />
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
     <div className="estimates-workspace">
-      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={(estimate) => estimateDisplayTitle(estimate.name)} hrefOf={paths.goods} onCreate={() => navigate(paths.goods())} onRemove={(estimate) => void remove(estimate)} />
+      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={estimateName} hrefOf={paths.goods} onCreate={() => navigate(paths.goods())} onRemove={(estimate) => void remove(estimate)} />
       <section className="estimates-content">
         {selected ? <GoodsCalculator
           key={selected.id}
@@ -140,11 +129,11 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
           onEstimateSaved={onEstimateSaved}
           exportName={[estimateTitle(selected.name), selected.client].filter(Boolean).join(' — ')}
           headerSlot={<div className="estimate-bar-meta">
-            <h1 title={estimateDisplayTitle(selected.name)}>{estimateDisplayTitle(selected.name)}</h1>
+            <h1 title={estimateName(selected)}>{estimateName(selected)}</h1>
             {/* Дата уже в названии — под ним не повторяется. */}
-            <span className="estimate-bar-sub">{estimateDisplayTitle(selected.name).includes(formatRuDate(selected.assessmentDate)) ? '' : `${formatRuDate(selected.assessmentDate)} · `}{selected.client || 'Клиент не указан'} ·</span>
+            <span className="estimate-bar-sub">{estimateName(selected).includes(formatRuDate(selected.assessmentDate)) ? '' : `${formatRuDate(selected.assessmentDate)} · `}{selected.client.trim() ? estimateSubtitle(selected) : 'Клиент не указан'} ·</span>
             {employeeEstimate && <span className="estimate-owner" title="Изменения и расчёт сохраняются в смете сотрудника">Смета сотрудника: {foreign?.ownerName || 'сотрудник'} · <Link href={paths.employees}>к сотрудникам</Link></span>}
-            <details className="estimate-bar-editor"><summary>{selected.client ? 'Изменить' : 'Указать'}</summary><div className="estimate-bar-fields"><label>Название<input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta || !meta.name.trim()}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
+            <details className="estimate-bar-editor"><summary>{selected.client ? 'Изменить' : 'Указать'}</summary><div className="estimate-bar-fields"><label>Название<input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} placeholder="По клиенту или номеру" /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
           </div>}
         /> : !loading && fresh && <div className="estimates-empty">
           {/* Как карточки этапов сметы: заголовок, три шага (как в шапке сметы) и зелёная кнопка. */}

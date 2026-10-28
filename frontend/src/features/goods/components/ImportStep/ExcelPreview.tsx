@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type jspreadsheet from 'jspreadsheet-ce'
 import { GoodsParseRow } from '@/shared/types/goods'
 import { ColumnField, ColumnFieldMenu, ColumnMenuAnchor } from './ColumnFieldMenu'
+import { spaceBelow } from '../../lib/spaceBelow'
 import './ExcelPreview.css'
 
 type Props = {
@@ -60,9 +61,8 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
     // конца сметы (подпись, отступ). Перемер — при изменении высоты страницы сметы и окна.
     const measure = () => {
       const box = element.getBoundingClientRect()
-      const page = element.closest('.goods-page')?.getBoundingClientRect()
       element.style.setProperty('--xp-top', `${box.top + window.scrollY}px`)
-      element.style.setProperty('--xp-below', `${page ? Math.max(0, page.bottom - box.bottom) : 0}px`)
+      element.style.setProperty('--xp-below', `${spaceBelow(element)}px`)
     }
     const resized = new ResizeObserver(measure)
     const pageElement = element.closest('.goods-page')

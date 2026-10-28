@@ -18,7 +18,6 @@ import './ReferenceChat.css'
 
 const pollInterval = 1500
 const maxPhotos = 3
-const examples = ['Лопата штыковая стальная с черенком', 'Перчатки трикотажные с покрытием ПВХ', 'Чем отличаются 6116 10 200 0 и 6116 10 800 0?']
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
 const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑' }
 
@@ -394,7 +393,6 @@ export function ReferenceChat() {
             </span>
             <h3>Какой код у товара?</h3>
             <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент сверит примеры декларирования и пояснения к ТН ВЭД, найдёт код в номенклатуре и объяснит выбор.</p>
-            <div className="rc-examples">{examples.map((example) => <button key={example} type="button" onClick={() => { setText(example); inputRef.current?.focus() }}>{example}</button>)}</div>
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
             documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)}
             stopping={busy} onStop={() => void stop()} />}

@@ -12,3 +12,23 @@ export function estimateTitle(value: string) {
 export function estimateDisplayTitle(value: string) {
   return estimateTitle(value).replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (date) => formatRuDate(date))
 }
+
+type Named = { id: number; name: string; client: string }
+const defaultTitle = /^Смета товаров(\s*·\s*\d{4}-\d{2}-\d{2})?$/
+
+// Своё название сотрудника, а не стандартное «Смета товаров · дата».
+export const hasOwnName = (name: string) => !defaultTitle.test(estimateTitle(name))
+
+// Название сметы в списках и заголовке. Своё название — как есть; стандартное «Смета товаров · дата»
+// одинаково у всех смет (дата и так видна рядом), поэтому вместо него клиент, а без клиента — «Смета №id».
+export function estimateName(estimate: Named) {
+  if (hasOwnName(estimate.name)) return estimateDisplayTitle(estimate.name)
+  return estimate.client.trim() || `Смета №${estimate.id}`
+}
+
+// Строка под названием: клиент; если клиент уже стал названием — номер сметы.
+export function estimateSubtitle(estimate: Named) {
+  const client = estimate.client.trim()
+  if (!client) return 'Без клиента'
+  return estimateName(estimate) === client ? `Смета №${estimate.id}` : client
+}

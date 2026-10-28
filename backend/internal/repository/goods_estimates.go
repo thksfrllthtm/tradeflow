@@ -16,8 +16,42 @@ func (r *Repository) GoodsEstimateByIDForUser(ctx context.Context, id, userID in
 	return estimate, err
 }
 
+// blankGoodsEstimate — смета, в которую ничего не положили: стандартное название, без клиента,
+// строк, файла, результата, фото и вопросов агенту. Такие копятся от каждого «Создать смету».
+const blankGoodsEstimate = `user_id = ? AND client = '' AND name ~ '^Смета товаров( · \d{4}-\d{2}-\d{2})?$'
+	AND CASE WHEN jsonb_typeof(input_snapshot->'items') = 'array' THEN jsonb_array_length(input_snapshot->'items') ELSE 0 END = 0
+	AND COALESCE(input_snapshot->'source', 'null'::jsonb) = 'null'::jsonb
+	AND result_snapshot IN ('{}'::jsonb, 'null'::jsonb)
+	AND NOT EXISTS (SELECT 1 FROM goods_estimate_photos p WHERE p.estimate_id = goods_estimates.id)
+	AND NOT EXISTS (SELECT 1 FROM tnved_agent_sessions s WHERE s.estimate_id = goods_estimates.id)`
+
+// CreateGoodsEstimate создаёт смету. Если у сотрудника уже есть пустые сметы, новая не заводится:
+// самая свежая пустая становится новой (название, клиент, дата, создана — из estimate), остальные
+// пустые удаляются — в них нечего терять.
 func (r *Repository) CreateGoodsEstimate(ctx context.Context, estimate GoodsEstimate) (GoodsEstimate, error) {
-	if err := r.db.WithContext(ctx).Create(&estimate).Error; err != nil {
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var blank []int64
+		if err := tx.Model(&GoodsEstimate{}).Where(blankGoodsEstimate, estimate.UserID).Order("id DESC").Pluck("id", &blank).Error; err != nil {
+			return err
+		}
+		if len(blank) == 0 {
+			return tx.Create(&estimate).Error
+		}
+		if len(blank) > 1 {
+			if err := tx.Where("id IN ?", blank[1:]).Delete(&GoodsEstimate{}).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Model(&GoodsEstimate{}).Where("id = ?", blank[0]).Updates(map[string]any{
+			"name": estimate.Name, "client": estimate.Client, "assessment_date": estimate.AssessmentDate,
+			"input_snapshot": estimate.InputSnapshot, "result_snapshot": estimate.ResultSnapshot,
+			"created_at": estimate.CreatedAt, "updated_at": estimate.UpdatedAt,
+		}).Error; err != nil {
+			return err
+		}
+		return tx.First(&estimate, blank[0]).Error
+	})
+	if err != nil {
 		return GoodsEstimate{}, err
 	}
 	return estimate, nil

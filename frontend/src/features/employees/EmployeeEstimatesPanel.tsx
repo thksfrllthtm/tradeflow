@@ -3,7 +3,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
 import { goodsEstimatesApi } from '@/features/goods/goodsEstimatesApi'
-import { estimateTitle } from '@/shared/lib/estimateTitle'
+import { estimateName, estimateSubtitle } from '@/shared/lib/estimateTitle'
 import { formatRuDate } from '@/shared/lib/dates'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { Employee } from './employeesApi'
@@ -38,8 +38,8 @@ export function EmployeeEstimatesPanel({ employee, onClose }: { employee: Employ
         {items && items.length > 0 && <ul className="emp-estimates-list">
           {items.map((estimate) => <li key={estimate.id}>
             <Link href={paths.goods(estimate.id)}>
-              <span className="emp-estimate-top"><strong>{estimateTitle(estimate.name)}</strong><i className={estimate.status === 'Рассчитано' ? 'done' : undefined}>{estimate.status}</i></span>
-              <small>{estimate.client || 'Без клиента'} · {formatRuDate(estimate.assessmentDate)} · изменена {formatRuDate(estimate.updatedAt.slice(0, 10))}</small>
+              <span className="emp-estimate-top"><strong>{estimateName(estimate)}</strong><i className={estimate.status === 'Рассчитано' ? 'done' : undefined}>{estimate.status}</i></span>
+              <small>{estimateSubtitle(estimate)} · {formatRuDate(estimate.assessmentDate)} · изменена {formatRuDate(estimate.updatedAt.slice(0, 10))}</small>
             </Link>
           </li>)}
         </ul>}
