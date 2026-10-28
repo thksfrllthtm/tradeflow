@@ -360,3 +360,29 @@ func TestClientEmbed(t *testing.T) {
 		t.Fatalf("wrong dimensions must be a bad response: %v", err)
 	}
 }
+
+// Сбой провайдера (503) повторяется, и подбор не обрывается; ключ (401) и лимит (429) — не повторяются.
+func TestClientRetriesProviderOutage(t *testing.T) {
+	for _, test := range []struct {
+		status   int
+		calls    int
+		expected error
+	}{{http.StatusServiceUnavailable, 2, nil}, {http.StatusTooManyRequests, 1, ai.ErrAIRateLimited}, {http.StatusUnauthorized, 1, ai.ErrAIUnauthorized}} {
+		calls := 0
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			calls++
+			if calls == 1 {
+				w.WriteHeader(test.status)
+				return
+			}
+			_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"ok"}}]}`))
+		}))
+		client := testClient(server, "model", "", false)
+		client.retryDelay = 0
+		reply, err := client.CompleteText(context.Background(), []agentMessage{{Role: "user", Content: "x"}}, 10)
+		server.Close()
+		if calls != test.calls || !errors.Is(err, test.expected) || (test.expected == nil && reply.Content != "ok") {
+			t.Errorf("status %d: calls %d, err %v, reply %q", test.status, calls, err, reply.Content)
+		}
+	}
+}

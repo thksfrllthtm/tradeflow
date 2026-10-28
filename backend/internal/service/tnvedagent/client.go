@@ -10,10 +10,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
 	"github.com/shopspring/decimal"
 )
@@ -98,10 +100,16 @@ type agentModel interface {
 type AgentModelClient struct {
 	config     AgentModelConfig
 	httpClient *http.Client
+	retryDelay time.Duration
 }
 
 // С уровнем размышлений max ответ модели может идти дольше минуты.
 const agentModelTimeout = 3 * time.Minute
+
+// Сбой провайдера (5xx, «перегружен», обрыв связи) — запрос повторяется: за подбор их десятки, и один
+// сбой не должен обрывать весь подбор. Тайм-аут и лимит запросов не повторяются (минуты ожидания,
+// дневной лимит Gemini).
+const agentModelAttempts = 3
 
 func NewAgentModelClient(config AgentModelConfig) *AgentModelClient {
 	config.APIKey = strings.TrimSpace(config.APIKey)
@@ -110,7 +118,7 @@ func NewAgentModelClient(config AgentModelConfig) *AgentModelClient {
 	if config.BaseURL == "" {
 		config.BaseURL = "https://api.deepseek.com"
 	}
-	return &AgentModelClient{config: config, httpClient: &http.Client{}}
+	return &AgentModelClient{config: config, httpClient: &http.Client{}, retryDelay: 3 * time.Second}
 }
 
 func (c *AgentModelClient) Configured() bool {
@@ -224,6 +232,21 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 	if err != nil {
 		return agentReply{}, ai.ErrAIBadResponse
 	}
+	for attempt := 1; ; attempt++ {
+		reply, err := c.post(ctx, body)
+		if !errors.Is(err, ai.ErrAIUnavailable) || attempt == agentModelAttempts {
+			return reply, err
+		}
+		select {
+		case <-ctx.Done():
+			return reply, err
+		case <-time.After(time.Duration(attempt) * c.retryDelay):
+		}
+	}
+}
+
+// post — один запрос к провайдеру.
+func (c *AgentModelClient) post(ctx context.Context, body []byte) (agentReply, error) {
 	requestCtx, cancel := context.WithTimeout(ctx, agentModelTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, c.config.BaseURL+"/chat/completions", bytes.NewReader(body))
@@ -237,6 +260,7 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 		if errors.Is(requestCtx.Err(), context.DeadlineExceeded) {
 			return agentReply{}, ai.ErrAITimeout
 		}
+		log.Printf("ai %s: %v", c.config.Model, err)
 		return agentReply{}, ai.ErrAIUnavailable
 	}
 	data, readErr := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
@@ -248,6 +272,7 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 		return agentReply{}, ai.ErrAIBadResponse
 	}
 	if err := statusError(resp.StatusCode); err != nil {
+		log.Printf("ai %s: HTTP %d %s", c.config.Model, resp.StatusCode, service.TruncateRunes(string(data), 300))
 		return agentReply{}, err
 	}
 	var parsed struct {
