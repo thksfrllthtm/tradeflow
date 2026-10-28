@@ -6,12 +6,11 @@ import { formatMoney, formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { moneyText } from '@/shared/lib/rounding'
 import { useTodayRates } from '@/shared/api/todayRates'
 import { User } from '@/shared/types/user'
-import { UtilFeeInput, UtilFeeMatch, UtilFeeResult, UtilFeeSection, utilFeeApi } from './utilFeeApi'
+import { UtilFeeInput, UtilFeeMatch, UtilFeeMaterial, UtilFeeResult, UtilFeeSection, utilFeeApi } from './utilFeeApi'
+import { DEFAULT_MRP } from './feeRows'
+import { UtilFeeRows } from './UtilFeeRows'
 import '@/shared/styles/list-page.css'
 import './utilFee.css'
-
-// МРП на 2026 год — значение по умолчанию; сотрудник может поменять.
-const DEFAULT_MRP = '4325'
 
 // Как платится — коротко, цветным текстом в колонке таблицы перечня (как статусы на этапах сметы).
 const payLabels: Record<UtilFeeMatch['kind'], string> = { product: 'за товар', packaging: 'за упаковку', vehicle: 'транспорт, техника' }
@@ -47,7 +46,11 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
 
   const [sections, setSections] = useState<UtilFeeSection[]>([])
   const [edition, setEdition] = useState('')
-  useEffect(() => { utilFeeApi.list().then((list) => { setSections(list.sections); setEdition(list.edition) }).catch((reason) => setError(errorMessage(reason))) }, [])
+  const [materials, setMaterials] = useState<UtilFeeMaterial[]>([])
+  // Режим запоминается: таблица хранится в браузере, после обновления страницы открывается она же.
+  const [mode, setModeState] = useState<'one' | 'table'>(() => { try { return localStorage.getItem('utilFee.mode') === 'table' ? 'table' : 'one' } catch { return 'one' } })
+  const setMode = (next: 'one' | 'table') => { setModeState(next); try { localStorage.setItem('utilFee.mode', next) } catch { /* без сохранения */ } }
+  useEffect(() => { utilFeeApi.list().then((list) => { setSections(list.sections); setEdition(list.edition); setMaterials(list.materials) }).catch((reason) => setError(errorMessage(reason))) }, [])
 
   const set = (change: Partial<UtilFeeInput>) => setInput((value) => ({ ...value, ...change }))
   const setRow = (index: number, change: Partial<UtilFeeInput['packaging'][number]>) =>
@@ -74,10 +77,22 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
       <div className="dir-head">
         <div>
           <h1>Утильсбор</h1>
-          <p>Введите код ТН ВЭД — программа покажет раздел перечня и коэффициент. Затем заполните массу или категорию — сумма посчитается сама.</p>
+          <p>{mode === 'one'
+            ? 'Введите код ТН ВЭД — программа покажет раздел перечня и коэффициент. Затем заполните массу или категорию — сумма посчитается сама.'
+            : <>1. В Excel выделите колонку кодов и нажмите Ctrl+C. 2. Щёлкните первую ячейку «Код ТН ВЭД» и нажмите Ctrl+V.
+              3. Так же вставьте брутто и, если есть, нетто. Суммы посчитаются сами.</>}</p>
+        </div>
+        <div className="uf-tabs" role="tablist" aria-label="Как считать">
+          <button type="button" role="tab" aria-selected={mode === 'one'} className={mode === 'one' ? 'active' : undefined} onClick={() => setMode('one')}
+            title="Подробный расчёт по одному коду: товар, упаковка из нескольких материалов, транспорт">Один товар</button>
+          <button type="button" role="tab" aria-selected={mode === 'table'} className={mode === 'table' ? 'active' : undefined} onClick={() => setMode('table')}
+            title="Много строк сразу: вставьте коды и вес из Excel поставщика">Таблица из Excel</button>
         </div>
       </div>
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
+
+      {mode === 'table' && <UtilFeeRows materials={materials} usdRate={usdRate?.rate} />}
+      {mode === 'one' && <>
 
       {/* Одна карточка: сверху поля, под ними перечень. Одно поле на всё: пока в нём меньше 4 цифр или слово —
           перечень фильтруется по нему; 4–10 цифр — перечень скрыт, ниже расчёт. Карточка не пересоздаётся —
@@ -192,6 +207,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
             </div>}
           </aside>}
         </div>
+      </>}
       </>}
 
       {/* По каким документам перечень и коэффициенты — одна строка внизу страницы, и при перечне, и при расчёте. */}

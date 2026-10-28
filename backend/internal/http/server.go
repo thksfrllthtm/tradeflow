@@ -159,6 +159,7 @@ func (s *Server) Router() *gin.Engine {
 	// Калькулятор утильсбора (перечень № 689, Методика № 448) — справочник в коде, без БД.
 	router.GET("/api/util-fee", s.requireUser, s.listUtilFee)
 	router.POST("/api/util-fee", s.requireUser, s.calculateUtilFee)
+	router.POST("/api/util-fee/rows", s.requireUser, s.calculateUtilFeeRows)
 
 	kzRates := router.Group("/api/tnved-kz-rates")
 	kzRates.Use(s.requireUser, s.requireAdmin)

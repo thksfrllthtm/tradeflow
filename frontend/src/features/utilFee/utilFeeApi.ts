@@ -28,9 +28,28 @@ export type UtilFeeResult = {
   total: string
 }
 
+// Таблица по Excel: POST /api/util-fee/rows — нетто, упаковку и суммы по строкам считает сервер.
+export type UtilFeeRowsInput = { mrp: string; packagingPercent: string; material: string; productWeight: 'net' | 'gross'; usdRate?: string; rows: { code: string; grossKg: string; netKg: string }[] }
+export type UtilFeeRowResult = {
+  code: string
+  netKg: string
+  netCalculated: boolean
+  packagingKg: string
+  matches: UtilFeeMatch[]
+  possible: UtilFeeMatch[]
+  product: string
+  packaging: string
+  total: string
+  totalUsd: string
+  error: string
+  warnings: string[]
+}
+export type UtilFeeRowsResult = { rows: UtilFeeRowResult[]; total: string; totalUsd: string }
+
 export type UtilFeeSection = { number: number; title: string; kind: UtilFeeKind; items: UtilFeeMatch[] }
 
 export const utilFeeApi = {
-  list: () => request<{ edition: string; sections: UtilFeeSection[] }>('/api/util-fee'),
+  list: () => request<{ edition: string; sections: UtilFeeSection[]; materials: UtilFeeMaterial[] }>('/api/util-fee'),
   calculate: (input: UtilFeeInput) => request<UtilFeeResult>('/api/util-fee', { method: 'POST', body: JSON.stringify(input) }),
+  calculateRows: (input: UtilFeeRowsInput) => request<UtilFeeRowsResult>('/api/util-fee/rows', { method: 'POST', body: JSON.stringify(input) }),
 }

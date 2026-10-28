@@ -189,3 +189,45 @@
 /* Суммы в долларах — мелко серым под суммой в тенге (по курсу НБРК на сегодня, только для показа). */
 .uf-calc .uf-amount small { display: block; color: var(--tf-muted); font-size: .76rem; font-weight: 400; text-align: right; }
 .uf-calc-total .uf-usd { color: var(--tf-text-2); font-size: .86rem; font-variant-numeric: tabular-nums; }
+
+/* Режимы «Один код» / «Таблица» — как вкладки на этапе проверки сметы. */
+.uf-tabs { display: flex; gap: 4px; align-self: flex-end; }
+.uf-tabs button, .uf-tabs button:hover:not(:disabled) { height: 32px; padding: 0 12px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; }
+.uf-tabs button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.uf-tabs button.active, .uf-tabs button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
+
+/* Таблица по Excel: карточка как у перечня, ввод прямо в ячейках сетки. */
+.uf-page > .uf-rows { display: flex; flex: 1 1 0; flex-direction: column; min-height: 320px; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.uf-rows .banner { margin: 8px 12px 0; }
+.uf-filterbar select { box-sizing: border-box; width: auto; min-width: 270px; height: 32px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; }
+.uf-rows-table .c-n { width: 48px; color: var(--tf-muted); font-size: .8rem; text-align: right; font-variant-numeric: tabular-nums; }
+.uf-rows-table .c-in { width: 130px; padding: 0 !important; }
+.uf-rows-table td.c-in input { box-sizing: border-box; width: 100%; height: 36px; margin: 0; padding: 0 10px; border: 0; border-radius: 0; background: transparent; color: var(--tf-text); font: inherit; font-variant-numeric: tabular-nums; }
+.uf-rows-table td.c-in input:focus { outline: 2px solid var(--tf-green); outline-offset: -2px; background: #fff; }
+.uf-rows-table td.c-in input::placeholder { color: var(--tf-muted); font-style: italic; }
+.uf-rows-table th.c-in { padding-left: 10px; }
+.uf-rows-table .c-num { width: 125px; text-align: right; font-variant-numeric: tabular-nums; }
+.uf-rows-table th.c-num { text-align: right; }
+.uf-rows-table .c-list { width: 250px; }
+.uf-rows-table td.c-list { white-space: normal; }
+.uf-rows-table .c-list .uf-pay { margin-right: 10px; }
+.uf-rows-table td.c-note.bad { color: var(--tf-error); }
+.uf-rows-table tfoot td { position: sticky; bottom: 0; height: 38px; border-top: 1px solid var(--tf-border); background: var(--xl-head); font-weight: 600; }
+.uf-rows-table tfoot td.c-note { color: var(--tf-muted); font-weight: 500; }
+.uf-legend { color: var(--tf-muted); font-style: italic; }
+.uf-rows-table .uf-pay small { color: var(--tf-muted); font-size: .78rem; }
+.uf-rows-table td.c-in input::placeholder { font-size: .8rem; }
+.uf-filterbar select.uf-select-short { min-width: 100px; }
+.uf-rows-table th small { color: var(--tf-muted); font-size: .74rem; font-weight: 500; }
+.uf-rows-table .c-note { width: auto; }
+/* Пояснение в заголовке («серое — расчётное», «от брутто») — второй строкой, чтобы колонки были узкими. */
+.uf-rows-table thead th { height: auto; line-height: 1.25; vertical-align: bottom; white-space: normal; }
+.uf-rows-table th small { display: block; }
+/* Кнопка «скопировать колонку» в заголовке сумм — видна всегда (приглушённо), как в результате сметы. */
+.uf-rows-table button.rs-copy-col { display: inline-grid; place-items: center; vertical-align: middle; width: 22px; height: 22px; margin: 0 4px 0 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); cursor: copy; opacity: .6; }
+.uf-rows-table button.rs-copy-col:hover { background: var(--tf-chip); color: var(--tf-text); opacity: 1; }
+.uf-rows-table button.rs-copy-col.copied { color: var(--tf-green); opacity: 1; }
+/* Итоги внизу копируются нажатием: значок слева от суммы и виден всегда, как у колонок. */
+.uf-rows-table tfoot button.copy-code { flex-direction: row-reverse; }
+.uf-rows-table tfoot button.copy-code .copy-code-icon { opacity: .6; }
+.uf-rows-table tfoot button.copy-code:hover .copy-code-icon, .uf-rows-table tfoot button.copy-code.copied .copy-code-icon { opacity: 1; }
