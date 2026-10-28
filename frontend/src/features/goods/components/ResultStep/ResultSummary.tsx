@@ -53,7 +53,7 @@ export function ResultSummary({ result, calculating, delivery, sirInvoiceRows, i
         <span className="rs-sum-value">
           {/* Сумма по нажатию копируется без пробелов — для вставки в Excel. */}
           {/* «—» — размером с остальные суммы, на одной линии с ними; «расчёт не завершён» — мелко под ним. */}
-          <strong aria-live="polite" className={notCalculated ? 'empty' : undefined}>{notCalculated ? '—' : <><CopyCode code={total} number />{'\u00a0'}₸</>}</strong>
+          <strong aria-live="polite" className={notCalculated ? 'empty' : undefined}>{notCalculated ? '—' : <><CopyCode code={total} number />{'\u00a0'}KZT</>}</strong>
           <span className="rs-sum-sub">
             {notCalculated ? 'расчёт не завершён' : `≈ ${usd === null ? '—' : formatMoney(moneyText(usd), 'USD')}`}
             {missing > 0 && ` · без ${missing} из ${result.totals.totalCount} строк`}
@@ -61,22 +61,22 @@ export function ResultSummary({ result, calculating, delivery, sirInvoiceRows, i
           </span>
         </span>
         <dl className="rs-sum-tip" role="tooltip">
-          <div><dt>Таможенная стоимость</dt><dd>{formatMoney(known(result.totals.customsValueKzt), '₸')}</dd></div>
+          <div><dt>Таможенная стоимость</dt><dd>{formatMoney(known(result.totals.customsValueKzt), 'KZT')}</dd></div>
           {delivery && <div><dt>Доставка</dt><dd>{formatMoney(result.totals.totalDeliveryUsd, 'USD')} <small>· не входит в растаможку</small></dd></div>}
-          {result.usdKzt && <div><dt>Курс USD</dt><dd>{formatMoney(result.usdKzt, '₸')}{result.assessmentDate && <small> на {formatRuDate(result.assessmentDate)}</small>}</dd></div>}
+          {result.usdKzt && <div><dt>Курс USD</dt><dd>{formatMoney(result.usdKzt, 'KZT')}{result.assessmentDate && <small> на {formatRuDate(result.assessmentDate)}</small>}</dd></div>}
           {/* Курс EUR — когда он нужен смете (пошлина или стоимость в евро). */}
-          {result.eurKzt && <div><dt>Курс EUR</dt><dd>{formatMoney(result.eurKzt, '₸')}</dd></div>}
+          {result.eurKzt && <div><dt>Курс EUR</dt><dd>{formatMoney(result.eurKzt, 'KZT')}</dd></div>}
         </dl>
       </div>
       <dl className="rs-sum-parts">
         {parts.map((part) => <div className="rs-part" key={part.label} title={part.title}>
           <dt>{part.label}</dt>
-          <dd>{formatMoney(part.value, '₸')}</dd>
+          <dd>{formatMoney(part.value, 'KZT')}</dd>
         </div>)}
         {/* По СУР — насколько больше или меньше, чем по инвойсу; по нажатию — сравнение. */}
         {diff !== null && <div className="rs-part">
           <dt>Разница с инвойсом</dt>
-          <dd><button type="button" className="button-link rs-sum-diff" onClick={onCompare} title="Открыть сравнение: по инвойсу и по СУР">{diff > 0 ? '+' : diff < 0 ? '−' : ''}{formatMoney(moneyText(Math.abs(diff) / 100), '₸')}</button></dd>
+          <dd><button type="button" className="button-link rs-sum-diff" onClick={onCompare} title="Открыть сравнение: по инвойсу и по СУР">{diff > 0 ? '+' : diff < 0 ? '−' : ''}{formatMoney(moneyText(Math.abs(diff) / 100), 'KZT')}</button></dd>
         </div>}
       </dl>
       <div className="rs-sum-tools">{tools}</div>

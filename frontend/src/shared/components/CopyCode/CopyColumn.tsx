@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CopyIcon } from './CopyIcon'
+import './CopyCode.css'
 
 // Кнопка в заголовке: колонка в буфер по всем строкам по порядку, чтобы вставить в Excel столбцом.
 export function CopyColumn({ label, text, html }: { label: string; text: () => string; html?: () => string }) {
@@ -26,7 +27,7 @@ export function CopyColumn({ label, text, html }: { label: string; text: () => s
     }
   }
 
-  return <button type="button" className={copied ? 'rs-copy-col copied' : 'rs-copy-col'} onClick={copy}
+  return <button type="button" className={copied ? 'copy-col copied' : 'copy-col'} onClick={copy}
     title={copied ? 'Скопировано' : `Скопировать колонку «${label}» для вставки в Excel`} aria-label={`Скопировать колонку ${label}`}>
     <CopyIcon copied={copied} size={12} />
   </button>

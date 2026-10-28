@@ -6,8 +6,6 @@
 .rs-sum-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .rs-sum-value strong { color: var(--tf-text); font-size: 1.6rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; white-space: nowrap; font-variant-numeric: tabular-nums; transition: opacity .15s; }
 .rs-sum-value strong button.copy-code { padding: 0; }
-/* Значок копирования не отодвигает знак ₸: сумма копируется по нажатию, подсказка — в title. */
-.rs-sum-value strong button.copy-code i { display: none; }
 .rs-summary.calculating .rs-sum-value strong { opacity: .45; }
 .rs-sum-sub { color: var(--tf-muted); font-size: .86rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .rs-sum-sub em { font-style: normal; }

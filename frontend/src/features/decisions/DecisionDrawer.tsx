@@ -111,26 +111,26 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
             {decision.photos.length > 0 && <div className="dc-photos">{decision.photos.map((photo, index) => <button key={index} type="button" className="dc-photo" onClick={() => setPhotoIndex(index)} title="Открыть фото крупно"><img src={photo} alt={`Фото ${index + 1}`} /></button>)}</div>}
             <div className="dc-summary">
               <div className="dc-summary-name">
+                {(admin ? invoiceName : title).trim() && <CopyButton text={admin ? invoiceName : title} label="наименование" />}
                 {admin
                   ? <textarea className="dc-inline-input" rows={2} value={invoiceName} onChange={(event) => setInvoiceName(event.target.value)}
                     onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault() }}
                     placeholder={decision.supplierName || decision.finalName || 'Наименование не заполнено'} aria-label="Наименование из инвойса" />
                   : <span>{title || 'Без наименования'}</span>}
-                {(admin ? invoiceName : title).trim() && <CopyButton text={admin ? invoiceName : title} label="наименование" />}
               </div>
               <dl className="dc-stats">
                 <div><dt>Код ТН ВЭД</dt><dd>
                   {admin
-                    ? <><input className="dc-inline-input dc-code-inline" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" aria-label="Код ТН ВЭД" aria-invalid={!codeValid} />
-                      {codeValid && <CopyButton text={code.replace(/\D/g, '')} label="код" />}</>
+                    ? <>{codeValid && <CopyButton text={code.replace(/\D/g, '')} label="код" />}
+                      <input className="dc-inline-input dc-code-inline" value={code} onChange={(event) => setCode(event.target.value)} inputMode="numeric" aria-label="Код ТН ВЭД" aria-invalid={!codeValid} /></>
                     : <CopyCode code={decision.code} />}
                 </dd>{!codeValid && <span className="dc-field-error">Код — 10 цифр</span>}</div>
                 <div><dt>Цена за 1 шт</dt><dd>
+                  {price.trim() && priceValid && <CopyButton text={price.trim().replace('.', ',')} label="цену" />}
                   {admin
                     ? <input className="dc-inline-input dc-price-input" value={price} onChange={(event) => setPrice(event.target.value)} inputMode="decimal" placeholder="—" aria-label="Цена за 1 шт, USD" aria-invalid={!priceValid} />
                     : <span>{decision.unitPriceUsd.replace('.', ',') || '—'}</span>}
-                  <span className="dc-unit">$</span>
-                  {price.trim() && priceValid && <CopyButton text={price.trim().replace('.', ',')} label="цену" />}
+                  <span className="dc-unit">USD</span>
                 </dd>{!priceValid && <span className="dc-field-error">Число, например 0.5</span>}</div>
                 {decision.unitNetKg && <div><dt>Нетто 1 шт</dt><dd>{decision.unitNetKg}<span className="dc-unit">кг</span></dd></div>}
               </dl>
@@ -216,11 +216,11 @@ function PhotoDescription({ features }: { features: PhotoFeatures }) {
   </div>
 }
 
-// Строка карточки: подпись (и подсказка администратору) с «копировать» справа, под ними значение —
+// Строка карточки: «копировать» и подпись (и подсказка администратору), под ними значение —
 // текст или поле. empty — значения нет: серый прочерк, копировать нечего.
 function Field({ label, hint, copy, copyLabel, empty, children }: { label: string; hint?: string; copy: string; copyLabel: string; empty?: boolean; children: ReactNode }) {
   return <div className="dc-field">
-    {(label || hint || (!empty && copy.trim())) && <div className="dc-field-head"><span>{label}{hint && <small>{hint}</small>}</span>{!empty && copy.trim() && <CopyButton text={copy} label={copyLabel} />}</div>}
+    {(label || hint || (!empty && copy.trim())) && <div className="dc-field-head">{!empty && copy.trim() && <CopyButton text={copy} label={copyLabel} />}<span>{label}{hint && <small>{hint}</small>}</span></div>}
     {empty ? <p className="dc-value dc-none">—</p> : children}
   </div>
 }

@@ -18,7 +18,7 @@ const payLabels: Record<UtilFeeMatch['kind'], string> = { product: 'за тов�
 const verdictLabels: Record<UtilFeeMatch['kind'], string> = { product: 'за товар', packaging: 'за упаковку', vehicle: 'как за транспорт или технику' }
 const needLabels: Record<UtilFeeMatch['kind'], string> = { product: 'массу товара', packaging: 'материал и массу упаковки', vehicle: 'категорию транспорта' }
 
-const money = (value: string) => `${formatRuNumber(value)} ₸`
+const money = (value: string) => `${formatRuNumber(value)} KZT`
 const digits = (code: string) => code.replace(/\s/g, '')
 // Код любой длины — теми же группами, что полный (4-2-3-1): «8701 21 101», «4011 20», «8516 50 000 0».
 const groupCode = (code: string) => [code.slice(0, 4), code.slice(4, 6), code.slice(6, 9), code.slice(9)].filter(Boolean).join(' ')
@@ -101,7 +101,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
         showList={!/^\d{4,}$/.test(digits(input.code)) && sections.length > 0}
         fields={<>
           <label className="uf-code">Код ТН ВЭД<input value={input.code} onChange={(event) => setCode(event.target.value)} placeholder="код (8516500000) или слово (шины)" autoFocus /></label>
-          <label className="uf-mrp" title="Месячный расчётный показатель; по умолчанию — на 2026 год">МРП<input value={input.mrp} onChange={(event) => set({ mrp: event.target.value })} inputMode="decimal" /><span>₸</span></label>
+          <label className="uf-mrp" title="Месячный расчётный показатель; по умолчанию — на 2026 год">МРП<input value={input.mrp} onChange={(event) => set({ mrp: event.target.value })} inputMode="decimal" /><span>KZT</span></label>
         </>} />
 
       {/^\d{11,}$/.test(digits(input.code)) && <p className="uf-hint">В коде ТН ВЭД не больше 10 цифр.</p>}
@@ -158,7 +158,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
             <div className="uf-calc-total">
               <span>Итого утильсбор</span>
               <strong>{result.total ? money(result.total) : '—'}</strong>
-              {result.total && inUsd(result.total) && <small className="uf-usd" title={usdRate ? `Курс НБРК ${formatRuNumber(usdRate.rate)} ₸ за 1 USD` : undefined}>{inUsd(result.total)}{usdRate && ` · курс ${formatRuNumber(usdRate.rate)} ₸`}</small>}
+              {result.total && inUsd(result.total) && <small className="uf-usd" title={usdRate ? `Курс НБРК ${formatRuNumber(usdRate.rate)} KZT за 1 USD` : undefined}>{inUsd(result.total)}{usdRate && ` · курс ${formatRuNumber(usdRate.rate)} KZT`}</small>}
               {!result.total && <small>Заполните поля ниже — сумма посчитается сама</small>}
             </div>
 

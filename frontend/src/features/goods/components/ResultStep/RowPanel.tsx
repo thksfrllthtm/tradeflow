@@ -59,11 +59,11 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
   const lines: { label: string; value: string; title?: string }[] = [
     { label: 'Стоимость', value: formatMoney(priceProblem ? '' : item.goodsCost || item.costInput, currency) },
     ...(positive(item.deliveryUsd) ? [{ label: 'Доставка', value: formatMoney(item.deliveryUsd, 'USD') }] : []),
-    { label: 'Таможенная стоимость', value: formatMoney(known(item.customsValueKzt), '₸'), title: item.sir ? sirTitle(item.sir) : undefined },
-    { label: `Пошлина${duty ? ` ${duty}` : ''}`, value: formatMoney(known(item.dutyKzt), '₸') },
-    ...(positive(item.antiDumpingKzt) ? [{ label: 'Антидемпинг', value: formatMoney(item.antiDumpingKzt, '₸') }] : []),
-    { label: `НДС${vat ? ` ${vat}` : ''}`, value: formatMoney(known(item.vatKzt), '₸') },
-    { label: 'Сбор', value: formatMoney(item.feeKzt, '₸'), title: 'Таможенный сбор, распределённый на строку' },
+    { label: 'Таможенная стоимость', value: formatMoney(known(item.customsValueKzt), 'KZT'), title: item.sir ? sirTitle(item.sir) : undefined },
+    { label: `Пошлина${duty ? ` ${duty}` : ''}`, value: formatMoney(known(item.dutyKzt), 'KZT') },
+    ...(positive(item.antiDumpingKzt) ? [{ label: 'Антидемпинг', value: formatMoney(item.antiDumpingKzt, 'KZT') }] : []),
+    { label: `НДС${vat ? ` ${vat}` : ''}`, value: formatMoney(known(item.vatKzt), 'KZT') },
+    { label: 'Сбор', value: formatMoney(item.feeKzt, 'KZT'), title: 'Таможенный сбор, распределённый на строку' },
   ]
 
   return <aside className="rp" aria-label={`Строка ${index + 1}`}>
@@ -124,7 +124,7 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
 
     {/* Итог и включение строки — внизу панели, видны всегда. */}
     <div className="rp-foot">
-      <dl className="rp-total"><dt>К оплате</dt><dd>{formatMoney(rowPaymentKzt(item), '₸')}</dd></dl>
+      <dl className="rp-total"><dt>К оплате</dt><dd>{formatMoney(rowPaymentKzt(item), 'KZT')}</dd></dl>
       <label className="rp-include">
         <input type="checkbox" checked={!item.excluded} disabled={loading} onChange={(event) => onToggleIncluded(event.target.checked)} />
         Учитывать строку в расчёте

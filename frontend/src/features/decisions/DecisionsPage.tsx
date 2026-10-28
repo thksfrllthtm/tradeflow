@@ -132,9 +132,9 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
                     <td className="dc-photo-col">{item.thumb
                       ? <button type="button" className="dc-thumb" title="Открыть фото" aria-label="Открыть фото" onClick={(event) => { event.stopPropagation(); void openPhotos(item) }}><img src={item.thumb} alt="" /></button>
                       : <span className="dc-nophoto" aria-hidden="true" />}</td>
-                    <td className="dc-names" title={name}>{name ? <span className="dc-name"><span className="dc-name-text">{name}</span><CopyButton text={name} label="наименование" /></span> : <span className="dir-none">—</span>}</td>
+                    <td className="dc-names" title={name}>{name ? <span className="dc-name"><CopyButton text={name} label="наименование" /><span className="dc-name-text">{name}</span></span> : <span className="dir-none">—</span>}</td>
                     <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <span className="dc-warn" title="Кода нет в номенклатуре ЕАЭС"> ⚠</span>}</td>
-                    <td className="dc-price-col">{item.unitPriceUsd ? <><CopyCode code={item.unitPriceUsd.replace('.', ',')} number /> $</> : <span className="dir-none">—</span>}</td>
+                    <td className="dc-price-col">{item.unitPriceUsd ? <><CopyCode code={item.unitPriceUsd.replace('.', ',')} number /> USD</> : <span className="dir-none">—</span>}</td>
                     <td className="dc-status-col">
                       <span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>
                       {item.agentCorrect === false && <span className="dc-ai bad" title={`ИИ ошибся: предлагал ${formatCode(item.agentCode)}`}>ИИ</span>}

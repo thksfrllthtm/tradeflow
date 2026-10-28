@@ -19,7 +19,7 @@ export function formatRuNumber(value: string | number | undefined | null): strin
   return formatDisplayNumber(value).replace(/^([+-]?[\d ]+)\.(\d+)$/, '$1,$2')
 }
 
-// Сумма с валютой через неразрывный пробел: «128 432,04 ₸», «9 456,49 USD». Пусто — «—».
+// Сумма с валютой через неразрывный пробел: «128 432,04 KZT», «9 456,49 USD». Пусто — «—».
 export function formatMoney(value: string | number | undefined | null, currency: string): string {
   const shown = formatRuNumber(value)
   return shown && shown !== '—' ? `${shown} ${currency}` : '—'

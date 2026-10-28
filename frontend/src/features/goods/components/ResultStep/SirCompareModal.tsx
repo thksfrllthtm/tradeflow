@@ -118,9 +118,9 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
           <tbody>
             <tr className="sc-pay">
               <th scope="row">Растаможка к оплате</th>
-              <td><b>{money(payments?.invoice ?? null)} ₸</b><small>{money(paymentsUsd?.invoice ?? null)} USD</small></td>
-              <td className="sc-sir"><b>{money(payments?.sir ?? null)} ₸</b><small>{money(paymentsUsd?.sir ?? null)} USD</small></td>
-              <td className={`sc-diff ${tone(payments?.diff ?? null)}`}><b>{signed(payments?.diff ?? null)} ₸</b><small>{signed(paymentsUsd?.diff ?? null)} USD{growth !== null && ` · ${growth > 0 ? '+' : '−'}${percent(Math.abs(growth))}%`}</small></td>
+              <td><b>{money(payments?.invoice ?? null)} KZT</b><small>{money(paymentsUsd?.invoice ?? null)} USD</small></td>
+              <td className="sc-sir"><b>{money(payments?.sir ?? null)} KZT</b><small>{money(paymentsUsd?.sir ?? null)} USD</small></td>
+              <td className={`sc-diff ${tone(payments?.diff ?? null)}`}><b>{signed(payments?.diff ?? null)} KZT</b><small>{signed(paymentsUsd?.diff ?? null)} USD{growth !== null && ` · ${growth > 0 ? '+' : '−'}${percent(Math.abs(growth))}%`}</small></td>
             </tr>
             {breakdown.map((line) => <tr key={line.label}>
               <th scope="row">{line.label}</th>
@@ -148,7 +148,7 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
               <tr className="sc-group">
                 <th colSpan={3} />
                 <th colSpan={hasDiscount ? 3 : 2} className="sc-span">Цена за 1 кг, USD</th>
-                <th colSpan={3} className="sc-span">Таможенная стоимость, ₸</th>
+                <th colSpan={3} className="sc-span">Таможенная стоимость, KZT</th>
               </tr>
               <tr>
                 <th className="sc-num">№</th>

@@ -73,3 +73,4 @@
   .sc-col-label { width: auto; }
   .sc-status { margin-left: 0; }
 }
+.sc-rows td.sc-name .copy-code { display: flex; width: fit-content; }

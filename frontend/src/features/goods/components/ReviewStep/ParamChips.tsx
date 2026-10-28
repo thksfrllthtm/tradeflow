@@ -103,8 +103,8 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
   </span>
 
   const fee = noFee(value('feeMultiplier')) ? 'не начисляется'
-    : params.customsFeeKzt ? formatMoney(params.customsFeeKzt, '₸')
-      : feeTotal(value('mrp'), value('feeMultiplier')) ? formatMoney(feeTotal(value('mrp'), value('feeMultiplier')), '₸') : '—'
+    : params.customsFeeKzt ? formatMoney(params.customsFeeKzt, 'KZT')
+      : feeTotal(value('mrp'), value('feeMultiplier')) ? formatMoney(feeTotal(value('mrp'), value('feeMultiplier')), 'KZT') : '—'
   const delivery = params.deliveryMode === 'none' ? 'не учитывается'
     : params.deliveryMode === 'total' ? formatMoney(params.deliveryTotalUsd, 'USD')
       : params.deliveryMode === 'wagons' ? `${formatRuNumber(params.wagons) || '—'} ваг. × ${formatMoney(params.wagonTariffUsd, 'USD')}`
@@ -112,7 +112,7 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
   // Все параметры видны сразу; пустые дата и курс — красным (без них расчёт не пойдёт), прочие пустые — серым.
   const shown: { label: string; text: string; warn?: boolean; empty?: boolean }[] = [
     { label: 'Дата', text: params.assessmentDate ? formatRuDate(params.assessmentDate) : 'не указана', warn: !params.assessmentDate },
-    { label: 'Курс USD', text: params.usdKzt ? formatMoney(params.usdKzt, '₸') : 'не указан', warn: !params.usdKzt },
+    { label: 'Курс USD', text: params.usdKzt ? formatMoney(params.usdKzt, 'KZT') : 'не указан', warn: !params.usdKzt },
     { label: 'Доставка', text: delivery || 'не указана', empty: !delivery },
     { label: 'Упаковка', text: params.packageWeightKg ? `${formatRuNumber(params.packageWeightKg)} кг/место` : 'не указана', empty: !params.packageWeightKg },
     { label: 'Сбор', text: fee, empty: fee === '—' },
@@ -142,7 +142,7 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
       <div className="rv-param">
         <span>Курс USD</span>
         <div className="rv-param-inputs">
-          {num('usdKzt', 'Курс за 1 USD', '₸')}
+          {num('usdKzt', 'Курс за 1 USD', 'KZT')}
           <button type="button" className={usdRateNotice && params.usdKzt ? 'rv-param-link active' : 'rv-param-link'} onClick={() => void loadUsdRate()} disabled={usdRateLoading || !params.assessmentDate}
             title={params.assessmentDate ? `Взять курс НБРК на ${formatRuDate(params.assessmentDate)}` : 'Сначала укажите дату расчёта'}>{usdRateLoading ? '…' : 'НБРК'}</button>
         </div>
@@ -171,7 +171,7 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
       <div className="rv-param">
         <span>Сбор</span>
         <div className="rv-param-inputs">
-          {num('mrp', 'МРП', '₸')}<span className="rv-param-op">×</span>{num('feeMultiplier', 'Множитель сбора (0 — без сбора)', '', '—', true)}
+          {num('mrp', 'МРП', 'KZT')}<span className="rv-param-op">×</span>{num('feeMultiplier', 'Множитель сбора (0 — без сбора)', '', '—', true)}
         </div>
         <p className="rv-param-note total">= <b>{fee}</b></p>
       </div>

@@ -148,7 +148,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
 
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
         <table className="sheet sheet-rownum dir-table nom-table">
-          <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Наименование</th><th className="nom-rate">Пошлина ЕТТ</th><th className="nom-kz" title="Ставка ниже ЕТТ по обязательствам Казахстана в ВТО">Ставка РК</th><th className="nom-vat">НДС</th><th className="nom-ad" title="Антидемпинговая пошлина ЕАЭС сверх ЕТТ, % для прочих производителей">Антидемпинг</th><th className="nom-sir" title="Стоимостной индикатор риска КГД для Китая (CN), USD за 1 кг; из нескольких профилей — больший">СУР, $/кг</th><th className="nom-link" aria-label="Подробнее" /></tr></thead>
+          <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Наименование</th><th className="nom-rate">Пошлина ЕТТ</th><th className="nom-kz" title="Ставка ниже ЕТТ по обязательствам Казахстана в ВТО">Ставка РК</th><th className="nom-vat">НДС</th><th className="nom-ad" title="Антидемпинговая пошлина ЕАЭС сверх ЕТТ, % для прочих производителей">Антидемпинг</th><th className="nom-sir" title="Стоимостной индикатор риска КГД для Китая (CN), USD за 1 кг; из нескольких профилей — больший">СУР, USD/кг</th><th className="nom-link" aria-label="Подробнее" /></tr></thead>
           <tbody>
             {items.length === 0 ? <tr><td colSpan={8} className="dir-empty">{loading ? 'Загрузка…'
               : !source ? admin ? <>Номенклатура ещё не загружена. Скачайте Excel на <a href="https://www.tws.by/tws/tnved/download" target="_blank" rel="noreferrer">tws.by</a> и нажмите «Загрузить файл TWS».</> : 'Номенклатура ещё не загружена администратором.'

@@ -6,7 +6,7 @@ import { GoodsCalculationResult, ItpSaved } from '@/shared/types/goods'
 import { useSavedSnapshot } from '../../hooks/useSavedSnapshot'
 import { calculatorInputValue, parseCalculatorNumber, weightInputValue } from './resultValues'
 
-// «Сверка по ИТП» (свёрнута по умолчанию): ИТП × общий нетто = USD, × курс = ₸. Только для сверки,
+// «Сверка по ИТП» (свёрнута по умолчанию): ИТП × общий нетто = USD, × курс = KZT. Только для сверки,
 // на расчёт не влияет. Нетто и курс заполняются из результата, их можно поправить. Введённое
 // хранится в смете (saved / onSave), пока задан ИТП.
 export function ItpCalculator({ result, saved, onSave, onClose }: { result: GoodsCalculationResult; saved?: ItpSaved; onSave: (value: ItpSaved | undefined) => void; onClose: () => void }) {
@@ -47,10 +47,10 @@ export function ItpCalculator({ result, saved, onSave, onClose }: { result: Good
         <span className="rs-op">×</span>
         <label>Нетто всего, кг<NumberField value={itsNetKg} onChange={setItsNetKg} onBlur={() => setItsNetKg(weightInputValue(itsNetKg))} /></label>
         <span className="rs-op">×</span>
-        <label>Курс, ₸ за 1 USD<NumberField value={itsRate} onChange={setItsRate} onBlur={() => setItsRate(calculatorInputValue(itsRate))} /></label>
+        <label>Курс, KZT за 1 USD<NumberField value={itsRate} onChange={setItsRate} onBlur={() => setItsRate(calculatorInputValue(itsRate))} /></label>
         <span className="rs-op">=</span>
         <div className="rs-total rs-its-total">
-          <strong>{itsKzt !== null ? `${formatRuNumber(moneyText(itsKzt))} ₸` : '—'}</strong>
+          <strong>{itsKzt !== null ? `${formatRuNumber(moneyText(itsKzt))} KZT` : '—'}</strong>
           <small>{itsUsd !== null ? `≈ ${formatRuNumber(moneyText(itsUsd))} USD` : 'введите ИТП'}</small>
         </div>
       </div>

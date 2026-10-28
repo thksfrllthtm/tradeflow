@@ -543,29 +543,29 @@ export function ResultStep({
                 <tr>
                   <th className="rs-num" scope="col">№</th>
                   <th className="rs-mark" scope="col"><span className="rs-sr">Состояние строки</span></th>
-                  <th className="rs-name" scope="col">Товар{copyNames}</th>
-                  <th className="rs-code" scope="col">Код ТН ВЭД{copyCodes}</th>
-                  <th className="rs-qty" scope="col">Кол-во{copyCol('Кол-во', (item) => item.pairs)}</th>
+                  <th className="rs-name" scope="col">{copyNames}Товар</th>
+                  <th className="rs-code" scope="col">{copyCodes}Код ТН ВЭД</th>
+                  <th className="rs-qty" scope="col">{copyCol('Кол-во', (item) => item.pairs)}Кол-во</th>
                   {allColumns && (sirMode ? <>
-                    <th className="rs-w" scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС' : 'Вес нетто — по нему считается ТС'}>{sirGross ? 'Брутто' : 'Нетто'}, кг{copyCol(sirGross ? 'Брутто' : 'Нетто', (item) => sirGross ? item.grossKg : item.netKg)}</th>
-                  </> : <th className="rs-w" scope="col">Нетто, кг{copyCol('Нетто', (item) => item.netKg)}</th>)}
+                    <th className="rs-w" scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС' : 'Вес нетто — по нему считается ТС'}>{copyCol(sirGross ? 'Брутто' : 'Нетто', (item) => sirGross ? item.grossKg : item.netKg)}{sirGross ? 'Брутто' : 'Нетто'}, кг</th>
+                  </> : <th className="rs-w" scope="col">{copyCol('Нетто', (item) => item.netKg)}Нетто, кг</th>)}
                   {/* Главная колонка СУР — цена со снижением, по ней считается ТС; исходный индикатор — только во «Всех колонках». */}
-                  {allColumns && sirMode && sirDiscount > 0 && <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">СУР, $/кг{copyCol('СУР', (item) => item.sir?.priceUsd)}</th>}
+                  {allColumns && sirMode && sirDiscount > 0 && <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">{copyCol('СУР', (item) => item.sir?.priceUsd)}СУР, USD/кг</th>}
                   {sirMode
-                    ? <th scope="col" className="rs-sir-col" title={sirDiscount > 0 ? `Индикатор со снижением: берётся ${100 - sirDiscount} %` : 'Стоимостной индикатор риска из файла профиля, USD за 1 кг'}>{sirDiscount > 0 ? `СУР −${displayNumber(sir.sirDiscountPercent)}%` : 'СУР'}, $/кг{copyCol(sirDiscount > 0 ? 'СУР со снижением' : 'СУР', (item) => item.sir?.pricePerKgUsd)}</th>
-                    : <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">Цена, ${copyCol('Цена ед.', (_item, index) => priceOf(index))}</th>}
+                    ? <th scope="col" className="rs-sir-col" title={sirDiscount > 0 ? `Индикатор со снижением: берётся ${100 - sirDiscount} %` : 'Стоимостной индикатор риска из файла профиля, USD за 1 кг'}>{copyCol(sirDiscount > 0 ? 'СУР со снижением' : 'СУР', (item) => item.sir?.pricePerKgUsd)}{sirDiscount > 0 ? `СУР −${displayNumber(sir.sirDiscountPercent)}%` : 'СУР'}, USD/кг</th>
+                    : <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">{copyCol('Цена ед.', (_item, index) => priceOf(index))}Цена, USD</th>}
                   {sirMode
-                    ? <th className="rs-usd" scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">ТС, USD{copyCol('ТС, USD', (item) => item.sir ? item.sir.valueUsd : item.goodsCost || item.costInput)}</th>
-                    : <th className="rs-usd" scope="col">Стоимость, USD{copyCol('Стоимость', (item) => item.goodsCost || item.costInput)}</th>}
+                    ? <th className="rs-usd" scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">{copyCol('ТС, USD', (item) => item.sir ? item.sir.valueUsd : item.goodsCost || item.costInput)}ТС, USD</th>
+                    : <th className="rs-usd" scope="col">{copyCol('Стоимость', (item) => item.goodsCost || item.costInput)}Стоимость, USD</th>}
                   {allColumns && <>
-                    {delivery && <th className="rs-usd" scope="col">Доставка, USD{copyCol('Доставка', (item) => item.deliveryUsd)}</th>}
-                    <th className="rs-cv" scope="col" title="Таможенная стоимость">ТС, ₸{copyCol('ТС, ₸', (item) => item.customsValueKzt)}</th>
-                    <th className="rs-tax" scope="col">Пошлина, ₸{copyCol('Пошлина', (item) => item.dutyKzt)}</th>
-                    {antiDumping && <th className="rs-tax" scope="col">Антидемпинг, ₸{copyCol('Антидемпинг', (item) => item.antiDumpingKzt)}</th>}
-                    <th className="rs-tax" scope="col">НДС, ₸{copyCol('НДС', (item) => item.vatKzt)}</th>
-                    <th className="rs-fee" scope="col" title="Таможенный сбор">Сбор, ₸{copyCol('Сбор', (item) => item.feeKzt)}</th>
+                    {delivery && <th className="rs-usd" scope="col">{copyCol('Доставка', (item) => item.deliveryUsd)}Доставка, USD</th>}
+                    <th className="rs-cv" scope="col" title="Таможенная стоимость">{copyCol('ТС, KZT', (item) => item.customsValueKzt)}ТС, KZT</th>
+                    <th className="rs-tax" scope="col">{copyCol('Пошлина', (item) => item.dutyKzt)}Пошлина, KZT</th>
+                    {antiDumping && <th className="rs-tax" scope="col">{copyCol('Антидемпинг', (item) => item.antiDumpingKzt)}Антидемпинг, KZT</th>}
+                    <th className="rs-tax" scope="col">{copyCol('НДС', (item) => item.vatKzt)}НДС, KZT</th>
+                    <th className="rs-fee" scope="col" title="Таможенный сбор">{copyCol('Сбор', (item) => item.feeKzt)}Сбор, KZT</th>
                   </>}
-                  <th className="rs-pay" scope="col" title="Пошлина + антидемпинг + НДС + сбор">К оплате, ₸{copyCol('К оплате', (item) => rowPaymentKzt(item))}</th>
+                  <th className="rs-pay" scope="col" title="Пошлина + антидемпинг + НДС + сбор">{copyCol('К оплате', (item) => rowPaymentKzt(item))}К оплате, KZT</th>
                 </tr>
               </thead>
               <tbody>

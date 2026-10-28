@@ -41,7 +41,7 @@ export function CopyCode({ code, className, number }: Props) {
 
   return <button type="button" className={['copy-code', number ? 'number' : '', copied ? 'copied' : '', className].filter(Boolean).join(' ')} onClick={(event) => { event.stopPropagation(); void copy() }} onCopy={onCopy}
     title={copied ? 'Скопировано' : `Скопировать без пробелов: ${digits}`} aria-label={`${number ? '' : 'Код '}${shown}, скопировать`}>
-    <span>{shown}</span>
     <i className="copy-code-icon"><CopyIcon copied={copied} size={13} /></i>
+    <span>{shown}</span>
   </button>
 }

@@ -177,11 +177,6 @@
 .goods-page .rs-table .rs-price.edited { font-weight: 600; }
 .goods-page .rs-table .rs-price:disabled { color: var(--tf-muted); }
 
-/* Кнопка копирования колонки в заголовке: еле видна, ярче при наведении на заголовок. */
-.goods-page .rs-table button.rs-copy-col { display: inline-grid; place-items: center; vertical-align: middle; width: 22px; height: 22px; margin: 0 -4px 0 4px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); font: inherit; line-height: inherit; cursor: copy; opacity: 0; transition: opacity .12s; }
-.goods-page .rs-table th:hover button.rs-copy-col, .goods-page .rs-table button.rs-copy-col:focus-visible, .goods-page .rs-table button.rs-copy-col.copied { opacity: 1; }
-.goods-page .rs-table button.rs-copy-col:hover { background: var(--tf-chip); color: var(--tf-text); }
-.goods-page .rs-table button.rs-copy-col.copied { color: var(--tf-green); }
 
 .goods-page .rs-table .rs-empty td { padding: 28px 16px !important; color: var(--tf-text-2); text-align: center; white-space: normal; cursor: default; }
 /* «Итого» прилипает к низу окна, пока видна таблица. */
@@ -266,8 +261,6 @@
 .goods-page .rs-table-wrap.wide .rs-table { table-layout: fixed; min-width: var(--rs-min) !important; }
 /* Узкие колонки: длинный заголовок («Стоимость, USD») переносится на вторую строку, а не обрезается. */
 .goods-page .rs-table-wrap.wide .rs-table th { white-space: normal; vertical-align: middle; }
-/* Кнопка копирования колонки — поверх конца заголовка (видна при наведении), не переносит его на вторую строку. */
-.goods-page .rs-table-wrap.wide .rs-table th button.rs-copy-col { position: absolute; top: 50%; right: 2px; margin: 0; transform: translateY(-50%); background: var(--tf-card); }
 .goods-page .rs-table-wrap.wide .rs-table th.rs-code { width: 128px; }
 .goods-page .rs-table-wrap.wide .rs-table th.rs-qty { width: 88px; }
 .goods-page .rs-table-wrap.wide .rs-table th.rs-w { width: 96px; }

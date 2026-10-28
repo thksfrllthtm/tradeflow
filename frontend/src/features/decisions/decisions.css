@@ -45,8 +45,6 @@ table.dc-table .dc-status { font-size: .86rem; font-weight: 500; }
 /* Наименование в одну строку с многоточием; справа — «копировать», видна при наведении на строку. */
 .dc-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .dc-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.dc-table button.copy-btn { opacity: 0; transition: opacity .12s; }
-.dc-table tr:hover button.copy-btn, .dc-table button.copy-btn:focus-visible, .dc-table button.copy-btn.copied { opacity: 1; }
 /* Миниатюра — кнопка: открывает фото крупно, с увеличением. */
 .dc-table button.dc-thumb { display: block; width: auto; height: auto; padding: 0; border: 0; border-radius: 4px; background: none; cursor: zoom-in; }
 .dc-table button.dc-thumb:hover img { border-color: var(--tf-green); }
@@ -143,7 +141,7 @@ p.dc-warn { margin: 0; font-size: .78rem; }
 
 /* Строка «подпись — значение»: подпись серым, «копировать» справа от неё; значение — текст или поле. */
 .dc-field { display: grid; gap: 4px; min-width: 0; }
-.dc-field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; }
+.dc-field-head { display: flex; align-items: center; gap: 4px; min-height: 26px; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; }
 .dc-field-head small { margin-left: 6px; color: var(--tf-muted); font-size: .76rem; font-weight: 400; }
 .dc-value { margin: 0; color: var(--tf-text); font-size: .9rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .dc-value.dc-none { color: var(--tf-muted); }

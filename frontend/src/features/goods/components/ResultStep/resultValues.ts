@@ -110,7 +110,7 @@ export function itemNames(item: DisplayNameItem, source?: DisplayNameItem): { ma
 
 type PaymentItem = { excluded?: boolean; errors?: string[]; dutyKzt?: string; antiDumpingKzt?: string; vatKzt?: string; feeKzt?: string }
 
-// К оплате по строке, ₸: пошлина + антидемпинг + НДС + сбор (как итог на сервере). Сумма в тиынах —
+// К оплате по строке, KZT: пошлина + антидемпинг + НДС + сбор (как итог на сервере). Сумма в тиынах —
 // без ошибок двоичной записи. Пусто — строка исключена или с ошибкой (пошлина и НДС не посчитаны).
 export function rowPaymentKzt(item: PaymentItem): string {
   const parts = [item.dutyKzt, item.antiDumpingKzt, item.vatKzt, item.feeKzt]

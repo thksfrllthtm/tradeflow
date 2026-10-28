@@ -11,7 +11,7 @@ export function AuthRates() {
   return <section className="auth-rates" aria-label="Курс Национального банка РК" title="Официальный курс Национального банка РК">
     <span className="auth-rates-title">Курс НБРК{date && ` на ${formatRuDate(date)}`}</span>
     <div className="auth-rates-list">
-      {rates.map((rate) => <span key={rate.currency} className="auth-rate"><small>1 {rate.currency}</small><b>{formatRuNumber(rate.rate)} ₸</b></span>)}
+      {rates.map((rate) => <span key={rate.currency} className="auth-rate"><small>1 {rate.currency}</small><b>{formatRuNumber(rate.rate)} KZT</b></span>)}
     </div>
   </section>
 }

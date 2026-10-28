@@ -11,7 +11,7 @@ describe('formatRuNumber', () => {
   })
 
   it('formats money with a non-breaking space before the currency', () => {
-    expect(formatMoney('128432.04', '₸')).toBe('128 432,04 ₸')
+    expect(formatMoney('128432.04', 'KZT')).toBe('128 432,04 KZT')
     expect(formatMoney('', 'USD')).toBe('—')
   })
 

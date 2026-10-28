@@ -12,7 +12,7 @@ export function convert(amount: string, from: string, to: string, rates: TodayRa
   return value * rate(from) / rate(to)
 }
 
-// Сумма для показа: от единицы — копейки; меньше единицы (1 ₸ ≈ 0,0022 USD) — до 6 знаков, не «0,00».
+// Сумма для показа: от единицы — копейки; меньше единицы (1 KZT ≈ 0,0022 USD) — до 6 знаков, не «0,00».
 export function amountText(value: number) {
   return formatRuNumber(Math.abs(value) >= 1 || value === 0 ? moneyText(value) : decimalText(value, 6))
 }
@@ -21,7 +21,6 @@ export function amountText(value: number) {
 const names = new Intl.DisplayNames(['ru'], { type: 'currency' })
 const nameOf = (code: string) => names.of(code) ?? code
 const FREQUENT = ['KZT', 'USD', 'EUR', 'CNY', 'RUB']
-const symbol = (code: string) => code === 'KZT' ? '₸' : code
 
 // Выбор валюты: плашка с кодом и названием; список — с поиском по коду и названию, частые валюты сверху,
 // у каждой — курс в тенге. ↑ ↓ — выбор, Enter — применить, Esc — закрыть список.
@@ -32,7 +31,7 @@ function CurrencySelect({ value, codes, rates, label, onChange }: { value: strin
   const listRef = useRef<HTMLUListElement>(null)
   const needle = query.trim().toLowerCase()
   const found = codes.filter((code) => !needle || code.toLowerCase().includes(needle) || nameOf(code).toLowerCase().includes(needle))
-  const rateOf = (code: string) => code === 'KZT' ? '' : `${formatRuNumber(rates.find((rate) => rate.currency === code)?.rate)} ₸`
+  const rateOf = (code: string) => code === 'KZT' ? '' : `${formatRuNumber(rates.find((rate) => rate.currency === code)?.rate)} KZT`
 
   useEffect(() => setActive(0), [query])
   useEffect(() => { listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }) }, [active, open])
@@ -105,8 +104,8 @@ export function RatesConverter({ rates }: { rates: TodayRate[] }) {
         <button type="button" className="cur-swap" onClick={() => { setFrom(to); setTo(from) }} title="Поменять местами" aria-label="Поменять валюты местами">⇅</button>
         <CurrencySelect value={to} codes={codes} rates={rates} label="В валюту" onChange={setTo} />
       </div>
-      <output className="app-header-converter-result">{result === null ? '—' : `${amountText(result)} ${symbol(to)}`}</output>
-      <small>{unit !== null && from !== to && `1 ${symbol(from)} = ${amountText(unit)} ${symbol(to)} · `}по курсу НБРК на {formatRuDate(rates[0].date)}</small>
+      <output className="app-header-converter-result">{result === null ? '—' : `${amountText(result)} ${to}`}</output>
+      <small>{unit !== null && from !== to && `1 ${from} = ${amountText(unit)} ${to} · `}по курсу НБРК на {formatRuDate(rates[0].date)}</small>
     </div>}
   </details>
 }

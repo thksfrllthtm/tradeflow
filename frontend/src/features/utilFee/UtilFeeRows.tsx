@@ -26,7 +26,7 @@ function load(): Saved {
 
 // «548.800» → «548,8»: вес без лишних нулей.
 const kg = (value: string) => formatRuNumber(value.includes('.') ? value.replace(/0+$/, '').replace(/\.$/, '') : value)
-const money = (value: string) => value ? `${formatRuNumber(value)} ₸` : ''
+const money = (value: string) => value ? `${formatRuNumber(value)} KZT` : ''
 const usd = (value: string) => value ? formatMoney(value, 'USD') : ''
 
 // Таблица утильсбора по Excel поставщика: код, брутто, нетто (пустое — брутто минус % упаковки).
@@ -83,7 +83,7 @@ export function UtilFeeRows({ materials, usdRate }: { materials: UtilFeeMaterial
   }
   return <section className="uf-rows" aria-label="Таблица утильсбора">
     <div className="uf-filterbar">
-      <label className="uf-mrp" title="Месячный расчётный показатель. По умолчанию — на 2026 год; поменяйте, если МРП изменился">МРП, ₸<input value={state.mrp} onChange={(event) => set({ mrp: event.target.value })} inputMode="decimal" /></label>
+      <label className="uf-mrp" title="Месячный расчётный показатель. По умолчанию — на 2026 год; поменяйте, если МРП изменился">МРП, KZT<input value={state.mrp} onChange={(event) => set({ mrp: event.target.value })} inputMode="decimal" /></label>
       <label className="uf-mrp" title="Для строк без нетто: нетто = брутто минус этот процент, остальное — вес упаковки">Нет нетто — вычесть из брутто<input value={state.packagingPercent} onChange={(event) => set({ packagingPercent: event.target.value })} inputMode="decimal" /><span>%</span></label>
       <label title="Из чего упаковка — от этого зависит коэффициент k в сборе за упаковку (Методика № 448)">Упаковка из
         <select value={state.material} onChange={(event) => set({ material: event.target.value })}>
@@ -103,14 +103,21 @@ export function UtilFeeRows({ materials, usdRate }: { materials: UtilFeeMaterial
     {error && <p className="banner error" role="alert">{error}</p>}
     <div className="uf-scroll">
       <table className="sheet uf-table uf-rows-table" ref={table}>
+        {/* Ширины колонок — здесь, одним списком; «Примечание» забирает остаток. */}
+        <colgroup>{[48, 120, 110, 150, 150, 220, 130, 130, 145, 125].map((width, index) => <col key={index} style={{ width }} />)}<col /></colgroup>
         <thead><tr>
-          <th className="c-n">№</th><th className="c-in">Код ТН ВЭД</th><th className="c-in" title="Общий вес строки, кг">Брутто, кг</th><th className="c-in" title="Пусто — программа вычтет из брутто процент, указанный выше (серым)">Нетто, кг <small><i>серое — расчётное</i></small></th>
-          <th className="c-num" title="Брутто минус нетто">Упаковка, кг</th><th className="c-list" title="За что платится утильсбор и раздел перечня № 689">Платится за</th>
-          <th className="c-num" title={`${state.productWeight === 'gross' ? 'Брутто' : 'Нетто'} (т) × МРП × k раздела`}>{copy('Сбор за товар, ₸', (row) => row.product)}Сбор за товар, ₸ <small>от {state.productWeight === 'gross' ? 'брутто' : 'нетто'}</small></th>
-          <th className="c-num" title="Упаковка (т) × МРП × k материала">{copy('Сбор за упаковку, ₸', (row) => row.packaging)}Сбор за упаковку, ₸</th>
-          <th className="c-num">{copy('Итого, ₸', (row) => row.total)}Итого, ₸</th>
-          <th className="c-num" title="Итого в тенге по курсу НБРК на сегодня">{copy('Итого, USD', (row) => row.totalUsd)}Итого, USD{usdRate && <small>курс {formatRuNumber(usdRate)} ₸</small>}</th>
-          <th className="c-note">Примечание</th>
+          {/* Шапка в две строки: название (одна строка) и под ним серое пояснение — у всех колонок одинаково. */}
+          <th className="c-n">№</th>
+          <th className="c-in">Код ТН ВЭД<small>из Excel</small></th>
+          <th className="c-in" title="Общий вес строки">Брутто<small>кг</small></th>
+          <th className="c-in" title="Пусто — программа вычтет из брутто процент, указанный выше (серым)">Нетто<small>кг · <i>серое</i> — расчёт</small></th>
+          <th className="c-num" title="Брутто минус нетто">Упаковка<small>кг · брутто − нетто</small></th>
+          <th className="c-list" title="За что платится утильсбор и раздел перечня № 689">Платится за<small>раздел перечня</small></th>
+          <th className="c-num" title={`${state.productWeight === 'gross' ? 'Брутто' : 'Нетто'} (т) × МРП × k раздела`}>{copy('За товар, KZT', (row) => row.product)}За товар<small>KZT · от {state.productWeight === 'gross' ? 'брутто' : 'нетто'}</small></th>
+          <th className="c-num" title="Упаковка (т) × МРП × k материала">{copy('За упаковку, KZT', (row) => row.packaging)}За упаковку<small>KZT</small></th>
+          <th className="c-num">{copy('Итого, KZT', (row) => row.total)}Итого<small>KZT</small></th>
+          <th className="c-num" title="Итого в тенге по курсу НБРК на сегодня">{copy('Итого, USD', (row) => row.totalUsd)}Итого<small>USD{usdRate && ` · ${formatRuNumber(usdRate)} KZT`}</small></th>
+          <th className="c-note">Примечание<small>&nbsp;</small></th>
         </tr></thead>
         <tbody>
           {state.rows.map((row, index) => {
@@ -135,7 +142,7 @@ export function UtilFeeRows({ materials, usdRate }: { materials: UtilFeeMaterial
         </tbody>
         {result && <tfoot><tr>
           <td colSpan={8}>Итого утильсбор по {filled} {filled % 10 === 1 && filled % 100 !== 11 ? 'строке' : 'строкам'}</td>
-          <td className="c-num"><b><CopyCode number code={formatRuNumber(result.total)} /> ₸</b></td>
+          <td className="c-num"><b><CopyCode number code={formatRuNumber(result.total)} /> KZT</b></td>
           <td className="c-num"><b>{result.totalUsd && <><CopyCode number code={formatRuNumber(result.totalUsd)} /> USD</>}</b></td>
           <td className="c-note">{!usdRate && 'Курс НБРК не загрузился — доллары не посчитаны'}</td>
         </tr></tfoot>}
