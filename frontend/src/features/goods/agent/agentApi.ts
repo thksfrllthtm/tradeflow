@@ -41,8 +41,11 @@ export type AgentCandidate = {
   code: string
   verdict: 'fits' | 'doubtful' | 'no'
   quote: string
-  // Где цитата найдена дословно; подпись — quoteSourceLabels. name — только в старых подборах.
+  // Где цитата найдена дословно; подпись — quoteSourceLabels. decision и name — только в старых подборах.
   quoteSource: '' | 'page' | 'decision' | 'tks' | 'help' | 'document' | 'name'
+  // Второе доказательство после пояснений: цитата из классификационного решения и его вид и страна.
+  decisionQuote?: string
+  decisionSource?: string
   reason: string
   check: string
   pageOpened: boolean

@@ -116,7 +116,7 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 					if text, other, ok := strings.Cut(page.Text, sameNotesPrefix); ok && len(other) >= 10 {
 						page.Text = text + notesOf(r.toolbox.opened[other[:10]])
 					}
-					r.toolbox.opened[page.Code] = page.Text
+					r.toolbox.opened[page.Code] = strings.Replace(page.Text, decisionsNote, "", 1)
 				}
 			case "search_declarations":
 				// Как при вызове: поиск сделан (с результатом или сайт не ответил), а не ошибка в аргументах.

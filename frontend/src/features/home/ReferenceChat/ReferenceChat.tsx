@@ -650,6 +650,7 @@ function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: A
       </span>)}
     </p>}
     {candidate.quote && <blockquote>{candidate.quote}{quoteSourceLabels[candidate.quoteSource] && <cite>{quoteSourceLabels[candidate.quoteSource]}</cite>}</blockquote>}
+    {candidate.decisionQuote && <blockquote>{candidate.decisionQuote}<cite>{candidate.decisionSource} (TWS.BY)</cite></blockquote>}
     {candidate.reason && <p className="rc-reason"><LinkText text={candidate.reason} /></p>}
     {candidate.check && <p className="rc-check"><b>Уточнить:</b> <LinkText text={candidate.check} /></p>}
     <div className="rc-cand-actions">

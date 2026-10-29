@@ -21,11 +21,18 @@ func testMakerText() string {
 
 type fakeSearcher struct {
 	queries   []string
+	domains   [][]string
 	extracted []string
+	// emptyMain — на tks.ru ничего не находится.
+	emptyMain bool
 }
 
-func (f *fakeSearcher) Search(_ context.Context, query string) ([]webResult, error) {
+func (f *fakeSearcher) Search(_ context.Context, query string, domains []string) ([]webResult, error) {
 	f.queries = append(f.queries, query)
+	f.domains = append(f.domains, domains)
+	if f.emptyMain && strings.Join(domains, ",") == "tks.ru" {
+		return nil, nil
+	}
 	return []webResult{
 		{Title: "Решение по формочкам для пластилина", URL: testAltaURL, Content: "пластиковые формочки"},
 		{Title: "Ножницы садовые", URL: testMakerURL, Content: "секатор с пружиной"},
@@ -97,6 +104,31 @@ func TestAgentWebSearchSourcesAndReview(t *testing.T) {
 	}
 	if !reviewed {
 		t.Fatal("самопроверка видна в ходе подбора")
+	}
+}
+
+// tks.ru — главный сайт: поиск сначала только по нему; другие сайты — вторым обращением, только если на
+// tks.ru пусто, и не сверх лимита.
+func TestWebSearchTKSFirst(t *testing.T) {
+	toolbox, _, search := webToolbox()
+	_, event := toolbox.run(context.Background(), "web_search", `{"query":"формочки"}`)
+	if len(search.domains) != 1 || strings.Join(search.domains[0], ",") != "tks.ru" || toolbox.webCalls != 1 || !strings.HasPrefix(event.Label, "tks.ru") {
+		t.Fatalf("нашлось на tks.ru — других сайтов нет: %v, обращений %d, %q", search.domains, toolbox.webCalls, event.Label)
+	}
+
+	toolbox, _, search = webToolbox()
+	search.emptyMain = true
+	content, event := toolbox.run(context.Background(), "web_search", `{"query":"формочки"}`)
+	if len(search.domains) != 2 || strings.Contains(strings.Join(search.domains[1], ","), "tks.ru") || toolbox.webCalls != 2 || !strings.Contains(content, testAltaURL) || !strings.Contains(event.Label, "другие сайты") {
+		t.Fatalf("на tks.ru пусто — другие сайты: %v, обращений %d, %q", search.domains, toolbox.webCalls, event.Label)
+	}
+
+	toolbox, _, search = webToolbox()
+	search.emptyMain = true
+	toolbox.webCalls = agentMaxWebCalls - 1
+	toolbox.run(context.Background(), "web_search", `{"query":"формочки"}`)
+	if len(search.domains) != 1 || toolbox.webCalls != agentMaxWebCalls {
+		t.Fatalf("на последнем обращении — только tks.ru: %v, обращений %d", search.domains, toolbox.webCalls)
 	}
 }
 
