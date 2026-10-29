@@ -1049,6 +1049,13 @@ func decisionsMarked(page string) string {
 	return page[:start] + decisionsNote + page[start:]
 }
 
+// containsQuote — есть ли цитата в тексте без учёта регистра, знаков и пробелов: на TWS.BY слова бывают
+// разорваны («мет аллические»), и дословная цитата с целым словом иначе не находится.
+func containsQuote(text, quote string) bool {
+	squash := func(value string) string { return strings.ReplaceAll(decisions.NormalizeDecisionName(value), " ", "") }
+	return strings.Contains(squash(text), squash(quote))
+}
+
 // decisionSource — вид и страна решения, в котором дословно есть цитата: «Предварительное · RU - Россия».
 // Решения в блоке идут подряд, каждое заканчивается строкой «Страна : …». "" — цитаты в решениях нет.
 func decisionSource(page, quote string) string {
@@ -1067,7 +1074,7 @@ func decisionSource(page, quote string) string {
 		if !isEnd {
 			continue
 		}
-		if strings.Contains(decisions.NormalizeDecisionName(strings.Join(entry, "\n")), normalized) {
+		if containsQuote(strings.Join(entry, "\n"), normalized) {
 			parts := []string{"классификационное решение"}
 			// Первая строка решения — вид («Предварительное»), если это короткое слово, а не код.
 			if kind := entry[0]; utf8.RuneCountInString(kind) <= 40 && !strings.ContainsAny(kind, "0123456789") {
@@ -1081,7 +1088,7 @@ func decisionSource(page, quote string) string {
 		entry = nil
 	}
 	// Блок без строк «Страна» (решения ЕЭК и др.): цитата есть в блоке — решение без подробностей.
-	if strings.Contains(decisions.NormalizeDecisionName(decisionsBlock(page)), normalized) {
+	if containsQuote(decisionsBlock(page), normalized) {
 		return "классификационное решение"
 	}
 	return ""
@@ -1178,6 +1185,8 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 		Notes:    service.TruncateRunes(strings.TrimSpace(args.Notes), 1000), Candidates: []AgentCandidate{}, DroppedCodes: []string{},
 	}
 	used := map[string]bool{}
+	// withoutNotes — коды, где решение дано без цитаты пояснений: решение убирается, модели — замечание.
+	withoutNotes := []string{}
 	for _, candidate := range args.Candidates {
 		code := nonDigits.ReplaceAllString(candidate.Code, "")
 		if used[code] {
@@ -1204,12 +1213,17 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 				result.QuotesRemoved++
 			}
 		}
-		// Решение — второе доказательство: дословно из блока решений страницы этого кода, иначе убирается.
+		// Решение — второе доказательство: только вместе с цитатой пояснений и дословно из блока решений
+		// страницы этого кода, иначе убирается.
 		decisionQuote := service.TruncateRunes(strings.TrimSpace(strings.Trim(candidate.DecisionQuote, "«»\"' ")), 600)
 		decisionLabel := ""
 		if decisionQuote != "" {
 			if page := t.opened[code]; !strings.HasPrefix(page, tksNotesPrefix) {
 				decisionLabel = decisionSource(page, decisionQuote)
+			}
+			if decisionLabel != "" && quote == "" {
+				withoutNotes = append(withoutNotes, FormatTNVEDCode(code))
+				decisionLabel = ""
 			}
 			if decisionLabel == "" {
 				decisionQuote = ""
@@ -1253,6 +1267,9 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	}
 	if t.requireDeclarations && !t.declarationsChecked {
 		return result, "Итог ещё не принят: сначала проверь, как такой товар декларировали, — search_declarations по виду товара, затем внутри подходящей позиции (within). Сверь с выбранным кодом, напиши в reason, что показали декларации, и вызови finish снова.", nil
+	}
+	if len(withoutNotes) > 0 {
+		return result, "Классификационное решение без цитаты из пояснений у " + strings.Join(withoutNotes, ", ") + ": решение — второе доказательство, сначала quote — дословно скопируй из пояснений к ТН ВЭД на странице open_details этого кода слова, где назван товар (не пересказ). В пояснениях товара нет — убери decisionQuote. Вызови finish снова.", nil
 	}
 	return result, "", nil
 }
@@ -1359,7 +1376,7 @@ func (t *agentToolbox) quoteOrigin(quote, actURL, act string) string {
 	if utf8.RuneCountInString(normalized) < agentMinQuoteRunes {
 		return ""
 	}
-	has := func(text string) bool { return strings.Contains(decisions.NormalizeDecisionName(text), normalized) }
+	has := func(text string) bool { return containsQuote(text, normalized) }
 	if actURL != "" && has(t.web[actURL]) {
 		return firstNonEmpty(act, "акт по ссылке")
 	}
@@ -1417,16 +1434,16 @@ func (t *agentToolbox) quoteSource(code, quote string) string {
 	}
 	if page, ok := t.opened[code]; ok {
 		if strings.HasPrefix(page, tksNotesPrefix) {
-			if strings.Contains(decisions.NormalizeDecisionName(page), normalized) {
+			if containsQuote(page, normalized) {
 				return "tks"
 			}
-		} else if strings.Contains(decisions.NormalizeDecisionName(notesOf(page)), normalized) {
+		} else if containsQuote(notesOf(page), normalized) {
 			return "page"
 		}
 	}
 	source := ""
 	for address, text := range t.web {
-		if strings.Contains(decisions.NormalizeDecisionName(text), normalized) {
+		if containsQuote(text, normalized) {
 			if strings.Contains(address, "tnved.info") {
 				return "help"
 			}

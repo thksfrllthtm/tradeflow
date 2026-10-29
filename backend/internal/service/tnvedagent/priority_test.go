@@ -72,19 +72,27 @@ func TestFinishComparesFileCode(t *testing.T) {
 func TestFinishDecisionQuote(t *testing.T) {
 	toolbox := newAgentToolbox(&fakeAgentData{})
 	toolbox.opened["6116102000"] = "Дерево кода\n" + decisionsHeading + " (1)\nПредварительное\n6116 10 200 0\nПерчатки трикотажные с латексным покрытием ладони для хозяйственных работ.\nОснование : В соответствии с ОПИ 1 и 6\nСтрана : RU - Россия\n" +
-		notesHeading + "\nВ данную субпозицию включаются трикотажные перчатки с покрытием ладони."
-	finish := func(quote, decision string) AgentCandidate {
+		notesHeading + "\nВ данную субпозицию включаются трикотажные перчатки с покрытием ладони; одежные крючки; рожки для обуви; стальные и другие мет аллические ножеточки."
+	finish := func(quote, decision string) (AgentCandidate, string) {
 		raw, _ := json.Marshal(map[string]any{"description": "Перчатки", "name": "Перчатки", "confidence": "high",
 			"candidates": []map[string]string{{"code": "6116102000", "verdict": "fits", "reason": "Да.", "quote": quote, "decisionQuote": decision}}})
-		result, _, _ := toolbox.finish(context.Background(), string(raw))
-		return result.Candidates[0]
+		result, problem, _ := toolbox.finish(context.Background(), string(raw))
+		return result.Candidates[0], problem
 	}
-	got := finish("включаются трикотажные перчатки с покрытием ладони", "Перчатки трикотажные с латексным покрытием ладони")
-	if got.QuoteSource != "page" || got.DecisionQuote == "" || got.DecisionSource != "предварительное решение · RU - Россия" {
-		t.Fatalf("пояснение и решение: %+v", got)
+	got, problem := finish("включаются трикотажные перчатки с покрытием ладони", "Перчатки трикотажные с латексным покрытием ладони")
+	if got.QuoteSource != "page" || got.DecisionQuote == "" || got.DecisionSource != "предварительное решение · RU - Россия" || problem != "" {
+		t.Fatalf("пояснение и решение: %+v %q", got, problem)
 	}
-	if got := finish("Перчатки трикотажные с латексным покрытием ладони", "перчатки для сварщиков из спилка кожи"); got.Quote != "" || got.DecisionQuote != "" || got.DecisionSource != "" {
+	if got, _ := finish("Перчатки трикотажные с латексным покрытием ладони", "перчатки для сварщиков из спилка кожи"); got.Quote != "" || got.DecisionQuote != "" || got.DecisionSource != "" {
 		t.Fatalf("решение в quote и выдуманное решение убираются: %+v", got)
+	}
+	// Решение без цитаты пояснений не показывается, модели — замечание переделать итог.
+	if got, problem := finish("", "Перчатки трикотажные с латексным покрытием ладони"); got.DecisionQuote != "" || !strings.Contains(problem, "6116 10 200 0") || !strings.Contains(problem, "без цитаты из пояснений") {
+		t.Fatalf("решение без пояснений: %+v %q", got, problem)
+	}
+	// Слово, разорванное на TWS.BY («мет аллические»), не мешает дословной цитате.
+	if got, _ := finish("рожки для обуви; стальные и другие металлические ножеточки", ""); got.QuoteSource != "page" {
+		t.Fatalf("цитата с разорванным словом: %+v", got)
 	}
 }
 

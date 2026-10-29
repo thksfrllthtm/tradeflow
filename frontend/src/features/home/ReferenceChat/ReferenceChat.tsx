@@ -17,6 +17,8 @@ import { RoadGame } from './RoadGame'
 import './ReferenceChat.css'
 
 const pollInterval = 1500
+// Список истории, пока в нём есть вопрос, который ещё ищет.
+const historyPollInterval = 5000
 const maxPhotos = 3
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
 const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑' }
@@ -94,6 +96,14 @@ export function ReferenceChat() {
     agentApi.status().then(setStatus).catch(() => undefined)
     void loadHistory()
   }, [loadHistory])
+
+  // Вопрос в истории ещё ищет (в том числе не открытый сейчас) — обновляем список, пока не закончит.
+  const historyWorking = history.some((item) => item.status === 'running' || item.status === 'searching')
+  useEffect(() => {
+    if (!historyWorking) return
+    const timer = window.setInterval(() => void loadHistory(), historyPollInterval)
+    return () => window.clearInterval(timer)
+  }, [historyWorking, loadHistory])
 
   const accept = useCallback((next: AgentSession, replace: boolean) => {
     const newest = next.messages.length ? next.messages[next.messages.length - 1].id : 0
@@ -310,7 +320,7 @@ export function ReferenceChat() {
 
   async function open(id: number) {
     setHistoryOpen(false); setError('')
-    try { accept(await agentApi.get(id), true) } catch (reason) { setError(errorMessage(reason)) }
+    try { accept(await agentApi.get(id), true); void loadHistory() } catch (reason) { setError(errorMessage(reason)) }
   }
 
   async function remove(id: number) {
