@@ -12,6 +12,7 @@ import { DirectoryImportResult } from '../common/directoryTransfer'
 import { useKzListPanel } from '../kzList/KzListPanel'
 import { KzImport } from '../kzList/kzListApi'
 import { useRiskIndicatorsPanel } from '../riskIndicators/RiskIndicatorsPanel'
+import { useTrademarksPanel } from '../trademarks/TrademarksPanel'
 import { NomenclatureChange, NomenclatureUpload, nomenclatureApi } from './nomenclatureApi'
 import { useCodeCheck } from './CodeCheck'
 import { AntiDumpingPanel } from './AntiDumpingPanel'
@@ -95,9 +96,10 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
 
   // Проверка вставленной колонки кодов; с главной открывается сразу (?check=1).
   // Панели в шапке переключаются: открыта только одна.
-  function closePanels() { codeCheck.close(); setAntiDumpingOpen(false); riskIndicators.close(); kzList.close() }
+  function closePanels() { codeCheck.close(); setAntiDumpingOpen(false); riskIndicators.close(); trademarks.close(); kzList.close() }
   const codeCheck = useCodeCheck({ initialOpen: new URLSearchParams(window.location.search).has('check'), onOpen: closePanels })
   const riskIndicators = useRiskIndicatorsPanel({ admin, onOpen: closePanels })
+  const trademarks = useTrademarksPanel({ admin, onOpen: closePanels })
   const kzList = useKzListPanel({ current: kzSource, onImported: () => setRefreshKey((value) => value + 1), onOpen: closePanels })
   const empty = !loading && total === 0
   return <main className="app-shell directory-shell">
@@ -112,6 +114,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
           {codeCheck.button}
           <button type="button" className={antiDumpingOpen ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!antiDumpingOpen) closePanels(); setAntiDumpingOpen(!antiDumpingOpen) }} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
           {riskIndicators.button}
+          {trademarks.button}
           {admin && kzList.button}
           {admin && <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
             {uploading ? 'Загружаем…' : source ? 'Обновить из файла TWS' : 'Загрузить файл TWS'}
@@ -124,6 +127,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
       {antiDumpingOpen && <AntiDumpingPanel admin={admin} onLoaded={setAntiDumpingCount} onRefreshed={() => setRefreshKey((value) => value + 1)}
         onPickCode={(code) => { setQuery(formatMeasureCode(code)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
       {riskIndicators.panel}
+      {trademarks.panel}
       {admin && kzList.panel}
       {uploaded && <p className="dir-transfer-ok nom-note" role="status">
         Загружено {formatDisplayNumber(uploaded.codeCount)} {plural(uploaded.codeCount, 'код', 'кода', 'кодов')}: новых {formatDisplayNumber(uploaded.addedCount)}, удалено {formatDisplayNumber(uploaded.removedCount)}, изменились наименование или ставка — {formatDisplayNumber(uploaded.changedCount)}.

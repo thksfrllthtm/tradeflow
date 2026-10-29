@@ -1,3 +1,4 @@
+import type { TrademarkHit } from '@/shared/trademarks/trademarks'
 import { request } from '@/shared/api/client'
 import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 import { CodeDecision } from '@/shared/tnved/decisions'
@@ -74,7 +75,12 @@ export type AgentResult = {
   documentsCode?: string
   documents?: AgentDocument[]
   linksRemoved?: number
+  // Знаки ТРОИС в наименованиях строки и бренде с фото (проверяет сервер после итога).
+  trademarks?: TrademarkHit[]
 }
+
+// Ответ «/троис»: бренды, прочитанные с фото («SONV (похоже на SONY)»), знаки реестра; photoNote — фото не прочиталось.
+export type BrandCheck = { brands: string[]; pictures: string[]; hits: TrademarkHit[]; compared: number; photoNote?: string }
 
 // Мера или документ для ввоза: applies — относится ли мера к товару по пояснению под актом.
 // basis — дословная цитата из справки, акта или страницы кода, на которой основан вывод (проверена сервером);
@@ -103,6 +109,8 @@ export type AgentMessage =
   | { id: number; kind: 'error'; content: { message: string }; createdAt: string }
   | { id: number; kind: 'rerun' | 'start'; content: Record<string, never>; createdAt: string }
   | { id: number; kind: 'documents'; content: { code: string }; createdAt: string }
+  // Ответ «/троис»: бренды и рисунки с фото, знаки реестра.
+  | { id: number; kind: 'trademarks'; content: BrandCheck; createdAt: string }
 
 export type AgentSession = {
   id: number
@@ -116,6 +124,8 @@ export type AgentSession = {
   item: AgentItem
   photos?: string[]
   result: AgentResult | null
+  // Вопрос «/троис»: ответ — сообщение trademarks, уточнений и документов нет (новый вопрос).
+  trademarkCheck?: boolean
   messages: AgentMessage[]
   steps: number
   runs: number
@@ -127,7 +137,8 @@ export type AgentSession = {
 }
 
 // Вопрос чата-справочника в истории сотрудника.
-export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string }
+// kind — вкладка истории: chat — подбор кода, documents — только документы, trademarks — «/троис» (trademarkHits — найдено знаков).
+export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string; kind: 'chat' | 'documents' | 'trademarks'; trademarkHits?: number }
 
 export type AgentRowStatus = { sessionId: number; itemId: string; status: AgentSessionStatus; bestCode: string; verdict: string }
 
@@ -149,6 +160,8 @@ export const agentApi = {
   name: (id: number, name: string) => request<{ name: string }>(`/api/tnved-agent/sessions/${id}/name`, { method: 'POST', body: JSON.stringify({ name }) }),
   // Чат-справочник: вопрос о товаре (текст и/или фото), история и удаление вопроса.
   ask: (input: { text: string; photos: string[]; documentsCode?: string }) => request<AgentSession>('/api/tnved-agent/reference', { method: 'POST', body: JSON.stringify(input) }),
+  // «/троис»: вопрос в истории, проверка бренда по ТРОИС в фоне (без подбора кода и дневного лимита).
+  askTrademarks: (input: { text: string; photos: string[] }) => request<AgentSession>('/api/tnved-agent/reference/trademarks', { method: 'POST', body: JSON.stringify(input) }),
   history: () => request<{ items: ReferenceSummary[] }>('/api/tnved-agent/reference'),
   removeQuestion: (id: number) => request<void>(`/api/tnved-agent/reference/${id}`, { method: 'DELETE' }),
   apply: (id: number, code: string, name: string) => request<CodeDecision>(`/api/tnved-agent/sessions/${id}/apply`, { method: 'POST', body: JSON.stringify({ code, name }) }),

@@ -41,8 +41,10 @@ type TNVEDAgentSession struct {
 	VisionCompletionTokens int64           `gorm:"not null"`
 	VisionCostUSD          decimal.Decimal `gorm:"column:vision_cost_usd;type:numeric(12,6);not null"`
 	Model                  string          `gorm:"size:100;not null"`
-	CreatedAt              time.Time       `gorm:"not null"`
-	UpdatedAt              time.Time       `gorm:"not null"`
+	// TrademarkHits — вопрос «/троис» справочника: сколько знаков реестра найдено; nil — не проверка ТРОИС.
+	TrademarkHits *int      `gorm:"column:trademark_hits"`
+	CreatedAt     time.Time `gorm:"not null"`
+	UpdatedAt     time.Time `gorm:"not null"`
 }
 
 func (TNVEDAgentSession) TableName() string { return "tnved_agent_sessions" }
@@ -262,6 +264,7 @@ type ReferenceSession struct {
 	Result        JSON
 	Photos        JSON
 	DocumentsCode string
+	TrademarkHits *int
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -269,7 +272,7 @@ type ReferenceSession struct {
 // ReferenceSessions — вопросы сотрудника в чате-справочнике, последние — первыми.
 func (r *Repository) ReferenceSessions(ctx context.Context, userID int64, limit int) ([]ReferenceSession, error) {
 	var rows []ReferenceSession
-	err := r.db.WithContext(ctx).Table("tnved_agent_sessions").Select("id, title, status, result, photos, documents_code, created_at, updated_at").
+	err := r.db.WithContext(ctx).Table("tnved_agent_sessions").Select("id, title, status, result, photos, documents_code, trademark_hits, created_at, updated_at").
 		Where("user_id = ? AND mode = 'reference'", userID).Order("updated_at DESC, id DESC").Limit(limit).Scan(&rows).Error
 	return rows, err
 }

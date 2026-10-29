@@ -21,6 +21,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/trademarks"
 	"github.com/shopspring/decimal"
 )
 
@@ -110,6 +111,8 @@ type AgentSessionView struct {
 	Model      string             `json:"model"`
 	CreatedAt  time.Time          `json:"createdAt"`
 	UpdatedAt  time.Time          `json:"updatedAt"`
+	// TrademarkCheck — вопрос «/троис»: ответ — сообщение «trademarks», уточнений нет.
+	TrademarkCheck bool `json:"trademarkCheck,omitempty"`
 }
 
 // AgentRowStatus — состояние подбора строки для значка в таблице.
@@ -143,7 +146,12 @@ type TNVEDAgentService struct {
 	slots       chan struct{}
 	mu          sync.Mutex
 	cancels     map[int64]context.CancelFunc
+	// trademarks — реестр ТРОИС (nil — не подключён): проверка брендов и подписи логотипов.
+	trademarks *trademarks.Service
 }
+
+// SetTrademarks подключает реестр ТРОИС: инструмент check_trademarks, проверку итога и чтение логотипов.
+func (s *TNVEDAgentService) SetTrademarks(registry *trademarks.Service) { s.trademarks = registry }
 
 // NewTNVEDAgentService — visionModel nil: всё на одной модели model, как раньше.
 func NewTNVEDAgentService(r *repository.Repository, model, visionModel *AgentModelClient, decisions *decisions.CodeDecisionService, settings AgentSettings) *TNVEDAgentService {
@@ -581,6 +589,9 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	toolbox.lookPhoto = s.photoQuestions(photos, func(step agentUsage) { usage.add(step, s.visionModel.Cost(step), true) })
 	toolbox.requireDeclarations = !documents
 	toolbox.fileCode = sessionFileCode(session)
+	if s.trademarks != nil {
+		toolbox.trademarks = s.trademarks.Match
+	}
 	runner := &agentRunner{
 		model:      s.model,
 		toolbox:    toolbox,
@@ -600,6 +611,9 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 			changes["transcript"], changes["steps"] = repository.JSON(data), steps
 			_ = s.repository.UpdateAgentSession(store, sessionID, changes)
 		},
+	}
+	if !documents {
+		runner.finalize = func(result *AgentResult) { result.Trademarks = s.checkTrademarks(store, session, transcript, result) }
 	}
 	runner.restoreOpened(store)
 	outcome := runner.execute(ctx)
@@ -732,6 +746,7 @@ func (s *TNVEDAgentService) Get(ctx context.Context, user repository.User, id, a
 		Tokens: session.PromptTokens + session.CompletionTokens, CreatedAt: session.CreatedAt, UpdatedAt: session.UpdatedAt,
 		Messages: make([]AgentMessageView, 0, len(messages)),
 	}
+	view.TrademarkCheck = session.TrademarkHits != nil
 	_ = json.Unmarshal(session.Item, &view.Item)
 	if afterID == 0 {
 		_ = json.Unmarshal(session.Photos, &view.Photos)
@@ -963,6 +978,10 @@ func (s *TNVEDAgentService) resume(ctx context.Context, user repository.User, id
 	session, err := s.ownedSession(ctx, user, id)
 	if err != nil {
 		return AgentSessionView{}, err
+	}
+	// Проверка «/троис» — без агента: уточнения и документы — новым вопросом.
+	if session.TrademarkHits != nil {
+		return AgentSessionView{}, &service.ValidationError{Field: "text", Message: "Это проверка по ТРОИС — задайте новый вопрос"}
 	}
 	if session.Status == "running" || session.Status == "searching" {
 		return AgentSessionView{}, ErrAgentBusy

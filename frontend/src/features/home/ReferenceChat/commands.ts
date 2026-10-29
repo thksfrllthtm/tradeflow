@@ -1,11 +1,12 @@
 import type { AgentMessage } from '@/features/goods/agent/agentApi'
 
 // Команды поля вопроса: «/» в начале — меню, «/док 8205591000» — сразу команда (имя можно сокращать).
-export type CommandName = 'подбор' | 'документы' | 'сравнить' | 'новый'
+export type CommandName = 'подбор' | 'троис' | 'документы' | 'сравнить' | 'новый'
 export type Command = { name: CommandName; label: string; hint: string; arg?: string }
 
 export const commands: Command[] = [
   { name: 'подбор', label: 'Подбор кода', hint: 'новый вопрос, даже если открыт другой', arg: 'товар' },
+  { name: 'троис', label: 'Проверка бренда по ТРОИС', hint: 'фото или название — есть ли знак в реестре, похожие написания', arg: 'бренд или фото' },
   { name: 'документы', label: 'Документы для ввоза', hint: 'по коду ответа или товар и код', arg: 'товар код' },
   { name: 'сравнить', label: 'Сравнить коды', hint: 'чем отличаются и когда какой', arg: 'код и код' },
   { name: 'новый', label: 'Новый вопрос', hint: 'очистить и начать заново' },

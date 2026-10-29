@@ -9,10 +9,12 @@ import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { sameAnswer } from './answerText'
 import { Command, documentsCode, menuCommands, parseCommand, splitDocumentsArg } from './commands'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
-import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, ReferenceSummary, agentApi, quoteSourceLabels } from '@/features/goods/agent/agentApi'
+import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, BrandCheck, ReferenceSummary, agentApi, quoteSourceLabels } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
 import { DeclarationsLink } from '@/features/goods/agent/DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from '@/features/goods/agent/DocumentsAnswer'
+import { TrademarkHits } from '@/shared/trademarks/TrademarkHits'
+import { plural } from '@/shared/lib/plural'
 import { RoadGame } from './RoadGame'
 import './ReferenceChat.css'
 
@@ -21,7 +23,7 @@ const pollInterval = 1500
 const historyPollInterval = 5000
 const maxPhotos = 3
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
-const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑' }
+const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑', check_trademarks: '®️' }
 
 const isWorking = (session: AgentSession | null) => session?.status === 'running' || session?.status === 'searching'
 const isImage = (file: File) => file.type === 'image/jpeg' || file.type === 'image/png'
@@ -49,17 +51,42 @@ function saveOpenQuestion(value: OpenQuestion | null) {
 }
 
 function historyState(item: ReferenceSummary) {
-  if (item.status === 'running' || item.status === 'searching') return 'ищет…'
+  if (item.status === 'running' || item.status === 'searching') return item.kind === 'trademarks' ? 'проверяет…' : 'ищет…'
   if (item.status === 'waiting') return 'ждёт ответа'
   if (item.status === 'error' || item.status === 'cancelled') return 'не завершён'
+  if (item.kind === 'trademarks') return item.trademarkHits ? `ТРОИС: найдено ${item.trademarkHits}` : 'ТРОИС: нет в реестре'
   return item.bestCode ? <code>{formatCode(item.bestCode)}</code> : 'код не найден'
+}
+
+// Вкладки истории: «Общий» — все вопросы; «Чат» — подбор кода (и документы после него); «ТРОИС» —
+// проверки бренда; «Документы» — только «Документы для ввоза».
+type HistoryTab = 'all' | ReferenceSummary['kind']
+const historyTabs: { tab: HistoryTab; label: string }[] = [
+  { tab: 'all', label: 'Общий' }, { tab: 'chat', label: 'Чат' }, { tab: 'trademarks', label: 'ТРОИС' }, { tab: 'documents', label: 'Документы' },
+]
+
+const kindLabels: Record<ReferenceSummary['kind'], string> = { chat: 'Чат', trademarks: 'Проверка ТРОИС', documents: 'Документы для ввоза' }
+
+// Значки вида вопроса: общий — слои, чат — облачко, ТРОИС — щит (защита знака), документы — лист.
+const kindPaths: Record<HistoryTab, string[]> = {
+  all: ['M8 2 2 5l6 3 6-3-6-3Z', 'm2 8 6 3 6-3', 'm2 11 6 3 6-3'],
+  chat: ['M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.2L4.5 13.4V11H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z'],
+  trademarks: ['M8 1.8 3 3.7v3.9c0 3 2.1 5.3 5 6.6 2.9-1.3 5-3.6 5-6.6V3.7L8 1.8Z', 'm5.9 8 1.5 1.5 2.8-3'],
+  documents: ['M4 1.8h5.4L12.4 5v9.2H4Z', 'M9.4 1.8V5h3', 'M6 8.2h4.4M6 10.8h4.4'],
+}
+
+function KindIcon({ kind, label }: { kind: HistoryTab; label?: string }) {
+  return <svg className={`rc-kind ${kind}`} width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+    role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+    {kindPaths[kind].map((path) => <path key={path} d={path} />)}
+  </svg>
 }
 
 // Что озвучить экранному диктору при смене состояния вопроса.
 function liveText(session: AgentSession | null) {
   if (!session) return ''
   if (session.status === 'searching') return 'Ищу в базе решений'
-  if (session.status === 'running') return 'Агент ищет код'
+  if (session.status === 'running') return session.trademarkCheck ? 'Проверяю бренд по ТРОИС' : 'Агент ищет код'
   if (session.status === 'waiting') return 'Агент задал уточняющий вопрос'
   if (session.status === 'error') return 'Подбор прервался'
   if (session.status === 'done') return 'Ответ готов'
@@ -80,6 +107,7 @@ export function ReferenceChat() {
   // Игра, пока агент работает: только по кнопке «Сыграть», закрывается крестиком.
   const [gameOpen, setGameOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyTab, setHistoryTab] = useState<HistoryTab>('all')
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // История — одна остановка Tab: по вопросам — стрелками (roving tabindex).
   const [historyFocus, setHistoryFocus] = useState(0)
@@ -233,6 +261,10 @@ export function ReferenceChat() {
     if (!parsed) return submit(value, false)
     const { command, arg } = parsed
     if (command.name === 'новый') return startNew()
+    if (command.name === 'троис') {
+      if (!arg && photos.length === 0) { setError('Напишите бренд или добавьте фото: /троис SONV'); return }
+      return checkBrand(arg)
+    }
     if (command.name === 'документы') {
       // Нет чата или указаны и код, и товар (текст/фото) — новый чат сразу с документами, без подбора.
       const typed = splitDocumentsArg(arg)
@@ -252,11 +284,26 @@ export function ReferenceChat() {
     return submit(question, true)
   }
 
-  // Новый вопрос (fresh, фото или нет активного) — или уточнение к текущему (агент помнит разговор).
+  // «/троис»: новый вопрос в истории — проверка бренда по ТРОИС идёт в фоне, ход и ответ — в ленте.
+  async function checkBrand(value: string) {
+    setBusy(true); setError('')
+    try {
+      accept(await agentApi.askTrademarks({ text: value, photos }), true)
+      setPhotos([]); setText('')
+      void loadHistory()
+    } catch (reason) {
+      setError(errorMessage(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Новый вопрос (fresh, фото, нет активного или открыта проверка ТРОИС) — или уточнение к текущему
+  // (агент помнит разговор).
   async function submit(value: string, fresh: boolean, documentsCode?: string) {
     setBusy(true); setError('')
     try {
-      if (fresh || !session || photos.length > 0) {
+      if (fresh || !session || photos.length > 0 || session.trademarkCheck) {
         accept(await agentApi.ask({ text: value, photos, documentsCode }), true)
         setPhotos([])
       } else {
@@ -333,7 +380,7 @@ export function ReferenceChat() {
   }
 
   function onHistoryKey(event: KeyboardEvent<HTMLButtonElement>, index: number, id: number) {
-    const last = history.length - 1
+    const last = shown.length - 1
     const next = event.key === 'ArrowDown' ? Math.min(last, index + 1) : event.key === 'ArrowUp' ? Math.max(0, index - 1) : event.key === 'Home' ? 0 : event.key === 'End' ? last : -1
     if (next >= 0) {
       event.preventDefault()
@@ -353,8 +400,10 @@ export function ReferenceChat() {
   const configured = status?.configured !== false
   // Лимит вопросов на сегодня: от 80% — подсветка (лимит не меняется, только видно, что он близко).
   const nearLimit = status !== null && status.dailyLimit > 0 && status.usedToday >= status.dailyLimit * .8
-  const rovingIndex = Math.min(historyFocus, Math.max(0, history.length - 1))
+  const shown = historyTab === 'all' ? history : history.filter((item) => item.kind === historyTab)
+  const rovingIndex = Math.min(historyFocus, Math.max(0, shown.length - 1))
   const placeholder = !session ? 'Опишите товар, вставьте фото (Ctrl+V) или перетащите его сюда…'
+    : session.trademarkCheck ? 'Новый вопрос о товаре или /троис для другого бренда…'
     : session.status === 'waiting' ? 'Ответьте на вопрос…' : photos.length ? 'Добавьте пояснение к фото — это будет новый вопрос' : 'Уточните: «а если покрытие латекс?» — или добавьте фото для нового вопроса'
 
   return <section className={dragging ? 'rc dragging' : 'rc'} aria-label="Подбор кода ТН ВЭД"
@@ -381,12 +430,20 @@ export function ReferenceChat() {
     <div className="rc-body">
       <aside className={historyOpen ? 'rc-history open' : 'rc-history'} aria-label="Прошлые вопросы">
         <p className="rc-history-title">История вопросов{history.length > 0 && <span>{history.length}</span>}</p>
+        {history.length > 0 && <div className="rc-history-tabs" role="group" aria-label="Вид вопросов">
+          {historyTabs.map(({ tab, label }) => {
+            const count = tab === 'all' ? history.length : history.filter((item) => item.kind === tab).length
+            return <button key={tab} type="button" className={historyTab === tab ? 'active' : undefined} aria-pressed={historyTab === tab}
+              onClick={() => { setHistoryTab(tab); setHistoryFocus(0) }}><span className="rc-tab-top"><KindIcon kind={tab} /><small>{count}</small></span><b>{label}</b></button>
+          })}
+        </div>}
         {history.length === 0 ? <p className="rc-history-empty">Здесь появятся ваши вопросы.</p>
+          : shown.length === 0 ? <p className="rc-history-empty">{historyTab === 'trademarks' ? 'Проверок по ТРОИС ещё не было: отправьте фото или бренд с командой /троис.' : 'Здесь пока пусто.'}</p>
           : <>
             <p id="rc-history-help" className="rc-sr">Стрелки вверх и вниз — по вопросам, Enter — открыть, Delete — удалить</p>
-            <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
+            <ul ref={historyRef}>{shown.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
               <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
-                <span className="rc-history-name">{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
+                <span className="rc-history-name"><KindIcon kind={item.kind} label={kindLabels[item.kind]} />{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
                 <small>{historyState(item)} · {new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
               </button>
               <button type="button" className="rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
@@ -410,7 +467,7 @@ export function ReferenceChat() {
 
         {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
             Только пока агент ищет код; ответ готов — игра уходит. Сервер не нагружает. */}
-        {session?.status === 'running' && <div className="rc-game-dock">
+        {session?.status === 'running' && !session.trademarkCheck && <div className="rc-game-dock">
           {gameOpen ? <RoadGame onClose={() => setGameOpen(false)} />
             : <button type="button" className="rc-game-open" onClick={() => setGameOpen(true)}>Сыграть, пока ИИ ищет код</button>}
         </div>}
@@ -453,6 +510,21 @@ export function ReferenceChat() {
   </section>
 }
 
+// Ответ «/троис»: какие бренды и рисунки ИИ увидел на фото и знаки реестра (или что их нет).
+function BrandAnswer({ result, withPhotos }: { result: BrandCheck; withPhotos: boolean }) {
+  return <>
+    <div className="rc-answer">
+      {withPhotos && <p className="rc-answer-text">{result.brands.length > 0 ? <>На фото: <b>{result.brands.join(', ')}</b></> : 'На фото брендов не видно.'}</p>}
+      {result.pictures.length > 0 && <p className="rc-answer-text">Рисунок на знаке: <b>{result.pictures.join(', ')}</b></p>}
+      {result.compared > 0 && <p className="rc-note">Фото сверено с {result.compared} {plural(result.compared, 'логотипом', 'логотипами', 'логотипами')} реестра: с похожим рисунком и той же группы товаров.</p>}
+      {result.photoNote && <p className="rc-note">{result.photoNote}</p>}
+      {result.hits.length > 0 ? <TrademarkHits hits={result.hits} />
+        : <p className="rc-answer-text">В реестре ТРОИС этого знака и похожих нет: правообладатель не включал его в реестр, таможенной защиты по ТРОИС у него нет.</p>}
+      <p className="rc-note">Решение за декларантом: совпадение — повод проверить, нужен ли товарный знак и согласие правообладателя.</p>
+    </div>
+  </>
+}
+
 // Разговор: вопрос сотрудника, что нашлось в базе, ход поиска, вопросы агента, ответ.
 type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void; stopping: boolean; onStop: () => void }
 
@@ -467,8 +539,10 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments, stopping, on
       switch (message.kind) {
         case 'input': return <div key={message.id} className="rc-user">
           {photos.length > 0 && <div className="rc-user-photos">{photos.map((photo, at) => <button key={at} type="button" onClick={() => onPhoto(photos, at)} aria-label="Открыть фото крупно"><img src={photo} alt="" /></button>)}</div>}
-          {message.content.item.name && <p>{message.content.item.name}</p>}
+          {session.trademarkCheck ? <p>Проверка по ТРОИС{message.content.item.name && ` · ${message.content.item.name}`}</p>
+            : message.content.item.name && <p>{message.content.item.name}</p>}
         </div>
+        case 'trademarks': return <BrandAnswer key={message.id} result={message.content} withPhotos={photos.length > 0} />
         case 'user': return <div key={message.id} className="rc-user"><p>{message.content.text}</p></div>
         case 'documents': return <div key={message.id} className="rc-user"><p>Документы для ввоза · <code>{formatCode(message.content.code)}</code></p></div>
         case 'question': return <div key={message.id} className="rc-bot rc-question"><b>Уточните</b>{message.content.text}</div>
@@ -576,6 +650,7 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
       {sameAnswer(result.description, previous.description) ? <p className="rc-answer-text rc-muted">Ответ тот же.</p>
         : result.description && <p className="rc-answer-text"><LinkText text={result.description} /></p>}
       {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
+      {result.trademarks && <TrademarkHits hits={result.trademarks} />}
       <p className="rc-same-code">
         <span>{main.length > 1 ? 'Коды без изменений' : 'Код без изменений'}</span>
         {main.map((candidate) => <CopyCode key={candidate.code} code={candidate.code} className="rc-code small" />)}
@@ -595,6 +670,7 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
     </div>}
     <DeclarationNames sessionId={sessionId} short={result.name} full={result.nameFull ?? ''} />
     {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
+    {result.trademarks && <TrademarkHits hits={result.trademarks} />}
   </div>
 }
 

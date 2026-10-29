@@ -277,3 +277,18 @@ func (s *Server) savedCodeDocuments(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, saved)
 }
+
+func (s *Server) askTrademarks(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20)
+	var input tnvedagent.ReferenceInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		badRequest(c, "Некорректный запрос", "")
+		return
+	}
+	view, err := s.agent.AskTrademarks(c.Request.Context(), currentUser(c), input)
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusCreated, view)
+}

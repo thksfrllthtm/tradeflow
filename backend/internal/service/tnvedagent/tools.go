@@ -21,6 +21,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/trademarks"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/utilfee"
 )
 
@@ -197,6 +198,10 @@ func agentTools(reference, documents bool) []agentTool {
 				}, "url", "query")),
 		}
 	}
+	if !documents {
+		extra = append(extra, tool("check_trademarks", "Таможенный реестр объектов интеллектуальной собственности (ТРОИС): есть ли бренд в реестре, включая похожие написания (SONV вместо SONY). Наименования строки и строку «Бренд» описания фото программа проверяет сама — вызывай для бренда, который увидел на фото сам.",
+			objectSchema(map[string]any{"query": stringProperty("Бренд буква в букву, как написан на товаре")}, "query")))
+	}
 	return append([]agentTool{
 		tool("search_nomenclature", "Поиск кодов в номенклатуре ТН ВЭД ЕАЭС по словам наименования (по-русски). Каждое слово ищется по основе, все слова должны встретиться в наименовании кода с его деревом. Лучше 1–3 слова. Возвращает до 30 кодов с наименованием и пошлиной ЕТТ.",
 			objectSchema(map[string]any{"query": stringProperty("Слова для поиска, например «перчатки трикотажные»")}, "query")),
@@ -288,6 +293,21 @@ type AgentResult struct {
 	DocumentsCode string          `json:"documentsCode,omitempty"`
 	Documents     []AgentDocument `json:"documents,omitempty"`
 	LinksRemoved  int             `json:"linksRemoved,omitempty"`
+	// Trademarks — знаки ТРОИС в наименованиях и бренде с фото (проверяет программа после итога).
+	Trademarks []trademarks.Hit `json:"trademarks,omitempty"`
+}
+
+// trademarkSummary — «SONY (похоже), DOVE» для шага в чате.
+func trademarkSummary(hits []trademarks.Hit) string {
+	names := []string{}
+	for _, hit := range hits {
+		name := firstNonEmpty(hit.Name, hit.RegNo)
+		if hit.Kind == trademarks.KindLookalike {
+			name += " (похоже)"
+		}
+		names = append(names, name)
+	}
+	return strings.Join(names, ", ")
 }
 
 type AgentSource struct {
@@ -435,6 +455,8 @@ type agentToolbox struct {
 	declarationCounts map[string]declarationCount
 	// fileCode — код из файла поставщика ("" — не было): итог сравнивается с ним.
 	fileCode string
+	// trademarks — поиск знаков ТРОИС (nil — инструмента нет).
+	trademarks func(ctx context.Context, texts []string, code string) ([]trademarks.Hit, error)
 }
 
 // AgentFileCode — код из файла поставщика рядом с подобранным: пошлины ЕТТ обоих.
@@ -676,10 +698,22 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 	if t.documentsCode == "" && (name == "open_goods_help" || name == "open_link" || (name == "search_in_document" && t.search == nil)) {
 		name = "unknown:" + name
 	}
-	if name == "look_at_photo" && t.lookPhoto == nil {
+	if (name == "look_at_photo" && t.lookPhoto == nil) || (name == "check_trademarks" && t.trademarks == nil) {
 		name = "unknown:" + name
 	}
 	switch name {
+	case "check_trademarks":
+		query := service.TruncateRunes(strings.TrimSpace(args.Query), 100)
+		label := "ТРОИС: " + quoted(query)
+		hits, err := t.trademarks(ctx, []string{query}, t.fileCode)
+		if err != nil {
+			return `{"error":"Реестр недоступен"}`, agentToolEvent{Tool: name, Label: label, Detail: "ошибка", Failed: true}
+		}
+		detail := "в реестре нет"
+		if len(hits) > 0 {
+			detail = trademarkSummary(hits)
+		}
+		return toolJSON(map[string]any{"hits": hits, "hint": "brand — знак как в реестре; lookalike — похожее написание (возможная имитация). Найденное отметь в notes."}), agentToolEvent{Tool: name, Label: label, Detail: detail}
 	case "search_declarations":
 		return t.searchDeclarations(ctx, args.Query, args.Within)
 	case "look_at_photo":

@@ -35,6 +35,8 @@ type agentRunner struct {
 	documents bool
 	// review — первый итог возвращается агенту на самопроверку («второй взгляд»), окончательный — второй.
 	review bool
+	// finalize — дополнение принятого итога программой перед показом (знаки ТРОИС); nil — нет.
+	finalize func(result *AgentResult)
 }
 
 // stepLimit — шагов до принудительного итога: maxSteps, иначе по режиму.
@@ -292,6 +294,9 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 			}
 			r.toolMessage(finishCall.ID, `{"status":"ok"}`)
 			r.onStep(r.transcript, reply.Usage)
+			if r.finalize != nil {
+				r.finalize(result)
+			}
 			r.emit("result", result)
 			return agentOutcome{status: "done", result: result}
 		}

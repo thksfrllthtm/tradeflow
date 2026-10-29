@@ -6,7 +6,8 @@ const result = (content: Partial<AgentResult>) => ({ id: 1, kind: 'result', crea
 
 describe('commands', () => {
   it('меню — пока набрано только «/имя»', () => {
-    expect(menuCommands('/').length).toBe(4)
+    expect(menuCommands('/').length).toBe(5)
+    expect(menuCommands('/т').map((command) => command.name)).toEqual(['троис'])
     expect(menuCommands('/до').map((command) => command.name)).toEqual(['документы'])
     expect(menuCommands('/документы 8205')).toEqual([])
     expect(menuCommands('лопата')).toEqual([])

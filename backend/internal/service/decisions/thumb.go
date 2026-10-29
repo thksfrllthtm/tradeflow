@@ -27,6 +27,12 @@ func MakeThumb(dataURL string) string {
 	if !ok {
 		return ""
 	}
+	return ImageThumb(raw, thumbSize, thumbQuality)
+}
+
+// ImageThumb — data URL JPEG (quality 1–100) не больше size по большей стороне (меньшие не увеличиваются), прозрачное —
+// на белом; "" — картинку не удалось прочитать (декодеры форматов подключает вызывающий пакет).
+func ImageThumb(raw []byte, size, quality int) string {
 	src, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
 		return ""
@@ -36,7 +42,7 @@ func MakeThumb(dataURL string) string {
 	if width == 0 || height == 0 {
 		return ""
 	}
-	scale := min(1, float64(thumbSize)/float64(max(width, height)))
+	scale := min(1, float64(size)/float64(max(width, height)))
 	outW, outH := max(1, int(float64(width)*scale)), max(1, int(float64(height)*scale))
 	out := image.NewRGBA(image.Rect(0, 0, outW, outH))
 	for y := 0; y < outH; y++ {
@@ -56,7 +62,7 @@ func MakeThumb(dataURL string) string {
 		}
 	}
 	var buffer bytes.Buffer
-	if jpeg.Encode(&buffer, out, &jpeg.Options{Quality: thumbQuality}) != nil {
+	if jpeg.Encode(&buffer, out, &jpeg.Options{Quality: quality}) != nil {
 		return ""
 	}
 	return thumbDataPrefix + base64.StdEncoding.EncodeToString(buffer.Bytes())

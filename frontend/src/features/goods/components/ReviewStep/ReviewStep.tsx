@@ -4,6 +4,7 @@ import { photosOf } from '@/shared/lib/itemPhotos'
 import { reviewStatus, rowMissing } from '../ReviewRow/reviewStatus'
 import { ReviewCheck } from '../../lib/reviewCheck'
 import { problemChips, reviewProblems } from '../../lib/reviewProblems'
+import { trademarkProblems, useTrademarkHits } from '../../lib/trademarkCheck'
 import { reviewTotals } from './reviewTotals'
 import { useStableCallback } from '@/shared/hooks/useStableCallback'
 import { AgentRowStatus } from '../../agent/agentApi'
@@ -132,6 +133,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   const itemsRef = useRef(items)
   itemsRef.current = items
   const history = useItemsHistory(items, editItems)
+  const trademarkHits = useTrademarkHits(items)
   const failed = storageFailed(storageNotice)
   const setSelectedExcluded = (excluded: boolean) => editItems(items.map((item) => selectedForDirectory.includes(item.id ?? '') ? { ...item, excluded } : item))
 
@@ -142,7 +144,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
     const status = reviewStatus(item, result?.items[index], result ? undefined : reviewCheck?.rows[id], rowMissing(item, params.packageWeightKg))
     const agent = agentStatuses[id]
     const aiCode = Boolean(item.code) && agent?.status === 'done' && agent.bestCode === item.code
-    return { item, index, id, status, problems: reviewProblems(item, status), aiCode }
+    return { item, index, id, status, problems: [...reviewProblems(item, status), ...(item.excluded ? [] : trademarkProblems(trademarkHits[id]))], aiCode }
   })
   const counts = {
     attention: rows.filter((row) => row.status.attention).length,

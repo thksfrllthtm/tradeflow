@@ -20,6 +20,7 @@ import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments
 import './agent.css'
 import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
+import { TrademarkHits } from '@/shared/trademarks/TrademarkHits'
 
 type Props = {
   estimateId: number
@@ -801,6 +802,7 @@ function ResultCard({ result, fileCode, applied, busy, onApplyCode, onApplyName,
     </details>}
     {result.name && <NameEditor suggested={result.name} applied={applied} busy={busy} onApply={onApplyName} />}
     {result.notes && <p className="ag-note"><LinkText text={result.notes} /></p>}
+    {result.trademarks && <TrademarkHits hits={result.trademarks} />}
     {(result.droppedCodes.length > 0 || result.quotesRemoved > 0) && <p className="ag-notice">
       {result.droppedCodes.length > 0 && <>Программа убрала коды, которых нет в номенклатуре: {result.droppedCodes.map(formatCode).join(', ')}. </>}
       {result.quotesRemoved > 0 && <>Цитат, не найденных в источниках, убрано: {result.quotesRemoved}.</>}

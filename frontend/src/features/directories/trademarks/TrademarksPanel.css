@@ -1,0 +1,9 @@
+/* Панель «ТРОИС»: рамка и шаг загрузки — как у СУР (DirectoryTransfer.css, KzListPanel.css). */
+
+.tm-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 8px; color: var(--tf-text-2); font-size: .82rem; }
+.tm-filters input[type="search"] { flex: 1 1 240px; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: 8px; font: inherit; font-size: .86rem; }
+.tm-filters label, .tm-filters span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tm-mark { min-width: 140px; }
+.tm-mark img { display: block; max-width: 120px; max-height: 64px; margin-bottom: 4px; object-fit: contain; }
+.tm-mark input { box-sizing: border-box; width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 6px; font: inherit; font-size: .82rem; }
+.tm-goods { max-width: 360px; color: var(--tf-text-2); font-size: .8rem; }

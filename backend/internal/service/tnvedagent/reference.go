@@ -39,6 +39,21 @@ type ReferenceSummary struct {
 	HasPhoto  bool      `json:"hasPhoto"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	// Kind — вкладка истории: trademarks — «/троис»; documents — только «Документы для ввоза», без подбора
+	// кода; chat — подбор кода (в том числе с документами после него). TrademarkHits — найдено знаков.
+	Kind          string `json:"kind"`
+	TrademarkHits *int   `json:"trademarkHits,omitempty"`
+}
+
+// referenceKind — вкладка истории для вопроса (см. ReferenceSummary.Kind).
+func referenceKind(row repository.ReferenceSession, hasResult bool) string {
+	switch {
+	case row.TrademarkHits != nil:
+		return "trademarks"
+	case !hasResult && row.DocumentsCode != "":
+		return "documents"
+	}
+	return "chat"
 }
 
 // referenceTitle — заголовок вопроса для истории: начало текста или «Фото товара».
@@ -168,13 +183,15 @@ func (s *TNVEDAgentService) ReferenceHistory(ctx context.Context, user repositor
 	}
 	items := make([]ReferenceSummary, 0, len(rows))
 	for _, row := range rows {
-		item := ReferenceSummary{ID: row.ID, Title: row.Title, Status: row.Status, HasPhoto: string(row.Photos) != "[]" && len(row.Photos) > 2, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
+		item := ReferenceSummary{ID: row.ID, Title: row.Title, Status: row.Status, HasPhoto: string(row.Photos) != "[]" && len(row.Photos) > 2, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, TrademarkHits: row.TrademarkHits}
 		var result AgentResult
-		if len(row.Result) > 0 && string(row.Result) != "null" && json.Unmarshal(row.Result, &result) == nil {
+		hasResult := len(row.Result) > 0 && string(row.Result) != "null" && json.Unmarshal(row.Result, &result) == nil
+		if hasResult {
 			if best := result.Best(); best != nil {
 				item.BestCode = best.Code
 			}
 		}
+		item.Kind = referenceKind(row, hasResult)
 		if item.BestCode == "" {
 			item.BestCode = row.DocumentsCode // чат только с «Документами для ввоза»
 		}

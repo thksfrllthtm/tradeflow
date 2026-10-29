@@ -18,6 +18,7 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/goods"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/riskindicators"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/tnvedagent"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service/trademarks"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/translator"
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +32,7 @@ type Server struct {
 	kzRates           *directory.TNVEDKZRateService
 	antiDumping       *antidumping.Service
 	riskIndicators    *riskindicators.Service
+	trademarks        *trademarks.Service
 	productDirectory  *directory.ProductDirectoryService
 	goods             *goods.GoodsService
 	goodsEstimates    *goods.GoodsEstimateService
@@ -46,13 +48,14 @@ type Server struct {
 
 func NewServer(database *repository.Repository, cfg config.Config) *Server {
 	decisions := decisions.NewCodeDecisionService(database)
-	return &Server{
+	server := &Server{
 		config:            cfg,
 		auth:              auth.NewAuthService(database, cfg.SessionTTL),
 		tnvedNomenclature: directory.NewTNVEDNomenclatureService(database),
 		kzRates:           directory.NewTNVEDKZRateService(database),
 		antiDumping:       antidumping.NewService(database),
 		riskIndicators:    riskindicators.NewService(database),
+		trademarks:        trademarks.NewService(database),
 		productDirectory:  directory.NewProductDirectoryService(database),
 		goods:             goods.NewGoodsService(database),
 		goodsEstimates:    goods.NewGoodsEstimateService(database),
@@ -65,6 +68,8 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		translator: translator.NewService(database, translator.NewClient(cfg.TranslatorAIAPIKey, cfg.TranslatorAIBaseURL, cfg.TranslatorAIModel)),
 		agent:      newAgentService(database, decisions, cfg),
 	}
+	server.agent.SetTrademarks(server.trademarks)
+	return server
 }
 
 // newAgentService — агент ТН ВЭД: модель рассуждений TNVED_AI_MODEL и, если задана, отдельная модель для
@@ -156,6 +161,16 @@ func (s *Server) Router() *gin.Engine {
 	riskIndicators.POST("/import", s.requireAdmin, s.importRiskIndicators)
 	riskIndicators.DELETE("/:id", s.requireAdmin, s.deleteRiskIndicators)
 
+	// Таможенный реестр ОИС (ТРОИС): список, логотипы и проверка наименований — всем; загрузка файла
+	// реестра и подпись логотипа — администратор.
+	trademarkRoutes := router.Group("/api/trademarks")
+	trademarkRoutes.Use(s.requireUser)
+	trademarkRoutes.GET("", s.listTrademarks)
+	trademarkRoutes.GET("/logo", s.trademarkLogo)
+	trademarkRoutes.POST("/check", s.checkTrademarks)
+	trademarkRoutes.POST("/import", s.requireAdmin, s.importTrademarks)
+	trademarkRoutes.PATCH("/logo-name", s.requireAdmin, s.setTrademarkLogoName)
+
 	// Калькулятор утильсбора (перечень № 689, Методика № 448) — справочник в коде, без БД.
 	router.GET("/api/util-fee", s.requireUser, s.listUtilFee)
 	router.POST("/api/util-fee", s.requireUser, s.calculateUtilFee)
@@ -235,6 +250,8 @@ func (s *Server) Router() *gin.Engine {
 	agent.POST("/sessions/:id/name", s.applyAgentName)
 	agent.GET("/reference", s.referenceHistory)
 	agent.POST("/reference", s.askReference)
+	// «/троис» с главной: вопрос в истории, проверка бренда по ТРОИС в фоне (без подбора кода).
+	agent.POST("/reference/trademarks", s.askTrademarks)
 	agent.DELETE("/reference/:id", s.deleteReference)
 
 	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
