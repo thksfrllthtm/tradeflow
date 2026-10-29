@@ -1378,15 +1378,6 @@ func (t *agentToolbox) quoteSource(code, quote string) string {
 	return source
 }
 
-// evidenceText — часть страницы кода, откуда принимаются цитаты: классификационные решения и
-// пояснения к ТН ВЭД («Дополнительная информация»). Резервный текст tks.ru — пояснения целиком.
-func evidenceText(page string) string {
-	if strings.HasPrefix(page, tksNotesPrefix) {
-		return page
-	}
-	return decisionsBlock(page) + "\n" + notesOf(page)
-}
-
 // antiDumpingNotes — антидемпинговые меры ЕАЭС для кода коротко: агент упоминает их в замечаниях.
 func antiDumpingNotes(item directory.NomenclatureCode) []string {
 	notes := []string{}

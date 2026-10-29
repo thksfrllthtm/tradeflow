@@ -13,7 +13,7 @@ import { photosOf } from '@/shared/lib/itemPhotos'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { saveRowDecision } from '../hooks/useRowDecisions'
 import { lookupNomenclature } from '../lib/nomenclatureRates'
-import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi } from './agentApi'
+import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, AgentStatus, SameProductMatch, SimilarMatch, agentApi, quoteSourceLabels } from './agentApi'
 import { AgentEvidence } from './AgentEvidence'
 import { DeclarationsLink } from './DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
@@ -462,11 +462,11 @@ function chatBlocks(messages: AgentMessage[]): ChatBlock[] {
   return blocks
 }
 
-// «Что проверил агент»: по источникам — база решений, номенклатура, пояснения (и интернет / фото,
+// «Что проверил агент»: по источникам — база решений, номенклатура, страницы кодов и документы (и интернет / фото,
 // если агент к ним обращался). Пока агент работает, крутится источник его последнего шага.
 const checkGroups: { label: string; tools: string[]; always: boolean; summary: (count: number) => string }[] = [
   { label: 'Номенклатура ТН ВЭД', tools: ['search_nomenclature', 'get_codes', 'list_heading'], always: true, summary: (count) => `${count} ${plural(count, 'запрос', 'запроса', 'запросов')}` },
-  { label: 'Пояснения к кодам', tools: ['open_details', 'open_goods_help', 'search_in_document', 'open_link'], always: true, summary: (count) => `открыто: ${count}` },
+  { label: 'Страницы кодов и документы', tools: ['open_details', 'open_goods_help', 'search_in_document', 'open_link'], always: true, summary: (count) => `открыто: ${count}` },
   { label: 'Фото товара', tools: ['photo', 'look_at_photo'], always: false, summary: (count) => `${count} ${plural(count, 'просмотр', 'просмотра', 'просмотров')}` },
   { label: 'Интернет и декларации', tools: ['web_search', 'web_page', 'search_declarations'], always: false, summary: (count) => `${count} ${plural(count, 'запрос', 'запроса', 'запросов')}` },
 ]
@@ -718,7 +718,7 @@ function CandidateRates({ candidate }: { candidate: AgentCandidate }) {
 // «Почему»: цитата из источника, довод агента и что уточнить.
 function CandidateWhy({ candidate }: { candidate: AgentCandidate }) {
   return <>
-    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'пояснения к коду (TWS.BY)' : candidate.quoteSource === 'decision' ? 'классификационное решение (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
+    {candidate.quote && <blockquote>{candidate.quote}{quoteSourceLabels[candidate.quoteSource] && <cite>{quoteSourceLabels[candidate.quoteSource]}</cite>}</blockquote>}
     {candidate.reason && <p className="ag-reason"><LinkText text={candidate.reason} /></p>}
     {candidate.check && <p className="ag-check"><b>Уточнить:</b> <LinkText text={candidate.check} /></p>}
   </>

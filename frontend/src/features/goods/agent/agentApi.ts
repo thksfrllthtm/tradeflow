@@ -26,12 +26,23 @@ export type AgentItem = {
   unit: string
 }
 
+// Подпись под цитатой кандидата — одна на панель агента и справочный чат.
+export const quoteSourceLabels: Record<AgentCandidate['quoteSource'], string> = {
+  '': '',
+  page: 'пояснения к коду (TWS.BY)',
+  decision: 'классификационное решение (TWS.BY)',
+  tks: 'пояснения к коду (tks.ru)',
+  help: 'справка по товару (tnved.info)',
+  document: 'документ по ссылке',
+  name: 'наименование кода в номенклатуре',
+}
+
 export type AgentCandidate = {
   code: string
   verdict: 'fits' | 'doubtful' | 'no'
   quote: string
-  // page — страница кода (TWS.BY), help — справка tnved.info или документ по ссылке, name — наименование кода.
-  quoteSource: '' | 'page' | 'decision' | 'help' | 'name'
+  // Где цитата найдена дословно; подпись — quoteSourceLabels. name — только в старых подборах.
+  quoteSource: '' | 'page' | 'decision' | 'tks' | 'help' | 'document' | 'name'
   reason: string
   check: string
   pageOpened: boolean
