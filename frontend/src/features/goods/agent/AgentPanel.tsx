@@ -718,7 +718,7 @@ function CandidateRates({ candidate }: { candidate: AgentCandidate }) {
 // «Почему»: цитата из источника, довод агента и что уточнить.
 function CandidateWhy({ candidate }: { candidate: AgentCandidate }) {
   return <>
-    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'со страницы кода (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
+    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'пояснения к коду (TWS.BY)' : candidate.quoteSource === 'decision' ? 'классификационное решение (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'из наименования кода в номенклатуре'}</cite></blockquote>}
     {candidate.reason && <p className="ag-reason"><LinkText text={candidate.reason} /></p>}
     {candidate.check && <p className="ag-check"><b>Уточнить:</b> <LinkText text={candidate.check} /></p>}
   </>

@@ -649,7 +649,7 @@ function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: A
         {measure.suspended ? 'антидемпинг не применяется' : `${measure.exact ? 'антидемпинг' : 'возможен антидемпинг'} ${measure.countries.map((country) => `${(measure.rates[country] ?? '').replace('.', ',')}%`).join(' / ')} (${measure.countryNames})`}
       </span>)}
     </p>}
-    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'пояснения к коду (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'наименование кода в номенклатуре'}</cite></blockquote>}
+    {candidate.quote && <blockquote>{candidate.quote}<cite>{candidate.quoteSource === 'page' ? 'пояснения к коду (TWS.BY)' : candidate.quoteSource === 'decision' ? 'классификационное решение (TWS.BY)' : candidate.quoteSource === 'help' ? 'справка по товару (tnved.info)' : 'наименование кода в номенклатуре'}</cite></blockquote>}
     {candidate.reason && <p className="rc-reason"><LinkText text={candidate.reason} /></p>}
     {candidate.check && <p className="rc-check"><b>Уточнить:</b> <LinkText text={candidate.check} /></p>}
     <div className="rc-cand-actions">

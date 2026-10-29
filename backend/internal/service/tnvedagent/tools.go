@@ -1325,17 +1325,24 @@ func (t *agentToolbox) quoteOrigin(quote, actURL, act string) string {
 	}
 	sort.Strings(codes)
 	for _, code := range codes {
-		if has(t.opened[code]) {
+		page := t.opened[code]
+		switch {
+		case !has(page):
+		case strings.HasPrefix(page, tksNotesPrefix):
+			return "пояснения к коду " + FormatTNVEDCode(code) + " (tks.ru)"
+		case has(decisionsBlock(page)):
+			return "классификационное решение, код " + FormatTNVEDCode(code) + " (TWS.BY)"
+		default:
 			return "страница кода " + FormatTNVEDCode(code) + " (TWS.BY)"
 		}
 	}
 	return ""
 }
 
-// quoteSource ищет цитату дословно (без учёта регистра и знаков препинания) на открытой странице
-// кода, затем в наименовании кода.
-// quoteSource — где цитата есть дословно: в пояснениях или классификационных решениях страницы кода
-// («page») или в справке tnved.info («help»). Наименование кода, дерево и меры — не доказательство.
+// quoteSource — где цитата есть дословно (без учёта регистра и знаков): в классификационных решениях
+// страницы кода TWS.BY («decision»), в пояснениях к коду TWS.BY («page») или резервных с tks.ru («tks»),
+// в справке tnved.info («help») или в другом открытом документе («document»).
+// Наименование кода, дерево и меры — не доказательство.
 func (t *agentToolbox) quoteSource(code, quote string) string {
 	normalized := decisions.NormalizeDecisionName(quote)
 	// Цифры кода («6116 10 800 0 прочие») ничего не подтверждают: нужны хотя бы три слова.
@@ -1348,15 +1355,27 @@ func (t *agentToolbox) quoteSource(code, quote string) string {
 	if len([]rune(normalized)) < agentMinQuoteRunes || words < agentMinQuoteWords {
 		return ""
 	}
-	if page, ok := t.opened[code]; ok && strings.Contains(decisions.NormalizeDecisionName(evidenceText(page)), normalized) {
-		return "page"
-	}
-	for _, text := range t.web {
-		if strings.Contains(decisions.NormalizeDecisionName(text), normalized) {
-			return "help"
+	if page, ok := t.opened[code]; ok {
+		if strings.HasPrefix(page, tksNotesPrefix) {
+			if strings.Contains(decisions.NormalizeDecisionName(page), normalized) {
+				return "tks"
+			}
+		} else if strings.Contains(decisions.NormalizeDecisionName(decisionsBlock(page)), normalized) {
+			return "decision"
+		} else if strings.Contains(decisions.NormalizeDecisionName(notesOf(page)), normalized) {
+			return "page"
 		}
 	}
-	return ""
+	source := ""
+	for address, text := range t.web {
+		if strings.Contains(decisions.NormalizeDecisionName(text), normalized) {
+			if strings.Contains(address, "tnved.info") {
+				return "help"
+			}
+			source = "document"
+		}
+	}
+	return source
 }
 
 // evidenceText — часть страницы кода, откуда принимаются цитаты: классификационные решения и

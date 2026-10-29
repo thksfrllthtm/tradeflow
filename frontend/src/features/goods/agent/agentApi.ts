@@ -31,7 +31,7 @@ export type AgentCandidate = {
   verdict: 'fits' | 'doubtful' | 'no'
   quote: string
   // page — страница кода (TWS.BY), help — справка tnved.info или документ по ссылке, name — наименование кода.
-  quoteSource: '' | 'page' | 'help' | 'name'
+  quoteSource: '' | 'page' | 'decision' | 'help' | 'name'
   reason: string
   check: string
   pageOpened: boolean
