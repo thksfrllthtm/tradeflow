@@ -290,7 +290,9 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 		items[i].Warnings = calculation.FilterRateWarnings(allIssues)
 		calculation.CalculateTariff(&items[i], calculation.ParseItemStringDecimal(items[i].NetKG), calculation.ParseItemStringDecimal(items[i].Pairs), calculation.ParseItemStringDecimal(items[i].Places), usd, service.DecimalValueOrZero(euro), &items[i].Warnings)
 		items[i].Errors, items[i].Warnings = calculation.SplitCalculationIssues(items[i].Warnings)
-		if len(items[i].Errors) == 0 && len(items[i].Warnings) == 0 && (items[i].GoodsCost != "" || items[i].CustomsBasis == "sir") && items[i].CustomsValueKZT != "" && items[i].DutyKZT != "" && items[i].VATKZT != "" {
+		if items[i].Excluded {
+			items[i].Status = "excluded"
+		} else if len(items[i].Errors) == 0 && len(items[i].Warnings) == 0 && (items[i].GoodsCost != "" || items[i].CustomsBasis == "sir") && items[i].CustomsValueKZT != "" && items[i].DutyKZT != "" && items[i].VATKZT != "" {
 			items[i].Status = "calculated"
 		} else {
 			items[i].Status = "needs_review"

@@ -6,6 +6,7 @@ package translator
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
@@ -19,6 +20,17 @@ type SegmentEdit struct {
 }
 
 const maxTargetRunes = 20000
+
+// validateTarget: перевод из одних пробелов — тоже пустой (в выгрузке абзац пропал бы).
+func validateTarget(target string) error {
+	switch {
+	case strings.TrimSpace(target) == "":
+		return &service.ValidationError{Field: "targetText", Message: "Перевод пустой: введите текст перевода"}
+	case len([]rune(target)) > maxTargetRunes:
+		return &service.ValidationError{Field: "targetText", Message: "Перевод сегмента слишком длинный"}
+	}
+	return nil
+}
 
 // EditSegment сохраняет правку. Новый текст без статуса — «исправлен»; «подтверждён» без текста
 // подтверждает текущий перевод (машинный, если правки не было).
@@ -42,11 +54,8 @@ func (s *Service) EditSegment(ctx context.Context, userID, id int64, edit Segmen
 	if edit.TargetText != nil {
 		target = normalizeTagged(*edit.TargetText)
 	}
-	switch {
-	case target == "":
-		return SegmentView{}, &service.ValidationError{Field: "targetText", Message: "Перевод пустой: введите текст перевода"}
-	case len([]rune(target)) > maxTargetRunes:
-		return SegmentView{}, &service.ValidationError{Field: "targetText", Message: "Перевод сегмента слишком длинный"}
+	if err := validateTarget(target); err != nil {
+		return SegmentView{}, err
 	}
 	textChanged := target != current
 	status := edit.Status

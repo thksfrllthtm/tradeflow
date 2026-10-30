@@ -1,0 +1,17 @@
+{
+  "name": "import-calculator-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --project=ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.10.0",
+    "exceljs": "^4.4.0",
+    "typescript": "5.7.3"
+  }
+}

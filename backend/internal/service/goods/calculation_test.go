@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"image"
 	"image/png"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -146,6 +147,35 @@ func TestGoodsCalculationUsesPairsWithoutDividingByTwo(t *testing.T) {
 	}
 	if item.Status != "calculated" {
 		t.Fatalf("expected calculated item, got %s errors=%v warnings=%v", item.Status, item.Errors, item.Warnings)
+	}
+}
+
+// Исключённая строка остаётся «excluded» после второго прохода (пошлина и проверки) и не
+// меняет итоги.
+func TestGoodsCalculationKeepsExcludedStatus(t *testing.T) {
+	row := GoodsItemInput{Name: "supplier", StandardName: "Резиновые перчатки", DirectorySnapshot: testGoodsSnapshot(), Places: "100", PairsPerPlace: "10", GrossKg: "100", Coefficient: "0.65", DeliveryIncluded: true}
+	excluded := row
+	excluded.Name, excluded.Excluded = "excluded", true
+	input := GoodsCalculationInput{AssessmentDate: "2026-09-17", UsdKzt: "500", DeliveryMode: "total", DeliveryTotalUsd: "100", PackageWeightKg: "0.3"}
+
+	input.Items = []GoodsItemInput{row}
+	alone, err := NewGoodsService().Calculate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("calculate: %v", err)
+	}
+	input.Items = []GoodsItemInput{row, excluded}
+	result, err := NewGoodsService().Calculate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("calculate: %v", err)
+	}
+	if got := result.Items[1].Status; got != "excluded" {
+		t.Fatalf("excluded row status: got %s", got)
+	}
+	if got := result.Items[0].Status; got != "calculated" {
+		t.Fatalf("included row status: got %s", got)
+	}
+	if !reflect.DeepEqual(result.Totals, alone.Totals) {
+		t.Fatalf("excluded row changed totals:\n%+v\n%+v", result.Totals, alone.Totals)
 	}
 }
 

@@ -622,6 +622,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
       </button>
     })}
   </nav>
+  // Пока смета не загружена с сервера, правки некуда положить: ответ сервера заменил бы строки,
+  // добавленные до него (на Render после простоя ответ идёт около минуты). Шапку сметы не
+  // показываем: после загрузки её рисует этап, и открытая форма названия закрылась бы.
+  if (!photoStorageReady) return <div className="goods-calculator-embedded is-import">
+    <div className="goods-page"><p className="muted" role="status">Загружаем смету…</p></div>
+  </div>
+
   // Строку заголовка (название сметы и этапы) рисует сам этап — у каждого рядом свои кнопки.
   return <div className={`goods-calculator-embedded ${resultStep ? 'is-result' : step === 2 ? 'is-review' : 'is-import'}`}>
     <div className="goods-page">

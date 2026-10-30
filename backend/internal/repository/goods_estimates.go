@@ -18,7 +18,8 @@ func (r *Repository) GoodsEstimateByIDForUser(ctx context.Context, id, userID in
 
 // blankGoodsEstimate — смета, в которую ничего не положили: стандартное название, без клиента,
 // строк, файла, результата, фото и вопросов агенту. Такие копятся от каждого «Создать смету».
-const blankGoodsEstimate = `user_id = ? AND client = '' AND name ~ '^Смета товаров( · \d{4}-\d{2}-\d{2})?$'
+// В регулярке {0,1} вместо «?»: GORM считает каждый «?» местом для параметра.
+const blankGoodsEstimate = `user_id = ? AND client = '' AND name ~ '^Смета товаров( · \d{4}-\d{2}-\d{2}){0,1}$'
 	AND CASE WHEN jsonb_typeof(input_snapshot->'items') = 'array' THEN jsonb_array_length(input_snapshot->'items') ELSE 0 END = 0
 	AND COALESCE(input_snapshot->'source', 'null'::jsonb) = 'null'::jsonb
 	AND result_snapshot IN ('{}'::jsonb, 'null'::jsonb)
@@ -103,12 +104,13 @@ func ownedBy(query *gorm.DB, userID int64) *gorm.DB {
 // (excluded rows and the current estimate are skipped). The JSON is read
 // inside PostgreSQL, so estimate snapshots with photos never reach the server.
 func (r *Repository) UnitPriceHistory(ctx context.Context, userID, excludeEstimateID int64, codes []string) (map[string]float64, error) {
+	// В регулярке {0,1} вместо «?»: GORM считает каждый «?» в Raw местом для параметра.
 	query := `SELECT DISTINCT ON (item->>'code') item->>'code' AS code, (item->>'pairPriceUsd')::numeric AS price
 		FROM goods_estimates e
 		CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(e.result_snapshot->'items') = 'array' THEN e.result_snapshot->'items' ELSE '[]'::jsonb END) AS item
 		WHERE item->>'code' IN ? AND e.id <> ?
 		  AND COALESCE(item->>'excluded', 'false') <> 'true'
-		  AND item->>'pairPriceUsd' ~ '^[0-9]+(\.[0-9]+)?$' AND (item->>'pairPriceUsd')::numeric > 0`
+		  AND item->>'pairPriceUsd' ~ '^[0-9]+(\.[0-9]+){0,1}$' AND (item->>'pairPriceUsd')::numeric > 0`
 	args := []any{codes, excludeEstimateID}
 	if userID != AllUsers {
 		query += ` AND e.user_id = ?`
