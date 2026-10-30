@@ -11,6 +11,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type CodeDecision struct {
@@ -103,6 +104,7 @@ func wordsExpr(text string, columns ...string) (string, []any) {
 
 func (r *Repository) ListCodeDecisions(ctx context.Context, filter CodeDecisionFilter) ([]CodeDecision, int64, error) {
 	query := codeDecisionQuery(r.db.WithContext(ctx))
+	listOrder := clause.Expr{SQL: decisionListOrder}
 	if filter.Status != "" {
 		query = query.Where("d.status = ?", filter.Status)
 	}
@@ -113,12 +115,10 @@ func (r *Repository) ListCodeDecisions(ctx context.Context, filter CodeDecisionF
 		if digitsQuery.MatchString(text) {
 			query = query.Where("d.code LIKE ?", strings.NewReplacer(" ", "", ".", "").Replace(text)+"%")
 		} else {
-			// Слова ищутся и в описании фото (синонимы, назначение, ключевые слова); AlsoIDs — найденные по смыслу.
-			expr, args := wordsExpr(text, "d.invoice_name", "d.supplier_name", "d.final_name", "d.photo_features::text")
-			if len(filter.AlsoIDs) > 0 {
-				expr, args = "("+expr+") OR d.id IN ?", append(args, filter.AlsoIDs)
-			}
-			query = query.Where(expr, args...)
+			where, order := decisionTextSearch(text, filter.AlsoIDs)
+			query = query.Where(where.SQL, where.Vars...)
+			order.SQL += ", " + decisionListOrder
+			listOrder = order
 		}
 	}
 	var total int64
@@ -126,8 +126,31 @@ func (r *Repository) ListCodeDecisions(ctx context.Context, filter CodeDecisionF
 		return nil, 0, err
 	}
 	var rows []CodeDecision
-	err := query.Select(codeDecisionListColumns).Order("d.updated_at DESC, d.id DESC").Limit(filter.Limit).Offset(filter.Offset).Scan(&rows).Error
+	err := query.Select(codeDecisionListColumns).Order(clause.OrderBy{Expression: listOrder}).Limit(filter.Limit).Offset(filter.Offset).Scan(&rows).Error
 	return rows, total, err
+}
+
+const decisionListOrder = "d.updated_at DESC, d.id DESC"
+
+// Из описания фото ищется только «что это за товар». Материал и особенности не участвуют:
+// «картонная упаковка» есть почти у всех, и «карта» находила рулетки и наждачку.
+const decisionPhotoSearchText = "concat_ws(' ', d.photo_features->>'kind', d.photo_features->>'purpose', " +
+	"d.photo_features->'synonyms', d.photo_features->'keywords')"
+
+// decisionTextSearch — условие поиска по словам (alsoIDs — найденные по смыслу) и порядок по
+// релевантности: совпало наименование → совпало описание фото → только по смыслу.
+func decisionTextSearch(text string, alsoIDs []int64) (where, order clause.Expr) {
+	byName, nameArgs := wordsExpr(text, "d.invoice_name", "d.supplier_name", "d.final_name")
+	byWords, wordArgs := wordsExpr(text, "d.invoice_name", "d.supplier_name", "d.final_name", decisionPhotoSearchText)
+	order = clause.Expr{
+		SQL:  "CASE WHEN " + byName + " THEN 0 WHEN " + byWords + " THEN 1 ELSE 2 END",
+		Vars: append(append([]any{}, nameArgs...), wordArgs...),
+	}
+	where = clause.Expr{SQL: byWords, Vars: wordArgs}
+	if len(alsoIDs) > 0 {
+		where = clause.Expr{SQL: "(" + byWords + ") OR d.id IN ?", Vars: append(append([]any{}, wordArgs...), alsoIDs)}
+	}
+	return where, order
 }
 
 func (r *Repository) CodeDecisionByID(ctx context.Context, id int64) (CodeDecision, error) {
@@ -199,7 +222,7 @@ func (r *Repository) SearchCodeDecisions(ctx context.Context, text string, limit
 	score := strings.Join(parts, " + ")
 	query := codeDecisionQuery(r.db.WithContext(ctx)).Where("d.status <> 'rejected'").Where("("+score+") > 0", args...)
 	err := query.Select(codeDecisionListColumns).
-		Order(gorm.Expr("("+score+") DESC, CASE d.status WHEN 'verified' THEN 0 ELSE 1 END, d.updated_at DESC", args...)).
+		Order(clause.OrderBy{Expression: gorm.Expr("("+score+") DESC, CASE d.status WHEN 'verified' THEN 0 ELSE 1 END, d.updated_at DESC", args...)}).
 		Limit(limit).Scan(&rows).Error
 	return rows, err
 }
