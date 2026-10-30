@@ -254,7 +254,7 @@ func (s *TNVEDAgentService) evalOne(ctx context.Context, item AgentEvalItem) Age
 	toolbox.requireDeclarations = true
 	toolbox.fileCode = item.Item.Code
 	runner := &agentRunner{
-		model: s.model, toolbox: toolbox, system: s.systemPrompt(false, false, toolbox.lookPhoto != nil), review: s.settings.SelfCheck,
+		model: s.model, toolbox: toolbox, system: s.systemPrompt(false, toolbox.lookPhoto != nil), review: s.settings.SelfCheck,
 		transcript: transcript, photos: item.Photos, vision: s.model.Vision(), emit: emit,
 		onStep: func(_ []map[string]any, usage agentUsage) {
 			record.CostUSD = record.CostUSD.Add(s.model.Cost(usage))

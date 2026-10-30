@@ -10,7 +10,7 @@ import (
 // Справочник: в итоге два варианта наименования (краткое и подробное) по правилу компании.
 func TestReferenceModeHasTwoDeclarationNames(t *testing.T) {
 	finishSchema := func(reference bool) string {
-		for _, tool := range agentTools(reference, false) {
+		for _, tool := range agentTools(reference) {
 			if tool.Function.Name == "finish" {
 				data, _ := json.Marshal(tool.Function.Parameters)
 				return string(data)
@@ -66,10 +66,10 @@ func TestReferenceFollowUpAnswersTheQuestion(t *testing.T) {
 // Справочник отвечает сразу: инструмента ask_user у него нет, а попытка спросить возвращается модели
 // ошибкой, и подбор продолжается до finish. В подборе для строки сметы вопрос есть.
 func TestReferenceModeHasNoAskUser(t *testing.T) {
-	if names := toolNames(agentTools(true, false)); strings.Contains(names, "ask_user") {
+	if names := toolNames(agentTools(true)); strings.Contains(names, "ask_user") {
 		t.Fatalf("в справочнике нет ask_user: %s", names)
 	}
-	if names := toolNames(agentTools(false, false)); !strings.Contains(names, "ask_user") {
+	if names := toolNames(agentTools(false)); !strings.Contains(names, "ask_user") {
 		t.Fatalf("в подборе по строке ask_user есть: %s", names)
 	}
 	prompt := tnvedReferencePrompt("")
@@ -83,7 +83,7 @@ func TestReferenceModeHasNoAskUser(t *testing.T) {
 			"candidates":       []map[string]string{{"code": "6116102000", "verdict": "fits", "reason": "Да.", "check": "уточнить материал"}}})}},
 	}}
 	runner, events := newTestRunner(model, &fakeAgentData{})
-	runner.tools = agentTools(true, false)
+	runner.tools = agentTools(true)
 	runner.toolbox.requireDeclarations = false
 	outcome := runner.execute(context.Background())
 	if outcome.status != "done" || outcome.result == nil || outcome.result.Candidates[0].Check != "уточнить материал" {

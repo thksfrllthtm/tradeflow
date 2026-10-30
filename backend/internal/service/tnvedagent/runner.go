@@ -17,6 +17,8 @@ type agentOutcome struct {
 	status string // done или waiting
 	result *AgentResult
 	err    error
+	// partial — итог «Документов для ввоза» с пробелами (под-агент не ответил): в базу по коду не сохраняется.
+	partial bool
 }
 
 type agentRunner struct {
@@ -31,7 +33,7 @@ type agentRunner struct {
 	maxSteps   int
 	// tools — инструменты запуска (nil — как при подборе для строки сметы).
 	tools []agentTool
-	// documents — запуск по кнопке «Документы для ввоза»: веб-инструменты и больше шагов.
+	// documents — под-агент «Документов для ввоза»: без поиска в интернете.
 	documents bool
 	// review — первый итог возвращается агенту на самопроверку («второй взгляд»), окончательный — второй.
 	review bool
@@ -44,8 +46,6 @@ func (r *agentRunner) stepLimit() int {
 	switch {
 	case r.maxSteps > 0:
 		return r.maxSteps
-	case r.documents:
-		return agentDocumentsMaxSteps
 	case r.toolbox.search != nil:
 		return agentWebMaxSteps
 	}
@@ -187,7 +187,7 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	maxSteps := r.stepLimit()
 	tools := r.tools
 	if tools == nil {
-		tools = agentTools(false, r.documents)
+		tools = agentTools(false)
 	}
 	if r.toolbox.search != nil && !r.documents {
 		tools = append(append([]agentTool{}, tools...), webTools()...)

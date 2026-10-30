@@ -52,12 +52,19 @@ func photoContent(text string, photos []string) []map[string]any {
 }
 
 func hasPhotoNote(transcript []map[string]any) bool {
+	return photoNoteText(transcript) != ""
+}
+
+// photoNoteText — описание фото из переписки без заголовка ("" — его нет): под-агентам «Документов для
+// ввоза», у которых своя короткая переписка.
+func photoNoteText(transcript []map[string]any) string {
 	for _, message := range transcript {
 		if text, ok := message["content"].(string); ok && message["role"] == "user" && strings.HasPrefix(text, photoNotePrefix) {
-			return true
+			_, description, _ := strings.Cut(text, "\n")
+			return firstNonEmpty(strings.TrimSpace(description), text)
 		}
 	}
-	return false
+	return ""
 }
 
 // photoNote — описание фото для модели рассуждений, которая фото не видит: сообщение в переписку и шаг

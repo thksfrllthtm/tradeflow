@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
@@ -15,6 +16,8 @@ import (
 // fakeAgentData — номенклатура из двух кодов, одна страница TWS, одна запись базы; для режима
 // «документы» — справка tnved.info и документы по ссылкам (helpLimit — лимит tnved.info исчерпан).
 type fakeAgentData struct {
+	// mu — под-агенты «Документов для ввоза» ходят к данным параллельно.
+	mu          sync.Mutex
 	pagesOpened []string
 	webOpened   []string
 	helpLimit   bool
@@ -65,7 +68,9 @@ func (d *fakeAgentData) LookupCodes(_ context.Context, codes []string) ([]direct
 }
 
 func (d *fakeAgentData) DetailsPage(_ context.Context, code, _ string) (string, bool, error) {
+	d.mu.Lock()
 	d.pagesOpened = append(d.pagesOpened, code)
+	d.mu.Unlock()
 	if code == "6116102000" {
 		return "Дерево кода:\n6116 10 200 0 перчатки, пропитанные или покрытые резиной\n" + notesHeading + "\nПояснения к ТН ВЭД: В данную субпозицию включаются трикотажные перчатки с покрытием ладони из резины или полиуретана.", false, nil
 	}
@@ -74,7 +79,9 @@ func (d *fakeAgentData) DetailsPage(_ context.Context, code, _ string) (string, 
 
 // TKSNotes — резервные пояснения tks.ru: только для позиции 4015, если tksNotes задан.
 func (d *fakeAgentData) TKSNotes(_ context.Context, code string) (string, bool, error) {
+	d.mu.Lock()
 	d.tksOpened = append(d.tksOpened, code)
+	d.mu.Unlock()
 	if d.tksNotes != "" && strings.HasPrefix(code, "4015") {
 		return d.tksNotes, false, nil
 	}

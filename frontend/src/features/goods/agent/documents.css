@@ -36,6 +36,12 @@
 .dl-act { color: #1b6b43; font-size: .78rem; font-weight: 600; text-decoration: none; }
 a.dl-act:hover { text-decoration: underline; }
 .dl-req { margin: 0; color: #34443b; font-size: .79rem; line-height: 1.45; }
+.dl-req b { font-weight: 650; color: #1f2d25; }
+/* Раскрытая мера («нужно», «возможно»): заголовок — не кнопка, цитата — под своим тогглом. */
+.dl-item.dl-open .dl-top::after { content: none; }
+.dl-quote summary { color: #7a877f; font-size: .74rem; cursor: pointer; }
+.dl-quote[open] summary { margin-bottom: 2px; }
+.dl-notes { display: grid; gap: 4px; margin: 0; padding-left: 18px; color: #56665c; font-size: .8rem; line-height: 1.45; }
 .dl-basis { margin: 2px 0 0; padding: 5px 8px; border-radius: 6px; background: #f1f5f2; color: #34443b; font-size: .77rem; font-style: italic; line-height: 1.45; }
 .dl-basis cite { display: block; margin-top: 2px; color: #7a8a80; font-size: .7rem; font-style: normal; }
 .dl-name { margin: 2px 0 0; padding: 5px 8px; border-radius: 6px; background: #fff8e6; color: #4d3f12; font-size: .78rem; line-height: 1.45; }

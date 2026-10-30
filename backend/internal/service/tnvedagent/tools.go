@@ -124,8 +124,8 @@ func stringProperty(description string) map[string]any {
 }
 
 // agentTools — инструменты агента; в справочнике (reference) у итога нет наименования для декларации.
-// documents — режим «Документы для ввоза»: ещё справка tnved.info и документы по ссылкам, итог — меры.
-func agentTools(reference, documents bool) []agentTool {
+// Инструменты «Документов для ввоза» — у под-агентов (documentsTools).
+func agentTools(reference bool) []agentTool {
 	tool := func(name, description string, parameters map[string]any) agentTool {
 		return agentTool{Type: "function", Function: agentToolFunction{Name: name, Description: description, Parameters: parameters}}
 	}
@@ -170,38 +170,8 @@ func agentTools(reference, documents bool) []agentTool {
 			}, "url")},
 		}, "description", "candidates", "name", "nameFull", "confidence"))
 	}
-	extra := []agentTool{}
-	if documents {
-		finish = tool("finish", "Итог по документам для ввоза. Вызывается один раз в конце.", objectSchema(map[string]any{
-			"description": stringProperty("Короткое резюме сотруднику, 2–4 предложения: какие документы и разрешения нужны для ввоза этого товара; если справка недоступна — скажи об этом"),
-			"documents": map[string]any{"type": "array", "description": "По одной записи на меру из справки (и из прочитанных актов), плюс одна запись conditional — условный выпуск", "items": objectSchema(map[string]any{
-				"kind":        map[string]any{"type": "string", "enum": []string{"cc", "dc", "sgr", "conditional", "other"}, "description": "Вид документа: cc — сертификат соответствия (СС), dc — декларация соответствия (ДС), sgr — свидетельство о государственной регистрации (СГР), conditional — условный выпуск, other — прочие меры (санэпиднадзор без СГР, лицензия, квота, ветеринарный контроль…)"},
-				"measure":     stringProperty("Вид меры полностью, с большой буквы, без сокращений: для техрегламента — номер и название в кавычках («Сертификат соответствия ТР ТС 010/2011 «О безопасности машин и оборудования»», «Декларация соответствия ТР ТС 019/2011 «О безопасности средств индивидуальной защиты»»); для санэпиднадзора — раздел Решения КТС №299 и нужно ли СГР («Санитарно-эпидемиологический надзор (раздел I, без СГР)»); прочие — «Ветеринарный контроль», «Условный выпуск», «Лицензия», «Тарифная квота», «Экспортный контроль»"),
-				"act":         stringProperty("Акт, например «Решение КТС №299 от 28.05.2010»"),
-				"url":         stringProperty("Ссылка на акт или документ — только адрес с открытых страниц; пусто, если нет"),
-				"requirement": stringProperty("Что конкретно нужно для этого товара, 1–2 предложения; для maybe — что уточнить"),
-				"applies":     map[string]any{"type": "string", "enum": []string{"yes", "maybe", "no"}, "description": "Относится ли мера к этому товару по пояснению под актом. Зависит от назначения товара (контакт с пищей, для детей, бытовое) — всегда yes и nameHint, даже если в наименовании назначение другое; решает декларант"},
-				"basis":       stringProperty("Дословная цитата (5–40 слов) из справки tnved.info, акта или страницы кода, на которой основан вывод applies: пояснение под мерой («Относится к товарам: …») или пункт перечня. Программа проверит цитату; без неё «нужно» не принимается"),
-				"nameHint":    stringProperty("Если мера зависит от признака товара (бытовое или промышленное назначение, контакт с пищей, напряжение, детский товар): при каком реальном признаке она не применяется, какое наименование тогда указать в декларации и какими документами поставщика это подтвердить. Пусто, если от наименования не зависит"),
-			}, "kind", "measure", "act", "requirement", "applies", "basis")},
-			"notes": stringProperty("Короткое дополнение; пусто, если нечего добавить"),
-		}, "description", "documents"))
-		extra = []agentTool{
-			tool("open_goods_help", "Справка по товару tnved.info для кода (ввоз в ЕАЭС): акты со ссылками, меры нетарифного регулирования и пояснения, к каким товарам относится мера.",
-				objectSchema(map[string]any{"code": stringProperty("Код, 10 цифр")}, "code")),
-			tool("open_link", "Открыть ссылку с уже открытой страницы (справки или документа) или адрес tnved.info, tws.by: начало текста страницы и ссылки с неё. Большой документ целиком не отдаётся — ищи в нём через search_in_document.",
-				objectSchema(map[string]any{"url": stringProperty("Полный адрес https://…")}, "url")),
-			tool("search_in_document", "Найти в документе по ссылке фрагменты со словами запроса (с соседними абзацами). Для больших актов (перечни, единые требования) вместо чтения целиком.",
-				objectSchema(map[string]any{
-					"url":   stringProperty("Адрес документа — ссылка с открытой страницы"),
-					"query": stringProperty("2–5 слов: вид товара, материал, код или группа ТН ВЭД, номер раздела"),
-				}, "url", "query")),
-		}
-	}
-	if !documents {
-		extra = append(extra, tool("check_trademarks", "Таможенный реестр объектов интеллектуальной собственности (ТРОИС): есть ли бренд в реестре, включая похожие написания (SONV вместо SONY). Наименования строки и строку «Бренд» описания фото программа проверяет сама — вызывай для бренда, который увидел на фото сам.",
-			objectSchema(map[string]any{"query": stringProperty("Бренд буква в букву, как написан на товаре")}, "query")))
-	}
+	extra := []agentTool{tool("check_trademarks", "Таможенный реестр объектов интеллектуальной собственности (ТРОИС): есть ли бренд в реестре, включая похожие написания (SONV вместо SONY). Наименования строки и строку «Бренд» описания фото программа проверяет сама — вызывай для бренда, который увидел на фото сам.",
+		objectSchema(map[string]any{"query": stringProperty("Бренд буква в букву, как написан на товаре")}, "query"))}
 	return append([]agentTool{
 		tool("search_nomenclature", "Поиск кодов в номенклатуре ТН ВЭД ЕАЭС по словам наименования (по-русски). Каждое слово ищется по основе, все слова должны встретиться в наименовании кода с его деревом. Лучше 1–3 слова. Возвращает до 30 кодов с наименованием и пошлиной ЕТТ.",
 			objectSchema(map[string]any{"query": stringProperty("Слова для поиска, например «перчатки трикотажные»")}, "query")),
@@ -433,10 +403,8 @@ type agentToolbox struct {
 	docs  map[string]directory.WebPage
 	// documentsCode — запуск по кнопке «Документы для ввоза» для этого кода ("" — обычный подбор).
 	documentsCode string
-	// general — поиск кода по общей базе за этот запуск (nil — ещё не искали); generalAsked — пропущенные
-	// перечни уже возвращались агенту.
-	general      *generalSearch
-	generalAsked bool
+	// general — поиск кода по общей базе за этот запуск (nil — ещё не искали).
+	general *generalSearch
 	// search — поиск в интернете (nil — не подключён); webCalls — обращений к Tavily за этот запуск,
 	// pages — разные страницы, открытые в обычном подборе.
 	search   webSearcher
@@ -449,6 +417,10 @@ type agentToolbox struct {
 	// (declarationsChecked — искал в этом подборе).
 	requireDeclarations bool
 	declarationsChecked bool
+	// requireActRead — под-агент «Документов для ввоза» должен заглянуть в сам акт (open_link или
+	// search_in_document), иначе первый итог возвращается ему; actRead — заглядывал.
+	requireActRead bool
+	actRead        bool
 	// declarationQuery — первый запрос search_declarations; declarationCounts — по кодам (10 цифр)
 	// наибольшее число записей и запрос, которым оно найдено: ссылка «Декларации» у кодов итога.
 	declarationQuery  string
@@ -701,6 +673,9 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 	if (name == "look_at_photo" && t.lookPhoto == nil) || (name == "check_trademarks" && t.trademarks == nil) {
 		name = "unknown:" + name
 	}
+	if name == "open_link" || name == "search_in_document" {
+		t.actRead = true
+	}
 	switch name {
 	case "check_trademarks":
 		query := service.TruncateRunes(strings.TrimSpace(args.Query), 100)
@@ -847,29 +822,14 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		return toolJSON(map[string]any{"entries": entries}), agentToolEvent{Tool: name, Label: "Справочник товаров: " + quoted(query), Detail: fmt.Sprintf("записей %d", len(hints))}
 	case "open_goods_help":
 		code := nonDigits.ReplaceAllString(args.Code, "")
-		label := "Справка по товару " + FormatTNVEDCode(code)
-		if items, err := t.data.LookupCodes(ctx, []string{code}); err != nil || len(items) == 0 {
-			return toolJSON(map[string]any{"code": code, "error": "Кода нет в номенклатуре"}), agentToolEvent{Tool: name, Label: label, Detail: "кода нет в номенклатуре", Failed: true}
+		page, event, err := t.goodsHelp(ctx, code)
+		switch {
+		case errors.Is(err, errCodeUnknown):
+			return toolJSON(map[string]any{"code": code, "error": "Кода нет в номенклатуре"}), event
+		case err != nil:
+			return t.generalAnswer(ctx, code, event.Label, event.Detail, page.URL)
 		}
-		page, err := t.data.GoodsHelp(ctx, code)
-		if errors.Is(err, directory.ErrGoodsHelpLimit) {
-			return t.generalAnswer(ctx, code, label, "лимит tnved.info на сегодня исчерпан", page.URL)
-		}
-		if err != nil || page.Text == "" {
-			return t.generalAnswer(ctx, code, label, "справка tnved.info не открылась", page.URL)
-		}
-		// Решения Коллегии ЕЭК — текстом с adilet, а не карточкой docs.eaeunion.org с PDF.
-		page = directory.WithAdiletLinks(page)
-		// Условный выпуск по Правилам РК: ссылка на текст Правил — вместе со справкой, чтобы агент мог
-		// открыть их (open_link, search_in_document) и указать в итоге.
-		page.Text += "\n\nУсловный выпуск (РК):\n" + conditionalReleaseTitle + " — " + conditionalReleaseURL
-		page.Links = append(page.Links, directory.WebLink{URL: conditionalReleaseURL, Text: conditionalReleaseTitle})
-		t.rememberPage(page.URL, page.Text, page.Links)
-		detail := "tnved.info"
-		if page.FromCache {
-			detail = "сохранённая копия"
-		}
-		return toolJSON(map[string]any{"code": code, "url": page.URL, "text": page.Text, "links": page.Links}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: page.URL}
+		return toolJSON(map[string]any{"code": code, "url": page.URL, "text": page.Text, "links": page.Links}), event
 	case "open_link":
 		address, problem := t.allowedURL(args.URL)
 		label := "Ссылка " + shortURL(firstNonEmpty(address, args.URL))
@@ -930,6 +890,39 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		return toolJSON(answer), agentToolEvent{Tool: name, Label: label, Detail: fmt.Sprintf("фрагментов %d из %d", len(fragments), matches), URL: address}
 	}
 	return `{"error":"Нет такого инструмента"}`, agentToolEvent{Tool: name, Label: "Неизвестный инструмент " + name, Failed: true}
+}
+
+var errCodeUnknown = errors.New("code is not in nomenclature")
+
+// goodsHelp — справка tnved.info по коду: решения Коллегии ЕЭК — ссылками на сводные тексты adilet (а не
+// карточкой docs.eaeunion.org с PDF), плюс ссылка на Правила РК об условном выпуске; страница запоминается для
+// цитат. Ошибка — справки нет: errCodeUnknown, directory.ErrGoodsHelpLimit (лимит) или сайт не ответил.
+func (t *agentToolbox) goodsHelp(ctx context.Context, code string) (directory.WebPage, agentToolEvent, error) {
+	const name = "open_goods_help"
+	label := "Справка по товару " + FormatTNVEDCode(code)
+	if items, err := t.data.LookupCodes(ctx, []string{code}); err != nil || len(items) == 0 {
+		return directory.WebPage{}, agentToolEvent{Tool: name, Label: label, Detail: "кода нет в номенклатуре", Failed: true}, errCodeUnknown
+	}
+	page, err := t.data.GoodsHelp(ctx, code)
+	if err == nil && page.Text == "" {
+		err = directory.ErrWebPageUnavailable
+	}
+	if err != nil {
+		detail := "справка tnved.info не открылась"
+		if errors.Is(err, directory.ErrGoodsHelpLimit) {
+			detail = "лимит tnved.info на сегодня исчерпан"
+		}
+		return page, agentToolEvent{Tool: name, Label: label, Detail: detail, URL: page.URL, Failed: true}, err
+	}
+	page = directory.WithAdiletLinks(page)
+	page.Text += "\n\nУсловный выпуск (РК):\n" + conditionalReleaseTitle + " — " + conditionalReleaseURL
+	page.Links = append(page.Links, directory.WebLink{URL: conditionalReleaseURL, Text: conditionalReleaseTitle})
+	t.rememberPage(page.URL, page.Text, page.Links)
+	detail := "tnved.info"
+	if page.FromCache {
+		detail = "сохранённая копия"
+	}
+	return page, agentToolEvent{Tool: name, Label: label, Detail: detail, URL: page.URL}, nil
 }
 
 // Примеры декларирования для модели: групп и примеров в группе — по уровню поиска.
@@ -1191,8 +1184,9 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 	}
 	if t.documentsCode != "" {
 		result, problem := t.finishDocuments(args)
-		if result != nil {
-			problem = t.checkGeneral(ctx, result, problem)
+		if result != nil && problem == "" && t.requireActRead && !t.actRead {
+			problem = "Итог ещё не принят: сначала проверь сам акт по ссылке — search_in_document по коду («" + t.documentsCode[:4] + "», «из " + t.documentsCode[:4] +
+				"»), по виду товара и по словам «примечание», «не распространяется», «за исключением»; сверь позицию, заголовок её раздела и примечания с товаром. Затем вызови finish снова."
 		}
 		return result, problem, nil
 	}
@@ -1326,7 +1320,10 @@ func (t *agentToolbox) finishDocuments(args finishArgs) (*AgentResult, string) {
 		if item.Measure == "" && item.Act == "" {
 			continue
 		}
-		item.Kind = documentKind(document.Kind, item.Measure+" "+item.Act)
+		// Условный выпуск считает программа при сборке (conditionalDocument): запись модели не нужна.
+		if item.Kind = documentKind(document.Kind, item.Measure+" "+item.Act); item.Kind == documentKindConditional {
+			continue
+		}
 		if isUtilFeeMeasure(item.Measure + " " + item.Act) {
 			fees, _ := utilfee.Lookup(t.documentsCode)
 			item.UtilFee = utilFeeObject(fees)

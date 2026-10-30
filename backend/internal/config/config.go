@@ -49,6 +49,9 @@ type Config struct {
 	TNVEDAIEmbedModel string
 	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
 	TNVEDAIEffort string
+	// TNVEDAIDocumentsEffort — уровень размышлений под-агентов «Документов для ввоза» (TNVED_AI_DOCUMENTS_EFFORT);
+	// пусто — как TNVEDAIEffort.
+	TNVEDAIDocumentsEffort string
 	// «Переводчик» (.docx): OpenAI-совместимый API, по умолчанию DeepSeek с ключом DEEPSEEK_API_KEY.
 	TranslatorAIAPIKey  string
 	TranslatorAIBaseURL string
@@ -129,6 +132,7 @@ func Load() (Config, error) {
 		TranslatorAIModel:        stringEnv("TRANSLATOR_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
 		TavilyAPIKey:             strings.TrimSpace(os.Getenv("TAVILY_API_KEY")),
 		TNVEDAIEffort:            strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_EFFORT"))),
+		TNVEDAIDocumentsEffort:   strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_DOCUMENTS_EFFORT"))),
 		TNVEDAIVision:            tnvedVision,
 		TNVEDAIDailyLimit:        tnvedDailyLimit,
 		TNVEDAINamingRule:        strings.TrimSpace(os.Getenv("TNVED_AI_NAMING_RULE")),

@@ -120,27 +120,31 @@ func TestDocumentsHelpLimitFallsBackToGeneralBase(t *testing.T) {
 	}
 }
 
-// Сверка с общей базой: перечень №79 есть, а в ответе его нет — первый итог возвращается агенту, после
-// повтора без него — предупреждение «⚠» в ответе; учтённый перечень (по номеру решения) — без предупреждений.
+// Сверка с общей базой при сборке: перечень №79 есть, а в ответах под-агентов его нет — предупреждение «⚠»
+// в ответе (перед условным выпуском); учтённый перечень (по номеру решения) — без предупреждений.
 func TestDocumentsGeneralCheck(t *testing.T) {
 	toolbox := newAgentToolbox(&fakeAgentData{generalActs: true})
 	toolbox.documentsCode = "6116102000"
-	without := `{"description":"Нужен санэпиднадзор.","documents":[{"kind":"other","measure":"Санэпиднадзор","act":"Решение КТС №299","requirement":"Уточнить контакт с пищей.","applies":"maybe"}]}`
-	result, problem, err := toolbox.finish(context.Background(), without)
-	if err != nil || !strings.Contains(problem, "Сверка с общей базой") || !strings.Contains(problem, testGeneralActURL) {
-		t.Fatalf("first finish: %q %v", problem, err)
+	matches, _, total := toolbox.generalMatches(context.Background(), "6116102000")
+	if len(matches) == 0 || total != 1 {
+		t.Fatalf("general matches: %d in %d", len(matches), total)
 	}
-	result, problem, _ = toolbox.finish(context.Background(), without)
-	last := result.Documents[len(result.Documents)-1]
-	if problem != "" || !strings.HasPrefix(last.Measure, "⚠ Код есть в перечне №79 (ТР ТС 019/2011)") || last.Applies != "maybe" || last.URL != testGeneralActURL {
-		t.Fatalf("second finish: %q %+v", problem, result.Documents)
+	task := documentsTask{label: "№299", title: "Решение КТС №299"}
+	without := []documentsTaskResult{{task: task, result: &AgentResult{Documents: []AgentDocument{{Kind: "other", Measure: "Санэпиднадзор", Act: "Решение КТС №299", Applies: "maybe"}}}}}
+	result := mergeDocuments("6116102000", without, matches, "", nil, nil, total)
+	if len(result.Documents) != 3 {
+		t.Fatalf("documents: %+v", result.Documents)
 	}
-	with := `{"description":"Декларация по ТР ТС 019.","documents":[{"kind":"dc","measure":"Декларация соответствия ТР ТС 019/2011","act":"Решение Коллегии ЕЭК №79","requirement":"Только если перчатки защитные.","applies":"maybe"}]}`
-	fresh := newAgentToolbox(&fakeAgentData{generalActs: true})
-	fresh.documentsCode = "6116102000"
-	result, problem, _ = fresh.finish(context.Background(), with)
-	if problem != "" || len(result.Documents) != 1 {
-		t.Fatalf("covered: %q %+v", problem, result.Documents)
+	// Перечень №79 — ДС «возможно», поэтому и условный выпуск «возможен».
+	warning, conditional := result.Documents[1], result.Documents[2]
+	if !strings.HasPrefix(warning.Measure, "⚠ Код есть в перечне №79 (ТР ТС 019/2011)") || warning.Applies != "maybe" || warning.Kind != documentKindDeclaration || warning.URL != testGeneralActURL ||
+		conditional.Kind != documentKindConditional || conditional.Applies != "maybe" {
+		t.Fatalf("warning and conditional: %+v %+v", warning, conditional)
+	}
+	with := []documentsTaskResult{{task: task, result: &AgentResult{Documents: []AgentDocument{{Kind: "dc", Measure: "Декларация соответствия ТР ТС 019/2011", Act: "Решение Коллегии ЕЭК №79", Applies: "maybe"}}}}}
+	result = mergeDocuments("6116102000", with, matches, "", nil, nil, total)
+	if len(result.Documents) != 2 || result.Documents[1].Kind != documentKindConditional || result.Documents[1].Applies != "maybe" {
+		t.Fatalf("covered: %+v", result.Documents)
 	}
 }
 

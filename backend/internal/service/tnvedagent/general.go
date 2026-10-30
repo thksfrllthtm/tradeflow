@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
@@ -216,8 +217,33 @@ type generalSearch struct {
 	total   int
 }
 
+// generalActsParallel — перечней общей базы читается одновременно: перечень, которого ещё нет в базе, adilet
+// отдаёт до минуты, и в «Документах для ввоза» это ожидание до запуска под-агентов.
+const generalActsParallel = 4
+
 func (t *agentToolbox) readGeneral(ctx context.Context, code string) (matches []actMatch, unread []string, total int) {
 	acts, _ := t.data.GeneralActs(ctx)
+	// Тексты — параллельно и без состояния toolbox (карты не для гонок); дальше всё по порядку из t.docs.
+	pages := make([]directory.WebPage, len(acts))
+	failed := make([]bool, len(acts))
+	var wg sync.WaitGroup
+	slots := make(chan struct{}, generalActsParallel)
+	for index, act := range acts {
+		wg.Add(1)
+		go func(index int, address string) {
+			defer wg.Done()
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			page, err := t.data.WebPage(ctx, address)
+			pages[index], failed[index] = page, err != nil
+		}(index, act.URL)
+	}
+	wg.Wait()
+	for index, act := range acts {
+		if !failed[index] {
+			t.docs[act.URL] = pages[index]
+		}
+	}
 	for _, act := range acts {
 		page, err := t.actText(ctx, act.URL)
 		if err != nil || strings.TrimSpace(page.Text) == "" {
@@ -299,46 +325,30 @@ func missingActs(matches []actMatch, documents []AgentDocument) []actMatch {
 	return missing
 }
 
-// checkGeneral — сверка ответа «Документы для ввоза» с общей базой (программой, без ИИ). Пропущенные
-// перечни — в ответ строкой «⚠ …»; первый раз ещё и агенту на проверку (problem — finish снова, тогда
-// ответ пересобирается и предупреждения остаются только у того, что агент так и не учёл).
-func (t *agentToolbox) checkGeneral(ctx context.Context, result *AgentResult, problem string) string {
-	matches, _, _ := t.generalMatches(ctx, t.documentsCode)
-	missing := missingActs(matches, result.Documents)
-	if len(missing) == 0 {
-		return problem
+// missingActDocument — запись «⚠» о перечне общей базы с кодом, которого нет в ответе под-агентов.
+func missingActDocument(match actMatch) AgentDocument {
+	name := service.TruncateRunes(firstNonEmpty(match.product, match.heading), 150)
+	return AgentDocument{Kind: match.kind,
+		Measure: "⚠ Код есть в перечне " + actShortTitle(match.act.Text) + ", позиция «" + name + "» — проверьте, подходит ли товар",
+		Act:     match.act.Text, URL: match.act.URL, Applies: "maybe", Basis: match.codes, BasisSource: match.act.Text,
+		Requirement: "Агент эту позицию не учёл. Документ по перечню: " + firstNonEmpty(match.document, "—") + "."}
+}
+
+// actMatchRows — позиции перечней для модели.
+func actMatchRows(matches []actMatch) []map[string]any {
+	positions := make([]map[string]any, 0, len(matches))
+	for _, match := range matches {
+		positions = append(positions, map[string]any{"act": match.act.Text, "url": match.act.URL, "kind": match.kind, "item": match.heading,
+			"product": match.product, "codes": match.codes, "document": match.document, "note": match.note, "partial": match.partial})
 	}
-	var lines []string
-	for index, match := range missing {
-		if index < 5 {
-			name := service.TruncateRunes(firstNonEmpty(match.product, match.heading), 150)
-			result.Documents = append(result.Documents, AgentDocument{Kind: match.kind,
-				Measure: "⚠ Код есть в перечне " + actShortTitle(match.act.Text) + ", позиция «" + name + "» — проверьте, подходит ли товар",
-				Act:     match.act.Text, URL: match.act.URL, Applies: "maybe", Basis: match.codes, BasisSource: match.act.Text,
-				Requirement: "Агент эту позицию не учёл. Документ по перечню: " + firstNonEmpty(match.document, "—") + "."})
-		}
-		if index < 8 {
-			lines = append(lines, fmt.Sprintf("%d) %s — позиция «%s», коды: %s; документ: %s; url: %s", index+1, match.act.Text,
-				service.TruncateRunes(firstNonEmpty(match.product, match.heading), 200), match.codes, firstNonEmpty(match.document, "—"), match.act.URL))
-		}
-	}
-	if t.generalAsked {
-		return problem
-	}
-	t.generalAsked = true
-	return strings.TrimSpace(problem + " Сверка с общей базой: код есть в перечнях, которых нет в documents:\n" + strings.Join(lines, "\n") +
-		"\nЭти перечни открыты (search_in_document по url). Реши по товару, относится ли позиция, и добавь по записи на каждый перечень: applies yes, maybe или no, basis — строка позиции, url — адрес перечня. Вызови finish снова.")
+	return positions
 }
 
 // generalAnswer — open_goods_help без справки: находки общей базы для агента.
 func (t *agentToolbox) generalAnswer(ctx context.Context, code, label, reason, helpURL string) (string, agentToolEvent) {
 	matches, unread, total := t.generalMatches(ctx, code)
 	t.rememberPage(conditionalReleaseURL, "", []directory.WebLink{{URL: conditionalReleaseURL, Text: conditionalReleaseTitle}})
-	positions := make([]map[string]any, 0, len(matches))
-	for _, match := range matches {
-		positions = append(positions, map[string]any{"act": match.act.Text, "url": match.act.URL, "kind": match.kind, "item": match.heading,
-			"product": match.product, "codes": match.codes, "document": match.document, "note": match.note, "partial": match.partial})
-	}
+	positions := actMatchRows(matches)
 	answer := map[string]any{"code": code, "error": reason, "general": positions, "actsRead": total,
 		"links": []directory.WebLink{{URL: conditionalReleaseURL, Text: conditionalReleaseTitle}},
 		"hint": "Справки tnved.info нет — ниже общая база: позиции перечней СС/ДС и раздела II Решения КТС №299, где встречается код. " +

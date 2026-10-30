@@ -107,9 +107,22 @@ type AgentModelClient struct {
 const agentModelTimeout = 3 * time.Minute
 
 // Сбой провайдера (5xx, «перегружен», обрыв связи) — запрос повторяется: за подбор их десятки, и один
-// сбой не должен обрывать весь подбор. Тайм-аут и лимит запросов не повторяются (минуты ожидания,
-// дневной лимит Gemini).
+// сбой не должен обрывать весь подбор. Тайм-аут не повторяется (минуты ожидания).
 const agentModelAttempts = 3
+
+// retryable — запрос стоит повторить: сбой провайдера, а также ограничение запросов (429) — у DeepSeek оно
+// кратковременное (под-агенты «Документов для ввоза» идут параллельно); у Gemini 429 — дневной лимит
+// фото, ждать бессмысленно.
+func retryable(err error, baseURL string) bool {
+	return errors.Is(err, ai.ErrAIUnavailable) || (errors.Is(err, ai.ErrAIRateLimited) && !isGemini(baseURL))
+}
+
+// WithEffort — тот же клиент с другим уровнем размышлений (под-агенты «Документов для ввоза»).
+func (c *AgentModelClient) WithEffort(effort string) *AgentModelClient {
+	clone := *c
+	clone.config.Effort = strings.TrimSpace(effort)
+	return &clone
+}
 
 func NewAgentModelClient(config AgentModelConfig) *AgentModelClient {
 	config.APIKey = strings.TrimSpace(config.APIKey)
@@ -234,7 +247,7 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 	}
 	for attempt := 1; ; attempt++ {
 		reply, err := c.post(ctx, body)
-		if !errors.Is(err, ai.ErrAIUnavailable) || attempt == agentModelAttempts {
+		if !retryable(err, c.config.BaseURL) || attempt == agentModelAttempts {
 			return reply, err
 		}
 		select {

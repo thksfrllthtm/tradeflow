@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { documentBadge } from './DocumentsAnswer'
+import { documentBadge, documentNotes } from './DocumentsAnswer'
+
+describe('documentNotes', () => {
+  it('по строке на акт; старый ответ одной строкой; пусто — нет', () => {
+    expect(documentNotes('[№299] Контакт с пищей.\n[ТР ТС 019/2011] Только защитные.\n')).toEqual(['[№299] Контакт с пищей.', '[ТР ТС 019/2011] Только защитные.'])
+    expect(documentNotes('Одно замечание.')).toEqual(['Одно замечание.'])
+    expect(documentNotes(undefined)).toEqual([])
+  })
+})
 
 describe('documentBadge', () => {
   it('коротко: вид документа или санэпиднадзор', () => {

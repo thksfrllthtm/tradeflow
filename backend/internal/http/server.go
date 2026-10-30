@@ -90,6 +90,9 @@ func newAgentService(database *repository.Repository, decisions *decisions.CodeD
 	agent := tnvedagent.NewTNVEDAgentService(database, model, vision, decisions, tnvedagent.AgentSettings{
 		DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true,
 	})
+	if cfg.TNVEDAIDocumentsEffort != "" {
+		agent.SetDocumentsModel(model.WithEffort(cfg.TNVEDAIDocumentsEffort))
+	}
 	// Поиск по смыслу в базе решений — той же моделью эмбеддингов, что у агента.
 	decisions.SetEmbedder(agent.Embedder())
 	return agent

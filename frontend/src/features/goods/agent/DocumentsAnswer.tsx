@@ -36,11 +36,18 @@ export function scrollToDocuments(container: HTMLElement | null, code: string) {
   return true
 }
 
-// Ответ «Документы для ввоза»: резюме, меры (сначала нужные, потом «возможно», неподходящие — свёрнуты).
+// Замечания агентов — по строке на акт («[№299] …»); у старых ответов одна строка.
+export function documentNotes(notes: string | undefined) {
+  return (notes ?? '').split('\n').map((line) => line.trim()).filter(Boolean)
+}
+
+// Ответ «Документы для ввоза»: резюме, меры «нужно» и «возможно» раскрыты (почему и наименование — сразу,
+// цитата — по клику), неподходящие и замечания агентов — свёрнуты.
 export function DocumentsAnswer({ result }: { result: AgentResult }) {
   const documents = result.documents ?? []
   const shown = [...documents.filter((item) => item.applies === 'yes'), ...documents.filter((item) => item.applies === 'maybe')]
   const rejected = documents.filter((item) => item.applies === 'no')
+  const notes = documentNotes(result.notes)
   return <section className="dl" data-documents={result.documentsCode}>
     <header className="dl-head">
       <h3>Документы для ввоза</h3>
@@ -49,14 +56,17 @@ export function DocumentsAnswer({ result }: { result: AgentResult }) {
     {result.description && <p className="dl-desc"><LinkText text={result.description} /></p>}
     {shown.length > 0 && <>
       <p className="dl-title">Документы и меры</p>
-      <ul className="dl-list">{shown.map((item, index) => <DocumentRow key={index} item={item} />)}</ul>
+      <ul className="dl-list">{shown.map((item, index) => <DocumentRow key={index} item={item} open />)}</ul>
     </>}
     {documents.length === 0 && <p className="dl-empty">Мер для ввоза агент не нашёл — проверьте справку по ссылке в ходе поиска.</p>}
     {rejected.length > 0 && <details className="dl-more">
       <summary>Не относятся к товару ({rejected.length})</summary>
       <ul className="dl-list">{rejected.map((item, index) => <DocumentRow key={index} item={item} />)}</ul>
     </details>}
-    {result.notes && <p className="dl-note"><LinkText text={result.notes} /></p>}
+    {notes.length > 0 && <details className="dl-more">
+      <summary>Замечания агентов ({notes.length})</summary>
+      <ul className="dl-notes">{notes.map((line, index) => <li key={index}><LinkText text={line} /></li>)}</ul>
+    </details>}
     {(result.linksRemoved ?? 0) > 0 && <p className="dl-notice">Программа убрала ссылки, которых не было на открытых страницах: {result.linksRemoved}.</p>}
     {result.quotesRemoved > 0 && <p className="dl-notice">Программа убрала основания-цитаты, которых нет в справке и актах: {result.quotesRemoved}.</p>}
     <p className="dl-disclaimer">Подсказка по справке tnved.info, перечням и актам — перед оформлением сверьте с актом.</p>
@@ -75,8 +85,12 @@ export function documentBadge(item: Pick<AgentDocument, 'kind' | 'measure' | 'ut
   return ''
 }
 
-// Мера свёрнута до заголовка и акта; по нажатию — пояснение, цитата-основание и подсказка по наименованию.
-function DocumentRow({ item }: { item: AgentDocument }) {
+// Подпись к пояснению меры: у «нужно» — почему, у «возможно» — что уточнить.
+const requirementLabels: Record<AgentDocument['applies'], string> = { yes: 'Почему', maybe: 'Что уточнить', no: 'Почему нет' }
+
+// Мера «нужно» или «возможно» (open) раскрыта: сразу видны почему и подсказка по наименованию, цитата-основание
+// — по клику. Неподходящая — свёрнута до заголовка и акта; по нажатию — пояснение и цитата.
+function DocumentRow({ item, open = false }: { item: AgentDocument; open?: boolean }) {
   const head = <>
     <div className="dl-top">
       <b>{documentBadge(item) && <span className="dl-kind">{documentBadge(item)}</span>}{measureTitle(item.measure || item.act)}</b>
@@ -87,12 +101,21 @@ function DocumentRow({ item }: { item: AgentDocument }) {
       : <span className="dl-act">{item.act}</span>)}
     {!item.measure && item.url && <a className="dl-act" href={item.url} target="_blank" rel="noreferrer">Открыть акт ↗</a>}
   </>
+  const basis = item.basis && <blockquote className="dl-basis">{item.basis}<cite>основание: {item.basisSource || 'справка или акт'}</cite></blockquote>
+  if (open) {
+    return <li className={`dl-item dl-open ${item.applies}`}>
+      {head}
+      {item.requirement && <p className="dl-req"><b>{requirementLabels[item.applies]}:</b> <LinkText text={item.requirement} /></p>}
+      {item.nameHint && <p className="dl-name"><b>Наименование:</b> <LinkText text={item.nameHint} /></p>}
+      {basis && <details className="dl-quote"><summary>Цитата из справки или акта</summary>{basis}</details>}
+    </li>
+  }
   if (!item.requirement && !item.basis && !item.nameHint) return <li className={`dl-item ${item.applies}`}>{head}</li>
   return <li>
     <details className={`dl-item ${item.applies}`}>
       <summary>{head}</summary>
       {item.requirement && <p className="dl-req"><LinkText text={item.requirement} /></p>}
-      {item.basis && <blockquote className="dl-basis">{item.basis}<cite>основание: {item.basisSource || 'справка или акт'}</cite></blockquote>}
+      {basis}
       {item.nameHint && <p className="dl-name"><b>Наименование:</b> <LinkText text={item.nameHint} /></p>}
     </details>
   </li>

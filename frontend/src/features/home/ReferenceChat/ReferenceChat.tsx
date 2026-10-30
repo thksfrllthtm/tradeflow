@@ -564,7 +564,7 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments, stopping, on
       }
     })}
     {session.status === 'searching' && <p className="rc-typing"><span /><span /><span /> ищу в базе решений…</p>}
-    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агент разбирает справку и перечни…' : 'агент ищет код…'}
+    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агенты разбирают справку и перечни параллельно…' : 'агент ищет код…'}
       <button type="button" className="rc-stop" onClick={onStop} disabled={stopping}>Остановить</button></p>}
   </>
 }

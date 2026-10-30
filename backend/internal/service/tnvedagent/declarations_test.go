@@ -13,7 +13,9 @@ import (
 // код с описанием (на «перчатки резиновые» не отвечает). Внутри позиции — коды, внутри кода — 30 описаний
 // (только ifcg.ru).
 func (d *fakeAgentData) Declarations(_ context.Context, query, within string) ([]directory.DeclarationSource, bool, error) {
+	d.mu.Lock()
 	d.declarations = append(d.declarations, query+"|"+within)
+	d.mu.Unlock()
 	if d.declarationsDown {
 		return nil, false, directory.ErrDeclarationsUnavailable
 	}
