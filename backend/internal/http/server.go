@@ -203,6 +203,9 @@ func (s *Server) Router() *gin.Engine {
 	goods.POST("/calculate", s.calculateGoods)
 	goods.POST("/export", s.exportGoods)
 
+	// Сверка инвойса с китайской экспортной декларацией (без сохранения).
+	router.POST("/api/export-check", s.requireUser, s.requireNotTranslator, s.exportCheck)
+
 	// Сметы товаров: список, карточка и сохранённый черновик с результатом.
 	goodsEstimates := router.Group("/api/goods-estimates")
 	goodsEstimates.Use(s.requireUser, s.requireNotTranslator)

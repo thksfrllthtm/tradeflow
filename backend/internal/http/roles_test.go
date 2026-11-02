@@ -91,6 +91,7 @@ func TestEmployeesAndDirectoryChangesRequireSession(t *testing.T) {
 		{http.MethodPost, "/api/tnved-nomenclature/lookup"},
 		{http.MethodPost, "/api/tnved-nomenclature/import"},
 		{http.MethodPost, "/api/util-fee"},
+		{http.MethodPost, "/api/export-check"},
 		{http.MethodPost, "/api/tnved-kz-rates/excel"},
 		{http.MethodPost, "/api/tnved-kz-rates/import-pdf"},
 		{http.MethodPost, "/api/tnved-kz-rates/import"},

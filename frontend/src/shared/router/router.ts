@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /util-fee                — калькулятор утильсбора
+//   /export-check            — сверка инвойса с экспортной декларацией КНР
 //   /translator[/id]         — перевод Word-документов: список или документ
 //   /login, /register        — вход и регистрация
 type Route =
@@ -21,6 +22,7 @@ type Route =
   | { page: 'employees' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'utilFee' }
+  | { page: 'exportCheck' }
   | { page: 'translator'; documentId: number | null }
   | { page: 'login' }
   | { page: 'register' }
@@ -35,6 +37,7 @@ export const paths = {
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
   utilFee: '/util-fee',
+  exportCheck: '/export-check',
   translator: (id?: number | null) => id ? `/translator/${id}` : '/translator',
   login: '/login',
   register: '/register',
@@ -53,6 +56,7 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }
   if (path === paths.utilFee) return { page: 'utilFee' }
+  if (path === paths.exportCheck) return { page: 'exportCheck' }
   const translatorDocument = /^\/translator(?:\/(\d+))?$/.exec(path)
   if (translatorDocument) return { page: 'translator', documentId: translatorDocument[1] ? Number(translatorDocument[1]) : null }
   if (path === paths.login) return { page: 'login' }

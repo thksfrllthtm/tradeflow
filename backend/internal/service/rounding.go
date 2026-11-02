@@ -44,6 +44,12 @@ func WeightKGText(value decimal.Decimal) string {
 	return rounded.StringFixed(3)
 }
 
+// RoundUnitPrice — цена за единицу: до четырёх знаков, как печатает её китайская экспортная
+// декларация («0.1700»); нужна только для сверки документов, в расчёте не участвует.
+func RoundUnitPrice(value decimal.Decimal) decimal.Decimal {
+	return value.Round(4)
+}
+
 // RoundExtraUnits — количество в дополнительных единицах: до двух знаков, меньше 0,01 — до шести.
 func RoundExtraUnits(value decimal.Decimal) decimal.Decimal {
 	if !value.IsZero() && value.Abs().LessThan(minExtraUnits) {

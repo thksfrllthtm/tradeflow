@@ -19,6 +19,7 @@ const (
 	testHelpURL = "https://tnved.info/Goodshelp/?Code=6116102000&date=05.10.2026&dir=1"
 	testActURL  = "https://adilet.zan.kz/rus/docs/H10T0000299"
 	testPDFURL  = "https://docs.eaeunion.org/upload/iblock/a/reshenie.pdf"
+	testListURL = "https://adilet.zan.kz/rus/docs/H18EK000006"
 )
 
 func (d *fakeAgentData) GoodsHelp(_ context.Context, code string) (directory.WebPage, error) {
@@ -46,6 +47,21 @@ func testActText() string {
 	return strings.Join(lines, "\n")
 }
 
+// testListText — перечень к техрегламенту: позиция с кодом «из 8467» под заголовком пункта, с документом и
+// оговоркой, примечание в конце; между ними — сотни строк других позиций.
+func testListText() string {
+	lines := []string{"Перечень продукции, в отношении которой подача таможенной декларации сопровождается представлением документа об оценке соответствия требованиям ТР ТС 010/2011"}
+	for index := 1; index <= 300; index++ {
+		lines = append(lines, fmt.Sprintf("%d. Оборудование для работы в особых средах, вид %d", index, index), "станки", "8456 10 000 0", "сертификат соответствия")
+	}
+	lines = append(lines, "5. Средства малой механизации садово-огородного и лесохозяйственного применения механизированные, в том числе электрические",
+		"триммеры, газонокосилки", "из 8467", "сертификат соответствия", "кроме игрушек")
+	for index := 301; index <= 600; index++ {
+		lines = append(lines, fmt.Sprintf("%d. Оборудование для работы в особых средах, вид %d", index, index), "станки", "8456 10 000 0", "сертификат соответствия")
+	}
+	return strings.Join(append(lines, "Примечание 2. Настоящий перечень не распространяется на оборудование, бывшее в употреблении."), "\n")
+}
+
 func (d *fakeAgentData) WebPage(_ context.Context, url string) (directory.WebPage, error) {
 	d.mu.Lock()
 	d.webOpened = append(d.webOpened, url)
@@ -62,6 +78,8 @@ func (d *fakeAgentData) WebPage(_ context.Context, url string) (directory.WebPag
 		return directory.WebPage{URL: url, Title: "О применении санитарных мер", Text: testActText(), Links: []directory.WebLink{{URL: "https://adilet.zan.kz/rus/docs/H10T0000317", Text: "Решение №317"}}}, nil
 	case testPDFURL:
 		return directory.WebPage{URL: url}, directory.ErrWebPageFile
+	case testListURL:
+		return directory.WebPage{URL: url, Title: "Перечень к ТР ТС 010/2011", Text: testListText(), Links: []directory.WebLink{{URL: "https://adilet.zan.kz/rus/docs/H18EK000006", Text: "Решение №6"}}}, nil
 	case conditionalReleaseURL:
 		return directory.WebPage{URL: url, Title: "Правила", Text: "Глава 2\n4. " + conditionalReleaseQuote + ", в отношении которых соблюдение запретов и ограничений подтверждается после выпуска товаров (условный выпуск)."}, nil
 	case testMakerURL:
@@ -284,11 +302,17 @@ func TestDocumentsRunParallel(t *testing.T) {
 	if names := toolNames(model.tools); names != "finish,open_link,search_in_document" {
 		t.Fatalf("sub-agent tools: %s", names)
 	}
-	// Под-агент видит товар, описание фото, свой акт и позиции перечня, найденные программой.
+	// Под-агент видит товар, описание фото, свой акт и позиции перечня, найденные программой; акт-PDF
+	// программа прочитать не смогла — так и сказано.
 	first, _ := model.seen["№79"][1].Content.(string)
 	if !strings.Contains(first, "Перчатки рабочие") || !strings.Contains(first, "резиновым покрытием") || !strings.Contains(first, "Решение Коллегии ЕЭК №79") ||
-		strings.Contains(first, "№299") || !strings.Contains(first, `"codes":"из 61, из 62`) {
+		strings.Contains(first, "№299") || !strings.Contains(first, `"codes":"из 61, из 62`) || !strings.Contains(first, "не смогла: По ссылке файл") {
 		t.Fatalf("task message: %s", first)
+	}
+	// Акт №299 программа прочитала заранее: фрагмент по словам товара — та самая строка перечня.
+	sanitary, _ := model.seen["№299"][1].Content.(string)
+	if !strings.Contains(sanitary, "Программа заранее прочитала акт") || !strings.Contains(sanitary, "перчатки трикотажные с покрытием") {
+		t.Fatalf("task message with preview: %s", sanitary)
 	}
 	if system, _ := model.seen["№79"][0].Content.(string); model.seen["№79"][0].Role != "system" || !strings.Contains(system, "ОДИН акт") {
 		t.Fatalf("system prompt: %q", system)
@@ -343,7 +367,8 @@ func TestDocumentsRunParallel(t *testing.T) {
 		labels = append(labels, event.content.(agentToolEvent).Label)
 	}
 	joined := strings.Join(labels, "|")
-	if !strings.HasPrefix(joined, "Справка по товару 6116 10 200 0|Перечни общей базы|") || !strings.Contains(joined, "[№299] Поиск в документе") || !strings.Contains(joined, "[ТР ТС 019/2011] Ссылка") {
+	if !strings.HasPrefix(joined, "Справка по товару 6116 10 200 0|Перечни общей базы|") || !strings.Contains(joined, "[№299] Поиск в документе") || !strings.Contains(joined, "[ТР ТС 019/2011] Ссылка") ||
+		!strings.Contains(joined, "[№299] Акт прочитан программой") || !strings.Contains(joined, "[ТР ТС 019/2011] Акт не прочитан программой") {
 		t.Fatalf("events: %s", joined)
 	}
 	if len(*usages) != 4 {
@@ -458,26 +483,93 @@ func TestConditionalDocument(t *testing.T) {
 }
 
 // Акт со ссылкой под-агент обязан прочитать сам: итог без open_link или search_in_document возвращается ему один
-// раз; у акта без ссылки требования нет.
+// раз. Акт-файл (PDF), который программа прочитать не смогла, под-агент тоже не прочитает — итог принимается
+// сразу; у акта без ссылки требования нет.
 func TestDocumentsActMustBeRead(t *testing.T) {
 	finish := call("f", "finish", map[string]any{"description": "ДС.", "documents": []map[string]string{
 		{"kind": "dc", "measure": "Декларация соответствия ТР ТС 019/2011", "act": "Решение Коллегии ЕЭК №79", "requirement": "Нужна.", "applies": "maybe"}}})
 	model := &actModel{scripts: map[string][]agentReply{
-		"№79":  {{ToolCalls: []agentToolCall{finish}}, {ToolCalls: []agentToolCall{finish}}},
-		"№299": {{ToolCalls: []agentToolCall{call("s", "search_in_document", map[string]string{"url": testActURL, "query": "перчатки"})}}, {ToolCalls: []agentToolCall{finish}}},
+		"№299": {{ToolCalls: []agentToolCall{finish}}, {ToolCalls: []agentToolCall{finish}}},
+		"№79":  {{ToolCalls: []agentToolCall{finish}}},
 	}}
 	run, _, usages := newDocumentsRun(model, &fakeAgentData{})
 	outcome := run.execute(context.Background())
-	if outcome.err != nil || outcome.result == nil || outcome.partial || len(*usages) != 4 {
+	if outcome.err != nil || outcome.result == nil || outcome.partial || len(*usages) != 3 {
 		t.Fatalf("outcome %+v, steps %d", outcome, len(*usages))
 	}
-	if problem := toolContent(t, model.seen["№79"], "f"); !strings.Contains(fmt.Sprint(problem["error"]), "проверь сам акт") {
+	// У №79 в сценарии один ответ: отклонённый итог вызвал бы модель снова и уронил бы под-агента (partial).
+	if problem := toolContent(t, model.seen["№299"], "f"); !strings.Contains(fmt.Sprint(problem["error"]), "проверь сам акт") {
 		t.Fatalf("finish without reading the act accepted: %v", problem)
 	}
 	toolbox := newAgentToolbox(&fakeAgentData{})
 	toolbox.documentsCode = "6116102000"
 	if _, problem, _ := toolbox.finish(context.Background(), `{"description":"x","documents":[{"kind":"other","measure":"Санэпиднадзор","act":"№299","requirement":"-","applies":"no"}]}`); problem != "" {
 		t.Fatalf("act without a link must not require reading: %q", problem)
+	}
+}
+
+// Программа читает акт под-агента заранее: позиция с кодом — разбором перечня (пункт, документ, оговорка),
+// фрагменты — по коду и примечаниям, без повторов окрестностей; весь акт — источник цитат; уже известная
+// из общей базы позиция не повторяется; всё это — в задании под-агенту.
+func TestReadAct(t *testing.T) {
+	run := &documentsRun{data: &fakeAgentData{}, code: "8467298000", codeName: "машины для подрезки живой изгороди и стрижки газонов",
+		product: "Триммер садовый электрический для стрижки газонов"}
+	toolbox := newAgentToolbox(run.data)
+	toolbox.documentsCode = run.code
+	task := documentsTask{label: "ТР ТС 010/2011", title: "Решение Коллегии ЕЭК №6 (ТР ТС 010/2011)", url: testListURL}
+	preview := run.readAct(context.Background(), toolbox, task)
+	if preview.err != nil || preview.chars == 0 || len(preview.positions) != 1 {
+		t.Fatalf("preview: %+v", preview)
+	}
+	position := preview.positions[0]
+	if !strings.HasPrefix(position.heading, "5. Средства малой механизации") || position.codes != "из 8467" || !position.partial ||
+		position.product != "триммеры, газонокосилки" || position.document != "сертификат соответствия" || position.note != "кроме игрушек" {
+		t.Fatalf("position: %+v", position)
+	}
+	// Пункт, позиция, документ и оговорка — одним фрагментом (окрестности склеены), примечание — отдельным.
+	joined := strings.Join(preview.fragments, "\n===\n")
+	if len(preview.fragments) != 2 || strings.Count(joined, "из 8467") != 1 ||
+		!strings.Contains(preview.fragments[0], "5. Средства малой механизации садово-огородного и лесохозяйственного применения механизированные, в том числе электрические\nтриммеры, газонокосилки\nиз 8467\nсертификат соответствия\nкроме игрушек") ||
+		!strings.Contains(preview.fragments[1], "Примечание 2. Настоящий перечень не распространяется") {
+		t.Fatalf("fragments (%d): %s", len(preview.fragments), joined)
+	}
+	if origin := toolbox.quoteOrigin("перечень не распространяется на оборудование, бывшее в употреблении", testListURL, "ТР ТС 010/2011"); origin != "ТР ТС 010/2011" {
+		t.Fatalf("quote from the act not accepted: %q", origin)
+	}
+	if !toolbox.links["https://adilet.zan.kz/rus/docs/H18EK000006"] {
+		t.Fatal("links of the act are not allowed")
+	}
+	message := run.taskMessage(task, preview)
+	if !strings.Contains(message, "Программа заранее прочитала акт по ссылке") || !strings.Contains(message, `"codes":"из 8467"`) ||
+		!strings.Contains(message, "Примечание 2") || !strings.Contains(message, "Это начало, а не замена проверки") {
+		t.Fatalf("task message: %s", message)
+	}
+	// Та же позиция уже найдена в общей базе — второй раз не даётся.
+	known := documentsTask{title: task.title, url: task.url, positions: []actMatch{{codes: "из 8467", product: "триммеры, газонокосилки"}}}
+	if again := run.readAct(context.Background(), newAgentToolbox(run.data), known); len(again.positions) != 0 || len(again.fragments) == 0 {
+		t.Fatalf("known position repeated: %+v", again)
+	}
+	// Акт-файл: не прочитан, под-агенту сказано не открывать его снова.
+	pdf := run.readAct(context.Background(), newAgentToolbox(run.data), documentsTask{title: "№79", url: testPDFURL})
+	if pdf.err == nil || !pdf.unreadable || pdf.chars != 0 {
+		t.Fatalf("pdf preview: %+v", pdf)
+	}
+	if message := run.taskMessage(documentsTask{title: "№79", url: testPDFURL}, pdf); !strings.Contains(message, "не смогла: По ссылке файл") || !strings.Contains(message, "Открывать его снова не нужно") {
+		t.Fatalf("pdf task message: %s", message)
+	}
+	if message := run.taskMessage(documentsTask{title: "Остальные акты"}, run.readAct(context.Background(), newAgentToolbox(run.data), documentsTask{})); strings.Contains(message, "Программа заранее") {
+		t.Fatalf("act without a link: %s", message)
+	}
+}
+
+// Основы для поиска по акту: наименование кода первым, только буквы, слова от четырёх, без повторов основ
+// («машины» и «машина» — одна), с лимитом.
+func TestProductStems(t *testing.T) {
+	if stems := strings.Join(productStems("машины для подрезки", "Посудомоечная машина (встраиваемая) 220В, бытовая, для подрезки"), " "); stems != "маши подр посудомое встраива бытов" {
+		t.Fatalf("stems: %q", stems)
+	}
+	if stems := productStems(strings.Repeat("слово ", 5), "один два три четыре пять шесть семь восемь девять десять одиннадцать двенадцать тринадцать четырнадцать пятнадцать шестнадцать семнадцать восемнадцать"); len(stems) != documentsPreviewWords {
+		t.Fatalf("limit: %q", stems)
 	}
 }
 

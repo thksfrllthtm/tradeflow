@@ -86,17 +86,21 @@ func (r RKNumber) Int() int {
 	return 0
 }
 
+// Float64 — значение RK любого вида (MS-XLS 2.5.217): бит 0 — число хранится умноженным на 100,
+// бит 1 — в старших 30 битах целое, иначе старшие 30 бит IEEE double. Раньше для целого ×100
+// (так Excel хранит, например, 11568.42 = 1156842 / 100) возвращался 0.
 func (r RKNumber) Float64() float64 {
 	val := int32(r) >> 2
-	v2 := math.Float64frombits(uint64(val) << 34)
-
-	if (r&1) == 0 && (r&2) == 0 {
-		return v2
+	var value float64
+	if (r & 2) != 0 {
+		value = float64(val)
+	} else {
+		value = math.Float64frombits(uint64(val) << 34)
 	}
-	if (r&1) != 0 && (r&2) == 0 {
-		return v2 / 100.0
+	if (r & 1) != 0 {
+		return value / 100.0
 	}
-	return 0.0
+	return value
 }
 
 func (r RKNumber) String() string {

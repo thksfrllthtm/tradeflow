@@ -20,6 +20,7 @@ const icon = { width: 20, height: 20, viewBox: '0 0 20 20', fill: 'none', stroke
 const PlusIcon = () => <svg {...icon}><path d="M10 4.5v11M4.5 10h11" /></svg>
 const CodesIcon = () => <svg {...icon}><rect x="3.5" y="3" width="13" height="14" rx="2" /><path d="M7 7h6M7 10h6M7 13h3.5" /></svg>
 const UtilFeeIcon = () => <svg {...icon}><rect x="4.5" y="3" width="11" height="14" rx="2" /><path d="M7.5 6.5h5M7.5 10h1M11.5 10h1M7.5 13.5h1M11.5 13.5h1" /></svg>
+const CheckIcon = () => <svg {...icon}><path d="M4 10.5l4 4 8-9" /><path d="M3.5 4h5M3.5 7h3" /></svg>
 const ArrowIcon = () => <svg {...icon} width={16} height={16}><path d="M7 5l5 5-5 5" /></svg>
 
 
@@ -78,6 +79,9 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
               <Link className="home-action" href={paths.utilFee} title="Расчёт утильсбора за товар или упаковку">
                 <ActionBody icon={<UtilFeeIcon />} title="Утильсбор" text="Расчёт утильсбора за товар или упаковку" />
               </Link>
+              {estimator && <Link className="home-action" href={paths.exportCheck} title="Сравнить инвойс с экспортной декларацией из Китая: итоги, реквизиты и каждая строка">
+                <ActionBody icon={<CheckIcon />} title="Сверка экспортной" text="Инвойс против экспортной декларации КНР" />
+              </Link>}
             </div>
 
             {admin && decisionCount > 0 && <Link className="home-notice" href={`${paths.decisions}?status=pending`}>

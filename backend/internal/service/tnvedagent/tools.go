@@ -562,6 +562,14 @@ func (t *agentToolbox) documentText(ctx context.Context, address string) (direct
 // searchDocument — абзацы с наибольшим числом слов запроса (по основе слова) с соседними абзацами,
 // в порядке документа; matches — сколько всего абзацев нашлось.
 func searchDocument(text, query string) (fragments []string, matches int) {
+	stems := queryStems(query)
+	lines := strings.Split(text, "\n")
+	chosen, matches := documentHits(lines, stems, agentSearchFragments)
+	return fragmentsAround(lines, chosen, stems), matches
+}
+
+// queryStems — основы слов запроса (от двух знаков).
+func queryStems(query string) []string {
 	stems := []string{}
 	for _, word := range strings.Fields(strings.ToLower(query)) {
 		word = strings.TrimFunc(word, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
@@ -569,9 +577,22 @@ func searchDocument(text, query string) (fragments []string, matches int) {
 			stems = append(stems, repository.SearchStem(word))
 		}
 	}
-	lines := strings.Split(text, "\n")
-	type hit struct{ line, score int }
-	hits := []hit{}
+	return stems
+}
+
+// documentHits — до limit строк с наибольшим числом основ, не из окрестности друг друга, в порядке
+// документа; matches — сколько всего строк содержит хоть одну основу.
+func documentHits(lines []string, stems []string, limit int) (chosen []int, matches int) {
+	hits := scoreLines(lines, stems)
+	return pickHits(hits, limit), len(hits)
+}
+
+// documentHit — строка документа и сколько основ запроса в ней.
+type documentHit struct{ line, score int }
+
+// scoreLines — строки хотя бы с одной основой: сильнейшие первыми, при равенстве — по порядку документа.
+func scoreLines(lines []string, stems []string) []documentHit {
+	hits := []documentHit{}
 	for index, line := range lines {
 		lower := strings.ToLower(line)
 		score := 0
@@ -581,39 +602,62 @@ func searchDocument(text, query string) (fragments []string, matches int) {
 			}
 		}
 		if score > 0 {
-			hits = append(hits, hit{index, score})
+			hits = append(hits, documentHit{index, score})
 		}
 	}
 	sort.SliceStable(hits, func(a, b int) bool { return hits[a].score > hits[b].score })
+	return hits
+}
+
+// pickHits — до limit строк не из окрестности друг друга, по возрастанию.
+func pickHits(hits []documentHit, limit int) []int {
 	chosen := []int{}
 	for _, candidate := range hits {
-		near := false
-		for _, line := range chosen {
-			if candidate.line >= line-1 && candidate.line <= line+3 {
-				near = true
-				break
-			}
-		}
-		if !near {
+		if !nearChosen(chosen, candidate.line) {
 			chosen = append(chosen, candidate.line)
 		}
-		if len(chosen) == agentSearchFragments {
+		if len(chosen) == limit {
 			break
 		}
 	}
 	sort.Ints(chosen)
+	return chosen
+}
+
+// nearChosen — строка попадает в окрестность уже выбранной (та же, что показывает fragmentAt).
+func nearChosen(chosen []int, line int) bool {
+	for _, picked := range chosen {
+		if line >= picked-1 && line <= picked+3 {
+			return true
+		}
+	}
+	return false
+}
+
+// fragmentsAround — найденные строки (по возрастанию) с одной соседней выше и двумя ниже; найденная
+// обрезана вокруг первой основы. Пересекающиеся окрестности — один фрагмент, а не повтор строк.
+func fragmentsAround(lines []string, chosen []int, stems []string) []string {
+	picked := map[int]bool{}
 	for _, line := range chosen {
+		picked[line] = true
+	}
+	fragments := []string{}
+	for index := 0; index < len(chosen); {
+		start, end := max(0, chosen[index]-1), min(len(lines), chosen[index]+3)
+		for index++; index < len(chosen) && chosen[index]-1 < end; index++ {
+			end = min(len(lines), chosen[index]+3)
+		}
 		parts := []string{}
-		for index := max(0, line-1); index < min(len(lines), line+3); index++ {
-			if index == line {
-				parts = append(parts, aroundMatch(lines[index], stems, agentFragmentRunes/2))
+		for at := start; at < end; at++ {
+			if picked[at] {
+				parts = append(parts, aroundMatch(lines[at], stems, agentFragmentRunes/2))
 			} else {
-				parts = append(parts, service.TruncateRunes(lines[index], agentFragmentRunes/6))
+				parts = append(parts, service.TruncateRunes(lines[at], agentFragmentRunes/6))
 			}
 		}
 		fragments = append(fragments, strings.Join(parts, "\n"))
 	}
-	return fragments, len(hits)
+	return fragments
 }
 
 // aroundMatch — длинный абзац (строка таблицы перечня) обрезается вокруг первого слова запроса.

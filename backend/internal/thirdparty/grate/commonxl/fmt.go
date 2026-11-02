@@ -2,6 +2,7 @@ package commonxl
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -71,8 +72,10 @@ func identFunc(x *Formatter, v interface{}) string {
 		if len(s) <= 11 || (len(s) == 12 && x < 0) {
 			return s
 		}
-		s = strconv.FormatFloat(x, 'g', 6, 64)
-		if len(s) <= 11 {
+		// East Trans Logistic: формат General в Excel показывает до 11 значащих цифр; раньше здесь
+		// было 6, и 12345678.912 превращалось в 1.23457e+07, а суммы и веса теряли копейки и граммы.
+		s = strconv.FormatFloat(x, 'g', 11, 64)
+		if len(s) <= 18 {
 			return s
 		}
 	case string:
@@ -93,7 +96,8 @@ func sprintfFunc(fs string, mul int) FmtFunc {
 		case float64:
 			val *= float64(mul)
 			if wantInt64 {
-				v2 := int64(val)
+				// East Trans Logistic: Excel округляет при показе (172.5 → 173), а не отбрасывает дробь.
+				v2 := int64(math.Round(val))
 				return fmt.Sprintf(fs, v2)
 			}
 			return fmt.Sprintf(fs, val)

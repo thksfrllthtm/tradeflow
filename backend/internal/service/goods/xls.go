@@ -18,8 +18,8 @@ func isMergeMark(value string) bool {
 		value == grate.ContinueRowMerged || value == grate.EndRowMerged
 }
 
-// xlsToXlsx возвращает ту же книгу в формате XLSX.
-func xlsToXlsx(file io.ReaderAt, size int64) (result []byte, err error) {
+// XLSToXLSX возвращает ту же книгу в формате XLSX.
+func XLSToXLSX(file io.ReaderAt, size int64) (result []byte, err error) {
 	// grate написан под доверенные файлы: на битом .xls он может упасть с паникой.
 	defer func() {
 		if recovered := recover(); recovered != nil {

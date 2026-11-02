@@ -338,7 +338,7 @@ func (s *GoodsService) parseXlsx(ctx context.Context, file io.ReaderAt, size int
 		return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: fmt.Sprintf("Файл Excel больше %d МБ не поддерживается", MaxGoodsXLSXBytes/(1024*1024))}
 	}
 	if isXls {
-		converted, err := xlsToXlsx(file, size)
+		converted, err := XLSToXLSX(file, size)
 		if err != nil {
 			return GoodsParseResult{}, &service.ValidationError{Field: "file", Message: "Файл повреждён или не является книгой Excel .xls"}
 		}

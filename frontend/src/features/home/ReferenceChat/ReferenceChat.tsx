@@ -23,7 +23,7 @@ const pollInterval = 1500
 const historyPollInterval = 5000
 const maxPhotos = 3
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
-const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑', check_trademarks: '®️' }
+const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑', check_trademarks: '®️', general: '🗃️', act: '📖' }
 
 const isWorking = (session: AgentSession | null) => session?.status === 'running' || session?.status === 'searching'
 const isImage = (file: File) => file.type === 'image/jpeg' || file.type === 'image/png'
@@ -51,9 +51,9 @@ function saveOpenQuestion(value: OpenQuestion | null) {
 }
 
 function historyState(item: ReferenceSummary) {
-  if (item.status === 'running' || item.status === 'searching') return item.kind === 'trademarks' ? 'проверяет…' : 'ищет…'
-  if (item.status === 'waiting') return 'ждёт ответа'
-  if (item.status === 'error' || item.status === 'cancelled') return 'не завершён'
+  if (item.status === 'running' || item.status === 'searching') return <b className="rc-state busy">{item.kind === 'trademarks' ? 'проверяет…' : 'ищет…'}</b>
+  if (item.status === 'waiting') return <b className="rc-state busy">ждёт ответа</b>
+  if (item.status === 'error' || item.status === 'cancelled') return <b className="rc-state bad">не завершён</b>
   if (item.kind === 'trademarks') return item.trademarkHits ? `ТРОИС: найдено ${item.trademarkHits}` : 'ТРОИС: нет в реестре'
   return item.bestCode ? <code>{formatCode(item.bestCode)}</code> : 'код не найден'
 }
@@ -429,7 +429,7 @@ export function ReferenceChat() {
 
     <div className="rc-body">
       <aside className={historyOpen ? 'rc-history open' : 'rc-history'} aria-label="Прошлые вопросы">
-        <p className="rc-history-title">История вопросов{history.length > 0 && <span>{history.length}</span>}</p>
+        <p className="rc-history-title">История вопросов</p>
         {history.length > 0 && <div className="rc-history-tabs" role="group" aria-label="Вид вопросов">
           {historyTabs.map(({ tab, label }) => {
             const count = tab === 'all' ? history.length : history.filter((item) => item.kind === tab).length
@@ -461,8 +461,7 @@ export function ReferenceChat() {
             <h3>Какой код у товара?</h3>
             <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент сверит примеры декларирования и пояснения к ТН ВЭД, найдёт код в номенклатуре и объяснит выбор.</p>
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
-            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)}
-            stopping={busy} onStop={() => void stop()} />}
+            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />}
         </div>
 
         {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
@@ -494,9 +493,14 @@ export function ReferenceChat() {
             <textarea ref={inputRef} value={text} onChange={(event) => { setText(event.target.value); setMenuIndex(0) }} onKeyDown={onKeyDown} onPaste={onPaste} rows={1} maxLength={2000}
               placeholder={placeholder} aria-label="Вопрос о товаре" aria-autocomplete="list" aria-expanded={Boolean(menuActive)}
               aria-controls={menuActive ? 'rc-commands' : undefined} aria-activedescendant={menuActive ? `rc-command-${menuActive.name}` : undefined} disabled={!configured || (working && photos.length === 0)} />
-            <button type="submit" className="rc-send" disabled={busy || !configured || (!text.trim() && photos.length === 0) || (working && photos.length === 0)} aria-label="Отправить">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M10 16V4M5 9l5-5 5 5" /></svg>
-            </button>
+            {/* Пока агент ищет, кнопка отправки — «стоп» (если не прикреплено новое фото). */}
+            {session?.status === 'running' && photos.length === 0
+              ? <button type="button" className="rc-send" onClick={() => void stop()} disabled={busy} aria-label="Остановить" title="Остановить">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="2" width="10" height="10" rx="2" /></svg>
+              </button>
+              : <button type="submit" className="rc-send" disabled={busy || !configured || (!text.trim() && photos.length === 0) || (working && photos.length === 0)} aria-label="Отправить">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M10 16V4M5 9l5-5 5 5" /></svg>
+              </button>}
           </div>
           <p className="rc-hint">
             {!configured ? 'ИИ не настроен на сервере.' : <span>Enter — отправить, Shift+Enter — новая строка, <kbd>/</kbd> — команды{status && status.dailyLimit > 0 && <> · <b className={nearLimit ? 'rc-limit near' : 'rc-limit'}>сегодня {status.usedToday} из {status.dailyLimit}</b></>}</span>}
@@ -526,9 +530,9 @@ function BrandAnswer({ result, withPhotos }: { result: BrandCheck; withPhotos: b
 }
 
 // Разговор: вопрос сотрудника, что нашлось в базе, ход поиска, вопросы агента, ответ.
-type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void; stopping: boolean; onStop: () => void }
+type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void }
 
-function Thread({ session, onPhoto, documentsDisabled, onDocuments, stopping, onStop }: ThreadProps) {
+function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProps) {
   const photos = session.photos ?? []
   const blocks = useMemo(() => threadBlocks(session.messages), [session.messages])
   const working = isWorking(session)
@@ -564,8 +568,7 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments, stopping, on
       }
     })}
     {session.status === 'searching' && <p className="rc-typing"><span /><span /><span /> ищу в базе решений…</p>}
-    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агенты разбирают справку и перечни параллельно…' : 'агент ищет код…'}
-      <button type="button" className="rc-stop" onClick={onStop} disabled={stopping}>Остановить</button></p>}
+    {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агенты разбирают справку и перечни параллельно…' : 'агент ищет код…'}</p>}
   </>
 }
 

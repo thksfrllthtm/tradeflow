@@ -18,6 +18,8 @@ func TestRoundingByDeclarationRules(t *testing.T) {
 		{WeightKGText(d("0.0009996")), "0.001"},    // после округления — ровно грамм
 		{WeightKGText(d("0.001")), "0.001"},
 		{WeightKGText(decimal.Zero), "0.000"},
+		{RoundUnitPrice(d("0.16667")).String(), "0.1667"},
+		{RoundUnitPrice(d("4.07")).StringFixed(4), "4.0700"},
 		{RoundExtraUnits(d("12.345")).String(), "12.35"},
 		{RoundExtraUnits(d("0.0012345")).String(), "0.001235"}, // меньше 0,01 — шесть знаков
 	}

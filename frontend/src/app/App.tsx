@@ -11,11 +11,12 @@ import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
 import { UtilFeePage } from '@/features/utilFee/UtilFeePage'
+import { ExportCheckPage } from '@/features/exportCheck/ExportCheckPage'
 import { TranslatorPage } from '@/features/translator/TranslatorPage'
 import { TranslatorDocumentPage } from '@/features/translator/TranslatorDocumentPage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
-const estimatePages: string[] = ['goods', 'products', 'decisions', 'ceramics']
+const estimatePages: string[] = ['goods', 'products', 'decisions', 'ceramics', 'exportCheck']
 
 export function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -88,6 +89,7 @@ export function App() {
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
     case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />
+    case 'exportCheck': return <ExportCheckPage user={user} onLogout={() => void logout()} />
     case 'translator': return !canTranslate(user) ? null : route.documentId
       ? <TranslatorDocumentPage key={route.documentId} user={user} documentId={route.documentId} onLogout={() => void logout()} />
       : <TranslatorPage user={user} onLogout={() => void logout()} />

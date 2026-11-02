@@ -1,0 +1,59 @@
+/* Сверка экспортной декларации: две зоны загрузки, список прочитанных PDF и отчёт из трёх таблиц. */
+.ec-page h2 { margin: 24px 0 8px; font-size: 16px; }
+
+.ec-files { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 8px; }
+.ec-drop { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); cursor: pointer; }
+.ec-drop:hover, .ec-drop:focus-within { border-color: var(--tf-green); }
+.ec-drop.filled { border-style: solid; }
+.ec-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ec-drop-title { font-weight: 600; color: var(--tf-text); }
+.ec-drop-text { font-size: 13px; color: var(--tf-muted); }
+
+.ec-decls { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.ec-decl { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); font-size: 13px; }
+.ec-decl span { color: var(--tf-text-2); }
+.ec-decl.error { border-color: #f3c6c0; background: #fdf1ef; }
+.ec-decl.error span { color: #a32d1c; }
+.ec-decl button { margin-left: auto; border: 0; background: transparent; color: var(--tf-muted); font-size: 16px; line-height: 1; cursor: pointer; }
+.ec-decl button:hover { color: var(--tf-text); }
+
+.ec-actions { margin-top: 14px; }
+.ec-actions button.primary { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 22px; border: 1px solid var(--tf-green); border-radius: 9px; background: var(--tf-green); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+.ec-actions button.primary:hover:not(:disabled) { background: var(--tf-green-hover); }
+.ec-actions button.primary:disabled { opacity: 0.55; cursor: default; }
+
+.ec-summary { margin: 20px 0 10px; padding: 10px 14px; border-radius: var(--tf-radius); font-weight: 500; }
+.ec-summary.ok { background: #eef7f1; color: #1a4d33; }
+.ec-summary.error { background: #fdf1ef; color: #a32d1c; }
+
+.ec-list { margin: 0 0 8px; padding: 8px 14px 8px 30px; border-radius: var(--tf-radius); font-size: 13px; }
+.ec-list.error { background: #fdf1ef; color: #a32d1c; }
+.ec-list.warn { background: #fff7e6; color: #7a4b00; }
+.ec-list li + li { margin-top: 4px; }
+
+.ec-table td small { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--tf-muted); white-space: normal; }
+.ec-table tr.ec-error > td { background: #fdf4f2; }
+.ec-table tr.ec-warn > td { background: #fffaf0; }
+.ec-table td.ec-missing { color: #a32d1c; font-weight: 600; }
+.ec-table td.ec-name { min-width: 240px; }
+
+/* Пары колонок «Инвойс | Декларация»: тонкая линия слева от каждой пары, числа по правому краю.
+   Совпавшие пары — обычным текстом, расхождение — обе ячейки красным, спорные — янтарным. */
+.ec-table th.ec-pair, .ec-table td.ec-pair { border-left: 1px solid var(--tf-border); }
+.ec-table th.ec-sub { font-weight: 400; font-size: 11px; color: var(--tf-muted); text-align: right; }
+.ec-table th[colspan] { text-align: center; }
+.ec-table td.ec-num, .ec-table td.ec-code { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ec-table td.ec-code { font-family: var(--tf-mono); font-size: 12px; color: var(--tf-text-2); }
+.ec-table td.ec-num.ec-error, .ec-table td.ec-value.ec-error { background: #fbe3df; color: #a32d1c; font-weight: 600; }
+.ec-table td.ec-num.ec-warn, .ec-table td.ec-value.ec-warn { background: #fdefd2; color: #7a4b00; font-weight: 600; }
+
+.ec-badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.ec-badge.ec-ok { background: #e3f3e8; color: #1a6b3a; }
+.ec-badge.ec-error { background: #fbe3df; color: #a32d1c; }
+.ec-badge.ec-warn { background: #fdefd2; color: #7a4b00; }
+.ec-badge.ec-skip { background: var(--tf-chip); color: var(--tf-muted); font-weight: 400; }
+
+.ec-rows-head { display: flex; align-items: baseline; gap: 16px; }
+.ec-rows-head h2 { margin-right: 0; }
+.ec-rows-count { margin-right: auto; font-size: 13px; color: var(--tf-muted); }
+.ec-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--tf-text-2); cursor: pointer; }
