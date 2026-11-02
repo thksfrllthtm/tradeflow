@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 //   /estimates/goods[/id]    — сметы товаров (без номера — начальный экран новой сметы)
 //   /directory/products      — справочник товаров
 //   /directory/nomenclature  — полная номенклатура ТН ВЭД ЕАЭС (выгрузка TWS.BY)
+//   /directory/trademarks    — ТРОИС: таможенный реестр объектов интеллектуальной собственности КГД
 //   /decisions               — база решений «товар из инвойса → код ТН ВЭД»
 //   /employees               — сотрудники и роли (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
@@ -18,6 +19,7 @@ type Route =
   | { page: 'goods'; estimateId: number | null }
   | { page: 'products' }
   | { page: 'nomenclature' }
+  | { page: 'trademarks' }
   | { page: 'decisions' }
   | { page: 'employees' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
@@ -32,6 +34,7 @@ export const paths = {
   goods: (id?: number | null) => id ? `/estimates/goods/${id}` : '/estimates/goods',
   products: '/directory/products',
   nomenclature: '/directory/nomenclature',
+  trademarks: '/directory/trademarks',
   decisions: '/decisions',
   employees: '/employees',
   ceramics: '/ceramics',
@@ -51,6 +54,7 @@ export function parseRoute(pathname: string): Route | null {
   if (estimate) return { page: 'goods', estimateId: estimate[1] ? Number(estimate[1]) : null }
   if (path === paths.products) return { page: 'products' }
   if (path === paths.nomenclature) return { page: 'nomenclature' }
+  if (path === paths.trademarks) return { page: 'trademarks' }
   if (path === paths.decisions) return { page: 'decisions' }
   if (path === paths.employees) return { page: 'employees' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }

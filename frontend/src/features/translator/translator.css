@@ -27,13 +27,14 @@
 .tr-drop:focus-within { outline: 2px solid rgba(37,133,90,.35); outline-offset: 2px; }
 
 /* Страница документа */
-.tr-back { display: inline-block; margin-bottom: 4px; color: var(--tf-green); font-size: .78rem; font-weight: 600; text-decoration: none; }
-.tr-back:hover { text-decoration: underline; }
+/* Назад к списку: заметная кнопка-ссылка над названием документа. */
+.tr-back { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin-bottom: 8px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; text-decoration: none; }
+.tr-back:hover { border-color: var(--tf-green); color: var(--tf-green); text-decoration: none; }
 .dir-head h1 .tr-status { font-size: .76rem; letter-spacing: 0; }
 .tr-warning { margin: 0; padding: 8px 12px; border: 1px solid #f0dca5; border-radius: var(--radius); background: #fff8e6; color: #6d5214; font-size: .82rem; }
 
 /* Сегменты: оригинал и перевод в одной строке — пары выровнены, наведение подсвечивает обе. */
-.tr-segments { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid var(--xl-head-line); border-radius: 2px; background: #fff; }
+.tr-segments { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: #fff; }
 .tr-seg { display: grid; grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr); border-bottom: 1px solid var(--tf-border-inner); font-size: .86rem; line-height: 1.5; }
 .tr-seg:last-child { border-bottom: 0; }
 .tr-seg > * { padding: 8px 12px; }
@@ -61,7 +62,7 @@
 .tr-doc-progress b { color: var(--tf-text); font-variant-numeric: tabular-nums; }
 .tr-doc-actions { display: flex; flex: 0 0 auto; gap: 8px; }
 .tr-doc-actions button { height: 36px; padding: 0 16px; border-radius: 8px; font-weight: 600; }
-.tr-qa { float: right; margin-left: 8px; color: #b7791f; cursor: help; }
+.tr-qa { display: block; margin-top: 4px; color: #8a5a00; font-size: .76rem; line-height: 1.4; }
 
 /* Статусы сегментов: машинный — серый, исправлен — жёлтый, подтверждён — зелёный, оригинал изменён — красный. */
 .tr-seg { --st: var(--tf-border); }
@@ -71,7 +72,7 @@
 .tr-count.st-machine { --st: var(--tf-border); }
 .tr-seg:not(.tr-seg-head) .tr-seg-target { box-shadow: inset 3px 0 0 var(--st); }
 
-.tr-toolbar { justify-content: space-between; flex-wrap: wrap; }
+.tr-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .tr-counts { display: flex; flex-wrap: wrap; gap: 14px; color: var(--tf-text-2); font-size: .8rem; }
 .tr-count { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .tr-count i { width: 9px; height: 9px; border-radius: 50%; background: var(--st); }
@@ -80,16 +81,22 @@
 .tr-seg-target.editable { cursor: text; }
 .tr-seg-target.editable:focus-visible { outline: 2px solid rgba(37,133,90,.35); outline-offset: -2px; }
 .tr-seg.active > * { background: var(--tf-chip); }
-.tr-seg.active .tr-seg-target { background: #fff; box-shadow: inset 3px 0 0 var(--st), inset 0 0 0 1.5px var(--c-border-focus); }
+.tr-seg.active .tr-seg-target { background: #fff; box-shadow: inset 3px 0 0 var(--st); }
 
 /* Редактор перевода (TipTap) */
-.tr-editor { min-height: 1.5em; outline: none; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tr-editor { min-height: 2.8em; padding: 8px 10px; border: 1px solid var(--tf-border); border-radius: 8px; background: #fff; outline: none; white-space: pre-wrap; overflow-wrap: anywhere; transition: border-color .12s, box-shadow .12s; }
+.tr-editor:focus { border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(37, 133, 90, .14); }
 .tr-editor p { margin: 0; }
 .tr-editor .tr-inline { user-select: none; }
-.tr-seg-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--tf-border); }
-.tr-seg-tools button { height: 28px; padding: 0 10px; border-radius: 6px; font-size: .76rem; font-weight: 600; }
-.tr-seg-tools small { margin-left: auto; color: var(--tf-muted); font-size: .76rem; }
-.tr-seg-tools kbd { padding: 0 4px; border: 1px solid var(--tf-border); border-radius: 3px; background: var(--tf-chip); font-size: .76rem; }
+.tr-seg-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.tr-page .tr-seg-tools button { height: 32px; padding: 0 12px; border-radius: 8px; font-size: .82rem; font-weight: 600; }
+.tr-page .tr-seg-tools .tr-main { display: inline-flex; align-items: center; gap: 8px; padding-left: 14px; }
+.tr-page .tr-seg-tools .tr-main kbd { padding: 1px 6px; border: 1px solid rgba(255, 255, 255, .4); border-radius: 4px; background: rgba(255, 255, 255, .16); color: #fff; font-size: .72rem; font-weight: 500; }
+.tr-seg-nav { display: flex; gap: 4px; margin-left: auto; }
+.tr-page .tr-seg-nav button { display: grid; place-items: center; width: 32px; padding: 0; border: 1px solid var(--tf-border); background: var(--tf-card); color: var(--tf-text-2); font-size: 15px; font-weight: 500; }
+.tr-page .tr-seg-nav button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
+.tr-page .tr-seg-nav button:disabled { opacity: .35; }
+.tr-qa-chip { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 3px 9px; border-radius: 6px; background: #fff4dc; }
 
 /* История версий */
 .tr-history { display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
@@ -103,3 +110,45 @@
 .tr-toast.error { background: var(--c-error); }
 @keyframes tr-toast-in { from { transform: translateY(6px); opacity: 0; } }
 .tr-ext { display: inline; margin-left: 1px; color: var(--tf-muted); font-size: .76rem; font-weight: 500; }
+
+/* На всю ширину экрана: оригинал и перевод в две колонки, длинные абзацы так короче по высоте. */
+.directory-page.tr-page { width: 100%; }
+
+/* Длинный документ (до 3 000 абзацев): браузер не рисует абзацы за пределами экрана, пока до них
+   не долистали. 60px — примерная высота строки, чтобы полоса прокрутки не прыгала. */
+.tr-seg:not(.tr-seg-head) { content-visibility: auto; contain-intrinsic-size: auto 60px; }
+
+/* Шапка документа: действия справа одной группой; «Удалить» краснеет только при наведении. */
+.tr-doc-head .tr-doc-actions { align-self: flex-start; flex-wrap: wrap; justify-content: flex-end; }
+.tr-page .tr-delete:hover:not(:disabled) { border-color: #e2a99f; background: #fdf1ef; color: #a32d1c; }
+
+/* Полоса хода перевода в два слоя: светлое — переведено, тёмное — подтверждено. */
+.tr-doc-progress .tr-progress { position: relative; }
+.tr-progress .tr-progress-done { background: #bfe0cc; }
+.tr-progress .tr-progress-confirmed { position: absolute; inset: 0 auto 0 0; background: var(--tf-green); }
+.tr-toolbar .tr-doc-progress { flex: 1 1 240px; max-width: 400px; }
+.tr-count.zero { opacity: .5; }
+
+/* Поиск по сегментам: общее поле поиска (dir-search) с крестиком очистки, вместе с фильтром прижат вправо. */
+.tr-toolbar .tr-search { flex: 0 1 320px; margin-left: auto; }
+.tr-page .tr-search input { padding-right: 30px; }
+.tr-page .tr-search button { position: absolute; top: 50%; right: 6px; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--tf-muted); font-size: 15px; line-height: 1; transform: translateY(-50%); }
+.tr-page .tr-search button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.tr-filter-count { margin-left: 2px; color: var(--tf-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.dir-seg button.active .tr-filter-count { color: var(--tf-text-2); }
+
+/* Строка с предупреждением проверки — бледно-янтарный перевод, чтобы глаз цеплялся при прокрутке. */
+.tr-seg.has-qa:not(.active) .tr-seg-target { background: #fffaf0; }
+.tr-seg.has-qa:not(.active):hover .tr-seg-target { background: #fff4dc; }
+
+/* Быстрое подтверждение при наведении: кнопка в правом верхнем углу перевода, поверх текста. */
+.tr-seg-target.editable { position: relative; }
+.tr-quick { position: absolute; top: 5px; right: 8px; opacity: 0; transition: opacity .1s; }
+.tr-seg:hover .tr-quick, .tr-quick:focus-within { opacity: 1; }
+.tr-page .tr-quick button { height: 24px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: 6px; background: var(--tf-card); color: var(--tf-text-2); font-size: .74rem; font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.tr-page .tr-quick button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
+.tr-page .tr-quick button.confirm { border-color: #c4dfcc; background: #eef7f1; color: #1a6b3a; }
+.tr-page .tr-quick button.confirm:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
+
+/* Список документов: карточка таблицы заканчивается на последней строке, а не тянется до низа экрана. */
+.tr-page .dir-table-wrap { flex: 0 1 auto; }

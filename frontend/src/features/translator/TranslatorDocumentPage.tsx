@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { SearchIcon } from '@/shared/components/icons'
 import { formatRuDate } from '@/shared/lib/dates'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
@@ -43,6 +44,7 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
+  const [search, setSearch] = useState('')
   const [activeId, setActiveId] = useState<number | null>(null)
   // Меняется, когда текст открытого сегмента заменён не из редактора (история, «Перевести заново»).
   const [editorVersion, setEditorVersion] = useState(0)
@@ -225,57 +227,82 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
     }
   }
 
+  // Подтвердить или снять подтверждение прямо из строки, не открывая редактор: так быстрее
+  // просматривать машинный перевод, когда править нечего.
+  async function quickStatus(segment: Segment, status: 'confirmed' | 'edited') {
+    try {
+      applySegment(await translatorApi.editSegment(segment.id, { status }))
+      showToast(status === 'confirmed' ? 'Подтверждено' : 'Подтверждение снято')
+    } catch (reason) {
+      showToast(errorMessage(reason), true)
+    }
+  }
+
   const skipped = doc ? skippedSummary(doc.skipped) : ''
   const canDelete = doc !== null && (isAdmin(user) || doc.createdBy === user.id)
   const done = segments.filter(translated).length
   const counts = Object.fromEntries(statuses.map((status) => [status, segments.filter((segment) => segment.status === status).length]))
+  const filterCounts = Object.fromEntries(filters.map((item) => [item.value, segments.filter(item.test).length]))
   const filterTest = filters.find((item) => item.value === filter)!.test
+  // Поиск по оригиналу и переводу — поверх выбранного фильтра.
+  const needle = search.trim().toLowerCase()
+  const matches = (segment: Segment) => !needle || segment.sourceText.toLowerCase().includes(needle) || (segment.targetText || segment.mtText).toLowerCase().includes(needle)
   // Открытый сегмент не пропадает из списка, пока его правят (например, подтверждённый в «Неподтверждённых»).
-  const visible = segments.filter((segment) => segment.id === activeId || filterTest(segment))
+  const visible = segments.filter((segment) => segment.id === activeId || (filterTest(segment) && matches(segment)))
   const number = new Map(segments.map((segment, index) => [segment.id, index + 1]))
 
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="translator" onLogout={onLogout} />
-    <section className="directory-page">
-      <div className="dir-head">
+    <section className="directory-page tr-page">
+      <div className="dir-head tr-doc-head">
         <div>
           <Link className="tr-back" href={paths.translator()}>← Все документы</Link>
           <h1>{doc?.name ?? 'Документ'}{doc && <span className={`tr-status ${doc.status}`}>{documentStatusLabels[doc.status]}</span>}</h1>
           {doc && <p>{languageLabel(doc.sourceLang)} → {languageLabel(doc.targetLang)} · загрузил {doc.createdByName || '—'} {formatRuDate(doc.createdAt.slice(0, 10))} · сегментов: {doc.segmentCount}</p>}
         </div>
-        {canDelete && <button type="button" className="secondary" onClick={() => void remove()} disabled={busy || translating}>Удалить</button>}
+        {doc && <div className="tr-doc-actions">
+          {!translating && segments.length > 0 && done < segments.length && <button type="button" onClick={() => void translate()} disabled={busy}>{done === 0 ? 'Перевести' : 'Перевести оставшиеся'}</button>}
+          <button type="button" className="secondary" onClick={() => void download('target')} disabled={busy || done === 0} title="Исходный документ, где текст заменён переводом">Скачать перевод</button>
+          {doc.format === 'docx' && <button type="button" className="secondary" onClick={() => void download('bilingual')} disabled={busy || done === 0} title="Под каждым абзацем оригинала — перевод серым курсивом">Скачать двуязычный</button>}
+          {canDelete && <button type="button" className="secondary tr-delete" onClick={() => void remove()} disabled={busy || translating} title="Удалить документ вместе с переводом">Удалить</button>}
+        </div>}
       </div>
       {skipped && <p className="tr-warning" role="status">Не переведено: {skipped}. Эти части останутся в файле на языке оригинала.</p>}
       {doc?.status === 'failed' && doc.error && <p className="dir-transfer-error" role="alert">{doc.error}</p>}
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
-      {doc && segments.length > 0 && <div className="tr-doc-bar">
+
+      {/* Одна строка над таблицей: ход перевода (светлое — переведено, тёмное — подтверждено),
+          счётчики статусов, поиск и фильтр. На узком экране переносится. */}
+      {doc && segments.length > 0 && <div className="tr-toolbar">
         <div className="tr-doc-progress" role="status">
-          <span className="tr-progress" aria-hidden="true"><span style={{ width: `${(done / segments.length) * 100}%` }} /></span>
+          <span className="tr-progress" aria-hidden="true">
+            <span className="tr-progress-done" style={{ width: `${(done / segments.length) * 100}%` }} />
+            <span className="tr-progress-confirmed" style={{ width: `${(counts.confirmed / segments.length) * 100}%` }} />
+          </span>
           <span>{translating ? 'Переводим…' : 'Переведено'} <b>{done}</b> из {segments.length}</span>
         </div>
-        <div className="tr-doc-actions">
-          {!translating && done < segments.length && <button type="button" onClick={() => void translate()} disabled={busy}>{done === 0 ? 'Перевести' : 'Перевести оставшиеся'}</button>}
-          <button type="button" className="secondary" onClick={() => void download('target')} disabled={busy || done === 0} title="Исходный документ, где текст заменён переводом">Скачать перевод</button>
-          {doc.format === 'docx' && <button type="button" className="secondary" onClick={() => void download('bilingual')} disabled={busy || done === 0} title="Под каждым абзацем оригинала — перевод серым курсивом">Скачать двуязычный</button>}
-        </div>
-      </div>}
-      {doc && segments.length > 0 && <div className="dir-toolbar tr-toolbar">
         <div className="tr-counts">
-          {statuses.map((status) => <span key={status} className={`tr-count st-${status}`}><i aria-hidden="true" />{segmentStatusLabels[status]} <b>{counts[status]}</b></span>)}
+          {statuses.map((status) => <span key={status} className={`tr-count st-${status}${counts[status] === 0 ? ' zero' : ''}`}><i aria-hidden="true" />{segmentStatusLabels[status]} <b>{counts[status]}</b></span>)}
         </div>
+        <label className="dir-search tr-search">
+          <SearchIcon />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Найти в оригинале или переводе" aria-label="Поиск по сегментам" />
+          {search && <button type="button" onClick={() => setSearch('')} aria-label="Очистить поиск">×</button>}
+        </label>
         <div className="dir-seg" role="radiogroup" aria-label="Показать сегменты">
           {filters.map((item) => <button key={item.value} type="button" role="radio" aria-checked={filter === item.value} className={filter === item.value ? 'active' : undefined} onClick={() => setFilter(item.value)}>
-            {item.label}{item.value === 'problems' && ` ${segments.filter(problem).length}`}
+            {item.label} <span className="tr-filter-count">{filterCounts[item.value]}</span>
           </button>)}
         </div>
       </div>}
+
       {doc && <div className="tr-segments">
         <div className="tr-seg tr-seg-head"><span>№</span><span>Оригинал · {languageLabel(doc.sourceLang)}</span><span>Перевод · {languageLabel(doc.targetLang)}</span></div>
-        {visible.length === 0 && <p className="dir-empty">{filter === 'problems' ? 'Проблемных сегментов нет' : 'Все сегменты подтверждены'}</p>}
-        {visible.map((segment) => {
+        {visible.length === 0 && <p className="dir-empty">{needle ? 'Ничего не найдено' : filter === 'problems' ? 'Проблемных сегментов нет' : 'Все сегменты подтверждены'}</p>}
+        {visible.map((segment, index) => {
           const active = segment.id === activeId
           const target = segment.targetText || segment.mtText
-          return <div id={`tr-seg-${segment.id}`} className={`tr-seg st-${segment.status}${active ? ' active' : ''}`} key={segment.id}>
+          return <div id={`tr-seg-${segment.id}`} className={`tr-seg st-${segment.status}${active ? ' active' : ''}${segment.qa.length > 0 ? ' has-qa' : ''}`} key={segment.id}>
             <span className="tr-seg-num" title={segmentStatusLabels[segment.status]}>{number.get(segment.id)}{segment.kind === 'table_cell' && doc.format === 'docx' && <small title="Абзац в ячейке таблицы">табл.</small>}</span>
             <div className="tr-seg-source"><TaggedText text={segment.sourceText} tags={segment.tags} /></div>
             {active
@@ -291,16 +318,30 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
                   onMove: move,
                   onClose: close,
                 }} />
+                {segment.qa.length > 0 && <small className="tr-qa tr-qa-chip">⚠ {segment.qa.map((item) => item.message).join(' · ')}</small>}
+                {/* Одна строка: главное действие с подсказкой клавиш внутри, вспомогательные рядом,
+                    переход по абзацам и закрытие — справа. Клавиши — в подсказках кнопок. */}
                 <div className="tr-seg-tools">
-                  <button type="button" onClick={() => void confirm()}>Подтвердить</button>
+                  <button type="button" className="tr-main" onClick={() => void confirm()} title="Подтвердить и перейти к следующему абзацу">✓ Подтвердить <kbd>Ctrl+Enter</kbd></button>
                   <button type="button" className="secondary" onClick={() => void retranslate(segment)} disabled={retranslating === segment.id}>{retranslating === segment.id ? 'Переводим…' : 'Перевести заново'}</button>
                   <button type="button" className="secondary" onClick={() => setHistoryFor(segment)}>История</button>
-                  <small><kbd>Ctrl</kbd>+<kbd>Enter</kbd> — подтвердить и дальше · <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> — соседние · <kbd>Esc</kbd> — закрыть</small>
+                  <div className="tr-seg-nav">
+                    <button type="button" onClick={() => move(-1)} disabled={index === 0} title="Предыдущий абзац (Alt+↑)" aria-label="Предыдущий абзац">↑</button>
+                    <button type="button" onClick={() => move(1)} disabled={index === visible.length - 1} title="Следующий абзац (Alt+↓)" aria-label="Следующий абзац">↓</button>
+                    <button type="button" onClick={close} title="Закрыть редактор (Esc)" aria-label="Закрыть редактор">×</button>
+                  </div>
                 </div>
               </div>
-              : <div className="tr-seg-target editable" role="button" tabIndex={0} onClick={() => open(segment)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); open(segment) } }}>
-                {segment.qa.length > 0 && <span className="tr-qa" title={segment.qa.map((item) => item.message).join('\n')} aria-label="Есть предупреждения">⚠</span>}
+              : <div className="tr-seg-target editable" role="button" tabIndex={0} onClick={() => open(segment)}
+                onKeyDown={(event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { event.preventDefault(); open(segment) } }}>
                 {target ? <TaggedText text={target} tags={segment.tags} /> : <span className="tr-seg-empty">{translating && !segment.locked ? 'Переводится…' : 'Нет перевода — щёлкните, чтобы ввести'}</span>}
+                {segment.qa.length > 0 && <small className="tr-qa">⚠ {segment.qa.map((item) => item.message).join(' · ')}</small>}
+                {/* Быстрое действие при наведении: подтвердить прочитанный перевод или снять подтверждение. */}
+                {target && !translating && <span className="tr-quick">
+                  {segment.status === 'confirmed'
+                    ? <button type="button" onClick={(event) => { event.stopPropagation(); void quickStatus(segment, 'edited') }} title="Снять подтверждение">Снять</button>
+                    : <button type="button" className="confirm" onClick={(event) => { event.stopPropagation(); void quickStatus(segment, 'confirmed') }} title="Подтвердить, не открывая редактор">✓ Подтвердить</button>}
+                </span>}
               </div>}
           </div>
         })}

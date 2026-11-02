@@ -7,13 +7,14 @@ import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная, на неё ведут логотип и пункт «Главная».
-type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'translator'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'translator'
 type Item = { value: AppSection; label: string; href: string }
 
 // Меню «Инструменты»: справочники, калькуляторы и рабочие инструменты.
 const directories: Item[] = [
   { value: 'products', label: 'Справочник товаров', href: paths.products },
   { value: 'nomenclature', label: 'Номенклатура', href: paths.nomenclature },
+  { value: 'trademarks', label: 'ТРОИС', href: paths.trademarks },
   { value: 'decisions', label: 'База решений', href: paths.decisions },
   { value: 'ceramics', label: 'Керамика', href: paths.ceramics },
   { value: 'utilFee', label: 'Утильсбор', href: paths.utilFee },
@@ -35,7 +36,9 @@ const chevron = <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="tru
 // Общая шапка всех страниц: логотип, разделы (справочники и инструменты — в выпадающем меню «Инструменты»), курс НБРК с
 // конвертером валют и меню профиля (Сотрудники, Выйти). На узком экране меню переносится на вторую строку.
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
-  const allowed = (item: Item) => (canEstimate(user) || !estimateSections.includes(item.value)) && (item.value !== 'translator' || canTranslate(user))
+  // Переводчику «Переводчик» — основная работа: ссылка в верхней строке, а не внутри «Инструментов».
+  const translatorOnTop = user.role === 'translator'
+  const allowed = (item: Item) => (canEstimate(user) || !estimateSections.includes(item.value)) && (item.value !== 'translator' || (canTranslate(user) && !translatorOnTop))
   const dirs = directories.filter(allowed)
   const headerRef = useRef<HTMLElement>(null)
   const rates = useTodayRates()
@@ -68,6 +71,7 @@ export function AppHeader({ user, section, onLogout }: { user: User; section: Ap
     <nav className="app-header-nav" aria-label="Разделы">
       {link({ value: 'home', label: 'Главная', href: paths.home })}
       {canEstimate(user) && link({ value: 'estimates', label: 'Сметы', href: paths.goods() })}
+      {translatorOnTop && link({ value: 'translator', label: 'Переводчик', href: paths.translator() })}
       {dirs.length > 0 && <details className={dirActive ? 'app-menu active' : 'app-menu'}>
         <summary>Инструменты{chevron}</summary>
         <div className="app-menu-pop" onClick={closeMenu}>{dirs.map(link)}</div>

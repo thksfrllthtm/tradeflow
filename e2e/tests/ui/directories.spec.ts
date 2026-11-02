@@ -3,8 +3,8 @@ import type { Page } from '@playwright/test'
 import { E2E, uid } from '../../support/users'
 import { archiveProducts, CODE_LAPTOP, productColumns, readXlsx, xlsx } from '../../support/directories-helpers'
 
-// Справочники в браузере: номенклатура ТН ВЭД с панелями (проверка кодов, антидемпинг, СУР, ТРОИС,
-// перечень РК) и справочник товаров. Общие справочники настоящими файлами не загружаются.
+// Справочники в браузере: номенклатура ТН ВЭД с панелями (проверка кодов, антидемпинг, СУР,
+// перечень РК), страница ТРОИС и справочник товаров. Общие справочники настоящими файлами не загружаются.
 
 const search = (page: Page) => page.getByRole('searchbox', { name: 'Поиск по номенклатуре' })
 
@@ -88,16 +88,19 @@ test.describe('номенклатура — инвойсер', () => {
     await expect(search(page)).toHaveValue(code)
   })
 
-  test('СУР и ТРОИС: просмотр без кнопок загрузки', async ({ page }) => {
+  test('СУР: просмотр без кнопок загрузки', async ({ page }) => {
     await page.goto('/directory/nomenclature')
     await page.getByRole('button', { name: /^СУР/ }).click()
     await expect(page.getByText('СУР — стоимостные индикаторы риска')).toBeVisible()
     await expect(page.getByText('Выбрать .xlsx')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Удалить' })).toHaveCount(0)
-
-    await page.getByRole('button', { name: /^ТРОИС/ }).click()
+    await page.getByRole('button', { name: /^Антидемпинг ЕАЭС/ }).click()
     await expect(page.getByText('СУР — стоимостные индикаторы риска'), 'панели переключаются').toHaveCount(0)
-    await expect(page.getByText('ТРОИС — таможенный реестр объектов интеллектуальной собственности')).toBeVisible()
+  })
+
+  test('ТРОИС: отдельная страница, просмотр без кнопки загрузки', async ({ page }) => {
+    await page.goto('/directory/trademarks')
+    await expect(page.getByRole('heading', { name: /^ТРОИС/ })).toBeVisible()
     await expect(page.getByText('Выбрать файл')).toHaveCount(0)
     const registry = page.getByRole('searchbox', { name: 'Поиск по реестру' })
     test.skip(await registry.count() === 0, 'реестр ТРОИС не загружен')
@@ -118,7 +121,7 @@ test.describe('номенклатура — инвойсер', () => {
 test.describe('номенклатура — администратор', () => {
   test.use(as('admin'))
 
-  test('видит загрузку TWS, перечень РК, обновление антидемпинга и управление СУР', async ({ page }) => {
+  test('видит загрузку TWS, перечень РК, обновление антидемпинга, управление СУР и загрузку ТРОИС', async ({ page }) => {
     await page.goto('/directory/nomenclature')
     await expect(page.getByText('Обновить из файла TWS')).toBeVisible()
     await page.getByRole('button', { name: 'Перечень РК' }).click()
@@ -128,7 +131,7 @@ test.describe('номенклатура — администратор', () => {
     await expect(page.getByRole('button', { name: 'Обновить из реестра ЕЭК' })).toBeVisible()
     await page.getByRole('button', { name: /^СУР/ }).click()
     await expect(page.getByText('Выбрать .xlsx')).toBeVisible()
-    await page.getByRole('button', { name: /^ТРОИС/ }).click()
+    await page.goto('/directory/trademarks')
     await expect(page.getByText('Выбрать файл')).toBeVisible()
   })
 

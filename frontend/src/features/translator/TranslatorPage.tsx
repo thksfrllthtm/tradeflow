@@ -12,7 +12,7 @@ import { UploadDrawer } from './UploadDrawer'
 import '@/shared/styles/list-page.css'
 import './translator.css'
 
-// «Переводчик»: список документов .docx всех сотрудников с прогрессом подтверждения перевода.
+// «Переводчик»: список документов Word и Excel всех сотрудников с прогрессом подтверждения перевода.
 export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [query, setQuery] = useState('')
   const search = useDebouncedValue(query.trim(), 300)
@@ -33,11 +33,11 @@ export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () =>
 
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="translator" onLogout={onLogout} />
-    <section className="directory-page">
+    <section className="directory-page tr-page">
       <div className="dir-head">
         <div>
           <h1>Переводчик{items.length > 0 && <span className="dir-count">{items.length}</span>}</h1>
-          <p>Перевод Word-документов по абзацам: правка на сайте, выгрузка .docx с исходным форматированием.</p>
+          <p>Перевод документов Word (.docx) и книг Excel (.xlsx) по абзацам и строкам: правка на сайте, выгрузка файла с исходным форматированием.</p>
         </div>
         <button type="button" className="dir-add" onClick={() => setUploadOpen(true)}>Загрузить документ</button>
       </div>
@@ -52,7 +52,7 @@ export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () =>
         <table className="sheet sheet-rownum dir-table tr-table">
           <thead><tr><th>Документ</th><th className="tr-langs-col">Языки</th><th className="tr-who-col">Загрузил</th><th className="tr-progress-col">Подтверждено</th><th className="tr-status-col">Статус</th></tr></thead>
           <tbody>
-            {items.length === 0 ? <tr><td colSpan={5} className="dir-empty">{loading ? 'Загрузка…' : search ? 'Ничего не найдено' : 'Документов пока нет. Загрузите .docx, чтобы перевести его.'}</td></tr>
+            {items.length === 0 ? <tr><td colSpan={5} className="dir-empty">{loading ? 'Загрузка…' : search ? 'Ничего не найдено' : 'Документов пока нет. Загрузите .docx или .xlsx, чтобы перевести.'}</td></tr>
               : items.map((item) => <tr key={item.id} onClick={() => navigate(paths.translator(item.id))}>
                 <td><Link className="dir-name" href={paths.translator(item.id)} onClick={(event) => event.stopPropagation()}>{item.name}<small className="tr-ext">.{item.format}</small></Link></td>
                 <td className="tr-langs-col">{languageLabel(item.sourceLang)} → {languageLabel(item.targetLang)}</td>

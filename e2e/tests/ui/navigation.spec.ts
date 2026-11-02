@@ -12,6 +12,7 @@ const pages: Record<string, PageInfo> = {
   goods: { path: '/estimates/goods', heading: /.+/ },
   products: { path: '/directory/products', heading: 'Справочник товаров', menu: 'Справочник товаров' },
   nomenclature: { path: '/directory/nomenclature', heading: 'Номенклатура ТН ВЭД ЕАЭС', menu: 'Номенклатура' },
+  trademarks: { path: '/directory/trademarks', heading: /^ТРОИС/, menu: 'ТРОИС' },
   decisions: { path: '/decisions', heading: 'База решений', menu: 'База решений' },
   ceramics: { path: '/ceramics', heading: 'Керамика: наименование и цена', menu: 'Керамика' },
   ceramicsBase: { path: '/ceramics/base', heading: 'Керамика: наименование и цена' },
@@ -23,17 +24,17 @@ const pages: Record<string, PageInfo> = {
 const access: Record<'admin' | 'invoicer' | 'translator', { allowed: string[]; directories: string[]; estimates: boolean; translator: boolean; employees: boolean }> = {
   admin: {
     allowed: Object.keys(pages),
-    directories: ['Справочник товаров', 'Номенклатура', 'База решений', 'Керамика', 'Утильсбор'],
+    directories: ['Справочник товаров', 'Номенклатура', 'ТРОИС', 'База решений', 'Керамика', 'Утильсбор'],
     estimates: true, translator: true, employees: true,
   },
   invoicer: {
-    allowed: ['home', 'goods', 'products', 'nomenclature', 'decisions', 'ceramics', 'ceramicsBase', 'utilFee'],
-    directories: ['Справочник товаров', 'Номенклатура', 'База решений', 'Керамика', 'Утильсбор'],
+    allowed: ['home', 'goods', 'products', 'nomenclature', 'trademarks', 'decisions', 'ceramics', 'ceramicsBase', 'utilFee'],
+    directories: ['Справочник товаров', 'Номенклатура', 'ТРОИС', 'База решений', 'Керамика', 'Утильсбор'],
     estimates: true, translator: false, employees: false,
   },
   translator: {
-    allowed: ['home', 'nomenclature', 'utilFee', 'translator'],
-    directories: ['Номенклатура', 'Утильсбор'],
+    allowed: ['home', 'nomenclature', 'trademarks', 'utilFee', 'translator'],
+    directories: ['Номенклатура', 'ТРОИС', 'Утильсбор'],
     estimates: false, translator: true, employees: false,
   },
 }
