@@ -72,8 +72,9 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
       <div className="dir-head">
         <div>
           <h1>ТРОИС — таможенный реестр объектов интеллектуальной собственности</h1>
-          <p>Товарные знаки, которые таможня РК защищает при ввозе. Смета и подбор ИИ ищут их в наименованиях товара — и похожие написания (SONV вместо SONY, кириллица вместо латиницы). Знаки только изображением ИИ подписывает в фоне{summary && summary.logos > 0 && ` (подписано ${formatDisplayNumber(summary.logosRead)} из ${formatDisplayNumber(summary.logos)})`}.
-            {summary?.importedAt && <> Загружен {formatRuDate(summary.importedAt.slice(0, 10))}{summary.importedByName && `, ${summary.importedByName}`}.</>}</p>
+          <p>{summary?.importedAt
+            ? <>Реестр КГД · загружено {formatRuDate(summary.importedAt.slice(0, 10))}{summary.importedByName && `, ${summary.importedByName}`}{summary.logos > 0 && <> · логотипов подписано ИИ {formatDisplayNumber(summary.logosRead)} из {formatDisplayNumber(summary.logos)}</>}</>
+            : 'Товарные знаки под защитой таможни РК.'}</p>
         </div>
       </div>
       {admin && <div className="kz-step">
