@@ -92,25 +92,27 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
           <label><input type="checkbox" checked={unnamed} onChange={(event) => { setUnnamed(event.target.checked); setPage(0) }} /> Логотипы без надписи</label>
           <span>{formatDisplayNumber(total)} найдено</span>
         </div>
-        <table className="sheet sir-profiles tm-table">
-          <thead><tr><th>Знак</th><th>Номер</th><th>Товары</th><th>Правообладатель</th><th>Защита до</th></tr></thead>
-          <tbody>{items.map((item) => <tr key={item.regNo}>
-            <td className="tm-mark">
-              {item.hasLogo && <img src={trademarkLogoUrl(item.regNo)} alt={item.name || item.logoName || 'Логотип'} loading="lazy" />}
-              {item.name ? <b>{item.name}</b> : item.hasLogo && (admin
-                ? <input key={item.logoName} defaultValue={item.logoName} placeholder={item.logoRead ? 'ИИ не прочитал — впишите' : 'ждёт ИИ — или впишите'} aria-label={`Надпись логотипа ${item.regNo}`}
-                  onBlur={(event) => void saveLogoName(item, event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} />
-                : <b>{item.logoName || '—'}</b>)}
-              {!item.name && item.logoName && <small>{item.logoNameSource === 'admin' ? 'подписано вручную' : 'прочитано ИИ'}</small>}
-              {item.logoPicture && <small>рисунок: {item.logoPicture}</small>}
-            </td>
-            <td>{item.regNo}</td>
-            <td className="tm-goods">{item.goods}</td>
-            <td>{shortHolder(item.holder)}</td>
-            <td>{item.protectedUntil ? formatRuDate(item.protectedUntil) : '—'}</td>
-          </tr>)}</tbody>
-        </table>
-        {items.length < total && <button type="button" className="button-link" onClick={() => setPage(page + 1)}>Показать ещё</button>}
+        <div className="dir-table-wrap">
+          <table className="sheet dir-table tm-table">
+            <thead><tr><th>Знак</th><th>Номер</th><th>Товары</th><th>Правообладатель</th><th>Защита до</th></tr></thead>
+            <tbody>{items.map((item) => <tr key={item.regNo}>
+              <td className="tm-mark">
+                {item.hasLogo && <img src={trademarkLogoUrl(item.regNo)} alt={item.name || item.logoName || 'Логотип'} loading="lazy" />}
+                {item.name ? <b>{item.name}</b> : item.hasLogo && (admin
+                  ? <input key={item.logoName} defaultValue={item.logoName} placeholder={item.logoRead ? 'ИИ не прочитал — впишите' : 'ждёт ИИ — или впишите'} aria-label={`Надпись логотипа ${item.regNo}`}
+                    onBlur={(event) => void saveLogoName(item, event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} />
+                  : <b>{item.logoName || '—'}</b>)}
+                {!item.name && item.logoName && <small>{item.logoNameSource === 'admin' ? 'подписано вручную' : 'прочитано ИИ'}</small>}
+                {item.logoPicture && <small>рисунок: {item.logoPicture}</small>}
+              </td>
+              <td>{item.regNo}</td>
+              <td className="tm-goods">{item.goods}</td>
+              <td>{shortHolder(item.holder)}</td>
+              <td>{item.protectedUntil ? formatRuDate(item.protectedUntil) : '—'}</td>
+            </tr>)}</tbody>
+          </table>
+          {items.length < total && <button type="button" className="button-link tm-more" onClick={() => setPage(page + 1)}>Показать ещё</button>}
+        </div>
       </>}
     </section>
   </main>
