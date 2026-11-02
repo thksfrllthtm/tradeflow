@@ -79,9 +79,9 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
               <Link className="home-action" href={paths.utilFee} title="Расчёт утильсбора за товар или упаковку">
                 <ActionBody icon={<UtilFeeIcon />} title="Утильсбор" text="Расчёт утильсбора за товар или упаковку" />
               </Link>
-              {estimator && <Link className="home-action" href={paths.exportCheck} title="Сравнить инвойс с экспортной декларацией из Китая: итоги, реквизиты и каждая строка">
+              <Link className="home-action" href={paths.exportCheck} title="Сравнить инвойс с экспортной декларацией из Китая: итоги, реквизиты и каждая строка">
                 <ActionBody icon={<CheckIcon />} title="Сверка экспортной" text="Инвойс против экспортной декларации КНР" />
-              </Link>}
+              </Link>
             </div>
 
             {admin && decisionCount > 0 && <Link className="home-notice" href={`${paths.decisions}?status=pending`}>

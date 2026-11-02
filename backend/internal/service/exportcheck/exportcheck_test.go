@@ -141,10 +141,10 @@ func TestCompareAmountHintTellsWhichSideIsWrong(t *testing.T) {
 		{No: 2, Qty: "10", QtyUnit: "双", NetKg: "1", Price: "2.0000", Amount: "200.00", Currency: "USD"},
 	}}}
 	report := Compare(invoice, declarations)
-	if note := report.Rows[0].Checks[3].Note; note != "штуки × цена = 11568.42, как в декларации: ошибка в инвойсе" {
+	if note := report.Rows[0].Checks[3].Note; note != "штуки × цена = 11568.42, как в экспортной: ошибка в инвойсе" {
 		t.Errorf("invoice wrong: %q", note)
 	}
-	if note := report.Rows[1].Checks[3].Note; note != "штуки × цена = 20.00, как в инвойсе: ошибка в декларации" {
+	if note := report.Rows[1].Checks[3].Note; note != "штуки × цена = 20.00, как в инвойсе: ошибка в экспортной" {
 		t.Errorf("declaration wrong: %q", note)
 	}
 }
@@ -163,7 +163,7 @@ func TestCompareFindsSwappedDigitsMissingAndExtraRows(t *testing.T) {
 	if net.Status != statusError || net.Note != "похоже, переставлены цифры или потеряна запятая" {
 		t.Errorf("swapped digits: %+v", net)
 	}
-	if report.Rows[1].Status != statusError || report.Rows[1].Checks[0].Note != "нет в декларациях" {
+	if report.Rows[1].Status != statusError || report.Rows[1].Checks[0].Note != "нет в экспортных" {
 		t.Errorf("missing row: %+v", report.Rows[1])
 	}
 	joined := strings.Join(report.Problems, "\n")
@@ -194,13 +194,13 @@ func TestCompareReportsDeclarationSelfCheckFailures(t *testing.T) {
 	}}}
 	report := Compare(invoice, declarations)
 	joined := strings.Join(report.Problems, "\n")
-	if !strings.Contains(joined, "общая стоимость в декларации 200, а сумма по прочитанным строкам 103") || !strings.Contains(joined, "сумма количеств в декларации 1200, а по прочитанным строкам 600") {
+	if !strings.Contains(joined, "общая стоимость в экспортной 200, а сумма по прочитанным строкам 103") || !strings.Contains(joined, "сумма количеств в экспортной 1200, а по прочитанным строкам 600") {
 		t.Errorf("problems: %s", joined)
 	}
-	if notes := strings.Join(report.Notes, "\n"); !strings.Contains(notes, "d.pdf, товар 1: 600 × 0.17 = 102.00, а сумма в декларации 103.00") {
+	if notes := strings.Join(report.Notes, "\n"); !strings.Contains(notes, "d.pdf, товар 1: 600 × 0.17 = 102.00, а сумма в экспортной 103.00") {
 		t.Errorf("notes: %s", notes)
 	}
-	if report.Rows[0].ExcelRow != 19 || report.Rows[0].Checks[3].Note != "штуки × цена = 102.00, как в инвойсе: ошибка в декларации" {
+	if report.Rows[0].ExcelRow != 19 || report.Rows[0].Checks[3].Note != "штуки × цена = 102.00, как в инвойсе: ошибка в экспортной" {
 		t.Errorf("row: %+v", report.Rows[0])
 	}
 }

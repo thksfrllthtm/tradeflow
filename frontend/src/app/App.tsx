@@ -16,7 +16,7 @@ import { TranslatorPage } from '@/features/translator/TranslatorPage'
 import { TranslatorDocumentPage } from '@/features/translator/TranslatorDocumentPage'
 import { navigate, parseRoute, paths, usePathname } from '@/shared/router/router'
 
-const estimatePages: string[] = ['goods', 'products', 'decisions', 'ceramics', 'exportCheck']
+const estimatePages: string[] = ['goods', 'products', 'decisions', 'ceramics']
 
 export function App() {
   const [user, setUser] = useState<User | null>(null)

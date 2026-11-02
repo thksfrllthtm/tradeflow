@@ -125,8 +125,8 @@ export function parseDeclarationPages(pages: PdfText[][], fileName: string): Dec
       else if (!sameValues(seen, item)) warnings.push(`Товар ${item.no} повторяется в файле с другими значениями: ${seen.qty} ${seen.qtyUnit}, ${seen.netKg} кг, ${seen.price}, ${seen.amount} и ${item.qty} ${item.qtyUnit}, ${item.netKg} кг, ${item.price}, ${item.amount}`)
     }
   }
-  if (items.size === 0) throw new Error(`${fileName}: не найдена таблица товаров декларации. Нужен PDF с текстом, а не скан`)
-  if (first.length === 0) warnings.push('Не найдена шапка декларации: нет мест, брутто, нетто, получателя и контракта')
+  if (items.size === 0) throw new Error(`${fileName}: не найдена таблица товаров экспортной. Нужен PDF с текстом, а не скан`)
+  if (first.length === 0) warnings.push('Не найдена шапка экспортной: нет мест, брутто, нетто, получателя и контракта')
   const sorted = [...items.values()].sort((a, b) => a.no - b.no)
   // Неполная строка — признак, что разметка PDF отличается от ожидаемой: лучше сказать сразу.
   const incomplete = sorted.filter((item) => !item.qty || !item.price || !item.amount || !item.code)

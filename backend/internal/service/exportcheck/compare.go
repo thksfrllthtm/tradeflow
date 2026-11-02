@@ -56,7 +56,7 @@ type RowCheck struct {
 	Name            string  `json:"name"`
 	CodeInvoice     string  `json:"codeInvoice"`
 	CodeDeclaration string  `json:"codeDeclaration"`
-	DeclarationNo   int     `json:"declarationNo"`   // 项号 в файле декларации (в разбитой партии отличается от № инвойса)
+	DeclarationNo   int     `json:"declarationNo"`   // 项号 в файле экспортной (в разбитой партии отличается от № инвойса)
 	DeclarationName string  `json:"declarationName"` // китайское наименование
 	ExcelRow        int     `json:"excelRow"`        // строка листа инвойса, чтобы открыть и проверить ячейку
 	File            string  `json:"file"`
@@ -109,7 +109,7 @@ func Compare(invoice Invoice, declarations []Declaration) Report {
 			}
 		}
 		if len(declaration.Items) > 50 {
-			report.Notes = append(report.Notes, fmt.Sprintf("%s: %d товаров, в одной декларации обычно не больше 50", declaration.FileName, len(declaration.Items)))
+			report.Notes = append(report.Notes, fmt.Sprintf("%s: %d товаров, в одной экспортной обычно не больше 50", declaration.FileName, len(declaration.Items)))
 		}
 		for _, warning := range declaration.Warnings {
 			report.Notes = append(report.Notes, declaration.FileName+": "+warning)
@@ -134,7 +134,7 @@ func Compare(invoice Invoice, declarations []Declaration) Report {
 		placed, ok := byNo[row.No]
 		used[row.No] = true
 		if !ok {
-			report.Rows = append(report.Rows, RowCheck{No: row.No, Name: row.Name, CodeInvoice: row.Code, ExcelRow: row.SourceRow, Status: statusError, Checks: []Check{{Label: "Строка", Invoice: fmt.Sprintf("№ %d", row.No), Status: statusError, Note: "нет в декларациях"}}})
+			report.Rows = append(report.Rows, RowCheck{No: row.No, Name: row.Name, CodeInvoice: row.Code, ExcelRow: row.SourceRow, Status: statusError, Checks: []Check{{Label: "Строка", Invoice: fmt.Sprintf("№ %d", row.No), Status: statusError, Note: "нет в экспортных"}}})
 			continue
 		}
 		report.Rows = append(report.Rows, compareRow(row, placed))
@@ -151,10 +151,10 @@ func Compare(invoice Invoice, declarations []Declaration) Report {
 	sort.Ints(extra)
 	for _, no := range extra {
 		placed := byNo[no]
-		report.Problems = append(report.Problems, fmt.Sprintf("В декларации %s есть товар № %d (%s, %s %s, %s USD), которого нет в инвойсе", placed.file, no, placed.item.Name, placed.item.Qty, placed.item.QtyUnit, placed.item.Amount))
+		report.Problems = append(report.Problems, fmt.Sprintf("В экспортной %s есть товар № %d (%s, %s %s, %s USD), которого нет в инвойсе", placed.file, no, placed.item.Name, placed.item.Qty, placed.item.QtyUnit, placed.item.Amount))
 	}
 	if len(byNo) != len(invoice.Rows) {
-		report.Problems = append(report.Problems, fmt.Sprintf("В инвойсе %d строк, в декларациях %d товаров", len(invoice.Rows), len(byNo)))
+		report.Problems = append(report.Problems, fmt.Sprintf("В инвойсе %d строк, в экспортных %d товаров", len(invoice.Rows), len(byNo)))
 	}
 
 	for _, check := range append(append([]Check{}, report.Totals...), report.Details...) {
@@ -209,11 +209,11 @@ func compareNumbers(label, invoice, declaration string, round func(decimal.Decim
 	b, okB := parseDecimal(declaration)
 	switch {
 	case !okA && !okB:
-		check.Status, check.Note = statusError, "нет значения ни в инвойсе, ни в декларации"
+		check.Status, check.Note = statusError, "нет значения ни в инвойсе, ни в экспортной"
 	case !okA:
 		check.Status, check.Note = statusError, "в инвойсе не число"
 	case !okB:
-		check.Status, check.Note = statusError, "в декларации не число"
+		check.Status, check.Note = statusError, "в экспортной не число"
 	case round(a).Equal(round(b)):
 		check.Status = statusOK
 	default:
@@ -279,7 +279,7 @@ func compareTotals(invoice Invoice, declarations []Declaration, report *Report) 
 		declSum, bad := sumDecimals(declValues)
 		check := compareNumbers(t.label, invoiceValue, declSum.String(), t.round)
 		if len(bad) > 0 {
-			check.Status, check.Note = statusError, "в декларации не найдено значение"
+			check.Status, check.Note = statusError, "в экспортной не найдено значение"
 		}
 		checks = append(checks, check)
 	}
@@ -290,13 +290,13 @@ func compareTotals(invoice Invoice, declarations []Declaration, report *Report) 
 		if stated, ok := parseDecimal(declaration.TotalAmount); ok {
 			sum, _ := sumDecimals(mapItems(declaration.Items, func(item DeclarationItem) string { return item.Amount }))
 			if !service.RoundMoney(stated).Equal(service.RoundMoney(sum)) {
-				report.Problems = append(report.Problems, fmt.Sprintf("%s: общая стоимость в декларации %s, а сумма по прочитанным строкам %s — декларация прочитана не полностью или в ней ошибка", declaration.FileName, declaration.TotalAmount, sum.String()))
+				report.Problems = append(report.Problems, fmt.Sprintf("%s: общая стоимость в экспортной %s, а сумма по прочитанным строкам %s — экспортная прочитана не полностью или в ней ошибка", declaration.FileName, declaration.TotalAmount, sum.String()))
 			}
 		}
 		if stated, ok := parseDecimal(declaration.TotalQty); ok {
 			sum, _ := sumDecimals(mapItems(declaration.Items, func(item DeclarationItem) string { return item.Qty }))
 			if !stated.Equal(sum) {
-				report.Problems = append(report.Problems, fmt.Sprintf("%s: сумма количеств в декларации %s, а по прочитанным строкам %s — декларация прочитана не полностью или в ней ошибка", declaration.FileName, declaration.TotalQty, sum.String()))
+				report.Problems = append(report.Problems, fmt.Sprintf("%s: сумма количеств в экспортной %s, а по прочитанным строкам %s — экспортная прочитана не полностью или в ней ошибка", declaration.FileName, declaration.TotalQty, sum.String()))
 			}
 		}
 		for _, item := range declaration.Items {
@@ -304,7 +304,7 @@ func compareTotals(invoice Invoice, declarations []Declaration, report *Report) 
 			price, okP := parseDecimal(item.Price)
 			amount, okA := parseDecimal(item.Amount)
 			if okQ && okP && okA && !service.RoundMoney(qty.Mul(price)).Equal(service.RoundMoney(amount)) {
-				report.Notes = append(report.Notes, fmt.Sprintf("%s, товар %d: %s × %s = %s, а сумма в декларации %s", declaration.FileName, item.No, qty.String(), price.String(), service.RoundMoney(qty.Mul(price)).StringFixed(2), item.Amount))
+				report.Notes = append(report.Notes, fmt.Sprintf("%s, товар %d: %s × %s = %s, а сумма в экспортной %s", declaration.FileName, item.No, qty.String(), price.String(), service.RoundMoney(qty.Mul(price)).StringFixed(2), item.Amount))
 			}
 		}
 	}
@@ -357,9 +357,9 @@ func compareDetails(invoice Invoice, declarations []Declaration) []Check {
 		check := Check{Label: label, Invoice: strings.TrimSpace(invoiceValue), Declaration: strings.Join(values, "; ")}
 		switch {
 		case len(values) > 1:
-			check.Status, check.Note = statusError, "в декларациях разные значения"
+			check.Status, check.Note = statusError, "в экспортных разные значения"
 		case len(values) == 0:
-			check.Status, check.Note = statusError, "в декларации не найдено"
+			check.Status, check.Note = statusError, "в экспортной не найдено"
 		case check.Invoice == "":
 			check.Status, check.Note = statusWarn, "в инвойсе не найдено, сверьте вручную"
 		case equal(check.Invoice, values[0]):
@@ -378,7 +378,7 @@ func compareDetails(invoice Invoice, declarations []Declaration) []Check {
 		}
 		return strings.HasPrefix(x, y) || strings.HasPrefix(y, x)
 	}
-	sender := Check{Label: "Отправитель", Invoice: strings.TrimSpace(invoice.Sender), Declaration: strings.Join(distinctValues(declarations, func(d Declaration) string { return d.Sender }), "; "), Status: statusSkip, Note: "не сверяется: в декларации китайский отправитель-агент"}
+	sender := Check{Label: "Отправитель", Invoice: strings.TrimSpace(invoice.Sender), Declaration: strings.Join(distinctValues(declarations, func(d Declaration) string { return d.Sender }), "; "), Status: statusSkip, Note: "в экспортной китайский отправитель-агент"}
 	return []Check{
 		detail("Получатель", invoice.Receiver, func(d Declaration) string { return d.Receiver }, same),
 		detail("Номер контракта", invoice.Contract, func(d Declaration) string { return d.Contract }, prefix),
@@ -396,16 +396,16 @@ func compareRow(row InvoiceRow, placed placedItem) RowCheck {
 	exact := func(value decimal.Decimal) decimal.Decimal { return value }
 	qty := compareNumbers("Количество, шт", row.Qty, item.Qty, exact)
 	if qty.Status == statusError && isKgUnit(item.QtyUnit) {
-		qty.Status, qty.Note = statusWarn, "в декларации количество в килограммах: "+item.Qty+" кг"
+		qty.Status, qty.Note = statusWarn, "в экспортной количество в килограммах: "+item.Qty+" кг"
 	}
 	net := compareNumbers("Нетто, кг", row.NetKg, item.NetKg, service.RoundWeightKG)
 	if strings.TrimSpace(item.NetKg) == "" {
-		net.Status, net.Note = statusWarn, "в декларации нет веса по строке"
+		net.Status, net.Note = statusWarn, "в экспортной нет веса по строке"
 	}
 	price := compareNumbers("Цена за штуку, USD", row.Price, item.Price, service.RoundUnitPrice)
 	amount := compareNumbers("Сумма, USD", row.Amount, item.Amount, service.RoundMoney)
 	if item.Currency != "" && item.Currency != "USD" && amount.Status == statusOK {
-		amount.Status, amount.Note = statusWarn, "валюта в декларации: "+item.Currency
+		amount.Status, amount.Note = statusWarn, "валюта в экспортной: "+item.Currency
 	}
 	// Суммы разошлись: штуки × цена подскажут, чья сумма верна.
 	if amount.Status == statusError && amount.Note == "" {
@@ -432,10 +432,10 @@ func amountHint(qtyText, priceText, invoiceAmount, declarationAmount string) str
 	}
 	expected := service.RoundMoney(qty.Mul(price))
 	if value, ok := parseDecimal(declarationAmount); ok && service.RoundMoney(value).Equal(expected) {
-		return "штуки × цена = " + expected.StringFixed(2) + ", как в декларации: ошибка в инвойсе"
+		return "штуки × цена = " + expected.StringFixed(2) + ", как в экспортной: ошибка в инвойсе"
 	}
 	if value, ok := parseDecimal(invoiceAmount); ok && service.RoundMoney(value).Equal(expected) {
-		return "штуки × цена = " + expected.StringFixed(2) + ", как в инвойсе: ошибка в декларации"
+		return "штуки × цена = " + expected.StringFixed(2) + ", как в инвойсе: ошибка в экспортной"
 	}
 	return ""
 }

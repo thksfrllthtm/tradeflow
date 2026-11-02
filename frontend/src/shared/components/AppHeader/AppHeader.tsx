@@ -10,16 +10,19 @@ import './AppHeader.css'
 type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'translator'
 type Item = { value: AppSection; label: string; href: string }
 
+// Меню «Инструменты»: справочники, калькуляторы и рабочие инструменты.
 const directories: Item[] = [
   { value: 'products', label: 'Справочник товаров', href: paths.products },
   { value: 'nomenclature', label: 'Номенклатура', href: paths.nomenclature },
   { value: 'decisions', label: 'База решений', href: paths.decisions },
   { value: 'ceramics', label: 'Керамика', href: paths.ceramics },
   { value: 'utilFee', label: 'Утильсбор', href: paths.utilFee },
+  { value: 'exportCheck', label: 'Сверка экспортной', href: paths.exportCheck },
+  { value: 'translator', label: 'Переводчик', href: paths.translator() },
 ]
 
 // Разделы, закрытые переводчику.
-const estimateSections: AppSection[] = ['estimates', 'products', 'decisions', 'ceramics', 'exportCheck']
+const estimateSections: AppSection[] = ['estimates', 'products', 'decisions', 'ceramics']
 
 function initials(user: User) {
   const source = user.name?.trim() || user.email
@@ -29,10 +32,10 @@ function initials(user: User) {
 
 const chevron = <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4l2.5 2.5L7.5 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
 
-// Общая шапка всех страниц: логотип, разделы (справочники — в выпадающем меню), курс НБРК с
+// Общая шапка всех страниц: логотип, разделы (справочники и инструменты — в выпадающем меню «Инструменты»), курс НБРК с
 // конвертером валют и меню профиля (Сотрудники, Выйти). На узком экране меню переносится на вторую строку.
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
-  const allowed = (item: Item) => canEstimate(user) || !estimateSections.includes(item.value)
+  const allowed = (item: Item) => (canEstimate(user) || !estimateSections.includes(item.value)) && (item.value !== 'translator' || canTranslate(user))
   const dirs = directories.filter(allowed)
   const headerRef = useRef<HTMLElement>(null)
   const rates = useTodayRates()
@@ -65,12 +68,10 @@ export function AppHeader({ user, section, onLogout }: { user: User; section: Ap
     <nav className="app-header-nav" aria-label="Разделы">
       {link({ value: 'home', label: 'Главная', href: paths.home })}
       {canEstimate(user) && link({ value: 'estimates', label: 'Сметы', href: paths.goods() })}
-      {canEstimate(user) && link({ value: 'exportCheck', label: 'Сверка', href: paths.exportCheck })}
       {dirs.length > 0 && <details className={dirActive ? 'app-menu active' : 'app-menu'}>
-        <summary>Справочники{chevron}</summary>
+        <summary>Инструменты{chevron}</summary>
         <div className="app-menu-pop" onClick={closeMenu}>{dirs.map(link)}</div>
       </details>}
-      {canTranslate(user) && link({ value: 'translator', label: 'Переводчик', href: paths.translator() })}
     </nav>
     {rates && rates.length > 0 && <RatesConverter rates={rates} />}
     <details className="app-menu app-header-user">

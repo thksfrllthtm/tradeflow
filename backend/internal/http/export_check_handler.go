@@ -27,7 +27,7 @@ func (s *Server) exportCheck(c *gin.Context) {
 	}
 	var declarations []exportcheck.Declaration
 	if err := json.Unmarshal([]byte(c.PostForm("declarations")), &declarations); err != nil || len(declarations) == 0 {
-		badRequest(c, "Загрузите хотя бы одну экспортную декларацию PDF", "declarations")
+		badRequest(c, "Загрузите хотя бы одну экспортную PDF", "declarations")
 		return
 	}
 	invoice, err := exportcheck.ParseInvoice(file, header.Size, header.Filename)
