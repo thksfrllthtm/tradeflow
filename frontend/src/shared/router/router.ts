@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 //   /directory/trademarks    — ТРОИС: таможенный реестр объектов интеллектуальной собственности КГД
 //   /decisions               — база решений «товар из инвойса → код ТН ВЭД»
 //   /employees               — сотрудники и роли (только администратор)
+//   /agent-log               — журнал агента ТН ВЭД: подборы всех сотрудников и теневая модель (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /util-fee                — калькулятор утильсбора
 //   /export-check            — сверка инвойса с экспортной декларацией КНР
@@ -22,6 +23,7 @@ type Route =
   | { page: 'trademarks' }
   | { page: 'decisions' }
   | { page: 'employees' }
+  | { page: 'agentLog' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'utilFee' }
   | { page: 'exportCheck' }
@@ -37,6 +39,7 @@ export const paths = {
   trademarks: '/directory/trademarks',
   decisions: '/decisions',
   employees: '/employees',
+  agentLog: '/agent-log',
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
   utilFee: '/util-fee',
@@ -57,6 +60,7 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.trademarks) return { page: 'trademarks' }
   if (path === paths.decisions) return { page: 'decisions' }
   if (path === paths.employees) return { page: 'employees' }
+  if (path === paths.agentLog) return { page: 'agentLog' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }
   if (path === paths.utilFee) return { page: 'utilFee' }

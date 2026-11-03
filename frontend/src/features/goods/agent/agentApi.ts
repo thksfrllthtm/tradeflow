@@ -79,8 +79,9 @@ export type AgentResult = {
   trademarks?: TrademarkHit[]
 }
 
-// Ответ «/троис»: бренды, прочитанные с фото («SONV (похоже на SONY)»), знаки реестра; photoNote — фото не прочиталось.
-export type BrandCheck = { brands: string[]; pictures: string[]; hits: TrademarkHit[]; compared: number; photoNote?: string }
+// Ответ «/троис»: бренды, прочитанные с фото («SONV (похоже на SONY)»), знаки реестра; photoNote — фото не прочиталось;
+// textNote — что ИИ думает о надписи, которой нет в реестре (похожа ли на известный бренд).
+export type BrandCheck = { brands: string[]; pictures: string[]; hits: TrademarkHit[]; compared: number; photoNote?: string; textNote?: string }
 
 // Мера или документ для ввоза: applies — относится ли мера к товару по пояснению под актом.
 // basis — дословная цитата из справки, акта или страницы кода, на которой основан вывод (проверена сервером);

@@ -149,6 +149,10 @@ type TNVEDAgentService struct {
 	cancels        map[int64]context.CancelFunc
 	// trademarks — реестр ТРОИС (nil — не подключён): проверка брендов и подписи логотипов.
 	trademarks *trademarks.Service
+	// shadow — модель теневого подбора (shadow.go); nil — тени нет. shadowSlots — её параллельность, отдельно от slots.
+	shadow         shadowModel
+	shadowSettings ShadowSettings
+	shadowSlots    chan struct{}
 }
 
 // SetTrademarks подключает реестр ТРОИС: инструмент check_trademarks, проверку итога и чтение логотипов.
@@ -167,9 +171,10 @@ func NewTNVEDAgentService(r *repository.Repository, model, visionModel *AgentMod
 	}
 	return &TNVEDAgentService{
 		repository: r, model: model, visionModel: visionModel, decisions: decisions, settings: settings, search: newTavilySearcher(settings.WebSearchKey),
-		data:    repositoryAgentData{repository: r, nomenclature: directory.NewTNVEDNomenclatureService(r), details: directory.NewDetailsFetcher(r), web: directory.NewWebPageFetcher(r)},
-		slots:   make(chan struct{}, agentParallelRuns),
-		cancels: map[int64]context.CancelFunc{},
+		data:        repositoryAgentData{repository: r, nomenclature: directory.NewTNVEDNomenclatureService(r), details: directory.NewDetailsFetcher(r), web: directory.NewWebPageFetcher(r)},
+		slots:       make(chan struct{}, agentParallelRuns),
+		shadowSlots: make(chan struct{}, shadowParallelRuns),
+		cancels:     map[int64]context.CancelFunc{},
 	}
 }
 
@@ -231,6 +236,9 @@ func (s *TNVEDAgentService) WarmGeneralActs(ctx context.Context) {
 func (s *TNVEDAgentService) RecoverInterrupted(ctx context.Context) error {
 	const message = "Подбор прерван перезапуском сервера. Нажмите «Подобрать заново»."
 	if err := s.repository.ReadyInterruptedSearches(ctx); err != nil {
+		return err
+	}
+	if err := s.repository.FailRunningShadowRuns(ctx, "Теневой подбор прерван перезапуском сервера."); err != nil {
 		return err
 	}
 	ids, err := s.repository.FailRunningAgentSessions(ctx, message)
@@ -317,7 +325,7 @@ func cleanItem(item AgentItemInput) AgentItemInput {
 	}
 }
 
-// Start — новый подбор для строки (прежний подбор этой строки удаляется).
+// Start — новый подбор для строки (прежние подборы строки остаются в журнале, но без фото).
 func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, input AgentStartInput) (AgentSessionView, error) {
 	if _, err := s.repository.GoodsEstimateByIDForUser(ctx, input.EstimateID, scopeFor(user)); err != nil {
 		return AgentSessionView{}, err
@@ -354,7 +362,7 @@ func (s *TNVEDAgentService) Start(ctx context.Context, user repository.User, inp
 			return AgentSessionView{}, err
 		}
 	}
-	if err := s.repository.DeleteAgentSessionsForItem(ctx, input.EstimateID, itemID); err != nil {
+	if err := s.repository.ArchiveAgentSessionsForItem(ctx, input.EstimateID, itemID); err != nil {
 		return AgentSessionView{}, err
 	}
 	itemJSON, _ := json.Marshal(item)
@@ -587,6 +595,8 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 			transcript = append(transcript, note)
 		}
 	}
+	// Тень стартует с той же переписки, что и основная модель, и идёт параллельно с ней.
+	s.launchShadow(session, transcript, photos)
 	var outcome agentOutcome
 	if documents {
 		outcome = s.runDocuments(ctx, store, session, transcript, &usage, &steps, emit)
@@ -659,6 +669,9 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 		changes["transcript"] = repository.JSON(data)
 	}
 	_ = s.repository.UpdateAgentSession(store, sessionID, changes)
+	if documents {
+		s.compareShadowDocuments(store, sessionID, session.DocumentsCode)
+	}
 }
 
 // runDocuments — «Документы для ввоза» под-агентами по актам (documents.go); расход и шаги — в сессию
@@ -999,7 +1012,7 @@ func documentsRequest(code, codeName, product string) string {
 
 // Rerun — подобрать заново ИИ (в том числе когда товар уже найден в базе решений).
 func (s *TNVEDAgentService) Rerun(ctx context.Context, user repository.User, id int64) (AgentSessionView, error) {
-	return s.resume(ctx, user, id, "rerun", map[string]string{}, "Подбери код заново: проверь ещё раз и закончи вызовом finish.", "")
+	return s.resume(ctx, user, id, "rerun", map[string]string{}, rerunPrompt, "")
 }
 
 // resume — новый запуск агента в разговоре. documentsCode — режим «Документы для ввоза» ("" — обычный).

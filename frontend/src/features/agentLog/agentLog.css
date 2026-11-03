@@ -1,0 +1,113 @@
+/* Журнал агента: на всю ширину экрана, как база решений — сводка, затем карточка с панелью фильтров,
+   таблицей на оставшуюся высоту и подвалом со страницами. Токены --tf-* (base.css), кнопки 30–32px.
+   Кнопки с двумя классами — чтобы перебить общий стиль button / button:hover. */
+
+.directory-page.alog { width: 100%; }
+
+/* Сводка: семь карточек в ряд, на узком экране — в две колонки */
+.alog-summary { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.alog-stat { display: grid; align-content: start; gap: 3px; min-width: 0; padding: 10px 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.alog-stat small { color: var(--tf-muted); font-size: .76rem; font-weight: 500; }
+.alog-stat strong { overflow: hidden; color: var(--tf-text); font-size: 1.2rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.alog-stat span { overflow: hidden; color: var(--tf-text-2); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+.alog-stat.shadow strong { display: flex; align-items: center; gap: 8px; font-size: .95rem; }
+.alog-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #b5bdb7; }
+.alog-dot.on { background: var(--tf-green); }
+.alog-bar { display: block; height: 4px; margin: 3px 0 1px; overflow: hidden; border-radius: 2px; background: var(--tf-border-inner); }
+.alog-bar i { display: block; height: 100%; border-radius: 2px; background: var(--tf-green); }
+
+/* Карточка списка: фильтры, таблица, подвал */
+.alog-card { display: flex; flex: 1 1 0; flex-direction: column; min-height: 320px; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.alog-card .dir-table-wrap { flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; }
+
+.alog-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
+.alog-filterbar label { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; white-space: nowrap; }
+.alog-filterbar input, .alog-filterbar select { width: auto; height: 32px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; }
+.alog-filterbar input:focus, .alog-filterbar select:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); box-shadow: none; }
+.alog-period input { width: 142px; }
+.alog-period i { color: var(--tf-muted); font-style: normal; }
+.alog-select select { min-width: 170px; max-width: 240px; }
+.alog-tabs { display: flex; align-items: center; gap: 4px; }
+.alog-tabs > span { margin-right: 4px; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; white-space: nowrap; }
+.alog-tabs button { height: 30px; padding: 0 10px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .84rem; font-weight: 500; white-space: nowrap; }
+.alog-tabs button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
+.alog-tabs button.active, .alog-tabs button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
+.alog-loading { margin-left: auto; color: var(--tf-muted); font-size: .82rem; }
+
+/* Таблица: две строки в ячейке — главное и подпись; коды моноширинным */
+.alog-table { min-width: 1180px; }
+.alog-table td { height: 50px; padding: 7px 10px; }
+.alog-table td small { display: block; margin-top: 2px; overflow: hidden; color: var(--tf-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+.alog-table .c-when { width: 132px; white-space: nowrap; }
+.alog-table .c-user { width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alog-table .c-name { max-width: 0; }
+.alog-table .c-name span { display: -webkit-box; overflow: hidden; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.alog-table .c-model { width: 230px; }
+.alog-table .c-applied { width: 150px; }
+.alog-table .c-verify { width: 150px; }
+.alog-table .c-cmp { width: 190px; }
+.alog-table code { font-size: .88rem; }
+.alog-state { font-size: .84rem; font-weight: 600; }
+.alog-state.warn { color: var(--tf-warn-text); }
+.alog-state.bad { color: var(--tf-error); }
+.alog-state.muted { color: var(--tf-muted); font-weight: 500; }
+.alog-none { color: #b5bdb7; }
+.alog-mark { display: flex; align-items: center; gap: 6px; color: var(--tf-text-2); font-size: .8rem; font-weight: 500; line-height: 1.4; white-space: nowrap; }
+.alog-mark::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #b5bdb7; }
+.alog-mark.ok { color: var(--tf-green); }
+.alog-mark.ok::before { background: var(--tf-green); }
+.alog-mark.warn { color: var(--tf-warn-text); font-weight: 600; }
+.alog-mark.warn::before { background: var(--tf-ai); }
+.alog-mark.bad { color: var(--tf-error); font-weight: 600; }
+.alog-mark.bad::before { background: var(--tf-error); }
+
+.alog-more { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-text-2); font-size: .84rem; }
+.alog-more div { display: flex; gap: 6px; }
+.alog-more button { height: 30px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font-size: .84rem; font-weight: 500; }
+.alog-more button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
+
+/* Карточка подбора: широкая, две колонки моделей рядом */
+.alog-entry { width: min(1240px, 100%); }
+.alog-item { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--tf-border-inner); }
+.alog-item > div { display: grid; gap: 4px; min-width: 0; }
+.alog-item p { margin: 0; }
+.alog-item small { color: var(--tf-muted); font-size: .8rem; }
+.alog-item-links { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; font-size: .84rem; }
+.alog-item-links a { color: var(--tf-green); }
+.alog-applied { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: .9rem; }
+.alog-photos { display: flex; flex: 0 0 auto; gap: 6px; }
+.alog-photos button { width: auto; height: auto; padding: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: none; cursor: zoom-in; }
+.alog-photos button:hover:not(:disabled) { border-color: var(--tf-green); background: none; }
+.alog-photos img { display: block; width: 76px; height: 76px; object-fit: cover; }
+.alog-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; padding-top: 14px; }
+.alog-column { display: grid; align-content: start; gap: 10px; min-width: 0; padding: 12px 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-bg); }
+.alog-column > header { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--tf-border-inner); }
+.alog-column > header h3 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: .95rem; font-weight: 600; }
+.alog-column > header h3 small { color: var(--tf-muted); font-size: .78rem; font-weight: 400; }
+.alog-metrics { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 4px 20px; margin: 0; }
+.alog-metrics div { display: grid; gap: 1px; }
+.alog-metrics dt { color: var(--tf-muted); font-size: .74rem; font-weight: 500; }
+.alog-metrics dd { margin: 0; color: var(--tf-text); font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.alog-metrics dd code { font-size: .9rem; }
+.alog-column .ag-steps { margin: 0; }
+.alog-column .ag-result { background: var(--tf-card); }
+.alog-column .ag-cand { background: var(--tf-card); }
+.alog-transcript { margin-top: 6px; font-size: .82rem; }
+.alog-transcript > summary { cursor: pointer; color: var(--tf-text-2); font-weight: 500; }
+/* Роль сообщения — цветом подписи, без цветных полос сбоку. */
+.alog-msg { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--tf-border-inner); border-radius: var(--tf-radius); background: var(--tf-card); }
+.alog-msg b { display: block; margin-bottom: 4px; font-size: .78rem; }
+.alog-msg.assistant b { color: var(--tf-green); }
+.alog-msg.tool b { color: var(--tf-warn-text); }
+.alog-msg.system b { color: var(--tf-muted); }
+.alog-msg b small { color: var(--tf-muted); font-weight: 400; }
+.alog-msg pre { max-height: 320px; margin: 4px 0 0; overflow: auto; font-size: .78rem; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+.alog-msg details > summary { cursor: pointer; color: var(--tf-text-2); font-size: .78rem; }
+.alog-call small { color: var(--tf-muted); }
+
+@media (max-width: 1200px) { .alog-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .alog-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .alog-filterbar { gap: 8px 12px; }
+  .alog-item { flex-direction: column; }
+}

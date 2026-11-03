@@ -224,6 +224,8 @@ type BrandCheck struct {
 	Compared int `json:"compared"`
 	// PhotoNote — что не получилось с фото ("" — всё в порядке или фото нет).
 	PhotoNote string `json:"photoNote,omitempty"`
+	// TextNote — что ИИ решил о надписи, которой нет в реестре: похожа ли на известный бренд ("" — не спрашивали).
+	TextNote string `json:"textNote,omitempty"`
 }
 
 const readBrandPrompt = `На фото — товар, упаковка или этикетка. Найди все бренды и знаки для таможенной проверки товарных знаков.
@@ -231,6 +233,29 @@ const readBrandPrompt = `На фото — товар, упаковка или �
 - pictures — заметные рисунки на логотипе, упаковке, этикетке и самом товаре (персонажи, животные, предметы, здания): существительные по-русски в единственном числе (поезд, юрта, медведь, рыба, корона); не форма и не цвет; рисунков нет — пустой список.
 - goods — что за товар и его общая категория, как в перечнях товаров, по-русски через запятую (конфеты, кондитерские изделия; наушники, аудиотехника; кроссовки, обувь); на фото только логотип — пусто.
 Не выдумывай. Ответь только JSON: {"brands":[{"text":"SONV","similar":"SONY"}],"pictures":["поезд"],"goods":"наушники"}`
+
+// similarBrandPrompt — надпись не совпала с реестром: сделана ли она под известный бренд (текстовый запрос без
+// фото; для фото то же спрашивается у модели для фото в readBrandPrompt).
+const similarBrandPrompt = `Сотрудник таможенного брокера проверяет надпись с товара по реестру товарных знаков. По буквам она не совпала ни с одним знаком. Реши, сделана ли надпись под известный бренд: похожее написание, замена или перестановка букв, цифры вместо букв, другой алфавит (Abibas → ADIDAS, SONV → SONY, Pumma → PUMA, Найк → NIKE). Обычное слово, вид товара или незнакомое название — пусто. Не угадывай: пусто лучше выдуманного.
+Ответь только JSON: {"similar":"ADIDAS"} или {"similar":""}`
+
+// similarBrand — известный бренд, под который сделана надпись (пусто — не похожа), по модели рассуждений.
+func (s *TNVEDAgentService) similarBrand(ctx context.Context, text string, spent func(agentUsage, bool)) (string, error) {
+	callCtx, cancel := context.WithTimeout(ctx, photoCallTimeout)
+	defer cancel()
+	reply, err := s.model.CompleteJSON(callCtx, []agentMessage{{Role: "system", Content: similarBrandPrompt}, {Role: "user", Content: "Надпись: " + text}})
+	spent(reply.Usage, false)
+	if err != nil {
+		return "", err
+	}
+	var answer struct {
+		Similar string `json:"similar"`
+	}
+	if json.Unmarshal([]byte(unwrapJSON(reply.Content)), &answer) != nil {
+		return "", ai.ErrAIBadResponse
+	}
+	return service.TruncateRunes(strings.TrimSpace(answer.Similar), 100), nil
+}
 
 // brandInput — текст и фото «/троис» после проверки.
 func brandInput(input ReferenceInput) (string, []string, error) {
@@ -269,7 +294,7 @@ func (s *TNVEDAgentService) AskTrademarks(ctx context.Context, user repository.U
 	session, err := s.repository.CreateAgentSession(ctx, repository.TNVEDAgentSession{
 		UserID: user.ID, Mode: modeReference, Title: referenceTitle(text), Status: "running", TrademarkHits: &zero,
 		Item: repository.JSON(itemJSON), Photos: repository.JSON(photosJSON), Transcript: repository.JSON("[]"),
-		Result: repository.JSON("null"), CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero, Model: s.visionModel.Name(), CreatedAt: now, UpdatedAt: now,
+		Result: repository.JSON("null"), CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero, Model: s.modelName(), CreatedAt: now, UpdatedAt: now,
 	})
 	if err != nil {
 		return AgentSessionView{}, err
@@ -297,7 +322,13 @@ func (s *TNVEDAgentService) launchBrandCheck(session repository.TNVEDAgentSessio
 		usage := usageOf(session)
 		emit := func(kind string, content any) { s.emit(store, session.ID, kind, content) }
 		result, err := s.checkBrand(ctx, text, photos, func(event agentToolEvent) { emit("tool", event) },
-			func(step agentUsage) { usage.add(step, s.visionModel.Cost(step), true) })
+			func(step agentUsage, vision bool) {
+				model := s.model
+				if vision {
+					model = s.visionModel
+				}
+				usage.add(step, model.Cost(step), vision)
+			})
 		changes := usage.changes()
 		switch {
 		case errors.Is(ctx.Err(), context.Canceled):
@@ -315,8 +346,10 @@ func (s *TNVEDAgentService) launchBrandCheck(session repository.TNVEDAgentSessio
 }
 
 // checkBrand — бренды и рисунки знаков с фото (модель для фото), текст сотрудника по ТРОИС и сверка фото с
-// логотипами реестра с похожим рисунком или той же группы товаров. step — шаг для чата, spent — расход.
-func (s *TNVEDAgentService) checkBrand(ctx context.Context, text string, photos []string, step func(agentToolEvent), spent func(agentUsage)) (BrandCheck, error) {
+// логотипами реестра с похожим рисунком или той же группы товаров. Надпись, которой нет в реестре, модель
+// рассуждений сверяет с известными брендами (Abibas → ADIDAS). step — шаг для чата, spent — расход (vision —
+// модели для фото).
+func (s *TNVEDAgentService) checkBrand(ctx context.Context, text string, photos []string, step func(agentToolEvent), spent func(agentUsage, bool)) (BrandCheck, error) {
 	result := BrandCheck{Brands: []string{}, Pictures: []string{}, Hits: []trademarks.Hit{}}
 	reading := brandReading{}
 	vision := len(photos) > 0 && s.visionModel.Configured() && s.visionModel.Vision()
@@ -364,6 +397,26 @@ func (s *TNVEDAgentService) checkBrand(ctx context.Context, text string, photos 
 		detail = trademarkSummary(result.Hits)
 	}
 	step(agentToolEvent{Tool: "check_trademarks", Label: "ТРОИС: поиск по надписям", Detail: detail})
+	if text != "" && len(result.Hits) == 0 && s.model.Configured() {
+		similar, err := s.similarBrand(ctx, text, spent)
+		switch {
+		case err != nil && ctx.Err() != nil:
+			return result, ctx.Err()
+		case err != nil:
+			result.TextNote = "Похожесть на известный бренд ИИ не проверил — проверено только написание"
+			step(agentToolEvent{Tool: "check_trademarks", Label: "Похоже на известный бренд?", Detail: "ИИ не ответил", Failed: true})
+		case similar == "":
+			result.TextNote = "По мнению ИИ, на известный бренд написание не похоже"
+			step(agentToolEvent{Tool: "check_trademarks", Label: "Похоже на известный бренд?", Detail: "нет"})
+		default:
+			result.TextNote = "По мнению ИИ, написание похоже на " + similar
+			detail := "в реестре нет"
+			if hits := trademarkHits(ctx, s.trademarks.Match, nil, []photoBrand{{written: text, similar: similar}}, code); hits != nil {
+				result.Hits, detail = hits, trademarkSummary(hits)
+			}
+			step(agentToolEvent{Tool: "check_trademarks", Label: "Похоже на известный бренд? " + similar, Detail: detail})
+		}
+	}
 	if !vision {
 		return result, nil
 	}
@@ -406,14 +459,14 @@ type brandReading struct {
 }
 
 // readBrands — бренды, рисунки знаков и вид товара на фото по ответу модели для фото.
-func (s *TNVEDAgentService) readBrands(ctx context.Context, photos []string, spent func(agentUsage)) (brandReading, error) {
+func (s *TNVEDAgentService) readBrands(ctx context.Context, photos []string, spent func(agentUsage, bool)) (brandReading, error) {
 	callCtx, cancel := context.WithTimeout(ctx, photoCallTimeout)
 	defer cancel()
 	reply, err := s.visionModel.CompleteJSON(callCtx, []agentMessage{
 		{Role: "system", Content: readBrandPrompt},
 		{Role: "user", Content: photoContent("Найди бренды и знаки на фото.", photos)},
 	})
-	spent(reply.Usage)
+	spent(reply.Usage, true)
 	if err != nil {
 		return brandReading{}, err
 	}
@@ -448,7 +501,7 @@ no — нет.
 Ответь только JSON: {"results":[{"index":1,"verdict":"no","why":"до 15 слов по-русски"}]}`
 
 // comparePictures — знаки-кандидаты, которые модель для фото нашла на товаре (тот же или похожий).
-func (s *TNVEDAgentService) comparePictures(ctx context.Context, photos []string, candidates []trademarks.Hit, spent func(agentUsage)) ([]trademarks.Hit, error) {
+func (s *TNVEDAgentService) comparePictures(ctx context.Context, photos []string, candidates []trademarks.Hit, spent func(agentUsage, bool)) ([]trademarks.Hit, error) {
 	regNos := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		regNos = append(regNos, candidate.RegNo)
@@ -473,7 +526,7 @@ func (s *TNVEDAgentService) comparePictures(ctx context.Context, photos []string
 	callCtx, cancel := context.WithTimeout(ctx, photoCallTimeout)
 	defer cancel()
 	reply, err := s.visionModel.CompleteJSON(callCtx, []agentMessage{{Role: "system", Content: comparePicturesPrompt}, {Role: "user", Content: content}})
-	spent(reply.Usage)
+	spent(reply.Usage, true)
 	if err != nil {
 		return nil, err
 	}

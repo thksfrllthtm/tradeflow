@@ -522,9 +522,11 @@ function BrandAnswer({ result, withPhotos }: { result: BrandCheck; withPhotos: b
       {result.pictures.length > 0 && <p className="rc-answer-text">Рисунок на знаке: <b>{result.pictures.join(', ')}</b></p>}
       {result.compared > 0 && <p className="rc-note">Фото сверено с {result.compared} {plural(result.compared, 'логотипом', 'логотипами', 'логотипами')} реестра: с похожим рисунком и той же группы товаров.</p>}
       {result.photoNote && <p className="rc-note">{result.photoNote}</p>}
-      {result.hits.length > 0 ? <TrademarkHits hits={result.hits} />
-        : <p className="rc-answer-text">В реестре ТРОИС этого знака и похожих нет: правообладатель не включал его в реестр, таможенной защиты по ТРОИС у него нет.</p>}
-      <p className="rc-note">Решение за декларантом: совпадение — повод проверить, нужен ли товарный знак и согласие правообладателя.</p>
+      {result.textNote && <p className="rc-note">{result.textNote}</p>}
+      {result.hits.length > 0 ? <>
+        <TrademarkHits hits={result.hits} />
+        <p className="rc-note">Решение за декларантом: совпадение — повод проверить, нужен ли товарный знак и согласие правообладателя.</p>
+      </> : <p className="rc-answer-text">В реестре ТРОИС по написанию не найдено: ни этого знака, ни отличающихся на одну букву. Это не значит, что знака нет у правообладателя.</p>}
     </div>
   </>
 }

@@ -383,7 +383,7 @@ test.describe('чат-справочник ТН ВЭД', () => {
     expect(sent).toEqual({ text: 'SONV', photos: [] })
     const thread = chat(page).locator('.rc-thread')
     await expect(thread).toContainText('Проверка по ТРОИС · SONV')
-    await expect(thread).toContainText('В реестре ТРОИС этого знака и похожих нет')
+    await expect(thread).toContainText('В реестре ТРОИС по написанию не найдено')
     await expect(input(page)).toHaveAttribute('placeholder', /для другого бренда/)
   })
 

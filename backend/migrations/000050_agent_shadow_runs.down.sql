@@ -1,0 +1,3 @@
+DROP INDEX code_decisions_session_idx;
+DROP INDEX tnved_agent_sessions_created_idx;
+DROP TABLE tnved_agent_shadow_runs;

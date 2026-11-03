@@ -52,6 +52,22 @@ type Config struct {
 	// TNVEDAIDocumentsEffort — уровень размышлений под-агентов «Документов для ввоза» (TNVED_AI_DOCUMENTS_EFFORT);
 	// пусто — как TNVEDAIEffort.
 	TNVEDAIDocumentsEffort string
+	// Теневой подбор (TNVED_AI_SHADOW_*): вторая модель подбирает код параллельно с основной, сотрудник её не
+	// видит, итоги сравнивает администратор в журнале агента. Без TNVED_AI_SHADOW_MODEL тени нет. Provider —
+	// anthropic (Claude, ключ по умолчанию ANTHROPIC_API_KEY) или openai (OpenAI-совместимый адрес BaseURL).
+	// Vision — модель смотрит фото сама; иначе получает описание от модели для фото, как основная.
+	// BudgetUSD — потолок расхода тени за всё время (0 — тень выключена), DailyLimit — прогонов в сутки.
+	TNVEDAIShadowProvider    string
+	TNVEDAIShadowModel       string
+	TNVEDAIShadowAPIKey      string
+	TNVEDAIShadowBaseURL     string
+	TNVEDAIShadowEffort      string
+	TNVEDAIShadowVision      bool
+	TNVEDAIShadowPriceInput  decimal.Decimal
+	TNVEDAIShadowPriceCached decimal.Decimal
+	TNVEDAIShadowPriceOutput decimal.Decimal
+	TNVEDAIShadowBudgetUSD   decimal.Decimal
+	TNVEDAIShadowDailyLimit  int
 	// «Переводчик» (.docx): OpenAI-совместимый API, по умолчанию DeepSeek с ключом DEEPSEEK_API_KEY.
 	TranslatorAIAPIKey  string
 	TranslatorAIBaseURL string
@@ -92,10 +108,21 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	shadowVision, err := boolEnv("TNVED_AI_SHADOW_VISION", true)
+	if err != nil {
+		return Config{}, err
+	}
+	shadowDailyLimit, err := positiveIntEnv("TNVED_AI_SHADOW_DAILY_LIMIT", 50)
+	if err != nil {
+		return Config{}, err
+	}
 	prices := map[string]decimal.Decimal{}
 	for name, fallback := range map[string]string{
 		"TNVED_AI_PRICE_INPUT": "0.30", "TNVED_AI_PRICE_CACHED": "0.006", "TNVED_AI_PRICE_OUTPUT": "1.20",
 		"TNVED_AI_VISION_PRICE_INPUT": "0.30", "TNVED_AI_VISION_PRICE_CACHED": "0.006", "TNVED_AI_VISION_PRICE_OUTPUT": "1.20",
+		// Цены тени по умолчанию — Claude Sonnet 5.5 (прайс Anthropic, 2026-10).
+		"TNVED_AI_SHADOW_PRICE_INPUT": "2", "TNVED_AI_SHADOW_PRICE_CACHED": "0.20", "TNVED_AI_SHADOW_PRICE_OUTPUT": "10",
+		"TNVED_AI_SHADOW_BUDGET_USD": "0",
 	} {
 		value, err := nonNegativeDecimalEnv(name, fallback)
 		if err != nil {
@@ -146,6 +173,17 @@ func Load() (Config, error) {
 		TNVEDAIVisionPriceCached: prices["TNVED_AI_VISION_PRICE_CACHED"],
 		TNVEDAIVisionPriceOutput: prices["TNVED_AI_VISION_PRICE_OUTPUT"],
 		TNVEDAIEmbedModel:        strings.TrimSpace(os.Getenv("TNVED_AI_EMBED_MODEL")),
+		TNVEDAIShadowProvider:    strings.ToLower(stringEnv("TNVED_AI_SHADOW_PROVIDER", "anthropic")),
+		TNVEDAIShadowModel:       strings.TrimSpace(os.Getenv("TNVED_AI_SHADOW_MODEL")),
+		TNVEDAIShadowAPIKey:      stringEnv("TNVED_AI_SHADOW_API_KEY", strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY"))),
+		TNVEDAIShadowBaseURL:     strings.TrimSpace(os.Getenv("TNVED_AI_SHADOW_BASE_URL")),
+		TNVEDAIShadowEffort:      strings.ToLower(stringEnv("TNVED_AI_SHADOW_EFFORT", "high")),
+		TNVEDAIShadowVision:      shadowVision,
+		TNVEDAIShadowPriceInput:  prices["TNVED_AI_SHADOW_PRICE_INPUT"],
+		TNVEDAIShadowPriceCached: prices["TNVED_AI_SHADOW_PRICE_CACHED"],
+		TNVEDAIShadowPriceOutput: prices["TNVED_AI_SHADOW_PRICE_OUTPUT"],
+		TNVEDAIShadowBudgetUSD:   prices["TNVED_AI_SHADOW_BUDGET_USD"],
+		TNVEDAIShadowDailyLimit:  shadowDailyLimit,
 		RegistrationDisabled:     !allowRegistration,
 	}, nil
 }

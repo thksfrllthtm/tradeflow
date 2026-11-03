@@ -13,6 +13,10 @@ import (
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
 
+// agentForcedTries — сколько раз после лимита шагов модели предлагается вызвать finish, прежде чем
+// запуск заканчивается без итога.
+const agentForcedTries = 2
+
 type agentOutcome struct {
 	status string // done или waiting
 	result *AgentResult
@@ -195,7 +199,10 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	if r.toolbox.lookPhoto != nil {
 		tools = append(append([]agentTool{}, tools...), lookPhotoTool())
 	}
-	nudged, finishRetried, forced := false, false, false
+	nudged, finishRetried := false, false
+	// forcedTries — попытки принудительного итога после лимита шагов: на них другие инструменты не
+	// выполняются, модель получает отказ и зовёт finish (модель с размышлениями tool_choice не принимает).
+	forcedTries := 0
 	reviewed := !r.review
 	canAsk := false
 	for _, tool := range tools {
@@ -211,13 +218,15 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 		}
 		force := ""
 		if step >= maxSteps {
-			if forced {
+			if forcedTries == agentForcedTries {
 				r.emit("notice", map[string]string{"text": "Агент не дал итог за отведённые шаги. Уточните задачу или подберите заново."})
 				return agentOutcome{status: "done"}
 			}
-			forced = true
+			forcedTries++
 			force = "finish"
-			r.append(agentMessage{Role: "user", Content: "Лимит шагов исчерпан. Сразу вызови finish по уже собранным данным."})
+			if forcedTries == 1 {
+				r.append(agentMessage{Role: "user", Content: "Лимит шагов исчерпан. Сразу вызови finish по уже собранным данным."})
+			}
 		}
 		reply, err := r.model.Complete(ctx, r.materialize(), tools, force)
 		if err != nil {
@@ -258,6 +267,10 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 				}
 				r.toolMessage(call.ID, `{"status":"ignored: один вопрос за раз"}`)
 			default:
+				if force != "" {
+					r.toolMessage(call.ID, `{"error":"Лимит шагов исчерпан: инструменты больше недоступны — сразу вызови finish по уже собранным данным (чего не хватает — applies maybe или verdict doubtful)."}`)
+					continue
+				}
 				content, event := r.toolbox.run(ctx, call.Function.Name, call.Function.Arguments)
 				r.toolMessage(call.ID, content)
 				r.emit("tool", event)
@@ -272,14 +285,14 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 				r.toolMessage(askCall.ID, `{"status":"ignored: подбор завершён"}`)
 			}
 			// На принудительном итоге (лимит шагов) повторов нет: итог принимается как есть.
-			if problem != "" && !finishRetried && !forced {
+			if problem != "" && !finishRetried && forcedTries == 0 {
 				finishRetried = true
 				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"error": problem}))
 				r.onStep(r.transcript, reply.Usage)
 				continue
 			}
 			// Самопроверка: итог ещё не принимается, агент проверяет себя и вызывает finish снова.
-			if result != nil && !reviewed && !forced {
+			if result != nil && !reviewed && forcedTries == 0 {
 				reviewed = true
 				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"status": "review", "instruction": agentReviewPrompt}))
 				r.onStep(r.transcript, reply.Usage)

@@ -591,10 +591,17 @@ func documentHits(lines []string, stems []string, limit int) (chosen []int, matc
 type documentHit struct{ line, score int }
 
 // scoreLines — строки хотя бы с одной основой: сильнейшие первыми, при равенстве — по порядку документа.
+// Общие слова запроса (есть больше чем в пятой части строк: «из», «для», «продукция» в перечне) при
+// нескольких основах не считаются — иначе они перевешивают редкие (код, вид товара) и выдача по
+// большому акту становится случайной.
 func scoreLines(lines []string, stems []string) []documentHit {
-	hits := []documentHit{}
+	lowered := make([]string, len(lines))
 	for index, line := range lines {
-		lower := strings.ToLower(line)
+		lowered[index] = strings.ToLower(line)
+	}
+	stems = rareStems(lowered, stems)
+	hits := []documentHit{}
+	for index, lower := range lowered {
 		score := 0
 		for _, stem := range stems {
 			if strings.Contains(lower, stem) {
@@ -607,6 +614,30 @@ func scoreLines(lines []string, stems []string) []documentHit {
 	}
 	sort.SliceStable(hits, func(a, b int) bool { return hits[a].score > hits[b].score })
 	return hits
+}
+
+// rareStems — основы, которые встречаются не больше чем в пятой части строк; одна основа или все общие —
+// как есть.
+func rareStems(lowered []string, stems []string) []string {
+	if len(stems) < 2 {
+		return stems
+	}
+	rare := []string{}
+	for _, stem := range stems {
+		count := 0
+		for _, line := range lowered {
+			if strings.Contains(line, stem) {
+				count++
+			}
+		}
+		if count*5 <= len(lowered) {
+			rare = append(rare, stem)
+		}
+	}
+	if len(rare) == 0 {
+		return stems
+	}
+	return rare
 }
 
 // pickHits — до limit строк не из окрестности друг друга, по возрастанию.

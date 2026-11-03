@@ -7,9 +7,14 @@
 //	go run ./cmd/tnved-agent-eval -limit 20 -single  // всё на модели для фото (Flash)
 //
 // По файлу поставщика: фото и наименования — из Excel, правильные коды — из TSV «строка<TAB>код<TAB>наименование[<TAB>спорный]»;
-// схема моделей — -scheme (A–E, см. schemes), подробный итог — в -out (JSON).
+// схема моделей — -scheme (A–E и P — как на проде, см. schemes), подробный итог — в -out (JSON).
 //
 //	go run ./cmd/tnved-agent-eval -file goods.xlsx -answers answers.tsv -rows 3,4,5 -scheme E -out e.json
+//
+// Несколько схем через запятую идут параллельно на одних и тех же товарах (у провайдеров свои лимиты),
+// в конце — сравнение по товарам. Запросы Tavily расходуются каждой схемой отдельно.
+//
+//	go run ./cmd/tnved-agent-eval -limit 20 -scheme P,E -out compare.json
 package main
 
 import (
@@ -23,14 +28,17 @@ import (
 	"image"
 	"image/jpeg"
 	_ "image/png"
+	"io"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/config"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/ai"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/goods"
@@ -57,12 +65,24 @@ func models(cfg config.Config) map[string]tnvedagent.AgentModelConfig {
 }
 
 // schemes — схема: модель для фото и модель подбора ("" для фото — одна модель видит фото сама).
+// Схема P — модели как на проде (TNVED_AI_* / TNVED_AI_VISION_*), задаётся в schemeModels.
 var schemes = map[string][2]string{
 	"A": {"", "flash"},
 	"B": {"flash", "pro"},
 	"C": {"claude-opus", "flash"},
 	"D": {"claude-opus", "pro"},
 	"E": {"claude-opus", "claude-sonnet"},
+}
+
+const schemeProd = "P"
+
+// schemeRun — прогон одной схемы: модели, сводка и записи по товарам.
+type schemeRun struct {
+	Scheme  string                       `json:"scheme"`
+	Vision  string                       `json:"vision"`
+	Model   string                       `json:"model"`
+	Summary tnvedagent.AgentEvalSummary  `json:"summary"`
+	Records []tnvedagent.AgentEvalRecord `json:"records"`
 }
 
 func main() {
@@ -73,7 +93,7 @@ func main() {
 	file := flag.String("file", "", "Excel поставщика: прогон по его строкам вместо базы решений")
 	answers := flag.String("answers", "", "TSV с правильными кодами: строка, код, наименование, «спорный»")
 	rows := flag.String("rows", "", "строки Excel через запятую (пусто — все из -answers)")
-	scheme := flag.String("scheme", "", "схема моделей для прогона по файлу: A–E")
+	scheme := flag.String("scheme", "", "схемы моделей через запятую: A–E, P (как на проде); несколько — параллельно, со сравнением")
 	out := flag.String("out", "", "куда записать подробный итог (JSON)")
 	flag.Parse()
 	cfg, err := config.Load()
@@ -94,52 +114,15 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Hour)
 	defer cancel()
 	if *file != "" || *scheme != "" {
-		model, vision := schemeModels(cfg, *scheme)
-		agent := tnvedagent.NewTNVEDAgentService(database, model, vision, decisions.NewCodeDecisionService(database), settings)
-		fmt.Printf("Схема %s: фото — %s, подбор — %s, интернет: %v\n", strings.ToUpper(*scheme), visionName(vision), model.Name(), settings.WebSearchKey != "")
-		var summary tnvedagent.AgentEvalSummary
-		var records []tnvedagent.AgentEvalRecord
-		if *file != "" {
-			items, err := loadItems(ctx, *file, *answers, *rows)
-			if err != nil {
-				log.Fatal(err)
-			}
-			summary, records, err = agent.EvaluateItems(ctx, items, func(line string) { fmt.Println(line) })
-			if err != nil {
-				log.Fatal(ai.AIErrorMessage(err))
-			}
-		} else {
-			summary, records, err = agent.EvaluateDecisions(ctx, *limit, func(line string) { fmt.Println(line) })
-			if err != nil {
-				log.Fatal(ai.AIErrorMessage(err))
-			}
-		}
-		printSummary(summary)
-		if *out != "" {
-			data, _ := json.MarshalIndent(map[string]any{"scheme": strings.ToUpper(*scheme), "vision": visionName(vision), "model": model.Name(),
-				"summary": summary, "records": records}, "", "  ")
-			if err := os.WriteFile(*out, data, 0o644); err != nil {
-				log.Fatal(err)
-			}
-		}
+		runSchemes(ctx, cfg, database, settings, strings.Split(*scheme, ","), *file, *answers, *rows, *limit, *out)
 		return
 	}
-	visionConfig := tnvedagent.AgentModelConfig{
-		APIKey: cfg.TNVEDAIVisionAPIKey, BaseURL: cfg.TNVEDAIVisionBaseURL, Model: cfg.TNVEDAIVisionModel, Vision: cfg.TNVEDAIVision,
-		PriceInput: cfg.TNVEDAIVisionPriceInput, PriceCached: cfg.TNVEDAIVisionPriceCached, PriceOutput: cfg.TNVEDAIVisionPriceOutput,
-	}
-	model := tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
-		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision && cfg.TNVEDAIVisionModel == "", Effort: cfg.TNVEDAIEffort,
-		PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
-	})
-	var vision *tnvedagent.AgentModelClient
+	model, vision := envModels(cfg)
 	switch {
 	case *single && cfg.TNVEDAIVisionModel == "":
 		log.Fatal("-single: задайте TNVED_AI_VISION_MODEL — модель прежней схемы")
 	case *single:
-		model = tnvedagent.NewAgentModelClient(visionConfig)
-	case cfg.TNVEDAIVisionModel != "":
-		vision = tnvedagent.NewAgentModelClient(visionConfig)
+		model, vision = tnvedagent.NewAgentModelClient(visionConfig(cfg)), nil
 	}
 	agent := tnvedagent.NewTNVEDAgentService(database, model, vision, decisions.NewCodeDecisionService(database), settings)
 	fmt.Printf("Модель %s, фото: %s, записей до %d, интернет: %v, самопроверка: %v\n", model.Name(), visionName(vision), *limit, settings.WebSearchKey != "", settings.SelfCheck)
@@ -154,25 +137,116 @@ func main() {
 	printSummary(summary)
 }
 
-// schemeModels — модели схемы (A–E): модель подбора и, если фото смотрит отдельная модель, она.
-func schemeModels(cfg config.Config, scheme string) (*tnvedagent.AgentModelClient, *tnvedagent.AgentModelClient) {
-	pair, ok := schemes[strings.ToUpper(scheme)]
-	if !ok {
-		log.Fatal("-scheme: A, B, C, D или E")
+// runSchemes — прогон схем на одних и тех же товарах: параллельно (у провайдеров отдельные лимиты), по ходу
+// строки с меткой схемы, в конце сводка каждой схемы и сравнение по товарам.
+func runSchemes(ctx context.Context, cfg config.Config, database *repository.Repository, settings tnvedagent.AgentSettings, names []string, file, answers, rows string, limit int, out string) {
+	var items []tnvedagent.AgentEvalItem
+	if file != "" {
+		var err error
+		if items, err = loadItems(ctx, file, answers, rows); err != nil {
+			log.Fatal(err)
+		}
 	}
-	configs := models(cfg)
-	model := tnvedagent.NewAgentModelClient(configs[pair[1]])
-	var vision *tnvedagent.AgentModelClient
-	if pair[0] != "" {
-		reasoning := configs[pair[1]]
-		reasoning.Vision = false
-		model = tnvedagent.NewAgentModelClient(reasoning)
-		vision = tnvedagent.NewAgentModelClient(configs[pair[0]])
+	runs := make([]schemeRun, len(names))
+	agents := make([]*tnvedagent.TNVEDAgentService, len(names))
+	for index, name := range names {
+		name = strings.ToUpper(strings.TrimSpace(name))
+		model, vision := schemeModels(cfg, name)
+		agents[index] = tnvedagent.NewTNVEDAgentService(database, model, vision, decisions.NewCodeDecisionService(database), settings)
+		runs[index] = schemeRun{Scheme: name, Vision: visionName(vision), Model: model.Name()}
+		fmt.Printf("Схема %s: фото — %s, подбор — %s, интернет: %v\n", name, runs[index].Vision, runs[index].Model, settings.WebSearchKey != "")
+	}
+	var wg sync.WaitGroup
+	for index := range runs {
+		wg.Add(1)
+		go func(run *schemeRun, agent *tnvedagent.TNVEDAgentService) {
+			defer wg.Done()
+			report := func(line string) { fmt.Printf("[%s] %s\n", run.Scheme, line) }
+			var err error
+			if file != "" {
+				run.Summary, run.Records, err = agent.EvaluateItems(ctx, items, report)
+			} else {
+				run.Summary, run.Records, err = agent.EvaluateDecisions(ctx, limit, report)
+			}
+			if err != nil {
+				log.Printf("[%s] прогон прерван: %s", run.Scheme, ai.AIErrorMessage(err))
+			}
+		}(&runs[index], agents[index])
+	}
+	wg.Wait()
+	for _, run := range runs {
+		fmt.Printf("\nСхема %s (фото — %s, подбор — %s):", run.Scheme, run.Vision, run.Model)
+		printSummary(run.Summary)
+	}
+	if len(runs) > 1 {
+		printComparison(os.Stdout, runs)
+	}
+	if out != "" {
+		data, _ := json.MarshalIndent(runs, "", "  ")
+		if err := os.WriteFile(out, data, 0o644); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+// printComparison — товары по строкам, под каждым — итог каждой схемы.
+func printComparison(w io.Writer, runs []schemeRun) {
+	fmt.Fprintln(w, "\nСравнение по товарам:")
+	for index, record := range runs[0].Records {
+		fmt.Fprintf(w, "%3d. %s → %s\n", index+1, service.TruncateRunes(record.Name, 60), tnvedagent.FormatTNVEDCode(record.Code))
+		for _, run := range runs {
+			if index >= len(run.Records) {
+				fmt.Fprintf(w, "     %s: прогон прерван\n", run.Scheme)
+				continue
+			}
+			fmt.Fprintf(w, "     %s: %s\n", run.Scheme, run.Records[index].Outcome())
+		}
+	}
+}
+
+// schemeModels — модели схемы (A–E, P): модель подбора и, если фото смотрит отдельная модель, она.
+func schemeModels(cfg config.Config, scheme string) (*tnvedagent.AgentModelClient, *tnvedagent.AgentModelClient) {
+	var model, vision *tnvedagent.AgentModelClient
+	if scheme == schemeProd {
+		model, vision = envModels(cfg)
+	} else {
+		pair, ok := schemes[scheme]
+		if !ok {
+			log.Fatal("-scheme: A, B, C, D, E или P")
+		}
+		configs := models(cfg)
+		model = tnvedagent.NewAgentModelClient(configs[pair[1]])
+		if pair[0] != "" {
+			reasoning := configs[pair[1]]
+			reasoning.Vision = false
+			model = tnvedagent.NewAgentModelClient(reasoning)
+			vision = tnvedagent.NewAgentModelClient(configs[pair[0]])
+		}
 	}
 	if !model.Configured() || (vision != nil && !vision.Configured()) {
-		log.Fatal("модель не настроена: нужны DEEPSEEK_API_KEY (или TNVED_AI_API_KEY) и для Claude — ANTHROPIC_API_KEY")
+		log.Fatalf("схема %s: модель не настроена — нужны DEEPSEEK_API_KEY (или TNVED_AI_API_KEY) и для Claude — ANTHROPIC_API_KEY", scheme)
 	}
 	return model, vision
+}
+
+// envModels — модели как на проде: подбор из TNVED_AI_*, фото из TNVED_AI_VISION_* (nil — одна модель на всё).
+func envModels(cfg config.Config) (*tnvedagent.AgentModelClient, *tnvedagent.AgentModelClient) {
+	model := tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
+		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision && cfg.TNVEDAIVisionModel == "", Effort: cfg.TNVEDAIEffort,
+		PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
+	})
+	var vision *tnvedagent.AgentModelClient
+	if cfg.TNVEDAIVisionModel != "" {
+		vision = tnvedagent.NewAgentModelClient(visionConfig(cfg))
+	}
+	return model, vision
+}
+
+func visionConfig(cfg config.Config) tnvedagent.AgentModelConfig {
+	return tnvedagent.AgentModelConfig{
+		APIKey: cfg.TNVEDAIVisionAPIKey, BaseURL: cfg.TNVEDAIVisionBaseURL, Model: cfg.TNVEDAIVisionModel, Vision: cfg.TNVEDAIVision,
+		PriceInput: cfg.TNVEDAIVisionPriceInput, PriceCached: cfg.TNVEDAIVisionPriceCached, PriceOutput: cfg.TNVEDAIVisionPriceOutput,
+	}
 }
 
 // loadItems — строки Excel с фото и наименованиями и правильные коды из TSV.

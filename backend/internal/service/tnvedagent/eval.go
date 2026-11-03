@@ -64,7 +64,8 @@ type AgentEvalRecord struct {
 	Seconds          float64         `json:"seconds"`
 }
 
-func (r AgentEvalRecord) line(number int) string {
+// Outcome — вердикт (при ошибке — с лучшим кодом агента), стоимость и время: строка отчёта и ячейка сравнения схем.
+func (r AgentEvalRecord) Outcome() string {
 	verdict := r.Verdict
 	switch {
 	case r.Error != "":
@@ -72,7 +73,11 @@ func (r AgentEvalRecord) line(number int) string {
 	case r.Verdict == "ошибка" || r.Verdict == "среди вариантов":
 		verdict += ", лучший — " + FormatTNVEDCode(r.BestCode)
 	}
-	return fmt.Sprintf("%3d. %s → %s: %s ($%s, %.0fs)", number, service.TruncateRunes(r.Name, 60), FormatTNVEDCode(r.Code), verdict, r.CostUSD.StringFixed(4), r.Seconds)
+	return fmt.Sprintf("%s ($%s, %.0fs)", verdict, r.CostUSD.StringFixed(4), r.Seconds)
+}
+
+func (r AgentEvalRecord) line(number int) string {
+	return fmt.Sprintf("%3d. %s → %s: %s", number, service.TruncateRunes(r.Name, 60), FormatTNVEDCode(r.Code), r.Outcome())
 }
 
 func (summary *AgentEvalSummary) add(record AgentEvalRecord) {

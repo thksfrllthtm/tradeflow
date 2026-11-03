@@ -93,6 +93,13 @@ func newAgentService(database *repository.Repository, decisions *decisions.CodeD
 	if cfg.TNVEDAIDocumentsEffort != "" {
 		agent.SetDocumentsModel(model.WithEffort(cfg.TNVEDAIDocumentsEffort))
 	}
+	if cfg.TNVEDAIShadowModel != "" {
+		agent.SetShadow(tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
+			Provider: cfg.TNVEDAIShadowProvider, APIKey: cfg.TNVEDAIShadowAPIKey, BaseURL: cfg.TNVEDAIShadowBaseURL, Model: cfg.TNVEDAIShadowModel,
+			Vision: cfg.TNVEDAIShadowVision, Effort: cfg.TNVEDAIShadowEffort,
+			PriceInput: cfg.TNVEDAIShadowPriceInput, PriceCached: cfg.TNVEDAIShadowPriceCached, PriceOutput: cfg.TNVEDAIShadowPriceOutput,
+		}), tnvedagent.ShadowSettings{BudgetUSD: cfg.TNVEDAIShadowBudgetUSD, DailyLimit: cfg.TNVEDAIShadowDailyLimit})
+	}
 	// Поиск по смыслу в базе решений — той же моделью эмбеддингов, что у агента.
 	decisions.SetEmbedder(agent.Embedder())
 	return agent
@@ -243,6 +250,8 @@ func (s *Server) Router() *gin.Engine {
 	agent.Use(s.requireUser)
 	agent.GET("/status", s.agentStatus)
 	agent.GET("/usage", s.requireAdmin, s.agentUsage)
+	agent.GET("/log", s.requireAdmin, s.agentLog)
+	agent.GET("/log/:id", s.requireAdmin, s.agentLogEntry)
 	agent.GET("/sessions", s.requireNotTranslator, s.listAgentSessions)
 	agent.POST("/sessions", s.requireNotTranslator, s.startAgentSession)
 	agent.GET("/sessions/:id", s.getAgentSession)

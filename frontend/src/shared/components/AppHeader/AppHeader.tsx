@@ -7,7 +7,7 @@ import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная, на неё ведут логотип и пункт «Главная».
-type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'translator'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'agentLog' | 'translator'
 type Item = { value: AppSection; label: string; href: string }
 
 // Меню «Инструменты»: справочники, калькуляторы и рабочие инструменты.
@@ -20,6 +20,8 @@ const directories: Item[] = [
   { value: 'utilFee', label: 'Утильсбор', href: paths.utilFee },
   { value: 'exportCheck', label: 'Сверка экспортной', href: paths.exportCheck },
   { value: 'translator', label: 'Переводчик', href: paths.translator() },
+  // Только администратору.
+  { value: 'agentLog', label: 'Журнал агента', href: paths.agentLog },
 ]
 
 // Разделы, закрытые переводчику.
@@ -38,7 +40,7 @@ const chevron = <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="tru
 export function AppHeader({ user, section, onLogout }: { user: User; section: AppSection; onLogout: () => void }) {
   // Переводчику «Переводчик» — основная работа: ссылка в верхней строке, а не внутри «Инструментов».
   const translatorOnTop = user.role === 'translator'
-  const allowed = (item: Item) => (canEstimate(user) || !estimateSections.includes(item.value)) && (item.value !== 'translator' || (canTranslate(user) && !translatorOnTop))
+  const allowed = (item: Item) => (canEstimate(user) || !estimateSections.includes(item.value)) && (item.value !== 'translator' || (canTranslate(user) && !translatorOnTop)) && (item.value !== 'agentLog' || isAdmin(user))
   const dirs = directories.filter(allowed)
   const headerRef = useRef<HTMLElement>(null)
   const rates = useTodayRates()
@@ -87,6 +89,7 @@ export function AppHeader({ user, section, onLogout }: { user: User; section: Ap
           <small>{roleLabels[user.role] ?? ''}</small>
         </div>
         {isAdmin(user) && link({ value: 'employees', label: 'Сотрудники', href: paths.employees })}
+        {isAdmin(user) && link({ value: 'agentLog', label: 'Журнал агента', href: paths.agentLog })}
         <button type="button" className="app-header-logout" onClick={onLogout}>Выйти</button>
       </div>
     </details>

@@ -2,7 +2,7 @@ package tnvedagent
 
 // Модель Claude (Anthropic Messages API, официальный Go SDK) в тех же ролях, что AgentModelClient на
 // OpenAI-совместимом API: цикл агента с инструментами, описание фото, ответы по фото. Только для прогона
-// cmd/tnved-agent-eval (Provider = "anthropic"); сервер её не использует.
+// cmd/tnved-agent-eval (Provider = "anthropic") и теневой подбор на сервере (shadow.go).
 //
 // Переписка агента хранится в OpenAI-формате; здесь она переводится в формат Claude: системная подсказка —
 // отдельно, фото — base64-картинками, вызовы инструментов — tool_use, ответы — tool_result в сообщении

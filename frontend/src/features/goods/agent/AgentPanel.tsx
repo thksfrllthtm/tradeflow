@@ -49,7 +49,7 @@ const toolIcons: Record<string, string> = {
   open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑', general: '🗃️', act: '📖',
 }
 
-const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
+export const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
 
 export function agentItemFrom(item: GoodsItemInput): AgentItem {
   return {
@@ -448,7 +448,7 @@ type Applied = { code?: string; name?: string; nameRu?: string }
 // сворачиваемой группой, остальное — по одному.
 type ChatBlock = { type: 'steps'; messages: AgentMessage[] } | { type: 'message'; message: AgentMessage }
 
-function chatBlocks(messages: AgentMessage[]): ChatBlock[] {
+export function chatBlocks(messages: AgentMessage[]): ChatBlock[] {
   const blocks: ChatBlock[] = []
   for (const message of messages) {
     if (message.kind === 'input' || message.kind === 'match' || message.kind === 'similar' || message.kind === 'start') continue
@@ -510,7 +510,7 @@ function plural(count: number, one: string, few: string, many: string) {
 }
 
 // Ход подбора: свёрнут после итога, пока агент работает — открыт.
-function StepsGroup({ messages, live }: { messages: AgentMessage[]; live: boolean }) {
+export function StepsGroup({ messages, live }: { messages: AgentMessage[]; live: boolean }) {
   const [open, setOpen] = useState(false)
   const steps = messages.filter((message) => message.kind === 'tool').length
   const expanded = open || live
@@ -611,7 +611,7 @@ function perUnit(total: string, quantity: string) {
   return decimalText(value / count, 4).replace('.', ',')
 }
 
-function CodeLine({ code, name }: { code: string; name?: string }) {
+export function CodeLine({ code, name }: { code: string; name?: string }) {
   const parts = name ? nameParts(name) : []
   return <div className="ag-code-line">
     <CopyCode code={code} className="ag-code" />
@@ -703,7 +703,7 @@ function NameEditor({ suggested, applied, busy, onApply }: { suggested: string; 
 }
 
 // Ставки кода чипами и антидемпинг ЕАЭС (реестр ЕЭК).
-function CandidateRates({ candidate }: { candidate: AgentCandidate }) {
+export function CandidateRates({ candidate }: { candidate: AgentCandidate }) {
   return <>
     {candidate.nomenclature && <div className="ag-chips">
       <span className="ag-chip">Пошлина {candidate.nomenclature.tariffText || 'не указана'}</span>
@@ -717,7 +717,7 @@ function CandidateRates({ candidate }: { candidate: AgentCandidate }) {
 }
 
 // «Почему»: цитата из источника, довод агента и что уточнить.
-function CandidateWhy({ candidate }: { candidate: AgentCandidate }) {
+export function CandidateWhy({ candidate }: { candidate: AgentCandidate }) {
   return <>
     {candidate.quote && <blockquote>{candidate.quote}{quoteSourceLabels[candidate.quoteSource] && <cite>{quoteSourceLabels[candidate.quoteSource]}</cite>}</blockquote>}
     {candidate.decisionQuote && <blockquote>{candidate.decisionQuote}<cite>{candidate.decisionSource} (TWS.BY)</cite></blockquote>}

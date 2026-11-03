@@ -8,6 +8,7 @@ import { TrademarksPage } from '@/features/directories/trademarks/TrademarksPage
 import { ProductDirectoryPage } from '@/features/directories/products/ProductDirectoryPage'
 import { GoodsEstimatesPage } from '@/features/goods/GoodsEstimatesPage'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
+import { AgentLogPage } from '@/features/agentLog/AgentLogPage'
 import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
@@ -28,9 +29,10 @@ export function App() {
   // Куда вернуться после входа, если страницу открыли без сессии.
   const returnTo = useRef<string | null>(null)
   const authPage = route?.page === 'login' || route?.page === 'register'
-  // Сотрудники — только администратору, «Переводчик» — переводчику и администратору, сметы,
+  // Сотрудники и журнал агента — только администратору, «Переводчик» — переводчику и администратору, сметы,
   // справочник товаров, база решений и керамика — не переводчику; остальных на главную.
-  const knownRoute = route !== null && !(user !== null && (route.page === 'employees' && !isAdmin(user) || route.page === 'translator' && !canTranslate(user) || estimatePages.includes(route.page) && !canEstimate(user)))
+  const adminPages: string[] = ['employees', 'agentLog']
+  const knownRoute = route !== null && !(user !== null && (adminPages.includes(route.page) && !isAdmin(user) || route.page === 'translator' && !canTranslate(user) || estimatePages.includes(route.page) && !canEstimate(user)))
 
   useEffect(() => {
     const onSessionExpired = () => {
@@ -88,6 +90,7 @@ export function App() {
     case 'products': return <ProductDirectoryPage user={user} onLogout={() => void logout()} />
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
     case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null
+    case 'agentLog': return isAdmin(user) ? <AgentLogPage user={user} onLogout={() => void logout()} /> : null
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
     case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />

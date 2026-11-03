@@ -11,8 +11,10 @@ package tnvedagent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"sort"
 	"strings"
@@ -239,6 +241,9 @@ type documentsTaskResult struct {
 	task   documentsTask
 	result *AgentResult
 	err    error
+	// positions — позиции перечня с кодом, найденные программой (из справки и самого акта): если
+	// под-агент не ответил, запись в итоге строится по ним.
+	positions []actMatch
 }
 
 func (r *documentsTaskResult) failed() bool { return r.err != nil || r.result == nil }
@@ -360,7 +365,8 @@ func (d *documentsRun) runTask(ctx context.Context, task documentsTask, seed *ag
 		},
 	}
 	outcome := runner.execute(ctx)
-	return documentsTaskResult{task: task, result: outcome.result, err: outcome.err}
+	positions := append(append([]actMatch{}, task.positions...), preview.positions...)
+	return documentsTaskResult{task: task, result: outcome.result, err: outcome.err, positions: positions}
 }
 
 // actPreview — что программа нашла в акте до запуска под-агента: позиции перечня с кодом (кроме уже
@@ -509,6 +515,49 @@ func (d *documentsRun) taskMessage(task documentsTask, preview actPreview) strin
 	return text.String()
 }
 
+// documentsAgree — сходятся ли ответы двух моделей по документам: один и тот же набор мер «нужно» по акту
+// (адрес, без него — название меры) и виду документа. «Возможно» разногласием не считается: обе признают,
+// что решает декларант.
+func documentsAgree(main, shadow []AgentDocument) bool {
+	return maps.Equal(requiredDocuments(main), requiredDocuments(shadow))
+}
+
+func requiredDocuments(documents []AgentDocument) map[string]bool {
+	keys := map[string]bool{}
+	for _, document := range documents {
+		if document.Applies != "yes" {
+			continue
+		}
+		key := strings.ToLower(strings.TrimSpace(firstNonEmpty(document.URL, document.Measure)))
+		keys[document.Kind+"|"+key] = true
+	}
+	return keys
+}
+
+// lastDocumentsResult — последний ответ «Документы для ввоза» для кода среди содержимого сообщений ленты.
+func lastDocumentsResult(contents []json.RawMessage, code string) *AgentResult {
+	var found *AgentResult
+	for _, content := range contents {
+		var result AgentResult
+		if json.Unmarshal(content, &result) == nil && result.DocumentsCode == code {
+			found = &result
+		}
+	}
+	return found
+}
+
+// failedActDocument — под-агент по акту не ответил, но программа нашла в перечне позицию с кодом: запись по
+// ней (документ перечня и строка позиции), чтобы сотрудник видел, что именно проверить, а не только «⚠».
+func failedActDocument(task documentsTask, match actMatch) AgentDocument {
+	name := service.TruncateRunes(firstNonEmpty(match.product, match.heading), 150)
+	return AgentDocument{
+		Kind:    firstNonEmpty(match.kind, documentKind("", task.title+" "+task.body)),
+		Measure: "⚠ " + task.label + " — агент не ответил; код есть в перечне, позиция «" + name + "» — проверьте по ссылке",
+		Act:     task.title, URL: task.url, Applies: "maybe", Basis: match.codes, BasisSource: match.act.Text,
+		Requirement: "Меры акта агентом не проверены. Документ по перечню: " + firstNonEmpty(match.document, "—") + ". " + service.TruncateRunes(task.body, 300),
+	}
+}
+
 // mergeDocuments — итог из ответов под-агентов: записи в порядке актов справки, ⚠ по упавшим заданиям и
 // перечням общей базы, которых нет в ответах, условный выпуск от программы; описание по шаблону. Замечания —
 // по строке на акт с его подписью, только от актов с мерами «нужно» или «возможно».
@@ -518,11 +567,17 @@ func mergeDocuments(code string, results []documentsTaskResult, matches []actMat
 	for index := range results {
 		item := &results[index]
 		if item.failed() {
-			result.Documents = append(result.Documents, AgentDocument{
-				Kind: documentKind("", item.task.title+" "+item.task.body), Measure: "⚠ " + item.task.label + " — агент не ответил, проверьте по ссылке",
-				Act: item.task.title, URL: item.task.url, Applies: "maybe",
-				Requirement: "Меры этого акта не проверены. " + service.TruncateRunes(item.task.body, 300),
-			})
+			if len(item.positions) == 0 {
+				result.Documents = append(result.Documents, AgentDocument{
+					Kind: documentKind("", item.task.title+" "+item.task.body), Measure: "⚠ " + item.task.label + " — агент не ответил, проверьте по ссылке",
+					Act: item.task.title, URL: item.task.url, Applies: "maybe",
+					Requirement: "Меры этого акта не проверены. " + service.TruncateRunes(item.task.body, 300),
+				})
+				continue
+			}
+			for _, match := range item.positions[:min(2, len(item.positions))] {
+				result.Documents = append(result.Documents, failedActDocument(item.task, match))
+			}
 			continue
 		}
 		result.Documents = append(result.Documents, item.result.Documents...)
@@ -536,10 +591,13 @@ func mergeDocuments(code string, results []documentsTaskResult, matches []actMat
 		result.QuotesRemoved += item.result.QuotesRemoved
 		result.LinksRemoved += item.result.LinksRemoved
 	}
-	for index, match := range missingActs(matches, result.Documents) {
-		if index == 5 {
-			break
-		}
+	// Позиции перечней с кодом, которые нашла программа (общая база, справка, сами акты), в ответе всегда:
+	// под-агент их не упомянул — строка «⚠» по позиции. Так набор актов не зависит от модели и прогона.
+	positions := append([]actMatch{}, matches...)
+	for index := range results {
+		positions = append(positions, results[index].positions...)
+	}
+	for _, match := range missingActs(positions, result.Documents) {
 		result.Documents = append(result.Documents, missingActDocument(match))
 	}
 	if len(result.Documents) > agentMaxDocuments {

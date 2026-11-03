@@ -29,7 +29,7 @@ type AgentModelConfig struct {
 	// Effort — уровень размышлений (reasoning_effort: low, high, max). Задан — режим размышлений DeepSeek
 	// включён, "" — выключен (быстрее, как раньше). У Claude — output_config.effort.
 	Effort string
-	// Provider — "" (OpenAI-совместимый API) или "anthropic" (Claude, только прогон eval, см. claude.go).
+	// Provider — "" (OpenAI-совместимый API) или "anthropic" (Claude: прогон eval и теневой подбор, см. claude.go).
 	Provider string
 	// EmbedModel — модель эмбеддингов на том же адресе и ключе (gemini-embedding-001): поиск похожих
 	// товаров и записей по смыслу описания. "" — эмбеддинги выключены.
