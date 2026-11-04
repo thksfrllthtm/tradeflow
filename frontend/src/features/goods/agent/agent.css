@@ -222,3 +222,7 @@
   .ag-foot { padding: 10px 14px 12px; }
   .ag-disclaimer { margin-left: 0; }
 }
+
+/* Ссылки «Декларации и решения» у кода: подпись и по ссылке на сайт. */
+.ag-decl { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.ag-decl-label { color: var(--tf-muted); font-size: 12px; font-weight: 500; }

@@ -153,6 +153,11 @@ func TestCandidateDeclarationsLink(t *testing.T) {
 	if fits == nil || fits.Count != 120 || fits.Query != "перчатки трикотажные" || fits.URL != directory.DeclarationsURL("перчатки трикотажные", "6116102000") {
 		t.Fatalf("код из поиска: %+v", fits)
 	}
+	if len(fits.Links) != 3 || fits.Links[0].Site != "ifcg.ru" || fits.Links[1].Site != "tks.ru" || fits.Links[2].Site != directory.NSIDecisionsSite ||
+		!strings.Contains(fits.Links[1].URL, "tks.ru/db/tnved/goods/?searchstr=") || !strings.HasPrefix(fits.Links[2].URL, "https://nsi.eaeunion.org/portal/1999?searchText=") ||
+		max(fits.Links[0].Count, fits.Links[1].Count, fits.Links[2].Count) != 120 {
+		t.Fatalf("ссылки по сайтам: %+v", fits.Links)
+	}
 	if no == nil || no.Count != 0 || no.URL != directory.DeclarationsURL("перчатки рабочие", "4015190000") {
 		t.Fatalf("код вне поиска: %+v", no)
 	}

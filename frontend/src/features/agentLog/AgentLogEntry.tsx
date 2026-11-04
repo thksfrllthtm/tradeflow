@@ -9,6 +9,7 @@ import { decisionStatusLabels } from '@/shared/tnved/decisions'
 import { AgentMessage, AgentResult } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
 import { DocumentsAnswer } from '@/features/goods/agent/DocumentsAnswer'
+import { DeclarationsLink } from '@/features/goods/agent/DeclarationsLink'
 import { CandidateRates, CandidateWhy, chatBlocks, CodeLine, StepsGroup, verdictLabels } from '@/features/goods/agent/AgentPanel'
 import { agentLogApi, LogEntry, LogModel, ShadowMessage, TranscriptMessage } from './agentLogApi'
 import { comparison, costText, decisionStatusClass, durationText, modelOutcome, statusLabels } from './logRows'
@@ -89,12 +90,19 @@ function ModelColumn({ title, model, messages, transcript }: { title: string; mo
   return <section className="alog-column">
     <header>
       <h3>{title}{model && <small>{model.model}</small>}</h3>
-      {model ? <dl className="alog-metrics">
-        <div><dt>Код</dt><dd>{outcome.tone === 'ok' ? <code>{outcome.text}</code> : <span className={`alog-state ${outcome.tone}`}>{outcome.text}</span>}</dd></div>
-        <div><dt>Статус</dt><dd>{statusLabels[model.status] ?? model.status}</dd></div>
-        <div><dt>Стоимость</dt><dd>{costText(model.costUsd)}</dd></div>
-        <div><dt>Время · шаги</dt><dd>{durationText(model.seconds)} · {model.steps}</dd></div>
-      </dl> : <p className="alog-none">Тень для этого подбора не запускалась.</p>}
+      {model ? <div className="alog-metrics">
+        <div><small>Код</small><b>{outcome.tone === 'ok' ? <code>{outcome.text}</code> : <span className={`alog-state ${outcome.tone}`}>{outcome.text}</span>}</b></div>
+        <div><small>Статус</small><b><i className={model.status === 'done' ? 'alog-dot on' : 'alog-dot'} aria-hidden="true" />{statusLabels[model.status] ?? model.status}</b></div>
+        <div title="Токены × цены моделей из настроек сервера (запись в кэш Claude +25%). Это расчёт по прайсу, а не счёт провайдера: скидки DeepSeek за непиковые часы не учтены.">
+          <small>Стоимость</small><b>{costText(model.costUsd)}</b><span>весь разговор</span>
+        </div>
+        <div title="От запуска модели до первого итога, вопроса или ошибки. Описание фото и поиск в базе решений до запуска не входят; у обеих моделей отсчёт от одного момента.">
+          <small>Время</small><b>{durationText(model.seconds)}</b><span>до первого итога</span>
+        </div>
+        <div title="Вызовов модели за весь разговор: подбор, уточнения, под-агенты по актам.">
+          <small>Шаги</small><b>{model.steps}</b><span>весь разговор</span>
+        </div>
+      </div> : <p className="alog-none">Тень для этого подбора не запускалась.</p>}
       {model?.error && <p className="ag-error">{model.error}</p>}
     </header>
     {chatBlocks(messages).map((block, index) => block.type === 'steps'
@@ -128,6 +136,7 @@ function ReadOnlyResult({ result }: { result: AgentResult }) {
     <div className="ag-row-top"><CodeLine code={candidate.code} name={candidate.nomenclature?.name} /><i className={`ag-pill ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i></div>
     <CandidateRates candidate={candidate} />
     <CandidateWhy candidate={candidate} />
+    {candidate.declarations && <div className="ag-actions"><DeclarationsLink candidate={candidate} /></div>}
   </article>
   return <section className="ag-result">
     <header className="ag-section-head"><h3>Предложение</h3></header>

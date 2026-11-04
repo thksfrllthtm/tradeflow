@@ -84,11 +84,15 @@
 .alog-column > header { display: grid; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--tf-border-inner); }
 .alog-column > header h3 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: .95rem; font-weight: 600; }
 .alog-column > header h3 small { color: var(--tf-muted); font-size: .78rem; font-weight: 400; }
-.alog-metrics { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 4px 20px; margin: 0; }
-.alog-metrics div { display: grid; gap: 1px; }
-.alog-metrics dt { color: var(--tf-muted); font-size: .74rem; font-weight: 500; }
-.alog-metrics dd { margin: 0; color: var(--tf-text); font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.alog-metrics dd code { font-size: .9rem; }
+/* Показатели модели: пять ячеек в ряд с тонкими разделителями; подпись сверху, значение, пояснение снизу */
+.alog-metrics { display: flex; flex-wrap: wrap; margin: 2px 0 0; }
+.alog-metrics > div { display: grid; align-content: start; gap: 2px; min-width: 0; padding: 2px 16px 2px 0; }
+.alog-metrics > div + div { padding-left: 16px; border-left: 1px solid var(--tf-border-inner); }
+.alog-metrics small { color: var(--tf-muted); font-size: .7rem; font-weight: 500; letter-spacing: .03em; text-transform: uppercase; }
+.alog-metrics b { display: flex; align-items: center; gap: 6px; color: var(--tf-text); font-size: .98rem; font-weight: 600; line-height: 1.3; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.alog-metrics b code { font-size: .98rem; }
+.alog-metrics span { color: var(--tf-muted); font-size: .72rem; }
+.alog-metrics .alog-state { font-size: .92rem; }
 .alog-column .ag-steps { margin: 0; }
 .alog-column .ag-result { background: var(--tf-card); }
 .alog-column .ag-cand { background: var(--tf-card); }

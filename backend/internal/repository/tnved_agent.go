@@ -42,9 +42,11 @@ type TNVEDAgentSession struct {
 	VisionCostUSD          decimal.Decimal `gorm:"column:vision_cost_usd;type:numeric(12,6);not null"`
 	Model                  string          `gorm:"size:100;not null"`
 	// TrademarkHits — вопрос «/троис» справочника: сколько знаков реестра найдено; nil — не проверка ТРОИС.
-	TrademarkHits *int      `gorm:"column:trademark_hits"`
-	CreatedAt     time.Time `gorm:"not null"`
-	UpdatedAt     time.Time `gorm:"not null"`
+	TrademarkHits *int `gorm:"column:trademark_hits"`
+	// AgentStartedAt — первый запуск агента (после описания фото и поиска в базе): от него считается время до итога.
+	AgentStartedAt *time.Time `gorm:"column:agent_started_at"`
+	CreatedAt      time.Time  `gorm:"not null"`
+	UpdatedAt      time.Time  `gorm:"not null"`
 }
 
 func (TNVEDAgentSession) TableName() string { return "tnved_agent_sessions" }
@@ -398,4 +400,14 @@ func (r *Repository) ClaimShadowRun(ctx context.Context, id int64) (bool, error)
 	result := r.db.WithContext(ctx).Model(&TNVEDAgentShadowRun{}).Where("id = ? AND status IN ('done', 'error')", id).
 		Updates(map[string]any{"status": "running", "error": ""})
 	return result.RowsAffected > 0, result.Error
+}
+
+// UpdateAgentMessageContent — содержимое сообщения чата (итог «Документов для ввоза» после второго мнения).
+func (r *Repository) UpdateAgentMessageContent(ctx context.Context, id int64, content JSON) error {
+	return r.db.WithContext(ctx).Model(&TNVEDAgentMessage{}).Where("id = ?", id).Update("content", content).Error
+}
+
+// MarkAgentStarted — момент первого запуска агента по сессии (повторные ходы его не сдвигают).
+func (r *Repository) MarkAgentStarted(ctx context.Context, id int64) error {
+	return r.db.WithContext(ctx).Model(&TNVEDAgentSession{}).Where("id = ? AND agent_started_at IS NULL", id).Update("agent_started_at", time.Now().UTC()).Error
 }

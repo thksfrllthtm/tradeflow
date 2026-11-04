@@ -40,6 +40,8 @@ type Props = {
   onAntiDumpingChoice: (index: number, key: string) => void
   // «Сменить» код строки: выбор из справочника, затем пересчёт с текущими ценами.
   onChangeCode: (index: number) => void
+  // Чат подбора кода ИИ для строки (нет — кнопки нет).
+  onAgent?: (index: number) => void
   // «Учитывать строку в расчёте»; смета пересчитывается.
   onToggleIncluded: (index: number, included: boolean) => void
   // Таможенная стоимость по инвойсу или по СУР и параметры СУР; смета пересчитывается.
@@ -103,6 +105,7 @@ export function ResultStep({
   onPriceBlur,
   onAntiDumpingChoice,
   onChangeCode,
+  onAgent,
   onToggleIncluded,
   sir,
   onSirChange,
@@ -664,6 +667,7 @@ export function ResultStep({
             sirMode={sirMode}
             loading={loading}
             onChangeCode={() => onChangeCode(selectedRow.index)}
+            onAgent={onAgent ? () => onAgent(selectedRow.index) : undefined}
             onToggleIncluded={(included) => onToggleIncluded(selectedRow.index, included)}
             onAntiDumpingChoice={(key) => onAntiDumpingChoice(selectedRow.index, key)}
           />

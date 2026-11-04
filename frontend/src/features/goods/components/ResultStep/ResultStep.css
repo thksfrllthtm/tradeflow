@@ -276,3 +276,9 @@
 .goods-page .rs-table-wrap.wide .rs-table tfoot .rs-pay { z-index: 3; }
 .goods-page .rs-table-wrap.wide .rs-table .rs-price { width: 64px; }
 
+
+/* Строка без кода в панели итога: «Указать код» и «Подобрать ИИ» рядом. */
+.rp-set { display: flex; flex-wrap: wrap; gap: 8px; }
+.rs-step .rs-btn.rp-set-code.ai { border-color: var(--tf-border); color: var(--tf-green); }
+.rs-step .rs-btn.rp-set-code.ai:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green-soft); }
+.rp-head-actions { display: inline-flex; gap: 10px; }

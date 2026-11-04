@@ -2,8 +2,9 @@ package repository
 
 // Журнал агента для администратора: все подборы всех сотрудников, рядом итог теневой модели
 // (tnved_agent_shadow_runs) и запись базы решений по подбору. Лучший код считается в SQL так же, как
-// AgentResult.Best(): первый «подходит», иначе первый не «не подходит». Время основной модели — от запуска
-// агента (сообщение start или input) до первого итога, вопроса или ошибки.
+// AgentResult.Best(): первый «подходит», иначе первый не «не подходит». Время основной модели — от первого
+// запуска агента (agent_started_at; у старых сессий — сообщение start или input) до первого итога, вопроса
+// или ошибки.
 
 import (
 	"context"
@@ -138,7 +139,7 @@ func (r *Repository) AgentLog(ctx context.Context, filter AgentLogFilter) ([]Age
 	var rows []AgentLogRow
 	err := r.db.WithContext(ctx).Raw(`SELECT s.id, s.user_id, u.name AS user_name, u.email AS user_email, s.estimate_id, s.item_id, s.mode, s.title,
 		s.status, s.error, COALESCE(s.item->>'name', '') AS item_name, COALESCE(s.item->>'supplierName', '') AS supplier_name, s.model,
-		s.cost_usd, s.steps, s.runs, s.created_at, COALESCE(sb.code, '') AS best_code, m.started AS started_at, m.finished AS finished_at,
+		s.cost_usd, s.steps, s.runs, s.created_at, COALESCE(sb.code, '') AS best_code, COALESCE(s.agent_started_at, m.started) AS started_at, m.finished AS finished_at,
 		sh.id AS shadow_id, COALESCE(sh.status, '') AS shadow_status, COALESCE(sh.model, '') AS shadow_model, COALESCE(sh.error, '') AS shadow_error,
 		COALESCE(sh.cost_usd, 0) AS shadow_cost_usd, COALESCE(sh.steps, 0) AS shadow_steps, sh.started_at AS shadow_started_at,
 		sh.finished_at AS shadow_finished_at, COALESCE(shb.code, '') AS shadow_best_code, sh.documents_agree AS shadow_documents_agree,
@@ -161,7 +162,7 @@ func (r *Repository) AgentLog(ctx context.Context, filter AgentLogFilter) ([]Age
 		COUNT(*) FILTER (WHERE sh.documents_agree IS NOT NULL) AS documents_compared,
 		COUNT(*) FILTER (WHERE sh.documents_agree) AS documents_agree,
 		COALESCE(SUM(s.cost_usd), 0) AS cost_usd, COALESCE(SUM(sh.cost_usd), 0) AS shadow_cost_usd,
-		COALESCE(AVG(EXTRACT(EPOCH FROM (m.finished - m.started))::float8) FILTER (WHERE m.finished IS NOT NULL), 0) AS seconds,
+		COALESCE(AVG(EXTRACT(EPOCH FROM (m.finished - COALESCE(s.agent_started_at, m.started)))::float8) FILTER (WHERE m.finished IS NOT NULL), 0) AS seconds,
 		COALESCE(AVG(EXTRACT(EPOCH FROM (sh.finished_at - sh.started_at))::float8) FILTER (WHERE sh.status = 'done'), 0) AS shadow_seconds
 		`+from, args...).Scan(&summary).Error
 	return rows, summary, err

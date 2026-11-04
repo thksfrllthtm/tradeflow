@@ -434,11 +434,14 @@ function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string
       return withProblem({ html, title: item.name + other, className: repeat ? 'xs-repeat' : '' })
     }
     case 'code': {
-      // Нет кода — кнопка «Указать код» (справочник); код — моноширинным, метка «ИИ», если его предложил подбор;
-      // значки справочника, подбора ИИ и базы решений — у выбранной строки и при наведении.
+      // Нет кода — кнопки «Указать код» (справочник) и «ИИ» (чат подбора, со значком его состояния); код —
+      // моноширинным, метка «ИИ», если его предложил подбор; значки справочника, подбора ИИ и базы решений —
+      // у выбранной строки и при наведении.
       if (!item.code) {
-        const html = item.excluded ? '' : '<button type="button" class="xs-set-code" data-act="picker">Указать код</button>'
-        return withProblem({ html, title: 'Выберите код в справочнике или введите его (двойной щелчок или просто начните печатать)', className: 'xs-code-empty' })
+        const empty = agentView(row.agent, '')
+        const html = item.excluded ? '' : '<span class="xs-set"><button type="button" class="xs-set-code" data-act="picker" title="Выбрать товар или код ТН ВЭД из справочника">Указать код</button>'
+          + `<button type="button" class="xs-set-code ai ${empty.tone}" data-act="agent" title="${escape(empty.title)}">${ICONS.agent}ИИ${empty.mark ? `<i>${escape(empty.mark)}</i>` : ''}</button></span>`
+        return withProblem({ html, title: 'Выберите код в справочнике, подберите его с ИИ или введите (двойной щелчок или просто начните печатать)', className: 'xs-code-empty' })
       }
       const agent = agentView(row.agent, item.code)
       const saved = row.decision === 'saved' || typeof row.decision === 'number'
@@ -504,6 +507,7 @@ function agentView(status: AgentRowStatus | undefined, code: string): { tone: st
   if (status?.status === 'waiting') return { tone: 'waiting', mark: '?', title: 'Подбор ждёт ответа на вопрос — открыть чат' }
   if (status?.status === 'error') return { tone: 'error', mark: '!', title: 'Подбор прервался — открыть чат' }
   if (status?.status === 'done' && status.bestCode) {
+    if (!code) return { tone: 'suggest', mark: '!', title: `Подбор предложил код ${formatCode(status.bestCode)} — открыть чат и применить` }
     return status.bestCode === code
       ? { tone: 'same', mark: '✓', title: 'Код совпадает с подбором — открыть чат' }
       : { tone: 'suggest', mark: '≠', title: `Подбор предлагает другой код ${formatCode(status.bestCode)} — открыть чат` }

@@ -52,6 +52,8 @@ var (
 type DeclarationExample struct {
 	Code string `json:"code"`
 	Text string `json:"text"`
+	// Source — чьё это решение, для предварительных решений ЕАЭС («предварительное решение · КАЗАХСТАН (НСИ ЕАЭС)»).
+	Source string `json:"source,omitempty"`
 }
 
 // DeclarationGroup — товарная позиция (4 цифры) или код (10 цифр): сколько записей деклараций нашлось
@@ -128,6 +130,16 @@ func (f *WebPageFetcher) Declarations(ctx context.Context, query, within string)
 			})
 		}
 	}
+	// Официальный сборник предварительных решений ЕАЭС: кеш — по запросу, позиция или код — отбор из него.
+	nsi := NSIDecisionsURL(query)
+	add(NSIDecisionsSite, nsi, func() ([]DeclarationGroup, error) {
+		decisions, err := f.nsiDecisions(ctx, query)
+		if err != nil {
+			return nil, err
+		}
+		return nsiGroups(decisions), nil
+	})
+	sources[len(sources)-1].Groups = groupsWithin(sources[len(sources)-1].Groups, within)
 	for _, source := range sources {
 		if source.Error == "" {
 			return sources, fromCache, nil
@@ -230,3 +242,7 @@ func parseTKS(grouped, plain string) []DeclarationGroup {
 func declarationText(fragment string) string {
 	return strings.Join(strings.Fields(html.UnescapeString(htmlTags.ReplaceAllString(fragment, ""))), " ")
 }
+
+// TKSDeclarationsURL — страница tks.ru с описаниями из деклараций по словам (ссылка для сотрудника);
+// ok=false — в запросе символы не из windows-1251.
+func TKSDeclarationsURL(query string) (string, bool) { return tksURL(query, false) }

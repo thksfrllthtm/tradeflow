@@ -123,6 +123,85 @@ func TestDocumentsAgree(t *testing.T) {
 	}
 }
 
+// Второе мнение: спорные меры «возможно» с доводом второй модели, найденная только ею мера добавляется как
+// «возможно», условный выпуск и описание пересчитаны, заметка сотруднику; без расхождений итог не тронут.
+func TestApplySecondOpinion(t *testing.T) {
+	cc004 := AgentDocument{Kind: "cc", Measure: "Сертификат ТР ТС 004/2011", URL: "https://docs.eaeunion.org/91", Applies: "yes", Requirement: "Низковольтное."}
+	sanitary := AgentDocument{Kind: "other", Measure: "Санэпиднадзор", URL: testActURL, Applies: "no", Requirement: "Техника под техрегламентами."}
+	result := &AgentResult{Documents: []AgentDocument{cc004, sanitary, conditionalDocument([]AgentDocument{cc004}, "")}, Notes: "старая заметка"}
+	others := []AgentDocument{
+		{Kind: "cc", Measure: "Сертификат ТР ТС 004/2011", URL: "https://docs.eaeunion.org/91", Applies: "yes"},
+		{Kind: "other", Measure: "Санэпиднадзор", URL: testActURL, Applies: "yes", Requirement: "Продукция машиностроения бытового назначения."},
+		{Kind: "cc", Measure: "Сертификат ТР ТС 010/2011", URL: "https://docs.eaeunion.org/6", Applies: "yes", Requirement: "Средство малой механизации."},
+		{Kind: "conditional", Measure: "Условный выпуск", Applies: "yes"},
+	}
+	if changed := applySecondOpinion(result, others, "claude-sonnet-5-5", "", nil, 0); changed != 2 {
+		t.Fatalf("изменено мер: %d", changed)
+	}
+	byMeasure := map[string]AgentDocument{}
+	for _, document := range result.Documents {
+		byMeasure[document.Measure] = document
+	}
+	if byMeasure["Сертификат ТР ТС 004/2011"].Applies != "yes" || byMeasure["Санэпиднадзор"].Applies != "maybe" ||
+		!strings.Contains(byMeasure["Санэпиднадзор"].Requirement, "Вторая модель (claude-sonnet-5-5): нужно — Продукция машиностроения") ||
+		byMeasure["Сертификат ТР ТС 010/2011"].Applies != "maybe" || !strings.HasPrefix(byMeasure["Сертификат ТР ТС 010/2011"].Requirement, "Нашла только вторая модель") {
+		t.Fatalf("меры: %+v", result.Documents)
+	}
+	last := result.Documents[len(result.Documents)-1]
+	if last.Kind != documentKindConditional || last.Applies != "yes" || !strings.Contains(result.Description, "Возможно: Санэпиднадзор") ||
+		!strings.HasPrefix(result.Notes, "старая заметка\n") || !strings.Contains(result.Notes, "не согласна с оценкой 2 мер") {
+		t.Fatalf("условный выпуск, описание, заметка: %+v %q %q", last, result.Description, result.Notes)
+	}
+	same := &AgentResult{Documents: []AgentDocument{cc004}, Notes: "как есть"}
+	if changed := applySecondOpinion(same, []AgentDocument{{Kind: "cc", URL: "https://docs.eaeunion.org/91", Applies: "maybe"}}, "x", "", nil, 0); changed != 0 || same.Notes != "как есть" || len(same.Documents) != 1 {
+		t.Fatalf("без расхождений итог не трогается: %+v", same)
+	}
+	// У акта несколько позиций перечня, каждая своей строкой: сравнивается лучшая оценка акта, а «не относится»
+	// второй модели по другой позиции того же акта — не разногласие.
+	act010 := "https://adilet.zan.kz/rus/docs/H18EK000006"
+	multi := &AgentResult{Documents: []AgentDocument{
+		{Kind: "cc", Measure: "СС ТР ТС 010/2011 (п. 5)", URL: act010, Applies: "yes", Requirement: "Средство малой механизации."},
+		{Kind: "cc", Measure: "СС ТР ТС 010/2011 (п. 3)", URL: act010, Applies: "no", Requirement: "Гаражное оборудование."},
+		{Kind: "cc", Measure: "СС ТР ТС 020/2011", URL: "https://adilet.zan.kz/rus/docs/H14EK000002", Applies: "no", Requirement: "Не бытовой прибор."},
+	}}
+	theirs := []AgentDocument{
+		{Kind: "cc", Measure: "СС ТР ТС 010/2011 (п. 5)", URL: act010, Applies: "yes"},
+		{Kind: "cc", Measure: "СС ТР ТС 010/2011 (п. 7)", URL: act010, Applies: "maybe"},
+		{Kind: "cc", Measure: "СС ТР ТС 010/2011 (п. 12)", URL: act010, Applies: "no", Requirement: "Оборудование для бурения."},
+		{Kind: "cc", Measure: "СС ТР ТС 020/2011 (п. 1)", URL: "https://adilet.zan.kz/rus/docs/H14EK000002", Applies: "yes", Requirement: "Газонокосилки, триммеры."},
+		{Kind: "cc", Measure: "СС ТР ТС 020/2011 (п. 4)", URL: "https://adilet.zan.kz/rus/docs/H14EK000002", Applies: "no", Requirement: "Инструмент электрический."},
+	}
+	if changed := mergeSecondOpinion(multi, theirs, "claude"); changed != 1 || multi.Documents[0].Applies != "yes" || multi.Documents[1].Applies != "no" ||
+		multi.Documents[2].Applies != "maybe" || !strings.Contains(multi.Documents[2].Requirement, "нужно — Газонокосилки, триммеры") || len(multi.Documents) != 3 {
+		t.Fatalf("несколько позиций одного акта: изменено %d, %+v", changed, multi.Documents)
+	}
+}
+
+// Предварительное решение ЕАЭС из search_declarations — источник decisionQuote наравне со страницей кода;
+// цитата не из решения убирается.
+func TestDecisionQuoteFromEAEUDecisions(t *testing.T) {
+	toolbox := newAgentToolbox(&fakeAgentData{})
+	toolbox.opened["6116102000"] = "Дерево кода:\n6116 10 200 0 перчатки\n" + notesHeading + "\nВ данную субпозицию включаются трикотажные перчатки с покрытием ладони."
+	toolbox.rememberDeclarations("перчатки", []directory.DeclarationSource{{Site: directory.NSIDecisionsSite, Groups: []directory.DeclarationGroup{{Code: "6116102000", Count: 1,
+		Examples: []directory.DeclarationExample{{Code: "6116102000", Text: "Перчатки трикотажные хозяйственные с латексным покрытием ладони для защиты рук. Обоснование: ОПИ 1 и 6", Source: "предварительное решение · КАЗАХСТАН (НСИ ЕАЭС)"}}}}}})
+	finish := func(decisionQuote string) *AgentResult {
+		args, _ := json.Marshal(map[string]any{"description": "Перчатки", "name": "Перчатки", "confidence": "high", "candidates": []map[string]string{
+			{"code": "6116102000", "verdict": "fits", "reason": "Да.", "quote": "трикотажные перчатки с покрытием ладони", "decisionQuote": decisionQuote},
+		}})
+		result, _, err := toolbox.finish(context.Background(), string(args))
+		if err != nil || result == nil || len(result.Candidates) != 1 {
+			t.Fatalf("итог: %+v %v", result, err)
+		}
+		return result
+	}
+	if candidate := finish("перчатки трикотажные хозяйственные с латексным покрытием ладони").Candidates[0]; candidate.DecisionSource != "предварительное решение · КАЗАХСТАН (НСИ ЕАЭС)" || candidate.DecisionQuote == "" {
+		t.Fatalf("решение ЕАЭС как второе доказательство: %+v", candidate)
+	}
+	if candidate := finish("перчатки нитриловые медицинские смотровые").Candidates[0]; candidate.DecisionSource != "" || candidate.DecisionQuote != "" {
+		t.Fatalf("выдуманная цитата решения должна убираться: %+v", candidate)
+	}
+}
+
 // Под-агент не ответил, но программа нашла в перечне позицию с кодом: запись по ней, а не только «⚠».
 func TestMergeDocumentsFailedTaskUsesListPosition(t *testing.T) {
 	act := directory.WebLink{URL: testActURL, Text: "Решение КТС №299 от 28.05.2010"}

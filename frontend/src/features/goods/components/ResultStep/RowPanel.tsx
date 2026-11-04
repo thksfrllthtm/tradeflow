@@ -30,6 +30,8 @@ type Props = {
   sirMode: boolean
   loading: boolean
   onChangeCode: () => void
+  // Открыть чат подбора кода ИИ для строки (нет — кнопки нет).
+  onAgent?: () => void
   onToggleIncluded: (included: boolean) => void
   onAntiDumpingChoice: (key: string) => void
 }
@@ -38,7 +40,7 @@ const arrow = (d: string) => <svg width="16" height="16" viewBox="0 0 16 16" ari
 
 // Панель выбранной строки справа (на узком экране — выезжающая): код и ставки, цена с пояснением ИИ,
 // количество и вес, расчёт по строке, включение строки в расчёт.
-export function RowPanel({ item, source, index, problems, antiDumpingInfo, position, count, onPrev, onNext, onClose, priceField, aiNote, edited, sirMode, loading, onChangeCode, onToggleIncluded, onAntiDumpingChoice }: Props) {
+export function RowPanel({ item, source, index, problems, antiDumpingInfo, position, count, onPrev, onNext, onClose, priceField, aiNote, edited, sirMode, loading, onChangeCode, onAgent, onToggleIncluded, onAntiDumpingChoice }: Props) {
   const names = itemNames(item, source)
   const code = item.code || source?.code || ''
   const snapshot = item.directorySnapshot
@@ -82,11 +84,17 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
     <section className="rp-block">
       <div className="rp-block-head">
         <h3>Код ТН ВЭД</h3>
-        {code && <button type="button" className="button-link" onClick={onChangeCode} disabled={loading}>Сменить</button>}
+        {code && <span className="rp-head-actions">
+          {onAgent && <button type="button" className="button-link" onClick={onAgent} disabled={loading}>Чат ИИ</button>}
+          <button type="button" className="button-link" onClick={onChangeCode} disabled={loading}>Сменить</button>
+        </span>}
       </div>
       {code ? <CopyCode code={code} className="rp-code" /> : <p className="rp-field-error">Код не указан</p>}
       {code && codeProblem && <p className="rp-field-error">{codeProblem.text}</p>}
-      {!code && <button type="button" className="rs-btn rp-set-code" onClick={onChangeCode} disabled={loading}>Указать код</button>}
+      {!code && <div className="rp-set">
+        <button type="button" className="rs-btn rp-set-code" onClick={onChangeCode} disabled={loading}>Указать код</button>
+        {onAgent && <button type="button" className="rs-btn rp-set-code ai" onClick={onAgent} disabled={loading} title="Подобрать код ТН ВЭД с ИИ: чат по строке с фото и наименованиями">Подобрать ИИ</button>}
+      </div>}
       {description && <p className="rp-muted">{description}</p>}
       {(duty || vat) && <p className="rp-chips">{duty && <span>Пошлина {duty}</span>}{vat && <span>НДС {vat}</span>}</p>}
       {antiDumpingInfo && <div className="rp-dump">

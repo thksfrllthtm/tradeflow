@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -179,13 +180,13 @@ func agentTools(reference bool) []agentTool {
 			objectSchema(map[string]any{"codes": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "До 10 кодов по 10 цифр"}}, "codes")),
 		tool("list_heading", "Все коды, начинающиеся с данных цифр (4–8 цифр): соседние коды товарной позиции или субпозиции, включая «прочие».",
 			objectSchema(map[string]any{"prefix": stringProperty("Начало кода, 4–8 цифр, например «6116» или «611610»")}, "prefix")),
-		tool("open_details", "Открыть страницу кода (TWS.BY) целиком: дерево кода, дополнительная единица, обязательные сведения, меры нетарифного регулирования, пояснения к ТН ВЭД — к позиции, общие положения группы и раздела (что включается и что исключается). Если страницы TWS.BY нет — пояснения к группе и позиции с tks.ru (без дерева). Цитаты для итога бери отсюда.",
+		tool("open_details", "Открыть страницу кода (TWS.BY): дерево кода, дополнительная единица, обязательные сведения, классификационные решения, пояснения к ТН ВЭД — к позиции, общие положения группы и раздела (что включается и что исключается). Если страницы TWS.BY нет — пояснения к группе и позиции с tks.ru (без дерева). Цитаты для итога бери отсюда.",
 			objectSchema(map[string]any{"code": stringProperty("Код, 10 цифр")}, "code")),
 		tool("search_decisions", "База решений компании: товары, которые раньше оформляли, с итоговым кодом и наименованием; проверенные администратором — первыми.",
 			objectSchema(map[string]any{"query": stringProperty("Слова наименования (по-русски или по-китайски)")}, "query")),
 		tool("search_directory", "Справочник товаров компании: наименования, синонимы, код ТН ВЭД и статус проверки.",
 			objectSchema(map[string]any{"query": stringProperty("Слова наименования")}, "query")),
-		tool("search_declarations", "Примеры декларирования: как такой товар уже декларировали — обезличенные описания из деклараций (графа 31), неофициальные, сразу с нескольких сайтов. Без within: ifcg.ru — товарные позиции с числом записей и описаниями, tks.ru — коды с числом записей и описаниями. within 4 цифры — коды внутри позиции (ifcg.ru); within 10 цифр — описания товаров под кодом (ifcg.ru). Обязательно перед итогом.",
+		tool("search_declarations", "Примеры декларирования и предварительные решения: как такой товар уже декларировали — обезличенные описания из деклараций (графа 31), неофициальные, сразу с нескольких сайтов, плюс официальный сборник предварительных решений таможенных органов ЕАЭС (nsi.eaeunion.org: код, описание товара, страна, обоснование). Без within: ifcg.ru — товарные позиции с числом записей и описаниями, tks.ru — коды с числом записей и описаниями. within 4 цифры — коды внутри позиции (ifcg.ru); within 10 цифр — описания товаров под кодом (ifcg.ru). Обязательно перед итогом.",
 			objectSchema(map[string]any{
 				"query":  stringProperty("1–3 слова вида товара по-русски, например «ключ газовый», или 10-значный код"),
 				"within": stringProperty("Пусто, товарная позиция (4 цифры) или код (10 цифр) — искать внутри"),
@@ -237,6 +238,16 @@ type AgentCandidate struct {
 type AgentDeclarations struct {
 	URL   string `json:"url"`
 	Query string `json:"query"`
+	Count int    `json:"count,omitempty"`
+	// Links — по сайту: описания под кодом по словам агента (ifcg.ru), поиск по словам (tks.ru), решения
+	// сборника ЕАЭС; count — сколько записей под этим кодом нашлось там.
+	Links []AgentDeclarationLink `json:"links,omitempty"`
+}
+
+// AgentDeclarationLink — ссылка на один сайт с примерами или решениями.
+type AgentDeclarationLink struct {
+	Site  string `json:"site"`
+	URL   string `json:"url"`
 	Count int    `json:"count,omitempty"`
 }
 
@@ -425,6 +436,13 @@ type agentToolbox struct {
 	// наибольшее число записей и запрос, которым оно найдено: ссылка «Декларации» у кодов итога.
 	declarationQuery  string
 	declarationCounts map[string]declarationCount
+	// declarationSites — то же по сайтам (код → сайт → число записей и запрос): ссылка на каждый сайт у кода итога.
+	declarationSites map[string]map[string]declarationCount
+	// decisionTexts — предварительные решения ЕАЭС из ответов search_declarations: источник decisionQuote
+	// наравне с блоком решений на странице кода.
+	decisionTexts []decisionText
+	// notesShown — части пояснений к ТН ВЭД, которые модель уже видела целиком: на какой странице и какая часть.
+	notesShown map[string]notesRef
 	// fileCode — код из файла поставщика ("" — не было): итог сравнивается с ним.
 	fileCode string
 	// trademarks — поиск знаков ТРОИС (nil — инструмента нет).
@@ -442,7 +460,8 @@ type AgentFileCode struct {
 }
 
 func newAgentToolbox(data agentData) *agentToolbox {
-	return &agentToolbox{data: data, opened: map[string]string{}, web: map[string]string{}, links: map[string]bool{}, docs: map[string]directory.WebPage{}, pages: map[string]bool{}, declarationCounts: map[string]declarationCount{}}
+	return &agentToolbox{data: data, opened: map[string]string{}, web: map[string]string{}, links: map[string]bool{}, docs: map[string]directory.WebPage{}, pages: map[string]bool{},
+		declarationCounts: map[string]declarationCount{}, declarationSites: map[string]map[string]declarationCount{}, notesShown: map[string]notesRef{}}
 }
 
 type declarationCount struct {
@@ -450,7 +469,13 @@ type declarationCount struct {
 	count int
 }
 
-// rememberDeclarations — запрос и число записей под каждым кодом из ответа search_declarations.
+// decisionText — предварительное решение ЕАЭС: текст и подпись («предварительное решение · КАЗАХСТАН (НСИ ЕАЭС)»).
+type decisionText struct {
+	text, label string
+}
+
+// rememberDeclarations — запрос и число записей под каждым кодом из ответа search_declarations; решения
+// сборника ЕАЭС — целиком, для проверки decisionQuote.
 func (t *agentToolbox) rememberDeclarations(query string, sources []directory.DeclarationSource) {
 	if t.declarationQuery == "" {
 		t.declarationQuery = query
@@ -460,8 +485,35 @@ func (t *agentToolbox) rememberDeclarations(query string, sources []directory.De
 			if len(group.Code) == 10 && group.Count > t.declarationCounts[group.Code].count {
 				t.declarationCounts[group.Code] = declarationCount{query: query, count: group.Count}
 			}
+			if len(group.Code) == 10 && group.Count > t.declarationSites[group.Code][source.Site].count {
+				if t.declarationSites[group.Code] == nil {
+					t.declarationSites[group.Code] = map[string]declarationCount{}
+				}
+				t.declarationSites[group.Code][source.Site] = declarationCount{query: query, count: group.Count}
+			}
+			if source.Site != directory.NSIDecisionsSite {
+				continue
+			}
+			for _, example := range group.Examples {
+				t.decisionTexts = append(t.decisionTexts, decisionText{text: example.Text, label: example.Source})
+			}
 		}
 	}
+}
+
+// nsiDecisionSource — подпись предварительного решения ЕАЭС (из search_declarations), в котором дословно есть
+// цитата; "" — нет такого.
+func (t *agentToolbox) nsiDecisionSource(quote string) string {
+	normalized := decisions.NormalizeDecisionName(quote)
+	if utf8.RuneCountInString(normalized) < agentMinQuoteRunes {
+		return ""
+	}
+	for _, decision := range t.decisionTexts {
+		if containsQuote(decision.text, normalized) {
+			return decision.label
+		}
+	}
+	return ""
 }
 
 // declarationsLink — ссылка на описания из деклараций под кодом: по запросу, которым код найден, иначе
@@ -474,7 +526,27 @@ func (t *agentToolbox) declarationsLink(code string) *AgentDeclarations {
 		}
 		found.query = t.declarationQuery
 	}
-	return &AgentDeclarations{URL: directory.DeclarationsURL(found.query, code), Query: found.query, Count: found.count}
+	link := &AgentDeclarations{URL: directory.DeclarationsURL(found.query, code), Query: found.query, Count: found.count}
+	// По сайту: запрос, которым код найден там, иначе первый запрос агента.
+	for _, site := range []string{"ifcg.ru", "tks.ru", directory.NSIDecisionsSite} {
+		query, count := t.declarationQuery, 0
+		if hit, ok := t.declarationSites[code][site]; ok {
+			query, count = hit.query, hit.count
+		}
+		address, ok := "", true
+		switch site {
+		case "ifcg.ru":
+			address = directory.DeclarationsURL(query, code)
+		case "tks.ru":
+			address, ok = directory.TKSDeclarationsURL(query)
+		default:
+			address = directory.NSIDecisionsURL(query)
+		}
+		if ok {
+			link.Links = append(link.Links, AgentDeclarationLink{Site: site, URL: address, Count: count})
+		}
+	}
+	return link
 }
 
 // rememberPage — агент видел текст страницы и ссылки с неё.
@@ -865,7 +937,7 @@ func (t *agentToolbox) run(ctx context.Context, name, arguments string) (string,
 		if decisionsBlock(text) != "" {
 			detail += " · есть классификационные решения"
 		}
-		return toolJSON(map[string]any{"code": code, "text": t.withoutRepeatedNotes(code, decisionsMarked(text))}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: items[0].DetailsURL}
+		return toolJSON(map[string]any{"code": code, "text": t.pageForModel(code, text)}), agentToolEvent{Tool: name, Label: label, Detail: detail, URL: items[0].DetailsURL}
 	case "search_decisions":
 		query := service.TruncateRunes(strings.TrimSpace(args.Query), 100)
 		rows, err := t.data.SearchDecisions(ctx, query, agentDecisionsLimit)
@@ -1065,12 +1137,12 @@ func (t *agentToolbox) searchDeclarations(ctx context.Context, query, within str
 		sources[index] = source
 	}
 	answer := map[string]any{"query": query, "within": within, "sources": sources,
-		"note": "Обезличенные описания из деклараций (графа 31) на разных сайтах, неофициальные: count — сколько записей с этими словами. Учитывай только записи о таком же товаре, случайные совпадения слов отбрось. Сравни сайты между собой: если указывают на разные коды — скажи об этом в notes."}
+		"note": "ifcg.ru и tks.ru — обезличенные описания из деклараций (графа 31), неофициальные: count — сколько записей с этими словами. nsi.eaeunion.org — официальный сборник предварительных решений таможенных органов ЕАЭС: это решения, а не практика; решение по такому же товару — доказательство, его описание можно цитировать в decisionQuote дословно. Учитывай только записи о таком же товаре, случайные совпадения слов отбрось. Сравни источники между собой: если указывают на разные коды — скажи об этом в notes."}
 	switch {
 	case found == 0:
 		answer["hint"] = "Ничего не нашлось. Попробуй другие слова: основу слова, синоним, вид товара без характеристик (tks.ru ищет все слова сразу)."
 	case within == "":
-		answer["hint"] = "Посмотри коды внутри подходящей позиции на ifcg.ru: within — 4 цифры."
+		answer["hint"] = "Число записей под кодами видно в ответе (tks.ru, nsi.eaeunion.org), под кодами кандидатов программа покажет его сама. within — только если код внутри позиции так и не ясен."
 	case len(within) == 4:
 		answer["hint"] = "Описания товаров под кодом: within — 10 цифр."
 	}
@@ -1113,7 +1185,7 @@ func (t *agentToolbox) tksNotesFallback(ctx context.Context, code, label, reason
 const decisionsHeading = "Классификационные решения"
 
 // decisionQuoteHint — поле decisionQuote кандидата в finish.
-const decisionQuoteHint = "Второе доказательство после quote: дословная цитата из блока «Классификационные решения» на странице open_details этого кода, только если товар решения такой же (вид, материал, устройство, назначение); пусто, если нет"
+const decisionQuoteHint = "Второе доказательство после quote: дословная цитата из блока «Классификационные решения» на странице open_details этого кода или из описания предварительного решения nsi.eaeunion.org в ответе search_declarations, только если товар решения такой же (вид, материал, устройство, назначение); пусто, если нет"
 
 // decisionsNote — пометка перед блоком решений для модели: решения — не главный довод.
 const decisionsNote = "[Классификационные решения ниже — дополнительное доказательство: сначала обоснуй код текстом позиции, деревом и пояснениями (quote), решение по такому же товару приводи в decisionQuote. Предварительное решение выдано конкретному заявителю на его товар.]\n"
@@ -1204,19 +1276,104 @@ func notesOf(page string) string {
 	return ""
 }
 
-// withoutRepeatedNotes — страница для модели: пояснения, уже показанные на странице другого кода этого
-// запуска, заменены ссылкой на неё (для проверки цитат в opened остаётся полный текст).
-func (t *agentToolbox) withoutRepeatedNotes(code, page string) string {
-	notes := notesOf(page)
-	if utf8.RuneCountInString(notes) < 500 {
-		return page
+// notesRef — часть пояснений, показанная модели ссылкой на страницу другого кода. Старый вид (до
+// 2026-11-04) — без номера части: тогда ссылкой заменены все пояснения страницы.
+type notesRef struct {
+	code string
+	part int
+}
+
+// notesBlockStart — начало части пояснений: пояснения к разделу, группе или позиции. Общие положения
+// группы и раздела у кодов одной группы одинаковые и составляют половину страницы — модели один раз.
+var notesBlockStart = regexp.MustCompile(`^(РАЗДЕЛ [IVXLC]+ |\d{2} \D|\d{4} \D)`)
+
+// notesBlocks — пояснения по частям; части вместе дают исходный текст.
+func notesBlocks(notes string) []string {
+	var blocks []string
+	for _, line := range strings.SplitAfter(notes, "\n") {
+		if line == "" {
+			continue
+		}
+		if len(blocks) == 0 || notesBlockStart.MatchString(line) {
+			blocks = append(blocks, line)
+			continue
+		}
+		blocks[len(blocks)-1] += line
 	}
-	for other, text := range t.opened {
-		if other != code && notesOf(text) == notes {
-			return strings.TrimSuffix(page, notes) + sameNotesPrefix + other + " выше."
+	return blocks
+}
+
+// notesMarker — ссылка вместо части пояснений, которую модель уже видела на странице другого кода.
+func notesMarker(ref notesRef) string {
+	return fmt.Sprintf("[%s%s выше, часть %d.]\n", sameNotesPrefix, ref.code, ref.part)
+}
+
+var notesMarkerPattern = regexp.MustCompile(`\[?` + regexp.QuoteMeta(sameNotesPrefix) + `(\d{10}) выше(?:, часть (\d+))?\.\]?\n?`)
+
+// rememberNotes — части пояснений страницы, которые модель видела целиком (первая страница с частью).
+func (t *agentToolbox) rememberNotes(code, page string) {
+	for index, block := range notesBlocks(notesOf(page)) {
+		if _, ok := t.notesShown[block]; !ok {
+			t.notesShown[block] = notesRef{code: code, part: index + 1}
 		}
 	}
-	return page
+}
+
+// expandNotes — текст страницы со ссылками на пояснения других страниц, развёрнутый обратно: для проверки
+// цитат после ответа сотрудника.
+func (t *agentToolbox) expandNotes(text string) string {
+	return notesMarkerPattern.ReplaceAllStringFunc(text, func(marker string) string {
+		match := notesMarkerPattern.FindStringSubmatch(marker)
+		notes := notesOf(t.opened[match[1]])
+		if match[2] == "" {
+			return notes
+		}
+		blocks := notesBlocks(notes)
+		if part, _ := strconv.Atoi(match[2]); part >= 1 && part <= len(blocks) {
+			return blocks[part-1]
+		}
+		return marker
+	})
+}
+
+// measuresHeading — меры нетарифного регулирования на странице кода (с утратившими силу): для выбора кода
+// не нужны, их проверяют «Документы для ввоза» по справке, а модели они стоят пятую часть страницы.
+const (
+	measuresHeading = "Меры нетарифного регулирования"
+	measuresNote    = "[Меры нетарифного регулирования убраны: для выбора кода они не нужны, их проверяют «Документы для ввоза».]\n"
+)
+
+// withoutMeasures — страница без мер: от их заголовка до решений, реестра ОИС или пояснений.
+func withoutMeasures(page string) string {
+	start := strings.Index(page, measuresHeading)
+	if start < 0 {
+		return page
+	}
+	end := len(page)
+	for _, stop := range []string{decisionsHeading, "Реестр объектов интеллектуальной собственности", notesHeading} {
+		if index := strings.Index(page[start:], stop); index >= 0 && start+index < end {
+			end = start + index
+		}
+	}
+	return page[:start] + measuresNote + page[end:]
+}
+
+// pageForModel — страница кода для модели: без мер, с пометкой перед решениями, а части пояснений, уже
+// показанные на странице другого кода этого подбора, — ссылкой на неё (в opened остаётся полный текст).
+func (t *agentToolbox) pageForModel(code, page string) string {
+	shaped := decisionsMarked(withoutMeasures(page))
+	notes := notesOf(shaped)
+	var text strings.Builder
+	text.WriteString(strings.TrimSuffix(shaped, notes))
+	for _, block := range notesBlocks(notes) {
+		if ref, ok := t.notesShown[block]; ok && ref.code != code && utf8.RuneCountInString(block) >= 300 {
+			text.WriteString(notesMarker(ref))
+			continue
+		}
+		text.WriteString(block)
+	}
+	t.rememberNotes(code, page)
+	return text.String()
 }
 
 // finishArgs — аргументы finish как их прислала модель.
@@ -1323,6 +1480,9 @@ func (t *agentToolbox) finish(ctx context.Context, arguments string) (*AgentResu
 		if decisionQuote != "" {
 			if page := t.opened[code]; !strings.HasPrefix(page, tksNotesPrefix) {
 				decisionLabel = decisionSource(page, decisionQuote)
+			}
+			if decisionLabel == "" {
+				decisionLabel = t.nsiDecisionSource(decisionQuote)
 			}
 			if decisionLabel != "" && quote == "" {
 				withoutNotes = append(withoutNotes, FormatTNVEDCode(code))

@@ -153,42 +153,109 @@ func (s *TNVEDAgentService) shadowDocuments(session repository.TNVEDAgentSession
 	s.compareShadowDocuments(store, session.ID, session.DocumentsCode)
 }
 
-// compareShadowDocuments — сошлись ли основная модель и тень по «Документам для ввоза» для кода: когда
-// есть оба ответа, итог пишется в строку тени. Зовётся с обеих сторон — сравнивает та, что закончила второй.
+// shadowOpinionWait — сколько основная модель ждёт ответ тени по документам, чтобы учесть второе мнение до
+// показа сотруднику (тень обычно отвечает быстрее).
+const shadowOpinionWait = 90 * time.Second
+
+func (s *TNVEDAgentService) shadowName() string {
+	if s.shadow == nil {
+		return ""
+	}
+	return s.shadow.Name()
+}
+
+// shadowResultContents — содержимое итогов (result) из ленты тени.
+func shadowResultContents(messages repository.JSON) []json.RawMessage {
+	var events []struct {
+		Kind    string          `json:"kind"`
+		Content json.RawMessage `json:"content"`
+	}
+	_ = json.Unmarshal(messages, &events)
+	contents := []json.RawMessage{}
+	for _, event := range events {
+		if event.Kind == "result" {
+			contents = append(contents, event.Content)
+		}
+	}
+	return contents
+}
+
+// documentsSecondOpinion — второе мнение по документам для основной модели: ждёт ответ тени (до
+// shadowOpinionWait), сверяет наборы мер «нужно» (итог — в строку тени) и отдаёт её документы, чтобы спорные
+// меры стали «возможно» ещё до показа. nil — тени нет.
+func (s *TNVEDAgentService) documentsSecondOpinion(store context.Context, session repository.TNVEDAgentSession) func(context.Context, *AgentResult) *AgentResult {
+	if s.shadow == nil {
+		return nil
+	}
+	return func(ctx context.Context, main *AgentResult) *AgentResult {
+		deadline := time.Now().Add(shadowOpinionWait)
+		for {
+			run, err := s.repository.ShadowRunBySession(store, session.ID)
+			if err == nil {
+				if run.Status == "skipped" {
+					return nil
+				}
+				if other := lastDocumentsResult(shadowResultContents(run.Messages), session.DocumentsCode); other != nil {
+					s.saveShadow(store, run.ID, map[string]any{"documents_code": session.DocumentsCode, "documents_agree": documentsAgree(main.Documents, other.Documents)})
+					return other
+				}
+			}
+			if ctx.Err() != nil || time.Now().After(deadline) {
+				return nil
+			}
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(shadowPollInterval):
+			}
+		}
+	}
+}
+
+// compareShadowDocuments — тень ответила по документам позже основной модели (второе мнение до показа не
+// успело): сверить наборы мер «нужно», итог — в строку тени; при расхождении спорные меры в уже показанном
+// ответе становятся «возможно», в чат — заметка, в базу ответов по коду — обновлённый итог.
 func (s *TNVEDAgentService) compareShadowDocuments(store context.Context, sessionID int64, code string) {
 	if s.shadow == nil || code == "" {
 		return
 	}
 	run, err := s.repository.ShadowRunBySession(store, sessionID)
-	if err != nil {
+	if err != nil || run.DocumentsCode == code {
 		return
 	}
-	var events []struct {
-		Kind    string          `json:"kind"`
-		Content json.RawMessage `json:"content"`
-	}
-	_ = json.Unmarshal(run.Messages, &events)
-	shadowContents := []json.RawMessage{}
-	for _, event := range events {
-		if event.Kind == "result" {
-			shadowContents = append(shadowContents, event.Content)
-		}
-	}
+	shadowResult := lastDocumentsResult(shadowResultContents(run.Messages), code)
 	messages, err := s.repository.AgentMessagesAfter(store, sessionID, 0)
 	if err != nil {
 		return
 	}
-	mainContents := []json.RawMessage{}
+	var mainMessage repository.TNVEDAgentMessage
+	var mainResult *AgentResult
 	for _, message := range messages {
-		if message.Kind == "result" {
-			mainContents = append(mainContents, json.RawMessage(message.Content))
+		if message.Kind != "result" {
+			continue
+		}
+		if result := lastDocumentsResult([]json.RawMessage{json.RawMessage(message.Content)}, code); result != nil {
+			mainMessage, mainResult = message, result
 		}
 	}
-	shadowResult, mainResult := lastDocumentsResult(shadowContents, code), lastDocumentsResult(mainContents, code)
 	if shadowResult == nil || mainResult == nil {
 		return
 	}
-	s.saveShadow(store, run.ID, map[string]any{"documents_code": code, "documents_agree": documentsAgree(mainResult.Documents, shadowResult.Documents)})
+	agree := documentsAgree(mainResult.Documents, shadowResult.Documents)
+	s.saveShadow(store, run.ID, map[string]any{"documents_code": code, "documents_agree": agree})
+	if agree {
+		return
+	}
+	rules, _ := s.data.WebPage(store, conditionalReleaseURL)
+	if applySecondOpinion(mainResult, shadowResult.Documents, s.shadow.Name(), rules.Text, nil, 0) == 0 {
+		return
+	}
+	data, _ := json.Marshal(mainResult)
+	_ = s.repository.UpdateAgentMessageContent(store, mainMessage.ID, repository.JSON(data))
+	if session, err := s.repository.AgentSessionByID(store, sessionID); err == nil {
+		s.saveCodeDocuments(store, session, mainResult)
+	}
+	s.emit(store, sessionID, "notice", map[string]string{"text": fmt.Sprintf("Вторая модель (%s) не согласна с частью мер «Документов для ввоза» для кода %s: они отмечены «возможно» с её доводом — откройте ответ заново и проверьте по актам.", s.shadow.Name(), FormatTNVEDCode(code))})
 }
 
 // claimShadow — строка тени сессии, занятая под новый ход, и её состояние. Ждёт, пока тень закончит прошлый

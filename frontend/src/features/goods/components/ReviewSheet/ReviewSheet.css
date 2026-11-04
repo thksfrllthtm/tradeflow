@@ -144,3 +144,13 @@
 .is-review .xs-host, .goods-estimates-app:has(.ag-panel) .xs-host { max-height: max(240px, calc(100vh - var(--xs-top, 0px) - var(--xs-below, 0px))); overflow: auto; }
 .app-shell.goods-estimates-app:has(.ag-panel) .estimates-workspace { min-height: 0; }
 .app-shell.goods-estimates-app:has(.ag-panel) .es-sidebar.es-rail { align-self: stretch; height: auto; }
+
+/* Строка без кода: «Указать код» (справочник) и «ИИ» (чат подбора) рядом; у «ИИ» — тон состояния подбора. */
+.xs-host .xs-set { display: inline-flex; align-items: center; gap: 6px; }
+.xs-host button.xs-set-code.ai { --tone: var(--tf-green); position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 0 9px; border-color: var(--tf-border); color: var(--tone); }
+.xs-host button.xs-set-code.ai:hover:not(:disabled) { border-color: var(--tone); background: var(--tf-green-soft); }
+.xs-host button.xs-set-code.ai svg { width: 13px; height: 13px; }
+.xs-host button.xs-set-code.ai.running svg { animation: xs-pulse 1.2s infinite ease-in-out; }
+.xs-host button.xs-set-code.ai:is(.waiting, .suggest) { --tone: #a0700c; }
+.xs-host button.xs-set-code.ai.error { --tone: #b42318; }
+.xs-host button.xs-set-code.ai i { position: absolute; top: -5px; right: -5px; min-width: 13px; height: 13px; padding: 0 2px; border-radius: 7px; background: var(--tone); color: #fff; font-size: .62rem; font-style: normal; font-weight: 800; line-height: 13px; text-align: center; }

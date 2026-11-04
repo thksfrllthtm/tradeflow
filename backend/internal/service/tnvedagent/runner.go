@@ -119,10 +119,9 @@ func (r *agentRunner) restoreOpened(ctx context.Context) {
 				}
 				if json.Unmarshal([]byte(content), &page) == nil && page.Code != "" && page.Text != "" {
 					// Пояснения, показанные модели ссылкой на страницу другого кода, — для цитат целиком.
-					if text, other, ok := strings.Cut(page.Text, sameNotesPrefix); ok && len(other) >= 10 {
-						page.Text = text + notesOf(r.toolbox.opened[other[:10]])
-					}
-					r.toolbox.opened[page.Code] = strings.Replace(page.Text, decisionsNote, "", 1)
+					text := strings.Replace(r.toolbox.expandNotes(page.Text), decisionsNote, "", 1)
+					r.toolbox.opened[page.Code] = text
+					r.toolbox.rememberNotes(page.Code, text)
 				}
 			case "search_declarations":
 				// Как при вызове: поиск сделан (с результатом или сайт не ответил), а не ошибка в аргументах.

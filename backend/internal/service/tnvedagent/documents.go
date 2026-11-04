@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"maps"
 	"regexp"
 	"sort"
@@ -234,7 +235,11 @@ type documentsRun struct {
 	codeName       string
 	emit           func(kind string, content any)
 	onStep         func(usage agentUsage)
-	mu             sync.Mutex
+	// secondOpinion — ответ другой модели по тем же документам (nil — нет): спорные меры перед показом
+	// становятся «возможно» с её доводом; secondOpinionName — как её назвать в заметках.
+	secondOpinion     func(ctx context.Context, main *AgentResult) *AgentResult
+	secondOpinionName string
+	mu                sync.Mutex
 }
 
 type documentsTaskResult struct {
@@ -309,6 +314,11 @@ func (d *documentsRun) execute(ctx context.Context) agentOutcome {
 		return agentOutcome{err: firstErr}
 	}
 	result := mergeDocuments(d.code, results, matches, rules.Text, helpErr, unread, total)
+	if d.secondOpinion != nil {
+		if other := d.secondOpinion(ctx, result); other != nil {
+			applySecondOpinion(result, other.Documents, d.secondOpinionName, rules.Text, helpErr, total)
+		}
+	}
 	d.emit("result", result)
 	return agentOutcome{status: "done", result: result, partial: failed > 0}
 }
@@ -351,6 +361,11 @@ func (d *documentsRun) runTask(ctx context.Context, task documentsTask, seed *ag
 		emit: func(kind string, content any) {
 			event, ok := content.(agentToolEvent)
 			if kind != "tool" || !ok {
+				// Заметки исполнителя («закончил без итога», «не дал итог за отведённые шаги») в чат не идут,
+				// но в журнале сервера нужны: иначе причину «⚠ агент не ответил» не узнать.
+				if text, isText := content.(map[string]string); kind == "notice" && isText {
+					log.Printf("documents %s [%s]: %s", d.code, task.label, text["text"])
+				}
 				return
 			}
 			event.Label = "[" + task.label + "] " + event.Label
@@ -365,6 +380,9 @@ func (d *documentsRun) runTask(ctx context.Context, task documentsTask, seed *ag
 		},
 	}
 	outcome := runner.execute(ctx)
+	if outcome.result == nil && outcome.err == nil {
+		log.Printf("documents %s [%s]: без итога, последний ответ модели: %s", d.code, task.label, service.TruncateRunes(lastAssistantText(runner.transcript), 300))
+	}
 	positions := append(append([]actMatch{}, task.positions...), preview.positions...)
 	return documentsTaskResult{task: task, result: outcome.result, err: outcome.err, positions: positions}
 }
@@ -532,6 +550,116 @@ func requiredDocuments(documents []AgentDocument) map[string]bool {
 		keys[document.Kind+"|"+key] = true
 	}
 	return keys
+}
+
+// lastAssistantText — текст последнего ответа модели в переписке (вызовы инструментов — именами).
+func lastAssistantText(transcript []map[string]any) string {
+	for index := len(transcript) - 1; index >= 0; index-- {
+		message := transcript[index]
+		if message["role"] != "assistant" {
+			continue
+		}
+		text, _ := message["content"].(string)
+		if calls, ok := message["tool_calls"].([]any); ok && len(calls) > 0 {
+			names := []string{}
+			for _, call := range calls {
+				object, _ := call.(map[string]any)
+				function, _ := object["function"].(map[string]any)
+				name, _ := function["name"].(string)
+				names = append(names, name)
+			}
+			text = strings.TrimSpace(text + " [инструменты: " + strings.Join(names, ", ") + "]")
+		}
+		return text
+	}
+	return ""
+}
+
+// documentBest — лучшая оценка меры по акту и виду документа (у одного акта бывает несколько позиций
+// перечня, каждая своей строкой): «нужно» старше «возможно», «возможно» старше «не относится».
+type documentBest struct {
+	index   int
+	applies string
+}
+
+func bestDocuments(documents []AgentDocument) map[string]documentBest {
+	rank := map[string]int{"no": 0, "maybe": 1, "yes": 2}
+	best := map[string]documentBest{}
+	for index, document := range documents {
+		if document.Kind == documentKindConditional {
+			continue
+		}
+		key := documentKey(document)
+		if current, ok := best[key]; !ok || rank[document.Applies] > rank[current.applies] {
+			best[key] = documentBest{index, document.Applies}
+		}
+	}
+	return best
+}
+
+// documentKey — акт (адрес, без него — название меры) и вид документа.
+func documentKey(document AgentDocument) string {
+	return document.Kind + "|" + strings.ToLower(strings.TrimSpace(firstNonEmpty(document.URL, document.Measure)))
+}
+
+// mergeSecondOpinion — второе мнение по документам: мера, по которой модели разошлись («нужно» против «не
+// относится» по лучшей оценке акта), становится «возможно» с доводом второй модели; мера «нужно», которую
+// нашла только вторая, добавляется как «возможно». Возвращает число изменённых мер.
+func mergeSecondOpinion(result *AgentResult, others []AgentDocument, name string) int {
+	mainBest, otherBest := bestDocuments(result.Documents), bestDocuments(others)
+	disputed := func(main, other string) bool {
+		return (main == "yes" && other == "no") || (main == "no" && other == "yes")
+	}
+	changed := 0
+	seen := map[string]bool{}
+	for _, document := range others {
+		key := documentKey(document)
+		if document.Kind == documentKindConditional || seen[key] {
+			continue
+		}
+		seen[key] = true
+		other := others[otherBest[key].index]
+		main, found := mainBest[key]
+		switch {
+		case !found && other.Applies == "yes":
+			added := other
+			added.Applies = "maybe"
+			added.Requirement = "Нашла только вторая модель (" + name + "), по ней мера нужна: " + service.TruncateRunes(other.Requirement, 400)
+			result.Documents = append(result.Documents, added)
+			changed++
+		case found && disputed(main.applies, other.Applies):
+			document := &result.Documents[main.index]
+			verdict := map[string]string{"yes": "нужно", "no": "не относится"}[other.Applies]
+			document.Applies = "maybe"
+			document.Requirement = strings.TrimSpace(document.Requirement) + "\nВторая модель (" + name + "): " + verdict + " — " + service.TruncateRunes(other.Requirement, 400)
+			changed++
+		}
+	}
+	return changed
+}
+
+// applySecondOpinion — второе мнение в итоге: спорные меры «возможно», условный выпуск и описание заново по
+// новым оценкам, заметка сотруднику. Возвращает число изменённых мер (0 — итог не тронут).
+func applySecondOpinion(result *AgentResult, others []AgentDocument, name, rulesText string, helpErr error, total int) int {
+	changed := mergeSecondOpinion(result, others, name)
+	if changed == 0 {
+		return 0
+	}
+	kept := result.Documents[:0]
+	for _, document := range result.Documents {
+		if document.Kind != documentKindConditional {
+			kept = append(kept, document)
+		}
+	}
+	result.Documents = append(kept, conditionalDocument(kept, rulesText))
+	result.Description = documentsDescription(result.Documents, helpErr, total)
+	word := "мер"
+	if changed == 1 {
+		word = "меры"
+	}
+	note := fmt.Sprintf("Вторая модель (%s) не согласна с оценкой %d %s: они отмечены «возможно» с её доводом — проверьте по актам.", name, changed, word)
+	result.Notes = strings.TrimSpace(strings.TrimSpace(result.Notes) + "\n" + note)
+	return changed
 }
 
 // lastDocumentsResult — последний ответ «Документы для ввоза» для кода среди содержимого сообщений ленты.

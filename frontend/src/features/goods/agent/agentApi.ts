@@ -53,7 +53,7 @@ export type AgentCandidate = {
   nomenclature: NomenclatureCode | null
   // Описания из деклараций под кодом (ifcg.ru) по словам агента; count — записей в его поиске (нет — код
   // в найденном не встретился). Нет поля — агент декларации не искал.
-  declarations?: { url: string; query: string; count?: number }
+  declarations?: { url: string; query: string; count?: number; links?: { site: string; url: string; count?: number }[] }
 }
 
 export type AgentResult = {

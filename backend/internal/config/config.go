@@ -50,7 +50,7 @@ type Config struct {
 	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
 	TNVEDAIEffort string
 	// TNVEDAIDocumentsEffort — уровень размышлений под-агентов «Документов для ввоза» (TNVED_AI_DOCUMENTS_EFFORT);
-	// пусто — как TNVEDAIEffort.
+	// пусто — high: в документах точность важнее скорости, и снижение TNVED_AI_EFFORT для подбора кода их не задевает.
 	TNVEDAIDocumentsEffort string
 	// Теневой подбор (TNVED_AI_SHADOW_*): вторая модель подбирает код параллельно с основной, сотрудник её не
 	// видит, итоги сравнивает администратор в журнале агента. Без TNVED_AI_SHADOW_MODEL тени нет. Provider —
@@ -159,7 +159,7 @@ func Load() (Config, error) {
 		TranslatorAIModel:        stringEnv("TRANSLATOR_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
 		TavilyAPIKey:             strings.TrimSpace(os.Getenv("TAVILY_API_KEY")),
 		TNVEDAIEffort:            strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_EFFORT"))),
-		TNVEDAIDocumentsEffort:   strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_DOCUMENTS_EFFORT"))),
+		TNVEDAIDocumentsEffort:   strings.ToLower(stringEnv("TNVED_AI_DOCUMENTS_EFFORT", "high")),
 		TNVEDAIVision:            tnvedVision,
 		TNVEDAIDailyLimit:        tnvedDailyLimit,
 		TNVEDAINamingRule:        strings.TrimSpace(os.Getenv("TNVED_AI_NAMING_RULE")),

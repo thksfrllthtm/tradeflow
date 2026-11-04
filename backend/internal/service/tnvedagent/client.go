@@ -107,7 +107,7 @@ type AgentModelClient struct {
 const agentModelTimeout = 3 * time.Minute
 
 // Сбой провайдера (5xx, «перегружен», обрыв связи) — запрос повторяется: за подбор их десятки, и один
-// сбой не должен обрывать весь подбор. Тайм-аут не повторяется (минуты ожидания).
+// сбой не должен обрывать весь подбор. Тайм-аут — только один повтор (минуты ожидания).
 const agentModelAttempts = 3
 
 // retryable — запрос стоит повторить: сбой провайдера, а также ограничение запросов (429) — у DeepSeek оно
@@ -247,7 +247,9 @@ func (c *AgentModelClient) send(ctx context.Context, request map[string]any, thi
 	}
 	for attempt := 1; ; attempt++ {
 		reply, err := c.post(ctx, body)
-		if !retryable(err, c.config.BaseURL) || attempt == agentModelAttempts {
+		// Тайм-аут одного ответа повторяется один раз: обычно это перегрузка провайдера, а не вечная задача.
+		timedOut := errors.Is(err, ai.ErrAITimeout) && attempt == 1
+		if (!retryable(err, c.config.BaseURL) && !timedOut) || attempt == agentModelAttempts {
 			return reply, err
 		}
 		select {

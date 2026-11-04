@@ -88,7 +88,7 @@ func newAgentService(database *repository.Repository, decisions *decisions.CodeD
 		})
 	}
 	agent := tnvedagent.NewTNVEDAgentService(database, model, vision, decisions, tnvedagent.AgentSettings{
-		DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey, SelfCheck: true,
+		DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey,
 	})
 	if cfg.TNVEDAIDocumentsEffort != "" {
 		agent.SetDocumentsModel(model.WithEffort(cfg.TNVEDAIDocumentsEffort))

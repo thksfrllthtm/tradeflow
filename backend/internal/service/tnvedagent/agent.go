@@ -54,7 +54,8 @@ type AgentSettings struct {
 	NamingRule string
 	// WebSearchKey — ключ Tavily: поиск в интернете для подбора ("" — без интернета).
 	WebSearchKey string
-	// SelfCheck — первый итог агента возвращается ему на самопроверку.
+	// SelfCheck — первый итог агента возвращается ему на самопроверку. На сервере выключено с 2026-11-04:
+	// за 26 подборов самопроверка ни разу не сменила код, а занимала около 18% времени.
 	SelfCheck bool
 }
 
@@ -551,8 +552,11 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+// launch — запуск в очереди. Лимит времени считается с выхода из очереди: в большой смете последние строки
+// ждут свободного места долго, и ожидание не должно съедать их время на подбор. Остановка сотрудником
+// (cancel) работает и в очереди.
 func (s *TNVEDAgentService) launch(sessionID int64, timeout time.Duration) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	queued, cancel := context.WithCancel(context.Background())
 	s.mu.Lock()
 	s.cancels[sessionID] = cancel
 	s.mu.Unlock()
@@ -566,8 +570,10 @@ func (s *TNVEDAgentService) launch(sessionID int64, timeout time.Duration) {
 		select {
 		case s.slots <- struct{}{}:
 			defer func() { <-s.slots }()
-		case <-ctx.Done():
+		case <-queued.Done():
 		}
+		ctx, stop := context.WithTimeout(queued, timeout)
+		defer stop()
 		s.run(ctx, sessionID)
 	}()
 }
@@ -595,7 +601,9 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 			transcript = append(transcript, note)
 		}
 	}
-	// Тень стартует с той же переписки, что и основная модель, и идёт параллельно с ней.
+	// Отсюда считается время до итога — у основной модели и у тени одинаково: описание фото и поиск в базе
+	// позади, обе начинают с одной переписки и идут параллельно.
+	_ = s.repository.MarkAgentStarted(store, sessionID)
 	s.launchShadow(session, transcript, photos)
 	var outcome agentOutcome
 	if documents {
@@ -684,6 +692,7 @@ func (s *TNVEDAgentService) runDocuments(ctx, store context.Context, session rep
 	run := &documentsRun{
 		model: model, data: s.data, search: s.search, code: session.DocumentsCode,
 		product: sessionProduct(session), photo: photoNoteText(transcript), emit: emit,
+		secondOpinion: s.documentsSecondOpinion(store, session), secondOpinionName: s.shadowName(),
 		onStep: func(step agentUsage) {
 			usage.add(step, model.Cost(step), false)
 			*steps++
