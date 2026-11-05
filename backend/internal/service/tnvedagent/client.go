@@ -125,7 +125,9 @@ func (c *AgentModelClient) WithEffort(effort string) *AgentModelClient {
 }
 
 func NewAgentModelClient(config AgentModelConfig) *AgentModelClient {
-	config.APIKey = strings.TrimSpace(config.APIKey)
+	// Ключ без пробелов и переводов строк внутри: при вставке в панель хостинга длинный ключ бывает разорван
+	// переносом, и провайдер отвечает «invalid x-api-key». В настоящих ключах пробелов нет.
+	config.APIKey = strings.Join(strings.Fields(config.APIKey), "")
 	config.Model = strings.TrimSpace(config.Model)
 	config.BaseURL = strings.TrimRight(strings.TrimSpace(config.BaseURL), "/")
 	if config.BaseURL == "" {

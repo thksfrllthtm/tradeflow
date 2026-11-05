@@ -41,3 +41,11 @@ func TestClaudeMessages(t *testing.T) {
 		t.Fatalf("склейка сообщений: %s", body)
 	}
 }
+
+// Ключ, разорванный переносом при вставке в панель хостинга, склеивается обратно.
+func TestAPIKeyWithoutInnerWhitespace(t *testing.T) {
+	client := NewAgentModelClient(AgentModelConfig{Provider: providerAnthropic, APIKey: " sk-ant-api03-\nAbCd \r\n123\t"})
+	if client.config.APIKey != "sk-ant-api03-AbCd123" {
+		t.Fatalf("ключ: %q", client.config.APIKey)
+	}
+}

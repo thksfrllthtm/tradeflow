@@ -119,3 +119,14 @@ func TestPromptHasSourcePriority(t *testing.T) {
 		t.Error("решения — пункт 4 после пояснений, цитата решения — в decisionQuote")
 	}
 }
+
+// Части и принадлежности: подбор и справочник проверяют примечания о частях своего раздела или группы.
+func TestPromptChecksPartsNotes(t *testing.T) {
+	for name, prompt := range map[string]string{"подбор": tnvedAgentPrompt(""), "справочник": tnvedReferencePrompt("")} {
+		for _, want := range []string{"примечания о частях своего раздела или группы", "к разделу XVI (примечание 2", "Части общего назначения"} {
+			if !strings.Contains(prompt, want) {
+				t.Errorf("%s: нет %q", name, want)
+			}
+		}
+	}
+}

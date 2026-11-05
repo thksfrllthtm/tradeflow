@@ -58,24 +58,16 @@ function historyState(item: ReferenceSummary) {
   return item.bestCode ? <code>{formatCode(item.bestCode)}</code> : 'код не найден'
 }
 
-// Вкладки истории: «Общий» — все вопросы; «Чат» — подбор кода (и документы после него); «ТРОИС» —
-// проверки бренда; «Документы» — только «Документы для ввоза».
-type HistoryTab = 'all' | ReferenceSummary['kind']
-const historyTabs: { tab: HistoryTab; label: string }[] = [
-  { tab: 'all', label: 'Общий' }, { tab: 'chat', label: 'Чат' }, { tab: 'trademarks', label: 'ТРОИС' }, { tab: 'documents', label: 'Документы' },
-]
-
 const kindLabels: Record<ReferenceSummary['kind'], string> = { chat: 'Чат', trademarks: 'Проверка ТРОИС', documents: 'Документы для ввоза' }
 
-// Значки вида вопроса: общий — слои, чат — облачко, ТРОИС — щит (защита знака), документы — лист.
-const kindPaths: Record<HistoryTab, string[]> = {
-  all: ['M8 2 2 5l6 3 6-3-6-3Z', 'm2 8 6 3 6-3', 'm2 11 6 3 6-3'],
+// Значки вида вопроса: чат — облачко, ТРОИС — щит (защита знака), документы — лист.
+const kindPaths: Record<ReferenceSummary['kind'], string[]> = {
   chat: ['M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.2L4.5 13.4V11H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z'],
   trademarks: ['M8 1.8 3 3.7v3.9c0 3 2.1 5.3 5 6.6 2.9-1.3 5-3.6 5-6.6V3.7L8 1.8Z', 'm5.9 8 1.5 1.5 2.8-3'],
   documents: ['M4 1.8h5.4L12.4 5v9.2H4Z', 'M9.4 1.8V5h3', 'M6 8.2h4.4M6 10.8h4.4'],
 }
 
-function KindIcon({ kind, label }: { kind: HistoryTab; label?: string }) {
+function KindIcon({ kind, label }: { kind: ReferenceSummary['kind']; label?: string }) {
   return <svg className={`rc-kind ${kind}`} width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
     role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
     {kindPaths[kind].map((path) => <path key={path} d={path} />)}
@@ -107,7 +99,6 @@ export function ReferenceChat() {
   // Игра, пока агент работает: только по кнопке «Сыграть», закрывается крестиком.
   const [gameOpen, setGameOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [historyTab, setHistoryTab] = useState<HistoryTab>('all')
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // История — одна остановка Tab: по вопросам — стрелками (roving tabindex).
   const [historyFocus, setHistoryFocus] = useState(0)
@@ -380,7 +371,7 @@ export function ReferenceChat() {
   }
 
   function onHistoryKey(event: KeyboardEvent<HTMLButtonElement>, index: number, id: number) {
-    const last = shown.length - 1
+    const last = history.length - 1
     const next = event.key === 'ArrowDown' ? Math.min(last, index + 1) : event.key === 'ArrowUp' ? Math.max(0, index - 1) : event.key === 'Home' ? 0 : event.key === 'End' ? last : -1
     if (next >= 0) {
       event.preventDefault()
@@ -400,8 +391,7 @@ export function ReferenceChat() {
   const configured = status?.configured !== false
   // Лимит вопросов на сегодня: от 80% — подсветка (лимит не меняется, только видно, что он близко).
   const nearLimit = status !== null && status.dailyLimit > 0 && status.usedToday >= status.dailyLimit * .8
-  const shown = historyTab === 'all' ? history : history.filter((item) => item.kind === historyTab)
-  const rovingIndex = Math.min(historyFocus, Math.max(0, shown.length - 1))
+  const rovingIndex = Math.min(historyFocus, Math.max(0, history.length - 1))
   const placeholder = !session ? 'Опишите товар, вставьте фото (Ctrl+V) или перетащите его сюда…'
     : session.trademarkCheck ? 'Новый вопрос о товаре или /троис для другого бренда…'
     : session.status === 'waiting' ? 'Ответьте на вопрос…' : photos.length ? 'Добавьте пояснение к фото — это будет новый вопрос' : 'Уточните: «а если покрытие латекс?» — или добавьте фото для нового вопроса'
@@ -430,18 +420,10 @@ export function ReferenceChat() {
     <div className="rc-body">
       <aside className={historyOpen ? 'rc-history open' : 'rc-history'} aria-label="Прошлые вопросы">
         <p className="rc-history-title">История вопросов</p>
-        {history.length > 0 && <div className="rc-history-tabs" role="group" aria-label="Вид вопросов">
-          {historyTabs.map(({ tab, label }) => {
-            const count = tab === 'all' ? history.length : history.filter((item) => item.kind === tab).length
-            return <button key={tab} type="button" className={historyTab === tab ? 'active' : undefined} aria-pressed={historyTab === tab}
-              onClick={() => { setHistoryTab(tab); setHistoryFocus(0) }}><span className="rc-tab-top"><KindIcon kind={tab} /><small>{count}</small></span><b>{label}</b></button>
-          })}
-        </div>}
         {history.length === 0 ? <p className="rc-history-empty">Здесь появятся ваши вопросы.</p>
-          : shown.length === 0 ? <p className="rc-history-empty">{historyTab === 'trademarks' ? 'Проверок по ТРОИС ещё не было: отправьте фото или бренд с командой /троис.' : 'Здесь пока пусто.'}</p>
           : <>
             <p id="rc-history-help" className="rc-sr">Стрелки вверх и вниз — по вопросам, Enter — открыть, Delete — удалить</p>
-            <ul ref={historyRef}>{shown.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
+            <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
               <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
                 <span className="rc-history-name"><KindIcon kind={item.kind} label={kindLabels[item.kind]} />{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
                 <small>{historyState(item)} · {new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
