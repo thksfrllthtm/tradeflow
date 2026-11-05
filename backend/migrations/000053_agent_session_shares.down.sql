@@ -1,0 +1,1 @@
+DROP TABLE tnved_agent_session_shares;

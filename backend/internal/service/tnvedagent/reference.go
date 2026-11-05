@@ -7,6 +7,7 @@ package tnvedagent
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -43,6 +44,8 @@ type ReferenceSummary struct {
 	// кода; chat — подбор кода (в том числе с документами после него). TrademarkHits — найдено знаков.
 	Kind          string `json:"kind"`
 	TrademarkHits *int   `json:"trademarkHits,omitempty"`
+	// SharedBy — вопрос коллеги, открытый сотруднику: имя автора ("" — свой вопрос).
+	SharedBy string `json:"sharedBy,omitempty"`
 }
 
 // referenceKind — вкладка истории для вопроса (см. ReferenceSummary.Kind).
@@ -181,9 +184,19 @@ func (s *TNVEDAgentService) ReferenceHistory(ctx context.Context, user repositor
 	if err != nil {
 		return nil, err
 	}
+	// Вопросы, которые открыли коллеги, — в той же истории по времени, с именем автора.
+	shared, err := s.repository.SharedReferenceSessions(ctx, user.ID, referenceHistoryLimit)
+	if err != nil {
+		return nil, err
+	}
+	rows = append(rows, shared...)
+	sort.SliceStable(rows, func(a, b int) bool { return rows[a].UpdatedAt.After(rows[b].UpdatedAt) })
+	if len(rows) > referenceHistoryLimit {
+		rows = rows[:referenceHistoryLimit]
+	}
 	items := make([]ReferenceSummary, 0, len(rows))
 	for _, row := range rows {
-		item := ReferenceSummary{ID: row.ID, Title: row.Title, Status: row.Status, HasPhoto: string(row.Photos) != "[]" && len(row.Photos) > 2, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, TrademarkHits: row.TrademarkHits}
+		item := ReferenceSummary{ID: row.ID, Title: row.Title, Status: row.Status, HasPhoto: string(row.Photos) != "[]" && len(row.Photos) > 2, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, TrademarkHits: row.TrademarkHits, SharedBy: row.SharedBy}
 		var result AgentResult
 		hasResult := len(row.Result) > 0 && string(row.Result) != "null" && json.Unmarshal(row.Result, &result) == nil
 		if hasResult {

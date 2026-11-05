@@ -22,3 +22,11 @@ button.copy-btn:focus-visible, button.copy-col:focus-visible { outline: 2px soli
 button.copy-btn.copied, button.copy-btn.copied:hover:not(:disabled), button.copy-col.copied, button.copy-col.copied:hover:not(:disabled) { color: var(--tf-green); opacity: 1; }
 /* В таблицах сметы у всех кнопок свой мелкий размер и отступы (calculatorPage.css) — значку колонки они не нужны. */
 .goods-page table button.copy-col { padding: 0; border-radius: 6px; font-size: inherit; line-height: inherit; }
+
+/* «Скопировать ответ» внизу ответа ИИ: справа, после тонкой черты, текстовая кнопка 30px. */
+.copy-answer { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--tf-border-inner); }
+.copy-answer button { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font: inherit; font-size: .82rem; font-weight: 500; cursor: copy; }
+.copy-answer button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
+.copy-answer button:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 1px; }
+.copy-answer button.copied, .copy-answer button.copied:hover:not(:disabled) { border-color: var(--tf-green); color: var(--tf-green); }
+.copy-answer button.share { cursor: pointer; }

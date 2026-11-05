@@ -127,6 +127,8 @@ export type AgentSession = {
   result: AgentResult | null
   // Вопрос «/троис»: ответ — сообщение trademarks, уточнений и документов нет (новый вопрос).
   trademarkCheck?: boolean
+  // Вопрос коллеги, открытый только для чтения: имя автора (нет — свой вопрос).
+  sharedBy?: string
   messages: AgentMessage[]
   steps: number
   runs: number
@@ -139,7 +141,10 @@ export type AgentSession = {
 
 // Вопрос чата-справочника в истории сотрудника.
 // kind — вкладка истории: chat — подбор кода, documents — только документы, trademarks — «/троис» (trademarkHits — найдено знаков).
-export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string; kind: 'chat' | 'documents' | 'trademarks'; trademarkHits?: number }
+export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string; kind: 'chat' | 'documents' | 'trademarks'; trademarkHits?: number; sharedBy?: string }
+
+// Сотрудник в списке «Поделиться»: только номер и имя.
+export type ShareUser = { id: number; name: string }
 
 export type AgentRowStatus = { sessionId: number; itemId: string; status: AgentSessionStatus; bestCode: string; verdict: string }
 
@@ -165,6 +170,11 @@ export const agentApi = {
   askTrademarks: (input: { text: string; photos: string[] }) => request<AgentSession>('/api/tnved-agent/reference/trademarks', { method: 'POST', body: JSON.stringify(input) }),
   history: () => request<{ items: ReferenceSummary[] }>('/api/tnved-agent/reference'),
   removeQuestion: (id: number) => request<void>(`/api/tnved-agent/reference/${id}`, { method: 'DELETE' }),
+  // Поделиться вопросом с коллегой: он видит вопрос в своей истории и только читает. userId «me» — убрать чужой вопрос у себя.
+  shareUsers: () => request<{ items: ShareUser[] }>('/api/tnved-agent/share-users'),
+  shares: (id: number) => request<{ items: ShareUser[] }>(`/api/tnved-agent/sessions/${id}/shares`),
+  share: (id: number, userIds: number[]) => request<{ items: ShareUser[] }>(`/api/tnved-agent/sessions/${id}/shares`, { method: 'POST', body: JSON.stringify({ userIds }) }),
+  unshare: (id: number, userId: number | 'me') => request<void>(`/api/tnved-agent/sessions/${id}/shares/${userId}`, { method: 'DELETE' }),
   apply: (id: number, code: string, name: string) => request<CodeDecision>(`/api/tnved-agent/sessions/${id}/apply`, { method: 'POST', body: JSON.stringify({ code, name }) }),
 }
 

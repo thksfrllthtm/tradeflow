@@ -1,6 +1,8 @@
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { LinkText } from '@/shared/components/LinkText/LinkText'
 import { AgentDocument, AgentMessage, AgentResult, DocumentKind } from './agentApi'
+import { documentsShortText, documentsText } from './answerCopy'
+import { CopyAnswer } from './CopyAnswer'
 import './documents.css'
 
 const appliesLabels: Record<AgentDocument['applies'], string> = { yes: 'нужно', maybe: 'возможно', no: 'не относится' }
@@ -70,6 +72,7 @@ export function DocumentsAnswer({ result }: { result: AgentResult }) {
     {(result.linksRemoved ?? 0) > 0 && <p className="dl-notice">Программа убрала ссылки, которых не было на открытых страницах: {result.linksRemoved}.</p>}
     {result.quotesRemoved > 0 && <p className="dl-notice">Программа убрала основания-цитаты, которых нет в справке и актах: {result.quotesRemoved}.</p>}
     <p className="dl-disclaimer">Подсказка по справке tnved.info, перечням и актам — перед оформлением сверьте с актом.</p>
+    <CopyAnswer short={documentsShortText(result)} full={documentsText(result)} />
   </section>
 }
 

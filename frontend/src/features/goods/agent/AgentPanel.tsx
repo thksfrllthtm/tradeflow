@@ -17,6 +17,8 @@ import { AgentCandidate, AgentItem, AgentMessage, AgentResult, AgentSession, Age
 import { AgentEvidence } from './AgentEvidence'
 import { DeclarationsLink } from './DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
+import { resultShortText, resultText } from './answerCopy'
+import { CopyAnswer } from './CopyAnswer'
 import './agent.css'
 import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
@@ -807,5 +809,6 @@ function ResultCard({ result, fileCode, applied, busy, onApplyCode, onApplyName,
       {result.droppedCodes.length > 0 && <>Программа убрала коды, которых нет в номенклатуре: {result.droppedCodes.map(formatCode).join(', ')}. </>}
       {result.quotesRemoved > 0 && <>Цитат, не найденных в источниках, убрано: {result.quotesRemoved}.</>}
     </p>}
+    <CopyAnswer short={resultShortText(result)} full={resultText(result)} />
   </section>
 }

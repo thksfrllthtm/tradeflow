@@ -270,6 +270,11 @@ func (s *Server) Router() *gin.Engine {
 	// «/троис» с главной: вопрос в истории, проверка бренда по ТРОИС в фоне (без подбора кода).
 	agent.POST("/reference/trademarks", s.askTrademarks)
 	agent.DELETE("/reference/:id", s.deleteReference)
+	// Поделиться вопросом чата на главной с коллегой: открыть может автор или администратор, получатель только читает.
+	agent.GET("/share-users", s.agentShareUsers)
+	agent.GET("/sessions/:id/shares", s.agentShares)
+	agent.POST("/sessions/:id/shares", s.shareAgentSession)
+	agent.DELETE("/sessions/:id/shares/:userId", s.unshareAgentSession)
 
 	// Подбор наименования и цены керамики — отдельный модуль, не связан со сметами и растаможкой.
 	ceramics := router.Group("/api/ceramics")

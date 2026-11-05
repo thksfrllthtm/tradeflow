@@ -292,3 +292,70 @@ func (s *Server) askTrademarks(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, view)
 }
+
+// agentShareUsers — сотрудники, которым можно открыть вопрос (имя и номер).
+func (s *Server) agentShareUsers(c *gin.Context) {
+	users, err := s.agent.ShareUsers(c.Request.Context(), currentUser(c))
+	if err != nil {
+		internalError(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": users})
+}
+
+// agentShares — кому открыт вопрос.
+func (s *Server) agentShares(c *gin.Context) {
+	id, ok := sessionID(c)
+	if !ok {
+		return
+	}
+	users, err := s.agent.Shares(c.Request.Context(), currentUser(c), id)
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": users})
+}
+
+// shareAgentSession — открыть вопрос сотрудникам ({"userIds": [..]}); ответ — кому открыт теперь.
+func (s *Server) shareAgentSession(c *gin.Context) {
+	id, ok := sessionID(c)
+	if !ok {
+		return
+	}
+	var input struct {
+		UserIDs []int64 `json:"userIds"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil || len(input.UserIDs) > 200 {
+		badRequest(c, "Некорректный список сотрудников", "userIds")
+		return
+	}
+	users, err := s.agent.Share(c.Request.Context(), currentUser(c), id, input.UserIDs)
+	if err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"items": users})
+}
+
+// unshareAgentSession — закрыть вопрос сотруднику (получатель может закрыть себе).
+func (s *Server) unshareAgentSession(c *gin.Context) {
+	id, ok := sessionID(c)
+	if !ok {
+		return
+	}
+	// «me» — получатель убирает чужой вопрос из своей истории.
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
+	if c.Param("userId") == "me" {
+		userID, err = currentUser(c).ID, nil
+	}
+	if err != nil || userID <= 0 {
+		badRequest(c, "Некорректный сотрудник", "userId")
+		return
+	}
+	if err := s.agent.Unshare(c.Request.Context(), currentUser(c), id, userID); err != nil {
+		s.agentError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}

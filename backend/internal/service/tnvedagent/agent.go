@@ -113,6 +113,8 @@ type AgentSessionView struct {
 	UpdatedAt  time.Time          `json:"updatedAt"`
 	// TrademarkCheck — вопрос «/троис»: ответ — сообщение «trademarks», уточнений нет.
 	TrademarkCheck bool `json:"trademarkCheck,omitempty"`
+	// SharedBy — вопрос коллеги, открытый сотруднику только для чтения: имя автора ("" — свой).
+	SharedBy string `json:"sharedBy,omitempty"`
 }
 
 // AgentRowStatus — состояние подбора строки для значка в таблице.
@@ -799,7 +801,7 @@ func (s *TNVEDAgentService) ownedSession(ctx context.Context, user repository.Us
 
 // Get — подбор с сообщениями после afterID; фото — только при первом запросе (afterID = 0).
 func (s *TNVEDAgentService) Get(ctx context.Context, user repository.User, id, afterID int64) (AgentSessionView, error) {
-	session, err := s.ownedSession(ctx, user, id)
+	session, sharedBy, err := s.readableSession(ctx, user, id)
 	if err != nil {
 		return AgentSessionView{}, err
 	}
@@ -814,6 +816,7 @@ func (s *TNVEDAgentService) Get(ctx context.Context, user repository.User, id, a
 		Messages: make([]AgentMessageView, 0, len(messages)),
 	}
 	view.TrademarkCheck = session.TrademarkHits != nil
+	view.SharedBy = sharedBy
 	_ = json.Unmarshal(session.Item, &view.Item)
 	if afterID == 0 {
 		_ = json.Unmarshal(session.Photos, &view.Photos)

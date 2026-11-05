@@ -10,12 +10,15 @@ import { sameAnswer } from './answerText'
 import { Command, documentsCode, menuCommands, parseCommand, splitDocumentsArg } from './commands'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 import { AgentCandidate, AgentMessage, AgentResult, AgentSession, AgentStatus, BrandCheck, ReferenceSummary, agentApi, quoteSourceLabels } from '@/features/goods/agent/agentApi'
+import { brandShortText, brandText, resultShortText, resultText } from '@/features/goods/agent/answerCopy'
+import { AnswerActions, CopyAnswer } from '@/features/goods/agent/CopyAnswer'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
 import { DeclarationsLink } from '@/features/goods/agent/DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from '@/features/goods/agent/DocumentsAnswer'
 import { TrademarkHits } from '@/shared/trademarks/TrademarkHits'
 import { plural } from '@/shared/lib/plural'
 import { RoadGame } from './RoadGame'
+import { ShareDialog } from './ShareDialog'
 import './ReferenceChat.css'
 
 const pollInterval = 1500
@@ -99,6 +102,7 @@ export function ReferenceChat() {
   // Игра, пока агент работает: только по кнопке «Сыграть», закрывается крестиком.
   const [gameOpen, setGameOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // История — одна остановка Tab: по вопросам — стрелками (roving tabindex).
   const [historyFocus, setHistoryFocus] = useState(0)
@@ -294,7 +298,8 @@ export function ReferenceChat() {
   async function submit(value: string, fresh: boolean, documentsCode?: string) {
     setBusy(true); setError('')
     try {
-      if (fresh || !session || photos.length > 0 || session.trademarkCheck) {
+      // Вопрос коллеги только для чтения: написанное — новый свой вопрос.
+      if (fresh || !session || photos.length > 0 || session.trademarkCheck || session.sharedBy) {
         accept(await agentApi.ask({ text: value, photos, documentsCode }), true)
         setPhotos([])
       } else {
@@ -312,7 +317,7 @@ export function ReferenceChat() {
 
   // «Документы для ввоза»: ответ для этого кода уже есть — прокрутка к нему, иначе запуск агента.
   async function requestDocuments(code: string) {
-    if (!session || busy || isWorking(session)) return
+    if (!session || session.sharedBy || busy || isWorking(session)) return
     if (scrollToDocuments(threadRef.current, code)) return
     setBusy(true); setError('')
     try {
@@ -362,9 +367,11 @@ export function ReferenceChat() {
   }
 
   async function remove(id: number) {
-    if (!window.confirm('Удалить этот вопрос из истории?')) return
+    // Вопрос коллеги не удаляется, а убирается из своей истории (доступ закрывается себе).
+    const shared = history.find((item) => item.id === id)?.sharedBy
+    if (!window.confirm(shared ? `Убрать вопрос от ${shared} из вашей истории?` : 'Удалить этот вопрос из истории?')) return
     try {
-      await agentApi.removeQuestion(id)
+      await (shared ? agentApi.unshare(id, 'me') : agentApi.removeQuestion(id))
       if (session?.id === id) setSession(null)
       void loadHistory()
     } catch (reason) { setError(errorMessage(reason)) }
@@ -393,6 +400,7 @@ export function ReferenceChat() {
   const nearLimit = status !== null && status.dailyLimit > 0 && status.usedToday >= status.dailyLimit * .8
   const rovingIndex = Math.min(historyFocus, Math.max(0, history.length - 1))
   const placeholder = !session ? 'Опишите товар, вставьте фото (Ctrl+V) или перетащите его сюда…'
+    : session.sharedBy ? 'Свой вопрос о товаре: опишите его или добавьте фото…'
     : session.trademarkCheck ? 'Новый вопрос о товаре или /троис для другого бренда…'
     : session.status === 'waiting' ? 'Ответьте на вопрос…' : photos.length ? 'Добавьте пояснение к фото — это будет новый вопрос' : 'Уточните: «а если покрытие латекс?» — или добавьте фото для нового вопроса'
 
@@ -426,7 +434,7 @@ export function ReferenceChat() {
             <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
               <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
                 <span className="rc-history-name"><KindIcon kind={item.kind} label={kindLabels[item.kind]} />{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
-                <small>{historyState(item)} · {new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
+                <small>{item.sharedBy && <span className="rc-history-from">от {item.sharedBy} · </span>}{historyState(item)} ·{new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
               </button>
               <button type="button" className="rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
             </li>)}</ul>
@@ -443,7 +451,9 @@ export function ReferenceChat() {
             <h3>Какой код у товара?</h3>
             <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент сверит примеры декларирования и пояснения к ТН ВЭД, найдёт код в номенклатуре и объяснит выбор.</p>
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
-            documentsDisabled={busy || working || !configured} onDocuments={(code) => void requestDocuments(code)} />}
+            documentsDisabled={busy || working || !configured || Boolean(session.sharedBy)} onDocuments={(code) => void requestDocuments(code)}
+            onShare={session.sharedBy || working ? undefined : () => setShareOpen(true)} />}
+          {session?.sharedBy && <p className="rc-shared-note">Вопрос от {session.sharedBy} — только просмотр. Свой вопрос задайте в поле ниже.</p>}
         </div>
 
         {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
@@ -476,7 +486,7 @@ export function ReferenceChat() {
               placeholder={placeholder} aria-label="Вопрос о товаре" aria-autocomplete="list" aria-expanded={Boolean(menuActive)}
               aria-controls={menuActive ? 'rc-commands' : undefined} aria-activedescendant={menuActive ? `rc-command-${menuActive.name}` : undefined} disabled={!configured || (working && photos.length === 0)} />
             {/* Пока агент ищет, кнопка отправки — «стоп» (если не прикреплено новое фото). */}
-            {session?.status === 'running' && photos.length === 0
+            {session?.status === 'running' && !session.sharedBy && photos.length === 0
               ? <button type="button" className="rc-send" onClick={() => void stop()} disabled={busy} aria-label="Остановить" title="Остановить">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="2" width="10" height="10" rx="2" /></svg>
               </button>
@@ -493,6 +503,7 @@ export function ReferenceChat() {
     </div>
     {dragging && <div className="rc-drop" aria-hidden="true"><span>Отпустите фото — оно добавится к вопросу</span></div>}
     {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.index} onClose={() => setLightbox(null)} />}
+    {shareOpen && session && <ShareDialog sessionId={session.id} onClose={() => setShareOpen(false)} />}
   </section>
 }
 
@@ -509,19 +520,26 @@ function BrandAnswer({ result, withPhotos }: { result: BrandCheck; withPhotos: b
         <TrademarkHits hits={result.hits} />
         <p className="rc-note">Решение за декларантом: совпадение — повод проверить, нужен ли товарный знак и согласие правообладателя.</p>
       </> : <p className="rc-answer-text">В реестре ТРОИС по написанию не найдено: ни этого знака, ни отличающихся на одну букву. Это не значит, что знака нет у правообладателя.</p>}
+      <CopyAnswer short={brandShortText(result)} full={brandText(result)} />
     </div>
   </>
 }
 
 // Разговор: вопрос сотрудника, что нашлось в базе, ход поиска, вопросы агента, ответ.
-type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void }
+// onShare — «Поделиться с сотрудником» в строке копирования последнего ответа (нет — вопрос чужой или агент ищет).
+type ThreadProps = { session: AgentSession; onPhoto: (photos: string[], index: number) => void; documentsDisabled: boolean; onDocuments: (code: string) => void; onShare?: () => void }
 
-function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProps) {
+function Thread({ session, onPhoto, documentsDisabled, onDocuments, onShare }: ThreadProps) {
   const photos = session.photos ?? []
   const blocks = useMemo(() => threadBlocks(session.messages), [session.messages])
   const working = isWorking(session)
+  let lastAnswer = -1
+  blocks.forEach((block, index) => { if (block.type !== 'steps' && (block.message.kind === 'result' || block.message.kind === 'trademarks')) lastAnswer = index })
+  const share = onShare && <button type="button" className="share" onClick={onShare} title="Открыть вопрос коллеге: он увидит его в своей истории и сможет только читать">
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="5.5" r="2.5" /><path d="M1.8 13.5c.6-2.3 2.2-3.5 4.2-3.5s3.6 1.2 4.2 3.5M11 4.5v4M9 6.5h4" /></svg>
+    Поделиться с сотрудником</button>
   return <>
-    {blocks.map((block, index) => {
+    {blocks.map((block, index) => <AnswerActions.Provider key={block.type === 'steps' ? `steps-${block.messages[0].id}` : block.message.id} value={index === lastAnswer ? share : null}>{(() => {
       if (block.type === 'steps') return <Steps key={`steps-${block.messages[0].id}`} messages={block.messages} live={working && index === blocks.length - 1} />
       const message = block.message
       switch (message.kind) {
@@ -550,7 +568,7 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments }: ThreadProp
         case 'rerun': return <p key={message.id} className="rc-divider"><span>заново</span></p>
         default: return null
       }
-    })}
+    })()}</AnswerActions.Provider>)}
     {session.status === 'searching' && <p className="rc-typing"><span /><span /><span /> ищу в базе решений…</p>}
     {session.status === 'running' && <p className="rc-typing"><span /><span /><span /> {documentsRequested(session.messages) ? 'агенты разбирают справку и перечни параллельно…' : 'агент ищет код…'}</p>}
   </>
@@ -642,6 +660,7 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
         <span>{main.length > 1 ? 'Коды без изменений' : 'Код без изменений'}</span>
         {main.map((candidate) => <CopyCode key={candidate.code} code={candidate.code} className="rc-code small" />)}
       </p>
+      <CopyAnswer short={resultShortText(result)} full={resultText(result)} />
     </div>
   }
   return <div className="rc-answer">
@@ -658,6 +677,7 @@ function Answer({ sessionId, result, previous, documentsDisabled, onDocuments }:
     <DeclarationNames sessionId={sessionId} short={result.name} full={result.nameFull ?? ''} />
     {result.notes && <p className="rc-note"><LinkText text={result.notes} /></p>}
     {result.trademarks && <TrademarkHits hits={result.trademarks} />}
+    <CopyAnswer short={resultShortText(result)} full={resultText(result)} />
   </div>
 }
 
