@@ -16,7 +16,7 @@ func TestShareQueriesFilterByUser(t *testing.T) {
 		t.Fatalf("запросов %d: %v", len(recorder.sql), recorder.sql)
 	}
 	shared, users := recorder.sql[0], recorder.sql[1]
-	for _, want := range []string{"sh.user_id = 42", "s.mode = 'reference'", "JOIN tnved_agent_sessions s ON s.id = sh.session_id", "AS shared_by", "LIMIT 50"} {
+	for _, want := range []string{"sh.user_id = 42", "s.mode = 'reference'", "JOIN tnved_agent_sessions s ON s.id = sh.session_id", "true AS shared", "AS shared_by", "LIMIT 50"} {
 		if !strings.Contains(shared, want) {
 			t.Errorf("открытые вопросы: нет %q в %s", want, shared)
 		}

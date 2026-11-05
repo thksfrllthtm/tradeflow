@@ -77,7 +77,7 @@ func (r *Repository) AgentSessionSharedWith(ctx context.Context, sessionID, user
 func (r *Repository) SharedReferenceSessions(ctx context.Context, userID int64, limit int) ([]ReferenceSession, error) {
 	var rows []ReferenceSession
 	err := r.db.WithContext(ctx).Table("tnved_agent_session_shares AS sh").
-		Select("s.id, s.title, s.status, s.result, s.photos, s.documents_code, s.trademark_hits, s.created_at, s.updated_at, COALESCE(u.name, '') AS shared_by").
+		Select("s.id, s.title, s.status, s.result, s.photos, s.documents_code, s.trademark_hits, s.created_at, s.updated_at, true AS shared, COALESCE(u.name, '') AS shared_by").
 		Joins("JOIN tnved_agent_sessions s ON s.id = sh.session_id").Joins("LEFT JOIN users u ON u.id = s.user_id").
 		Where("sh.user_id = ? AND s.mode = 'reference'", userID).Order("s.updated_at DESC, s.id DESC").Limit(limit).Scan(&rows).Error
 	return rows, err

@@ -86,30 +86,29 @@ func (s *TNVEDAgentService) Unshare(ctx context.Context, user repository.User, i
 }
 
 // readableSession — вопрос для просмотра: свой (как ownedSession) или открытый сотруднику коллегой.
-// sharedBy — имя автора, если вопрос чужой и открыт только для чтения ("" — свой).
-func (s *TNVEDAgentService) readableSession(ctx context.Context, user repository.User, id int64) (repository.TNVEDAgentSession, string, error) {
+// shared — вопрос чужой и открыт только для чтения; sharedBy — имя автора ("" — не заполнено).
+func (s *TNVEDAgentService) readableSession(ctx context.Context, user repository.User, id int64) (repository.TNVEDAgentSession, bool, string, error) {
 	session, err := s.ownedSession(ctx, user, id)
 	if !errors.Is(err, ErrAgentForbidden) {
-		return session, "", err
+		return session, false, "", err
 	}
 	session, err = s.repository.AgentSessionByID(ctx, id)
 	if err != nil {
-		return repository.TNVEDAgentSession{}, "", err
+		return repository.TNVEDAgentSession{}, false, "", err
 	}
 	if session.Mode != modeReference {
-		return repository.TNVEDAgentSession{}, "", ErrAgentForbidden
+		return repository.TNVEDAgentSession{}, false, "", ErrAgentForbidden
 	}
 	shared, err := s.repository.AgentSessionSharedWith(ctx, id, user.ID)
 	if err != nil {
-		return repository.TNVEDAgentSession{}, "", err
+		return repository.TNVEDAgentSession{}, false, "", err
 	}
 	if !shared {
-		return repository.TNVEDAgentSession{}, "", ErrAgentForbidden
+		return repository.TNVEDAgentSession{}, false, "", ErrAgentForbidden
 	}
-	author, err := s.repository.UserByID(ctx, session.UserID)
-	name := author.Name
-	if err != nil || name == "" {
-		name = "коллеги"
+	name := ""
+	if author, err := s.repository.UserByID(ctx, session.UserID); err == nil {
+		name = author.Name
 	}
-	return session, name, nil
+	return session, true, name, nil
 }

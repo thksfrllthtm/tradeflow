@@ -299,7 +299,7 @@ export function ReferenceChat() {
     setBusy(true); setError('')
     try {
       // Вопрос коллеги только для чтения: написанное — новый свой вопрос.
-      if (fresh || !session || photos.length > 0 || session.trademarkCheck || session.sharedBy) {
+      if (fresh || !session || photos.length > 0 || session.trademarkCheck || session.shared) {
         accept(await agentApi.ask({ text: value, photos, documentsCode }), true)
         setPhotos([])
       } else {
@@ -317,7 +317,7 @@ export function ReferenceChat() {
 
   // «Документы для ввоза»: ответ для этого кода уже есть — прокрутка к нему, иначе запуск агента.
   async function requestDocuments(code: string) {
-    if (!session || session.sharedBy || busy || isWorking(session)) return
+    if (!session || session.shared || busy || isWorking(session)) return
     if (scrollToDocuments(threadRef.current, code)) return
     setBusy(true); setError('')
     try {
@@ -368,7 +368,8 @@ export function ReferenceChat() {
 
   async function remove(id: number) {
     // Вопрос коллеги не удаляется, а убирается из своей истории (доступ закрывается себе).
-    const shared = history.find((item) => item.id === id)?.sharedBy
+    const item = history.find((entry) => entry.id === id)
+    const shared = item?.shared ? authorName(item.sharedBy) : ""
     if (!window.confirm(shared ? `Убрать вопрос от ${shared} из вашей истории?` : 'Удалить этот вопрос из истории?')) return
     try {
       await (shared ? agentApi.unshare(id, 'me') : agentApi.removeQuestion(id))
@@ -400,7 +401,7 @@ export function ReferenceChat() {
   const nearLimit = status !== null && status.dailyLimit > 0 && status.usedToday >= status.dailyLimit * .8
   const rovingIndex = Math.min(historyFocus, Math.max(0, history.length - 1))
   const placeholder = !session ? 'Опишите товар, вставьте фото (Ctrl+V) или перетащите его сюда…'
-    : session.sharedBy ? 'Свой вопрос о товаре: опишите его или добавьте фото…'
+    : session.shared ? 'Свой вопрос о товаре: опишите его или добавьте фото…'
     : session.trademarkCheck ? 'Новый вопрос о товаре или /троис для другого бренда…'
     : session.status === 'waiting' ? 'Ответьте на вопрос…' : photos.length ? 'Добавьте пояснение к фото — это будет новый вопрос' : 'Уточните: «а если покрытие латекс?» — или добавьте фото для нового вопроса'
 
@@ -431,10 +432,11 @@ export function ReferenceChat() {
         {history.length === 0 ? <p className="rc-history-empty">Здесь появятся ваши вопросы.</p>
           : <>
             <p id="rc-history-help" className="rc-sr">Стрелки вверх и вниз — по вопросам, Enter — открыть, Delete — удалить</p>
-            <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={session?.id === item.id ? 'active' : undefined}>
+            <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={[session?.id === item.id && 'active', item.shared && 'shared'].filter(Boolean).join(' ') || undefined}>
               <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
                 <span className="rc-history-name"><KindIcon kind={item.kind} label={kindLabels[item.kind]} />{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
-                <small>{item.sharedBy && <span className="rc-history-from">от {item.sharedBy} · </span>}{historyState(item)} ·{new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
+                {item.shared && <span className="rc-history-from"><PersonIcon />Чат {authorName(item.sharedBy)}</span>}
+                <small>{historyState(item)} ·{new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
               </button>
               <button type="button" className="rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
             </li>)}</ul>
@@ -451,9 +453,9 @@ export function ReferenceChat() {
             <h3>Какой код у товара?</h3>
             <p>Перетащите фото, вставьте его через Ctrl+V или опишите товар. Сначала проверим базу решений компании, потом агент сверит примеры декларирования и пояснения к ТН ВЭД, найдёт код в номенклатуре и объяснит выбор.</p>
           </div> : <Thread session={session} onPhoto={(list, index) => setLightbox({ photos: list, index })}
-            documentsDisabled={busy || working || !configured || Boolean(session.sharedBy)} onDocuments={(code) => void requestDocuments(code)}
-            onShare={session.sharedBy || working ? undefined : () => setShareOpen(true)} />}
-          {session?.sharedBy && <p className="rc-shared-note">Вопрос от {session.sharedBy} — только просмотр. Свой вопрос задайте в поле ниже.</p>}
+            documentsDisabled={busy || working || !configured || Boolean(session.shared)} onDocuments={(code) => void requestDocuments(code)}
+            onShare={session.shared || working ? undefined : () => setShareOpen(true)} />}
+          {session?.shared && <p className="rc-shared-note">Это чат {authorName(session.sharedBy)}: только просмотр. Свой вопрос задайте в поле ниже — он будет вашим.</p>}
         </div>
 
         {/* Игра — не в ленте, а над полем ввода: новые шаги агента прокручивают ленту выше и игру не сдвигают.
@@ -486,7 +488,7 @@ export function ReferenceChat() {
               placeholder={placeholder} aria-label="Вопрос о товаре" aria-autocomplete="list" aria-expanded={Boolean(menuActive)}
               aria-controls={menuActive ? 'rc-commands' : undefined} aria-activedescendant={menuActive ? `rc-command-${menuActive.name}` : undefined} disabled={!configured || (working && photos.length === 0)} />
             {/* Пока агент ищет, кнопка отправки — «стоп» (если не прикреплено новое фото). */}
-            {session?.status === 'running' && !session.sharedBy && photos.length === 0
+            {session?.status === 'running' && !session.shared && photos.length === 0
               ? <button type="button" className="rc-send" onClick={() => void stop()} disabled={busy} aria-label="Остановить" title="Остановить">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="2" width="10" height="10" rx="2" /></svg>
               </button>
@@ -539,17 +541,22 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments, onShare }: T
     <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="5.5" r="2.5" /><path d="M1.8 13.5c.6-2.3 2.2-3.5 4.2-3.5s3.6 1.2 4.2 3.5M11 4.5v4M9 6.5h4" /></svg>
     Поделиться с сотрудником</button>
   return <>
+    {session.shared && <div className="rc-shared-banner" role="note">
+      <span className="rc-shared-avatar" aria-hidden="true">{initial(session.sharedBy)}</span>
+      <span><b>Чат {authorName(session.sharedBy)}</b><small>Открыт вам для просмотра — уточнять и перезапускать может только автор</small></span>
+    </div>}
     {blocks.map((block, index) => <AnswerActions.Provider key={block.type === 'steps' ? `steps-${block.messages[0].id}` : block.message.id} value={index === lastAnswer ? share : null}>{(() => {
       if (block.type === 'steps') return <Steps key={`steps-${block.messages[0].id}`} messages={block.messages} live={working && index === blocks.length - 1} />
       const message = block.message
       switch (message.kind) {
         case 'input': return <div key={message.id} className="rc-user">
+          {session.shared && <small className="rc-user-author">{session.sharedBy || 'Коллега'}</small>}
           {photos.length > 0 && <div className="rc-user-photos">{photos.map((photo, at) => <button key={at} type="button" onClick={() => onPhoto(photos, at)} aria-label="Открыть фото крупно"><img src={photo} alt="" /></button>)}</div>}
           {session.trademarkCheck ? <p>Проверка по ТРОИС{message.content.item.name && ` · ${message.content.item.name}`}</p>
             : message.content.item.name && <p>{message.content.item.name}</p>}
         </div>
         case 'trademarks': return <BrandAnswer key={message.id} result={message.content} withPhotos={photos.length > 0} />
-        case 'user': return <div key={message.id} className="rc-user"><p>{message.content.text}</p></div>
+        case 'user': return <div key={message.id} className="rc-user">{session.shared && <small className="rc-user-author">{session.sharedBy || 'Коллега'}</small>}<p>{message.content.text}</p></div>
         case 'documents': return <div key={message.id} className="rc-user"><p>Документы для ввоза · <code>{formatCode(message.content.code)}</code></p></div>
         case 'question': return <div key={message.id} className="rc-bot rc-question"><b>Уточните</b>{message.content.text}</div>
         case 'match': return message.content.matches.length > 0 ? <BaseHits key={message.id} items={message.content.matches.map((match) => ({ id: match.decision.id, code: match.decision.code, name: match.decision.finalName || match.decision.invoiceName, thumb: match.decision.thumb, note: match.byPhoto ? 'то же фото' : 'то же наименование', verified: match.decision.status === 'verified' }))} title="Этот товар уже оформляли" /> : null
@@ -752,4 +759,18 @@ function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: A
       <DeclarationsLink candidate={candidate} className="rc-more" />
     </div>
   </article>
+}
+
+// Имя автора чужого чата в родительном падеже для подписей («Чат Айгерим», «от коллеги»): нет имени — «коллеги».
+function authorName(name?: string) {
+  return name?.trim() || 'коллеги'
+}
+
+// Первая буква имени для кружка-аватара в плашке чужого чата.
+function initial(name?: string) {
+  return (name?.trim()[0] ?? '?').toUpperCase()
+}
+
+function PersonIcon() {
+  return <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="8" cy="5.5" r="2.6" /><path d="M2.8 14c.7-2.6 2.7-4 5.2-4s4.5 1.4 5.2 4" /></svg>
 }

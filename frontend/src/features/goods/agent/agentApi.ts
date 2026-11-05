@@ -127,7 +127,8 @@ export type AgentSession = {
   result: AgentResult | null
   // Вопрос «/троис»: ответ — сообщение trademarks, уточнений и документов нет (новый вопрос).
   trademarkCheck?: boolean
-  // Вопрос коллеги, открытый только для чтения: имя автора (нет — свой вопрос).
+  // Вопрос коллеги, открытый только для чтения (shared); sharedBy — имя автора, если заполнено.
+  shared?: boolean
   sharedBy?: string
   messages: AgentMessage[]
   steps: number
@@ -141,7 +142,7 @@ export type AgentSession = {
 
 // Вопрос чата-справочника в истории сотрудника.
 // kind — вкладка истории: chat — подбор кода, documents — только документы, trademarks — «/троис» (trademarkHits — найдено знаков).
-export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string; kind: 'chat' | 'documents' | 'trademarks'; trademarkHits?: number; sharedBy?: string }
+export type ReferenceSummary = { id: number; title: string; status: AgentSessionStatus; bestCode: string; hasPhoto: boolean; createdAt: string; updatedAt: string; kind: 'chat' | 'documents' | 'trademarks'; trademarkHits?: number; shared?: boolean; sharedBy?: string }
 
 // Сотрудник в списке «Поделиться»: только номер и имя.
 export type ShareUser = { id: number; name: string }

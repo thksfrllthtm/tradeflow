@@ -265,7 +265,8 @@ type ReferenceSession struct {
 	TrademarkHits *int
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
-	// SharedBy — имя автора, если вопрос открыли сотруднику (только в SharedReferenceSessions).
+	// Shared — вопрос коллеги, открытый сотруднику; SharedBy — имя автора ("" — имя не заполнено). Только в SharedReferenceSessions.
+	Shared   bool
 	SharedBy string
 }
 

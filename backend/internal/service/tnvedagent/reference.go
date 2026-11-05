@@ -44,7 +44,8 @@ type ReferenceSummary struct {
 	// кода; chat — подбор кода (в том числе с документами после него). TrademarkHits — найдено знаков.
 	Kind          string `json:"kind"`
 	TrademarkHits *int   `json:"trademarkHits,omitempty"`
-	// SharedBy — вопрос коллеги, открытый сотруднику: имя автора ("" — свой вопрос).
+	// Shared — вопрос коллеги, открытый сотруднику только для чтения; SharedBy — имя автора ("" — не заполнено).
+	Shared   bool   `json:"shared,omitempty"`
 	SharedBy string `json:"sharedBy,omitempty"`
 }
 
@@ -196,7 +197,7 @@ func (s *TNVEDAgentService) ReferenceHistory(ctx context.Context, user repositor
 	}
 	items := make([]ReferenceSummary, 0, len(rows))
 	for _, row := range rows {
-		item := ReferenceSummary{ID: row.ID, Title: row.Title, Status: row.Status, HasPhoto: string(row.Photos) != "[]" && len(row.Photos) > 2, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, TrademarkHits: row.TrademarkHits, SharedBy: row.SharedBy}
+		item := ReferenceSummary{ID: row.ID, Title: row.Title, Status: row.Status, HasPhoto: string(row.Photos) != "[]" && len(row.Photos) > 2, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, TrademarkHits: row.TrademarkHits, Shared: row.Shared, SharedBy: row.SharedBy}
 		var result AgentResult
 		hasResult := len(row.Result) > 0 && string(row.Result) != "null" && json.Unmarshal(row.Result, &result) == nil
 		if hasResult {
