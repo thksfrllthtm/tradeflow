@@ -1,8 +1,7 @@
 /* Страница калькулятора смет: каркас, компактные таблицы, просмотр фото. */
 
 .goods-calculator-embedded { min-width: 0; }
-.goods-calculator-embedded .goods-page { padding-top: 14px; }
-.goods-calculator-embedded .goods-page { padding: 15px 20px 34px; }
+.goods-calculator-embedded .goods-page { padding: 16px 20px 32px; }
 @media (max-width: 760px) {
   .goods-calculator-embedded .goods-page { padding-inline: 12px; }
 }
@@ -27,7 +26,7 @@
   min-width: 0 !important;
   table-layout: auto;
   border-collapse: collapse;
-  font-size: .68rem;
+  font-size: var(--fs-xs);
   line-height: 1.15;
 }
 .goods-page table th,
@@ -36,7 +35,7 @@
 .goods-calculator-embedded table td {
   padding: 2px 4px !important;
   vertical-align: middle;
-  font-size: .68rem;
+  font-size: var(--fs-xs);
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
@@ -44,11 +43,11 @@
 }
 .goods-page table th,
 .goods-calculator-embedded table th {
-  padding: 3px 4px !important;
-  background: #f2f6f3;
-  color: #2e3c33;
-  font-size: .62rem !important;
-  font-weight: 700;
+  padding: 4px 4px !important;
+  background: var(--xl-head);
+  color: var(--tf-text);
+  font-size: var(--fs-xs) !important;
+  font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
   position: sticky;
@@ -57,11 +56,11 @@
 }
 .goods-page table tbody tr:nth-child(even) td,
 .goods-calculator-embedded table tbody tr:nth-child(even) td {
-  background: #fafcfb;
+  background: var(--xl-hover);
 }
 .goods-page table tbody tr:hover td,
 .goods-calculator-embedded table tbody tr:hover td {
-  background: #eef7f1;
+  background: var(--tf-ok-bg);
 }
 .goods-page table input,
 .goods-page table select,
@@ -71,34 +70,27 @@
   min-width: 0;
   margin: 0;
   padding: 2px 4px;
-  font-size: .68rem;
+  font-size: var(--fs-xs);
   line-height: 1.15;
   border-radius: 3px;
-  border: 1px solid #d4ddd6;
-  background: #fff;
+  border: 1px solid var(--tf-border-strong);
+  background: var(--tf-card);
 }
 .goods-page table input:focus,
 .goods-page table select:focus,
 .goods-calculator-embedded table input:focus,
 .goods-calculator-embedded table select:focus {
-  outline: 2px solid #dbe9df;
-  border-color: #25855a;
+  outline: 2px solid var(--tf-focus-ring);
+  border-color: var(--tf-green);
 }
 .goods-page table input[type="checkbox"],
 .goods-page table input[type="radio"],
 .goods-calculator-embedded table input[type="checkbox"],
 .goods-calculator-embedded table input[type="radio"] {
   width: auto;
-  margin: 0 3px 0 0;
+  margin: 0 4px 0 0;
   padding: 0;
   vertical-align: middle;
-}
-.goods-page table button,
-.goods-calculator-embedded table button {
-  padding: 2px 6px;
-  font-size: .64rem;
-  border-radius: 3px;
-  line-height: 1.1;
 }
 .goods-page table th small,
 .goods-page table th .field-hint,
@@ -109,13 +101,13 @@
 @media (max-width: 760px) {
   .goods-page table,
   .goods-calculator-embedded table {
-    font-size: .64rem;
+    font-size: var(--fs-xs);
   }
   .goods-page table th,
   .goods-page table td,
   .goods-calculator-embedded table th,
   .goods-calculator-embedded table td {
-    padding: 2px 3px !important;
+    padding: 2px 4px !important;
   }
 }
 

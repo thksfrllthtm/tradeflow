@@ -19,18 +19,20 @@ import { countryNames, formatMeasureCode, percentText } from './antiDumping'
 import '@/shared/styles/list-page.css'
 import '../components/DirectoryTransfer.css'
 import './nomenclature.css'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { AntiDumpingRef, NomenclatureCode, NomenclatureImport } from '@/shared/tnved/nomenclature'
 import { formatCode, nameParts } from '@/shared/tnved/codes'
 
 const pageSize = 100
 const changeLabels: Record<NomenclatureChange['kind'], string> = { added: 'Новый', removed: 'Удалён', changed: 'Изменён' }
+const changeTones: Record<NomenclatureChange['kind'], string> = { added: 'ok', removed: 'error', changed: 'warn' }
 
 // Строка изменения: у изменённого кода — что было и что стало (только то, что поменялось).
 function ChangeRow({ change }: { change: NomenclatureChange }) {
   const nameChanged = change.kind === 'changed' && change.oldName !== change.name
   const rateChanged = change.kind === 'changed' && change.oldTariffText !== change.tariffText
   return <li className={`nom-change ${change.kind}`}>
-    <span className="nom-change-kind">{changeLabels[change.kind]}</span>
+    <span className={`badge ${changeTones[change.kind]} nom-change-kind`}>{changeLabels[change.kind]}</span>
     <code>{formatCode(change.code)}</code>
     <span className="nom-change-text">
       {change.kind === 'changed'
@@ -103,22 +105,18 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="nomenclature" onLogout={onLogout} />
     <section className="directory-page nom-page">
-      <div className="dir-head">
-        <div>
-          <h1>Номенклатура ТН ВЭД ЕАЭС</h1>
-          <p>{source ? <>Источник: {source.source}{source.actualDate && <> · данные на {formatRuDate(source.actualDate)}</>} · загружено {formatRuDate(source.importedAt.slice(0, 10))}{source.importedByName && `, ${source.importedByName}`}</> : 'Все коды со ставками ввозной пошлины Единого таможенного тарифа.'}</p>
-        </div>
-        <div className="dir-head-actions dir-transfer">
+      <PageHead title="Номенклатура ТН ВЭД ЕАЭС"
+        subtitle={source ? <>Источник: {source.source}{source.actualDate && <> · данные на {formatRuDate(source.actualDate)}</>} · загружено {formatRuDate(source.importedAt.slice(0, 10))}{source.importedByName && `, ${source.importedByName}`}</> : 'Все коды со ставками ввозной пошлины Единого таможенного тарифа.'}
+        actions={<>
           {codeCheck.button}
-          <button type="button" className={antiDumpingOpen ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!antiDumpingOpen) closePanels(); setAntiDumpingOpen(!antiDumpingOpen) }} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
+          <button type="button" className={antiDumpingOpen ? 'secondary active' : 'secondary'} onClick={() => { if (!antiDumpingOpen) closePanels(); setAntiDumpingOpen(!antiDumpingOpen) }} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
           {riskIndicators.button}
           {admin && kzList.button}
-          {admin && <label className={uploading ? 'dir-transfer-button nom-upload busy' : 'dir-transfer-button nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
+          {admin && <label className={uploading ? 'secondary nom-upload busy' : 'secondary nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
             {uploading ? 'Загружаем…' : source ? 'Обновить из файла TWS' : 'Загрузить файл TWS'}
             <input type="file" accept=".xlsx" onChange={(event) => void upload(event)} disabled={uploading} />
           </label>}
-        </div>
-      </div>
+        </>} />
 
       {codeCheck.panel}
       {antiDumpingOpen && <AntiDumpingPanel admin={admin} onLoaded={setAntiDumpingCount} onRefreshed={() => setRefreshKey((value) => value + 1)}
@@ -180,7 +178,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
         </table>
         {items.length < total && <div className="nom-more">
           <span>Показано {formatDisplayNumber(items.length)} из {formatDisplayNumber(total)}</span>
-          <button type="button" className="dir-transfer-button" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? 'Загружаем…' : `Показать ещё ${Math.min(pageSize, total - items.length)}`}</button>
+          <button type="button" className="secondary" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? 'Загрузка…' : `Показать ещё ${Math.min(pageSize, total - items.length)}`}</button>
         </div>}
       </div>
       </section>

@@ -23,8 +23,8 @@ export function CalculationErrors({ groups, onBackToReview, onPickPrices, onShow
 
   function action(group: ProblemGroup) {
     // Нет кода — главное действие экрана: зелёная кнопка.
-    if (group.kind === 'code') return <button type="button" className="rs-problem-action primary" onClick={onBackToReview}>Перейти к проверке строк</button>
-    if (group.kind === 'price' && onPickPrices) return <button type="button" className="rs-problem-action" onClick={onPickPrices}>Подобрать цены ИИ</button>
+    if (group.kind === 'code') return <button type="button" onClick={onBackToReview}>Перейти к проверке строк</button>
+    if (group.kind === 'price' && onPickPrices) return <button type="button" className="secondary" onClick={onPickPrices}>Подобрать цены ИИ</button>
     return null
   }
 

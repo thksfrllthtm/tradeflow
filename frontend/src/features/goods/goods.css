@@ -1,131 +1,26 @@
-/* Общие стили модуля смет товаров: страница этапа, кнопки, баннеры, параметры, подсказки нетто,
-   карточка с панелью и нижней строкой действий, бейджи статусов. */
-.banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 12px;
-  padding: 9px 13px;
-  border-radius: 8px;
-  font-size: .84rem;
-}
-.banner.error { background: #fef2f2; border: 1px solid #f1c9c9; color: #8f2b2b; }
-.banner.error button {
-  margin-left: auto;
-  padding: 2px 8px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: 1.15rem;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 4px;
-}
-.banner.error button:hover { background: #f7dede; }
-.goods-step-page { display: grid; gap: 10px; }
-.secondary {
-  padding: 7px 14px;
-  border: 1px solid #b8d3c1;
-  border-radius: 6px;
-  background: #eef7f1;
-  color: #1c5538;
-  font-size: .82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, border-color .15s;
-}
-.secondary:hover:not(:disabled) { background: #ddeee4; border-color: #24704a; }
-.secondary:disabled { opacity: .5; cursor: not-allowed; }
-.button-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #2d704b;
-  font-size: .78rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-.button-link:hover:not(:disabled) { text-decoration: underline; }
-.button-link:disabled { color: #b3bcb6; cursor: not-allowed; }
+/* Общие стили модуля смет товаров: страница этапа, подсказки нетто, карточка, спиннер. */
+.goods-step-page { display: grid; gap: 8px; }
 .goods-page {
   padding: 16px 20px 28px;
   max-width: none;
   margin: 0;
-  color: #2c3a31;
-  font-size: 13.5px;
+  color: var(--tf-text);
+  font-size: var(--fs-base);
   line-height: 1.45;
 }
 @media (max-width: 768px) {
-  .goods-page { padding: 10px; }
+  .goods-page { padding: 12px; }
 }
-.net-ok { color: #23603d; }
-.net-warn { color: #956b16; }
-.net-bad { color: #a33232; }
-.goods-params {
-  margin: 0;
-  border: 1px solid #dfe7e1;
-  border-radius: 8px;
-  background: #f8faf8;
-}
-.goods-params > summary {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 10px 14px;
-  color: #34443a;
-  font-size: .84rem;
-  font-weight: 650;
-  cursor: pointer;
-  list-style: none;
-}
-.goods-params > summary::-webkit-details-marker { display: none; }
-.goods-params > summary::before { content: '▸'; margin-right: 2px; color: #7a877f; }
-.goods-params[open] > summary::before { content: '▾'; }
-.goods-params-summary {
-  flex: 1 1 auto;
-  overflow: hidden;
-  color: #718077;
-  font-size: .74rem;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.goods-table-top-scroll {
-  display: block;
-  height: 12px;
-  margin: 0 0 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border: 1px solid #d4dcd6;
-  border-radius: 6px;
-  background: #f1f5f2;
-}
-.goods-table-top-scroll > div { height: 1px; }
-.goods-empty { text-align: center; padding: 40px 20px; color: #7a877f; }
-.goods-empty h3 {
-  margin: 0 0 6px;
-  color: #45554b;
-  font-size: 1rem;
-  font-weight: 650;
-}
-.goods-empty p { margin: 0; font-size: .84rem; }
-
-/* Общие элементы всех этапов калькулятора: кнопки, баннеры, карточка с панелью
-   и нижней строкой действий, бейджи статусов. */
-
+.net-ok { color: var(--tf-ok); }
+.net-warn { color: var(--tf-warn-text); }
+.net-bad { color: var(--tf-error); }
 .goods-request-error { align-items: flex-start; }
 .goods-request-error strong { display: block; margin-bottom: 2px; }
 .goods-request-error p { margin: 0; line-height: 1.45; }
-.goods-storage-error { display: inline-flex; align-items: center; max-width: 420px; padding: 6px 9px; border: 1px solid #efcaca; border-radius: 6px; background: #fff7f7; color: #8d2929; font-size: .76rem; line-height: 1.35; }
 
-.rv-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #dfe7e1; border-radius: 10px; background: #fff; }
+.rv-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); }
 
-/* Статус строки (этапы 2 и 3): ✓ / ! в кружке, причина — в подсказке. */
-.rs-dot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: .66rem; font-weight: 800; cursor: default; }
-.rs-dot.ok { background: #e3f3e8; color: #1d6a3f; }
-.rs-dot.warn { background: #fdf3d8; color: #85640a; cursor: help; }
-.rs-dot.bad { background: #fde8e8; color: #a33232; cursor: help; }
-.rs-dot.off { background: #eef1ef; color: #9aa59e; }
-.rs-dot.todo { width: 8px; height: 8px; background: #e3e9e5; cursor: help; }
-
+/* Спиннер загрузки — один на модуль: панель подбора кода, поиск в окне выбора кода. */
+.goods-spinner { display: inline-block; box-sizing: border-box; width: 16px; height: 16px; border: 2px solid var(--tf-border); border-top-color: var(--tf-green); border-radius: 50%; animation: goods-spin .8s linear infinite; }
+@keyframes goods-spin { to { transform: rotate(360deg); } }
 

@@ -25,13 +25,13 @@ export function SirOptions({ weight, discount, disabled, onChange }: { weight: S
   }
 
   return <>
-    <div className="rs-seg" role="radiogroup" aria-label="Вес для СУР">
+    <div className="dir-seg" role="radiogroup" aria-label="Вес для СУР">
       <button type="button" role="radio" aria-checked={weight !== 'gross'} className={weight !== 'gross' ? 'active' : undefined} onClick={() => onChange({ sirWeight: 'net' })} disabled={disabled}>Нетто</button>
       <button type="button" role="radio" aria-checked={weight === 'gross'} className={weight === 'gross' ? 'active' : undefined} onClick={() => onChange({ sirWeight: 'gross' })} disabled={disabled}>Брутто</button>
     </div>
     <span className="sir-sep" aria-hidden="true" />
     <span className="sir-field">Снижение</span>
-    <div className="rs-seg" role="radiogroup" aria-label="Снижение индикатора">
+    <div className="dir-seg" role="radiogroup" aria-label="Снижение индикатора">
       {QUICK_DISCOUNTS.map((value) => {
         const active = sameDiscount(value, discount)
         return <button key={value} type="button" role="radio" aria-checked={active} className={active ? 'active' : undefined} onClick={() => onChange({ sirDiscountPercent: value === '0' ? '' : value })} disabled={disabled}
@@ -76,7 +76,7 @@ export function SirControls({ sir, sirRows, totalRows, disabled, onChange, child
 
   return <div className={mode === 'sir' ? 'sir-bar on' : 'sir-bar'} role="group" aria-label="Таможенная стоимость">
     <span className="sir-label">Таможенная стоимость</span>
-    <div className="rs-seg" role="radiogroup" aria-label="Как считать таможенную стоимость">
+    <div className="dir-seg" role="radiogroup" aria-label="Как считать таможенную стоимость">
       <button type="button" role="radio" aria-checked={mode === 'invoice'} className={mode === 'invoice' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'invoice' })} disabled={disabled} title="Таможенная стоимость = стоимость по инвойсу + доставка">По инвойсу</button>
       <button type="button" role="radio" aria-checked={mode === 'sir'} className={mode === 'sir' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'sir' })} disabled={disabled} title="Таможенная стоимость = вес × стоимостной индикатор риска КГД (USD за 1 кг) × (1 − снижение) + доставка">По СУР</button>
     </div>

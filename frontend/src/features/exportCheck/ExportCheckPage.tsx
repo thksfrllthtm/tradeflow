@@ -1,5 +1,6 @@
 import { ChangeEvent, Fragment, useEffect, useRef, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { User } from '@/shared/types/user'
@@ -33,7 +34,7 @@ export function shownValue(label: string, text: string) {
 }
 
 const badgeText: Record<CheckStatus, string> = { ok: '✓ совпадает', error: '✕ расхождение', warn: '! проверьте', skip: 'не сверяется' }
-const Badge = ({ status }: { status: CheckStatus }) => <span className={`ec-badge ec-${status}`}>{badgeText[status]}</span>
+const Badge = ({ status }: { status: CheckStatus }) => <span className={`badge ${status === 'skip' ? '' : status}`}>{badgeText[status]}</span>
 const pairColumns = ['Штук', 'Нетто, кг', 'Цена, USD', 'Сумма, USD']
 
 // Сверка нашего инвойса с экспортной КНР: инвойс Excel и один или несколько PDF (партия больше 50 товаров
@@ -124,19 +125,15 @@ export function ExportCheckPage({ user, onLogout }: { user: User; onLogout: () =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputKey, restored])
 
-  const status = !restored ? 'Загружаем сохранённую сверку…' : checking ? 'Сверяем…' : reading > 0 ? `Читаем PDF: ${reading}…` : !invoice ? 'Загрузите инвойс Excel' : loaded.length === 0 ? 'Загрузите экспортную PDF' : ''
+  const status = !restored ? 'Загрузка сохранённой сверки…' : checking ? 'Сверяем…' : reading > 0 ? `Читаем PDF: ${reading}…` : !invoice ? 'Загрузите инвойс Excel' : loaded.length === 0 ? 'Загрузите экспортную PDF' : ''
 
   return <main className="app-shell directory-shell ec-shell">
     <AppHeader user={user} section="exportCheck" onLogout={onLogout} />
-    <section className="ec-page">
-      <div className="ec-head">
-        <div>
-          <h1>Сверка экспортной</h1>
-          <p>Загрузите наш инвойс Excel и экспортную от китайской стороны (PDF с текстом, если товаров больше 50 — все части).
-            Сверка запустится сама: итоги, получатель и контракт, затем каждая строка — штуки, нетто, цена и сумма.</p>
-        </div>
-        {(invoice || loaded.length > 0) && <button type="button" className="ec-reset" onClick={reset} title="Убрать файлы и результат. Без этого сверка сохраняется при обновлении страницы и переходах">Очистить сверку</button>}
-      </div>
+    <section className="directory-page ec-page">
+      <PageHead title="Сверка экспортной"
+        subtitle={<>Загрузите наш инвойс Excel и экспортную от китайской стороны (PDF с текстом, если товаров больше 50 — все части).
+          Сверка запустится сама: итоги, получатель и контракт, затем каждая строка — штуки, нетто, цена и сумма.</>}
+        actions={(invoice || loaded.length > 0) && <button type="button" className="danger" onClick={reset} title="Убрать файлы и результат. Без этого сверка сохраняется при обновлении страницы и переходах">Очистить сверку</button>} />
 
       <div className="ec-files">
         <label className={invoice ? 'ec-drop filled' : 'ec-drop'}>
@@ -156,7 +153,7 @@ export function ExportCheckPage({ user, onLogout }: { user: User; onLogout: () =
               <b title={file.name}>{file.name}</b>
               {declaration && <span>{declaration.items.length} {plural(declaration.items.length, 'товар', 'товара', 'товаров')} · мест {declaration.places || '—'} · брутто {shownValue('кг', declaration.grossKg)} · нетто {shownValue('кг', declaration.netKg)}</span>}
               {readError && <span>{readError}</span>}
-              <button type="button" onClick={() => remove(file.name)} aria-label={`Убрать ${file.name}`} title="Убрать файл">×</button>
+              <button type="button" className="icon-button ghost sm" onClick={() => remove(file.name)} aria-label={`Убрать ${file.name}`} title="Убрать файл">×</button>
             </li>)}
           </ul>}
         </div>
@@ -209,7 +206,7 @@ function ReportView({ report, files, unread, checking, tab, onTab }: { report: R
 
     <div className="ec-rows-head">
       <h2>Строки</h2>
-      <div className="ec-tabs" role="tablist" aria-label="Какие строки показать">
+      <div className="dir-seg ec-tabs" role="tablist" aria-label="Какие строки показать">
         {tabs.map(({ value, label }) => <button key={value} type="button" role="tab" aria-selected={tab === value}
           className={`ec-tab ec-tab-${value}${tab === value ? ' active' : ''}`} onClick={() => onTab(value)} disabled={value !== 'all' && counts[value] === 0}>
           {label} <span>{counts[value]}</span>
@@ -217,7 +214,7 @@ function ReportView({ report, files, unread, checking, tab, onTab }: { report: R
       </div>
     </div>
     {rows.length === 0
-      ? <p className="ec-empty">Нет строк в этом списке.</p>
+      ? <p className="dir-empty ec-empty">Нет строк в этом списке.</p>
       : <div className="ec-table-wrap"><table className="ec-table ec-rows">
         {/* По каждому показателю две колонки рядом — из инвойса и из экспортной; совпавшее значение
             экспортной — серым, расхождение — обе ячейки красным. Код ТН ВЭД только для справки. */}

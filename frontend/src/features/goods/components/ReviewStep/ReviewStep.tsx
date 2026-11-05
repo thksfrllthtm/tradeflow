@@ -18,7 +18,9 @@ import { itemNames } from '../ResultStep/resultValues'
 import { ReviewSheet, RowAction, SheetApi, SheetRowView } from '../ReviewSheet/ReviewSheet'
 import { applySheetChanges, SheetChange } from '../ReviewSheet/sheetModel'
 import { ParamChips } from './ParamChips'
+import { SearchIcon } from '@/shared/components/icons'
 import '../../goods.css'
+import '@/shared/styles/list-page.css'
 import './ReviewStep.css'
 
 type Props = {
@@ -52,6 +54,8 @@ type Props = {
   addManualPhoto: (id: string, event: ChangeEvent<HTMLInputElement>) => void
   addEmptyRow: () => void
   calculate: () => void
+  // «← Файл»: вернуться к этапу «Файл и колонки».
+  onBack: () => void
   saveDraft: () => void
   clearAll: () => void
   // Подбор кода ИИ: состояние по строкам, открыть чат строки, подобрать для всех строк без кода.
@@ -121,7 +125,7 @@ function useItemsHistory(items: GoodsItemInput[], replace: (items: GoodsItemInpu
 
 // Этап 2 «Проверка строк»: строка заголовка, чипы параметров, панель фильтров, строка значения и
 // лист «как в Excel». Прокручивается страница: шапка листа прилипает к верху, «Итого» — к низу окна.
-export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, loading, usdRateLoading, usdRateNotice, storageNotice, unsaved, header, includedCount, editItems, setSelectedForDirectory, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
+export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, loading, usdRateLoading, usdRateNotice, storageNotice, unsaved, header, includedCount, editItems, setSelectedForDirectory, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, onBack, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [density, setDensity] = useState<Density>(storedDensity)
@@ -301,12 +305,12 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   }, [removedRow, onDismissRemoved])
 
   const tab = (value: Filter, label: string, count: number, hint: string) => (
-    <button type="button" role="tab" aria-selected={filter === value} className={filter === value ? 'active' : undefined} onClick={() => setFilter(value)} disabled={count === 0 && filter !== value} title={hint}>{label} <b>{count}</b></button>
+    <button type="button" role="tab" aria-selected={filter === value} className={filter === value ? 'active' : undefined} onClick={() => setFilter(value)} disabled={count === 0 && filter !== value} title={hint}>{label} <span className="dir-count">{count}</span></button>
   )
   const noCodeText = counts.noCode > 0 ? `${counts.noCode} ${plural(counts.noCode, ['строка', 'строки', 'строк'])} без кода` : ''
 
   const menu = <details className="rv-more" ref={menuRef}>
-    <summary className="rv-icon" title="Ещё" aria-label="Ещё действия">
+    <summary className="icon-button" title="Ещё" aria-label="Ещё действия">
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
     </summary>
     <div className="rv-menu">
@@ -317,7 +321,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
       <label className="rv-menu-item rv-menu-check" title={showPhoto && !forcePhoto ? 'У строк есть фото — колонка видна всегда' : 'Фото строк'}><input type="checkbox" checked={showPhoto} disabled={showPhoto && !forcePhoto} onChange={(event) => setForcePhoto(event.target.checked)} />Фото</label>
       <hr />
       <p className="rv-menu-label">Вид</p>
-      <div className="rv-seg" role="radiogroup" aria-label="Плотность таблицы">
+      <div className="dir-seg" role="radiogroup" aria-label="Плотность таблицы">
         <button type="button" role="radio" aria-checked={density === 'full'} className={density === 'full' ? 'active' : undefined} onClick={() => chooseDensity('full')} title="Выше строки и крупнее фото">Подробно</button>
         <button type="button" role="radio" aria-checked={density === 'compact'} className={density === 'compact' ? 'active' : undefined} onClick={() => chooseDensity('compact')} title="Одна строка на товар: больше строк на экране">Компактно</button>
       </div>
@@ -339,23 +343,24 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
             : <span className={failed ? 'rv-save-state failed' : 'rv-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>}
           {noCodeText && <span className="rv-save-nocode">{noCodeText}</span>}
         </span>
-        <button type="button" className="rv-btn" onClick={() => void saveDraft()} disabled={loading || items.length === 0} title="Сохранить на сервере сейчас (Ctrl+S)">Сохранить</button>
-        <button type="button" className="rv-btn primary" onClick={() => void calculate()} disabled={loading || includedCount === 0}>{loading ? 'Считаем…' : 'Рассчитать'} <span aria-hidden="true">→</span></button>
+        <button type="button" className="secondary" onClick={onBack} disabled={loading}><span aria-hidden="true">←</span> Файл</button>
+        <button type="button" className="secondary" onClick={() => void saveDraft()} disabled={loading || items.length === 0} title="Сохранить на сервере сейчас (Ctrl+S)">Сохранить</button>
+        <button type="button" onClick={() => void calculate()} disabled={loading || includedCount === 0}>{loading ? 'Считаем…' : 'Рассчитать'} <span aria-hidden="true">→</span></button>
       </div>
     </div>
 
     <section className="rv-card" aria-label="Строки сметы">
       {selectedForDirectory.length > 0 ? <div className="rv-panel selection">
         <strong>Выбрано: {selectedForDirectory.length}</strong>
-        <button type="button" className="rv-btn primary" onClick={() => openDirectoryPicker(selectedForDirectory)}>Сменить код</button>
-        <button type="button" className="rv-btn" onClick={() => void saveSelectedDecisions()} title="Записать отмеченные строки с кодом в базу решений; тот же товар этой сметы записывается один раз">В базу решений</button>
-        <button type="button" className="rv-btn" onClick={() => setSelectedExcluded(true)}>Исключить</button>
-        <button type="button" className="rv-btn" onClick={() => setSelectedExcluded(false)}>Включить</button>
-        <button type="button" className="rv-btn danger" onClick={() => deleteRows(items.flatMap((item, index) => selectedIds.has(item.id ?? '') ? [index] : []))}>Удалить</button>
+        <button type="button" className="secondary" onClick={() => openDirectoryPicker(selectedForDirectory)}>Сменить код</button>
+        <button type="button" className="secondary" onClick={() => void saveSelectedDecisions()} title="Записать отмеченные строки с кодом в базу решений; тот же товар этой сметы записывается один раз">В базу решений</button>
+        <button type="button" className="secondary" onClick={() => setSelectedExcluded(true)}>Исключить</button>
+        <button type="button" className="secondary" onClick={() => setSelectedExcluded(false)}>Включить</button>
+        <button type="button" className="danger" onClick={() => deleteRows(items.flatMap((item, index) => selectedIds.has(item.id ?? '') ? [index] : []))}>Удалить</button>
         <button type="button" className="button-link" onClick={() => { setSelectedForDirectory([]); setDecisionNote('') }}>Снять выбор</button>
         {decisionNote && <span className="rv-panel-note" role="status">{decisionNote}</span>}
       </div> : <div className="rv-panel">
-        <div className="rv-tabs" role="tablist" aria-label="Какие строки показать">
+        <div className="dir-seg" role="tablist" aria-label="Какие строки показать">
           {tab('all', 'Все', items.length, 'Все строки сметы')}
           {tab('attention', 'Требуют внимания', counts.attention, 'Ошибки и предупреждения расчёта, строки без кода, изменённые после расчёта строки с ошибками')}
         </div>
@@ -365,17 +370,17 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
             {chips.map((chip) => <button key={chip.type} type="button" className={[`rv-pchip ${chip.tone}`, filter === `type:${chip.type}` ? 'active' : ''].filter(Boolean).join(' ')} onClick={() => setFilter(filter === `type:${chip.type}` ? 'all' : `type:${chip.type}`)} aria-pressed={filter === `type:${chip.type}`} title={chip.label}>
               <i aria-hidden="true" />{chip.label} · {chip.rows}
             </button>)}
-            <button type="button" className="rv-next" onClick={nextProblem} disabled={counts.attention === 0} title="Следующая строка, требующая внимания (F8)">Следующая проблема <kbd>F8</kbd></button>
+            <button type="button" className="secondary sm rv-next" onClick={nextProblem} disabled={counts.attention === 0} title="Следующая строка, требующая внимания (F8)">Следующая проблема <kbd>F8</kbd></button>
           </span>}
         {counts.ai > 0 && <button type="button" className={filter === 'ai' ? 'rv-pchip neutral active' : 'rv-pchip neutral'} onClick={() => setFilter(filter === 'ai' ? 'all' : 'ai')} aria-pressed={filter === 'ai'} title="Строки, где код предложил подбор ИИ — просмотреть и подтвердить">Код от ИИ · {counts.ai}</button>}
         {agentBatch ? <span className="rv-panel-note">Запуск подбора: {agentBatch.done} из {agentBatch.total}</span>
-          : agentPending > 0 && <button type="button" className="rv-btn small" onClick={startAgentBatch} disabled={loading} title={`Подобрать коды для включённых строк без кода, где подбор ещё не запускали${agentStarted > 0 ? ` (ещё ${agentStarted} уже в подборе)` : ''}; результат — в чате строки`}>Подобрать коды ИИ ({agentPending})</button>}
+          : agentPending > 0 && <button type="button" className="secondary sm" onClick={startAgentBatch} disabled={loading} title={`Подобрать коды для включённых строк без кода, где подбор ещё не запускали${agentStarted > 0 ? ` (ещё ${agentStarted} уже в подборе)` : ''}; результат — в чате строки`}>Подобрать коды ИИ ({agentPending})</button>}
         <span className="rv-panel-end">
           {(result || pastCheck) && <span className={pastCheck ? 'rv-check-source past' : 'rv-check-source'} title={result ? 'Статусы строк — по актуальному расчёту' : 'Строки менялись после расчёта: ошибки — из прошлого расчёта, нужен пересчёт'}>
             {result ? 'Актуальный расчёт' : <>Прошлый расчёт{pastCheck && checkTime(pastCheck.at) && ` ${checkTime(pastCheck.at)}`}{counts.changed > 0 && <> · изменено {counts.changed}</>} · нужен пересчёт</>}
           </span>}
-          <label className="rv-search">
-            <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+          <label className="dir-search rv-search">
+            <SearchIcon />
             <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Товар или код" aria-label="Найти товар или код" />
           </label>
           {menu}
@@ -385,11 +390,11 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
       {removedRow && <div className="rv-undo" role="status">
         <span>Строка {removedRow.rowNumber}{removedRow.name ? ` «${removedRow.name.length > 60 ? `${removedRow.name.slice(0, 60)}…` : removedRow.name}»` : ''} удалена</span>
         <button type="button" className="button-link" onClick={restoreRemovedRow}>Вернуть</button>
-        <button type="button" className="rv-undo-close" onClick={dismissRemovedRow} aria-label="Закрыть сообщение">×</button>
+        <button type="button" className="icon-button ghost sm rv-undo-close" onClick={dismissRemovedRow} aria-label="Закрыть сообщение"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></svg></button>
       </div>}
 
-      {items.length === 0 && <p className="rv-empty-filter">Строк пока нет. Загрузите XLSX или выберите «+ Строка» в меню «⋯» — в неё можно вставить строки из Excel (Ctrl+V).</p>}
-      {items.length > 0 && visible.length === 0 && <p className="rv-empty-filter">В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => { setFilter('all'); setQuery('') }}>Показать все строки</button></p>}
+      {items.length === 0 && <p className="dir-empty rv-empty-filter">Строк пока нет. Загрузите XLSX или выберите «+ Строка» в меню «⋯» — в неё можно вставить строки из Excel (Ctrl+V).</p>}
+      {items.length > 0 && visible.length === 0 && <p className="dir-empty rv-empty-filter">В этом фильтре строк нет. <button type="button" className="button-link" onClick={() => { setFilter('all'); setQuery('') }}>Показать все строки</button></p>}
       <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} showPhoto={showPhoto} showPackage={showPackage} compact={density === 'compact'} apiRef={sheetApi}
         totals={{ ...totals, included: includedCount, all: items.length }}
         onChanges={applyChanges} onAction={rowAction} onSelectAll={toggleAllVisible} onInsertRow={insertRow} onDeleteRows={deleteRows}

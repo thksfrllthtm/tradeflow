@@ -14,33 +14,34 @@
 }
 
 
-/* ── Всплывающее сообщение: ошибка (по умолчанию) или успех (.ok) ── */
+/* ── Всплывающее сообщение: ошибка (по умолчанию) или успех (.ok). Поверх шапки, окон и панелей. ── */
 .banner {
   position: fixed;
-  z-index: 50;
+  z-index: var(--z-toast);
   right: 16px;
-  top: 60px;
+  top: 64px;
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  max-width: 400px;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  background: var(--c-error-bg);
-  border: 1px solid #f0cccc;
-  box-shadow: 0 4px 16px rgba(0,0,0,.1);
-  font-size: .86rem;
+  max-width: 420px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--tf-error-border);
+  border-radius: var(--tf-radius);
+  background: var(--tf-error-bg);
+  color: var(--tf-error);
+  box-shadow: var(--tf-shadow-pop);
+  font-size: var(--fs-md);
 }
 .banner button {
   flex-shrink: 0;
+  margin-left: auto;
   padding: 0 4px;
+  border: 0;
   background: transparent;
-  color: var(--c-error);
-  font-size: 1.12rem;
+  color: inherit;
+  font-size: var(--fs-lg);
   line-height: 1;
 }
-.banner button:hover:not(:disabled) { background: transparent; }
-/* Сообщение об успехе — зелёное, чтобы не выглядело ошибкой */
-.banner.ok { border-color: #c4dfcc; background: #eef7f1; color: #1a4d33; }
-.banner.ok button { color: #1a4d33; }
-
+.banner button:hover:not(:disabled) { background: transparent; opacity: .7; }
+.banner.ok { border-color: var(--tf-green-border); background: var(--tf-ok-bg); color: var(--tf-ok); }

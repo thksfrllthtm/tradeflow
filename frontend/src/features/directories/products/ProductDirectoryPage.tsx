@@ -16,6 +16,7 @@ import { ProductDirectoryEntry } from './types'
 import '@/shared/styles/list-page.css'
 import '@/shared/styles/verification-status.css'
 import './productDirectory.css'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 
 export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   // Справочники меняет только администратор; остальные сотрудники их просматривают.
@@ -68,16 +69,11 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="products" onLogout={onLogout} />
     <section className="directory-page pd-page">
-      <div className="dir-head">
-        <div>
-          <h1>Справочник товаров</h1>
-          <p>Карточки товаров с кодом ТН ВЭД и ИТС. При выборе карточки в смете всё подставляется автоматически.</p>
-        </div>
-        {canEdit && <div className="dir-head-actions">
+      <PageHead title="Справочник товаров" subtitle="Карточки товаров с кодом ТН ВЭД и ИТС. При выборе карточки в смете всё подставляется автоматически."
+        actions={canEdit && <>
           {transfer.buttons}
           <button type="button" className="dir-add" onClick={() => setPanel({})}>+ Добавить товар</button>
-        </div>}
-      </div>
+        </>} />
       {canEdit && transfer.panel}
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
       <section className="pd-card" aria-label="Карточки товаров">
@@ -102,7 +98,7 @@ export function ProductDirectoryPage({ user, onLogout }: { user: User; onLogout:
                     <td className="c-rates">{rates ? <>ЕТТ {rates.tariffText || '—'}{rates.vatPercent && ` · НДС ${rates.vatPercent}%`}</> : <span className="dir-none">—</span>}</td>
                     <td className="c-num">{item.companyCoefficient || <span className="dir-none">—</span>}</td>
                     <td className="c-unit">{item.unit}</td>
-                    <td className="c-status"><span className={`directory-status ${item.archivedAt ? 'archived' : item.verificationStatus}`} title={item.archivedAt ? undefined : verificationStatusLabel(item.verificationStatus)}>
+                    <td className="c-status"><span className={`status-dot directory-status ${item.archivedAt ? '' : item.verificationStatus === 'operator_verified' ? 'ok' : 'warn'}`} title={item.archivedAt ? undefined : verificationStatusLabel(item.verificationStatus)}>
                       {item.archivedAt ? 'В архиве' : item.verificationStatus === 'operator_verified' ? 'Проверено' : 'Проверить'}
                     </span></td>
                     <td className="c-actions">{canEdit && <RowActions name={item.name} archived={Boolean(item.archivedAt)} onEdit={() => setPanel({ item })} onCopy={() => void copy(item)} onArchive={() => void archive(item)} onRestore={() => void restore(item)} />}</td>

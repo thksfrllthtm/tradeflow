@@ -40,7 +40,7 @@ export function ProductForm({ product, onCancel, onSaved }: Props) {
     {product && <p className="cer-display-name">Распознано из наименования: <strong>{product.productType}</strong>{product.sizeValue ? `, размер ${product.sizeValue}${product.sizeUnit === 'inch' ? '"' : ` ${product.sizeUnit}`}` : ', без размера'}</p>}
     {error && <p className="error" role="alert">{error}</p>}
     <div className="cer-editor-actions">
-      <button type="button" className="cer-secondary" onClick={onCancel}>Отмена</button>
+      <button type="button" className="secondary" onClick={onCancel}>Отмена</button>
       <button type="submit" disabled={saving}>{saving ? 'Сохраняем…' : 'Сохранить'}</button>
     </div>
   </form>

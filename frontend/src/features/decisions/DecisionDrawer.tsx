@@ -3,10 +3,10 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { formatRuDate } from '@/shared/lib/dates'
 import { decisionSourceLabels, decisionsApi } from './decisionsApi'
-import '@/shared/styles/drawer.css'
+import { Drawer } from '@/shared/components/Drawer/Drawer'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
-import { CodeDecision, PhotoFeatures, decisionStatusLabels } from '@/shared/tnved/decisions'
+import { CodeDecision, PhotoFeatures, decisionStatusLabels, decisionStatusTones } from '@/shared/tnved/decisions'
 import { CopyButton } from '@/shared/components/CopyCode/CopyButton'
 import { agentApi, SavedDocuments } from '@/features/goods/agent/agentApi'
 import { DocumentsAnswer } from '@/features/goods/agent/DocumentsAnswer'
@@ -56,14 +56,6 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
     return () => { active = false }
   }, [id])
 
-  useEffect(() => {
-    // Пока открыто фото, Esc закрывает только его.
-    if (photoIndex !== null) return
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose, photoIndex])
-
   const edit = () => ({ code: code.replace(/\D/g, ''), finalName, invoiceName, unitPriceUsd: price, reason, note })
   const codeValid = /^\d{10}$/.test(code.replace(/\D/g, ''))
   // Цена — неотрицательное число с точкой или запятой; пусто — цены нет. Окончательно проверяет сервер.
@@ -89,20 +81,28 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
   const agentChanged = decision?.agentCode && decision.agentCode !== code.replace(/\D/g, '')
   const title = decision?.invoiceName || decision?.supplierName || decision?.finalName || ''
 
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <aside className="drawer dc-drawer" role="dialog" aria-modal="true" aria-label={title || 'Запись базы решений'}>
-      {/* В шапке только статус и кто/когда: наименование и код — в сводке ниже, без повторов. */}
-      <header className="drawer-head">
-        {decision
-          ? <p className="dc-head-meta">
-            <span className={`dc-status ${decision.status}`}>{decisionStatusLabels[decision.status]}</span>
-            <span>{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}</span>
-            {decision.verifiedByName && decision.verifiedAt && <span>проверил {decision.verifiedByName} · {formatRuDate(decision.verifiedAt.slice(0, 10))}</span>}
-          </p>
-          : <p className="dc-head-meta">Загрузка…</p>}
-        <button type="button" className="drawer-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
-      </header>
-      <div className="drawer-body">
+  // В шапке видны только статус и кто/когда: наименование и код — в сводке ниже, без повторов.
+  // Наименование в заголовке скрыто визуально — оно даёт панели доступное имя.
+  const head = <>
+    <span className="dc-head-name">{title || 'Запись базы решений'}</span>
+    {decision
+      ? <span className="dc-head-meta">
+        <span className={`status-dot ${decisionStatusTones[decision.status]} dc-status ${decision.status}`}>{decisionStatusLabels[decision.status]}</span>
+        <span>{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}</span>
+        {decision.verifiedByName && decision.verifiedAt && <span>проверил {decision.verifiedByName} · {formatRuDate(decision.verifiedAt.slice(0, 10))}</span>}
+      </span>
+      : <span className="dc-head-meta">Загрузка…</span>}
+  </>
+  const footer = admin && decision ? <>
+    <button type="button" className="danger dc-delete" onClick={() => { if (window.confirm('Удалить запись из базы решений?')) void run(() => decisionsApi.remove(decision.id), true) }} disabled={busy}>Удалить</button>
+    {decision.status !== 'rejected' && <button type="button" className="secondary" onClick={() => void run(() => decisionsApi.reject(decision.id, note))} disabled={busy}>Отклонить</button>}
+    {decision.status !== 'verified' && <button type="button" className="secondary" onClick={() => void run(() => decisionsApi.update(decision.id, edit()))} disabled={busy || !canSave}>Сохранить без проверки</button>}
+    <button type="button" onClick={() => void run(() => decisionsApi.verify(decision.id, edit()))} disabled={busy || !canSave}>{decision.status === 'verified' ? 'Сохранить' : 'Отметить «Проверено»'}</button>
+  </> : undefined
+
+  // Пока открыто фото, Esc закрывает только его (у просмотра фото свой обработчик Esc).
+  return <>
+    <Drawer title={head} className="dc-drawer" footer={footer} onClose={onClose}>
         {error && <p className="dc-error" role="alert">{error}</p>}
         {decision && <>
           {/* Сводка: фото, справа наименование, под ним код, цена и нетто — всё копируется.
@@ -184,16 +184,9 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
               : <p className="dc-muted">ИИ составит описание в течение нескольких минут.</p>}
           </section>}
         </>}
-      </div>
-      {admin && decision && <footer className="drawer-foot dc-foot">
-        <button type="button" className="dc-btn primary" onClick={() => void run(() => decisionsApi.verify(decision.id, edit()))} disabled={busy || !canSave}>{decision.status === 'verified' ? 'Сохранить' : 'Отметить «Проверено»'}</button>
-        {decision.status !== 'verified' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.update(decision.id, edit()))} disabled={busy || !canSave}>Сохранить без проверки</button>}
-        {decision.status !== 'rejected' && <button type="button" className="dc-btn" onClick={() => void run(() => decisionsApi.reject(decision.id, note))} disabled={busy}>Отклонить</button>}
-        <button type="button" className="dc-btn danger" onClick={() => { if (window.confirm('Удалить запись из базы решений?')) void run(() => decisionsApi.remove(decision.id), true) }} disabled={busy}>Удалить</button>
-      </footer>}
-    </aside>
+    </Drawer>
     {photoIndex !== null && decision && decision.photos.length > 0 && <PhotoLightbox photos={decision.photos} startIndex={photoIndex} onClose={() => setPhotoIndex(null)} />}
-  </div>
+  </>
 }
 
 // Описание фото от ИИ по полям: подпись слева, значение справа. Пустые поля не показываются.

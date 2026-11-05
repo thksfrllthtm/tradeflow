@@ -1,7 +1,7 @@
 /* Выбор кода ТН ВЭД в карточке товара: поле поиска, список под ним, выбранный код со ставками.
    Цвета — токены --tf-* (base.css), как в этапах сметы. */
 
-.tnved-picker { position: relative; display: grid; gap: 10px; }
+.tnved-picker { position: relative; display: grid; gap: 8px; }
 .tnved-picker > input {
   width: 100%;
   height: 36px;
@@ -11,10 +11,10 @@
   border-radius: var(--tf-radius);
   background: var(--tf-card);
   color: var(--tf-text);
-  font-size: .86rem;
+  font-size: var(--fs-md);
 }
 .tnved-picker > input::placeholder { color: var(--tf-muted); }
-.tnved-picker > input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); box-shadow: none; }
+.tnved-picker > input:focus { outline: 2px solid var(--tf-focus-ring); border-color: var(--tf-green); box-shadow: none; }
 
 .tnved-picker-list {
   position: absolute;
@@ -32,19 +32,19 @@
   box-shadow: var(--tf-shadow-pop);
   list-style: none;
 }
-.tnved-picker-list li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 1px 10px; padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+.tnved-picker-list li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 1px 8px; padding: 8px 8px; border-radius: var(--tf-radius); cursor: pointer; }
 .tnved-picker-list li.active { background: var(--tf-chip); }
 .tnved-picker-list li.selected code::after { content: ' ✓'; color: var(--tf-green); }
-.tnved-picker-list code { grid-row: span 2; color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 400; white-space: nowrap; }
-.tnved-picker-list span { overflow: hidden; color: var(--tf-text); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
-.tnved-picker-list small { color: var(--tf-muted); font-size: .78rem; }
-.tnved-picker-list .tnved-picker-empty { display: block; color: var(--tf-muted); font-size: .86rem; cursor: default; }
+.tnved-picker-list code { grid-row: span 2; color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); font-weight: 400; white-space: nowrap; }
+.tnved-picker-list span { overflow: hidden; color: var(--tf-text); font-size: var(--fs-md); text-overflow: ellipsis; white-space: nowrap; }
+.tnved-picker-list small { color: var(--tf-muted); font-size: var(--fs-xs); }
+.tnved-picker-list .tnved-picker-empty { display: block; color: var(--tf-muted); font-size: var(--fs-md); cursor: default; }
 
 /* Выбранный код: крупно код, под ним наименование из номенклатуры и ставки чипами */
-.tnved-picker-card { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--tf-radius); background: var(--tf-green-soft); }
-.tnved-picker-card code { color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: 1rem; font-weight: 500; letter-spacing: 0; }
-.tnved-picker-name { overflow: hidden; color: var(--tf-text-2); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.tnved-picker-card { display: grid; gap: 4px; padding: 8px 12px; border-radius: var(--tf-radius); background: var(--tf-green-soft); }
+.tnved-picker-card code { color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-base); font-weight: 500; letter-spacing: 0; }
+.tnved-picker-name { overflow: hidden; color: var(--tf-text-2); font-size: var(--fs-md); text-overflow: ellipsis; white-space: nowrap; }
 .tnved-picker-rates { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.tnved-picker-rates i { height: 24px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: 999px; background: var(--tf-card); color: var(--tf-text); font-size: .8rem; font-style: normal; font-weight: 500; line-height: 22px; font-variant-numeric: tabular-nums; }
-.tnved-picker-rates i.warn { border-color: #f5dfa6; background: #fff7e6; color: var(--tf-warn-text); font-weight: 600; }
-.tnved-picker-card > .warn { color: var(--tf-warn-text); font-size: .86rem; font-weight: 600; }
+.tnved-picker-rates i { height: 24px; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 999px; background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-sm); font-style: normal; font-weight: 500; line-height: 22px; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.tnved-picker-rates i.warn { border-color: var(--tf-warn-border); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 600; }
+.tnved-picker-card > .warn { color: var(--tf-warn-text); font-size: var(--fs-md); font-weight: 600; }

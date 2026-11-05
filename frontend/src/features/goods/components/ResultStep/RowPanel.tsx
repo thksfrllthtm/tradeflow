@@ -71,9 +71,9 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
   return <aside className="rp" aria-label={`Строка ${index + 1}`}>
     <div className="rp-head">
       <span>Строка {position} из {count}</span>
-      <button type="button" className="rs-icon" onClick={onPrev} disabled={!onPrev} title="Предыдущая строка (↑)" aria-label="Предыдущая строка">{arrow('M4 10l4-4 4 4')}</button>
-      <button type="button" className="rs-icon" onClick={onNext} disabled={!onNext} title="Следующая строка (↓)" aria-label="Следующая строка">{arrow('M4 6l4 4 4-4')}</button>
-      <button type="button" className="rs-icon" onClick={onClose} title="Закрыть панель" aria-label="Закрыть панель строки">{arrow('M4.5 4.5l7 7M11.5 4.5l-7 7')}</button>
+      <button type="button" className="icon-button ghost" onClick={onPrev} disabled={!onPrev} title="Предыдущая строка (↑)" aria-label="Предыдущая строка">{arrow('M4 10l4-4 4 4')}</button>
+      <button type="button" className="icon-button ghost" onClick={onNext} disabled={!onNext} title="Следующая строка (↓)" aria-label="Следующая строка">{arrow('M4 6l4 4 4-4')}</button>
+      <button type="button" className="icon-button ghost" onClick={onClose} title="Закрыть панель" aria-label="Закрыть панель строки">{arrow('M4.5 4.5l7 7M11.5 4.5l-7 7')}</button>
     </div>
 
     <div className="rp-title">
@@ -92,8 +92,8 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
       {code ? <CopyCode code={code} className="rp-code" /> : <p className="rp-field-error">Код не указан</p>}
       {code && codeProblem && <p className="rp-field-error">{codeProblem.text}</p>}
       {!code && <div className="rp-set">
-        <button type="button" className="rs-btn rp-set-code" onClick={onChangeCode} disabled={loading}>Указать код</button>
-        {onAgent && <button type="button" className="rs-btn rp-set-code ai" onClick={onAgent} disabled={loading} title="Подобрать код ТН ВЭД с ИИ: чат по строке с фото и наименованиями">Подобрать ИИ</button>}
+        <button type="button" className="secondary" onClick={onChangeCode} disabled={loading}>Указать код</button>
+        {onAgent && <button type="button" className="secondary" onClick={onAgent} disabled={loading} title="Подобрать код ТН ВЭД с ИИ: чат по строке с фото и наименованиями">Подобрать ИИ</button>}
       </div>}
       {description && <p className="rp-muted">{description}</p>}
       {(duty || vat) && <p className="rp-chips">{duty && <span>Пошлина {duty}</span>}{vat && <span>НДС {vat}</span>}</p>}
@@ -104,7 +104,7 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
     </section>
 
     <section className="rp-block">
-      <div className="rp-block-head"><h3>Цена за шт.</h3>{aiNote && <span className="rp-badge">оценка ИИ</span>}</div>
+      <div className="rp-block-head"><h3>Цена за шт.</h3>{aiNote && <span className="badge warn">оценка ИИ</span>}</div>
       <div className={priceProblem ? 'rp-price todo' : 'rp-price'}>{priceField}</div>
       {priceProblem && <p className="rp-field-todo">Укажите цену</p>}
       {aiNote && <p className="rp-muted">{aiNote}</p>}

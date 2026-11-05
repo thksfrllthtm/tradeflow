@@ -21,26 +21,31 @@ const pages: Record<string, PageInfo> = {
   employees: { path: '/employees', heading: /^Сотрудники/ },
 }
 
-const access: Record<'admin' | 'invoicer' | 'translator', { allowed: string[]; directories: string[]; estimates: boolean; translator: boolean; employees: boolean }> = {
+// Группы меню шапки: «Коды ТН ВЭД», «Инструменты», «Администрирование» (только администратору).
+// «Переводчик» у переводчика — отдельной ссылкой в верхней строке, у администратора — в «Инструментах».
+const codes = ['Номенклатура', 'База решений', 'Справочник товаров', 'ТРОИС']
+const access: Record<'admin' | 'invoicer' | 'translator', { allowed: string[]; menus: Record<string, string[]>; estimates: boolean; translatorOnTop: boolean }> = {
   admin: {
     allowed: Object.keys(pages),
-    directories: ['Справочник товаров', 'Номенклатура', 'ТРОИС', 'База решений', 'Керамика', 'Утильсбор'],
-    estimates: true, translator: true, employees: true,
+    menus: { 'Коды ТН ВЭД': codes, 'Инструменты': ['Утильсбор', 'Сверка с экспортной декларацией', 'Керамика', 'Переводчик'], 'Администрирование': ['Сотрудники', 'Журнал агента', 'База документов'] },
+    estimates: true, translatorOnTop: false,
   },
   invoicer: {
     allowed: ['home', 'goods', 'products', 'nomenclature', 'trademarks', 'decisions', 'ceramics', 'ceramicsBase', 'utilFee'],
-    directories: ['Справочник товаров', 'Номенклатура', 'ТРОИС', 'База решений', 'Керамика', 'Утильсбор'],
-    estimates: true, translator: false, employees: false,
+    menus: { 'Коды ТН ВЭД': codes, 'Инструменты': ['Утильсбор', 'Сверка с экспортной декларацией', 'Керамика'] },
+    estimates: true, translatorOnTop: false,
   },
   translator: {
     allowed: ['home', 'nomenclature', 'trademarks', 'utilFee', 'translator'],
-    directories: ['Номенклатура', 'ТРОИС', 'Утильсбор'],
-    estimates: false, translator: true, employees: false,
+    menus: { 'Коды ТН ВЭД': ['Номенклатура', 'ТРОИС'], 'Инструменты': ['Утильсбор', 'Сверка с экспортной декларацией'] },
+    estimates: false, translatorOnTop: true,
   },
 }
 
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Разделы' })
-const directoriesMenu = (page: Page) => nav(page).locator('details.app-menu')
+const menus = (page: Page) => nav(page).locator('details.app-menu')
+const menuOf = (page: Page, label: string) => menus(page).filter({ has: page.locator('summary', { hasText: label }) })
+const groupOf = (rules: { menus: Record<string, string[]> }, item: string) => Object.keys(rules.menus).find((label) => rules.menus[label].includes(item)) ?? ''
 // У администратора из bootstrap-admin имени может не быть — тогда в профиле его email.
 const profile = (page: Page) => page.locator('summary.app-header-avatar')
 
@@ -64,14 +69,19 @@ for (const who of ['admin', 'invoicer', 'translator'] as const) {
       await page.goto('/')
       await expect(nav(page).getByRole('link', { name: 'Главная', exact: true })).toBeVisible()
       await expect(nav(page).getByRole('link', { name: 'Сметы', exact: true })).toHaveCount(rules.estimates ? 1 : 0)
-      await expect(nav(page).getByRole('link', { name: 'Переводчик', exact: true })).toHaveCount(rules.translator ? 1 : 0)
+      await expect(nav(page).getByRole('link', { name: 'Переводчик', exact: true })).toHaveCount(rules.translatorOnTop ? 1 : 0)
 
-      await directoriesMenu(page).locator('summary').click()
-      await expect(directoriesMenu(page)).toHaveAttribute('open', '')
-      await expect(directoriesMenu(page).getByRole('link')).toHaveText(rules.directories)
+      await expect(menus(page).locator('summary')).toHaveText(Object.keys(rules.menus))
+      for (const [label, items] of Object.entries(rules.menus)) {
+        await menuOf(page, label).locator('summary').click()
+        await expect(menuOf(page, label)).toHaveAttribute('open', '')
+        await expect(menuOf(page, label).getByRole('link')).toHaveText(items)
+        await page.keyboard.press('Escape')
+      }
 
+      // В профиле — только кто вошёл и «Выйти»; разделы администратора — в меню «Администрирование».
       await profile(page).click()
-      await expect(page.getByRole('link', { name: 'Сотрудники', exact: true })).toHaveCount(rules.employees ? 1 : 0)
+      await expect(page.locator('details.app-header-user').getByRole('link')).toHaveCount(0)
       await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
     })
 
@@ -110,11 +120,13 @@ for (const who of ['admin', 'invoicer', 'translator'] as const) {
       for (const key of rules.allowed) {
         const info = pages[key]
         if (!info.menu) continue
-        await directoriesMenu(page).locator('summary').click()
-        await directoriesMenu(page).getByRole('link', { name: info.menu, exact: true }).click()
+        const menu = menuOf(page, groupOf(rules, info.menu))
+        await menu.locator('summary').click()
+        await menu.getByRole('link', { name: info.menu, exact: true }).click()
         await expect(page).toHaveURL(new RegExp(`${info.path}$`))
-        await expect(directoriesMenu(page), 'меню закрывается после выбора').not.toHaveAttribute('open', '')
-        await expect(directoriesMenu(page)).toHaveClass(/active/)
+        await expect(menu, 'меню закрывается после выбора').not.toHaveAttribute('open', '')
+        await expect(menu, 'группа подсвечена и показывает страницу').toHaveClass(/active/)
+        await expect(menu.locator('summary')).toContainText(info.menu)
         await expect(page.getByRole('heading', { level: 1 }).first()).toHaveText(info.heading)
       }
     })
@@ -140,8 +152,8 @@ test.describe('общее', () => {
     await page.goto('/')
     await nav(page).getByRole('link', { name: 'Сметы', exact: true }).click()
     await expect(page).toHaveURL(/\/estimates\/goods$/)
-    await directoriesMenu(page).locator('summary').click()
-    await directoriesMenu(page).getByRole('link', { name: 'Утильсбор' }).click()
+    await menuOf(page, 'Инструменты').locator('summary').click()
+    await menuOf(page, 'Инструменты').getByRole('link', { name: 'Утильсбор' }).click()
     await expect(page.getByRole('heading', { name: 'Утильсбор' })).toBeVisible()
 
     await page.goBack()
@@ -162,7 +174,7 @@ test.describe('общее', () => {
 
   test('меню закрывается по Esc (фокус на кнопку) и щелчком вне', async ({ page }) => {
     await page.goto('/')
-    const menu = directoriesMenu(page)
+    const menu = menuOf(page, 'Инструменты')
     await menu.locator('summary').click()
     await expect(menu).toHaveAttribute('open', '')
     await page.keyboard.press('Escape')

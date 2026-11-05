@@ -117,14 +117,14 @@ export function BaseImport({ onCancel, onImported }: { onCancel: () => void; onI
   return <section className="cer-card cer-import">
     <div className="cer-card-row">
       <h3>Загрузка базы из Excel</h3>
-      <label className="cer-file-button">{busy && !parsed ? 'Читаем…' : parsed ? 'Другой файл' : 'Выбрать .xlsx'}<input type="file" accept=".xlsx" onChange={upload} disabled={busy} /></label>
+      <label className="secondary cer-file-button">{busy && !parsed ? 'Читаем…' : parsed ? 'Другой файл' : 'Выбрать .xlsx'}<input type="file" accept=".xlsx" onChange={upload} disabled={busy} /></label>
       {fileName && <span className="cer-file-name">{fileName}</span>}
       {parsed && <label className="cer-field narrow" title="Номер строки Excel с названиями колонок">Заголовки в строке
         <input type="number" min={1} value={headerRow} disabled={busy} onChange={(event) => setHeaderRow(Math.max(1, Number(event.target.value) || 1))}
           onBlur={() => { if (file) void parse(file, headerRow) }} />
       </label>}
       <span className="cer-toolbar-spacer" />
-      <button type="button" className="cer-secondary" onClick={onCancel}>Закрыть</button>
+      <button type="button" className="secondary" onClick={onCancel}>Закрыть</button>
     </div>
     <p className="muted">Три колонки: наименование («Керамическая фруктовница 7 дюймов для взрослых/ 成年人陶瓷盘7高脚水果盘»), марка и цена. Тип и размер система выделит из наименования.</p>
     {error && <p className="error" role="alert">{error}</p>}
@@ -151,7 +151,7 @@ export function BaseImport({ onCancel, onImported }: { onCancel: () => void; onI
       <div className="cer-card-row end">
         <span className="muted">Готово к загрузке: {valid.length}{invalid > 0 && `, с ошибками (не загрузятся): ${invalid}`}{duplicates > 0 && `, полных повторов: ${duplicates}`}{shown.length > 300 && `. Показаны первые 300 строк`}</span>
         <label className="cer-check"><input type="checkbox" checked={overwrite} onChange={(event) => setOverwrite(event.target.checked)} />Обновлять марки, которые уже есть в базе</label>
-        <button type="button" disabled={busy || valid.length === 0} onClick={() => void submit()}>{busy ? 'Загружаем…' : `Загрузить ${valid.length}`}</button>
+        <button type="button" disabled={busy || valid.length === 0} onClick={() => void submit()}>{busy ? 'Загрузка…' : `Загрузить ${valid.length}`}</button>
       </div>
     </>}
   </section>

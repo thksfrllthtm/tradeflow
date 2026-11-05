@@ -1,76 +1,73 @@
-/* Окно «Сравнение: по инвойсу и по СУР». Окно — в document.body с классом .rs-step (токены цветов
+/* Окно «Сравнение: по инвойсу и по СУР». Окно — в document.body, у .modal класс .rs-step (токены цветов
    и стиль переключателей экрана результата), поэтому общий мелкий стиль таблиц сметы на него не действует.
    Колонки СУР — светло-жёлтые, как полоса режима СУР; разница: по СУР дороже — тёплым, дешевле — зелёным. */
 
-.sc-backdrop { position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; padding: 16px; background: rgba(20, 38, 27, .35); backdrop-filter: blur(2px); }
-.sc-modal { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; width: min(1240px, 100%); max-height: 94vh; padding: 20px 22px; overflow: hidden; border-radius: 14px; background: #fff; box-shadow: 0 20px 60px #1d332a55; color: var(--rs-ink); outline: none; }
+/* Каркас — общий Modal; .rs-step добавляет свой gap — убираем. Прокручивается только таблица строк. */
+.modal.sc-modal { gap: 0; max-height: 94vh; }
+.sc-modal .modal-title p { white-space: normal; }
+.sc-modal .modal-body { display: flex; flex-direction: column; gap: 12px; overflow: hidden; padding: 16px 24px 20px; }
 
-.sc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.sc-head h2 { margin: 0; font-size: 1.2rem; font-weight: 700; }
-.sc-head p { margin: 4px 0 0; color: var(--rs-ink-3); font-size: .88rem; }
-.rs-step button.sc-close { flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--rs-ink-2); font-size: 1.5rem; line-height: 1; cursor: pointer; }
-.rs-step button.sc-close:hover { background: #edf4ef; }
+.sc-options { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; padding: 8px 12px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); }
+.rs-step .sc-options .dir-seg button.active, .rs-step .sc-options .dir-seg button.active:hover:not(:disabled) { background: var(--tf-warn-text); }
+.sc-country { color: var(--tf-text-2); font-size: var(--fs-md); }
+.sc-status { margin-left: auto; color: var(--tf-muted); font-size: var(--fs-md); }
 
-.sc-options { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 8px 12px; border-radius: 10px; background: #fffbef; }
-.rs-step .sc-options .rs-seg button.active, .rs-step .sc-options .rs-seg button.active:hover:not(:disabled) { background: var(--rs-warn); }
-.sc-country { color: var(--rs-ink-2); font-size: .86rem; }
-.sc-status { margin-left: auto; color: var(--rs-ink-3); font-size: .86rem; }
+.sc-error { margin: 0; padding: 8px 12px; border-radius: var(--tf-radius); background: var(--tf-error-bg); color: var(--tf-error); font-size: var(--fs-md); }
+.sc-wait { margin: 0; padding: 32px 0; color: var(--tf-muted); text-align: center; }
 
-.sc-error { margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--rs-bad-bg); color: var(--rs-bad); font-size: .88rem; }
-.sc-wait { margin: 0; padding: 32px 0; color: var(--rs-ink-3); text-align: center; }
-
-.sc-body { display: flex; flex-direction: column; gap: 14px; min-height: 0; transition: opacity .15s; }
+.sc-body { display: flex; flex-direction: column; gap: 12px; min-height: 0; transition: opacity .15s; }
 .sc-stale { opacity: .55; }
 
 /* Итоги: растаможка к оплате крупно, ниже — из чего она складывается. */
-.sc-totals { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
+.sc-totals { width: 100%; border-collapse: collapse; font-size: var(--fs-md); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .sc-col-label { width: 28%; }
-.sc-totals th, .sc-totals td { padding: 7px 14px; border-bottom: 1px solid var(--rs-line); text-align: right; white-space: nowrap; }
-.sc-totals thead th { padding-block: 6px; color: var(--rs-ink-3); font-size: .82rem; font-weight: 650; }
-.sc-totals tbody th { color: var(--rs-ink-2); font-weight: 600; text-align: left; }
-.sc-totals tr.sc-pay th { color: var(--rs-ink); font-size: 1rem; font-weight: 700; }
-.sc-totals tr.sc-pay td { padding-block: 10px; }
-.sc-totals tr.sc-pay b { display: block; font-size: 1.3rem; font-weight: 750; }
-.sc-totals tr.sc-pay small { display: block; margin-top: 2px; color: var(--rs-ink-3); font-size: .84rem; font-weight: 600; }
+.sc-totals th, .sc-totals td { padding: 8px 16px; border-bottom: 1px solid var(--tf-border-inner); text-align: right; white-space: nowrap; }
+.sc-totals thead th { padding-block: 6px; color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 600; }
+.sc-totals tbody th { color: var(--tf-text-2); font-weight: 600; text-align: left; }
+.sc-totals tr.sc-pay th { color: var(--tf-text); font-size: var(--fs-base); font-weight: 600; }
+.sc-totals tr.sc-pay td { padding-block: 8px; }
+.sc-totals tr.sc-pay b { display: block; font-size: var(--fs-xl); font-weight: 600; }
+.sc-totals tr.sc-pay small { display: block; margin-top: 2px; color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 600; }
 .sc-totals tr.sc-pay .sc-diff small { color: inherit; opacity: .85; }
 .sc-totals tbody tr:last-child th, .sc-totals tbody tr:last-child td { border-bottom: 0; }
 
-.sc-sir { background: #fffbef; }
-.sc-totals thead th.sc-sir, .sc-rows thead th.sc-sir { color: var(--rs-warn); }
-.sc-diff.up { color: #8a3d0f; font-weight: 650; }
-.sc-diff.down { color: var(--rs-green); font-weight: 650; }
-.sc-warn { color: var(--rs-warn); }
+.sc-sir { background: color-mix(in srgb, var(--tf-warn-bg) 45%, var(--tf-card)); }
+.sc-totals thead th.sc-sir, .sc-rows thead th.sc-sir { color: var(--tf-warn-text); }
+.sc-diff.up { color: var(--tf-warn-text); font-weight: 600; }
+.sc-diff.down { color: var(--tf-green); font-weight: 600; }
+.sc-warn { color: var(--tf-warn-text); }
 
 .sc-rows-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
-.sc-note { margin: 0; color: var(--rs-ink-2); font-size: .88rem; }
+.sc-note { margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); }
 
 /* Строки: группы колонок «Цена за 1 кг» и «Таможенная стоимость», название и код — в две строки. */
 .sc-rows-wrap { flex: 1 1 auto; min-height: 160px; overflow: auto; border: 1px solid var(--xl-head-line); border-radius: 2px; }
-.sc-rows { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .88rem; font-variant-numeric: tabular-nums; }
-.sc-rows th, .sc-rows td { padding: 7px 12px; border-bottom: 1px solid var(--rs-line); text-align: right; white-space: nowrap; }
+.sc-rows { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
+.sc-rows th, .sc-rows td { padding: 8px 12px; border-bottom: 1px solid var(--tf-border-inner); text-align: right; white-space: nowrap; }
 .sc-rows thead { position: sticky; top: 0; z-index: 1; }
-.sc-rows thead th { background: var(--rs-head); color: var(--rs-ink-2); font-size: .8rem; font-weight: 650; }
-.sc-rows thead tr:first-child th { padding-block: 6px 2px; border-bottom: 0; color: var(--rs-ink-3); font-size: .79rem; font-weight: 600; }
-.sc-rows thead th.sc-span { text-align: center; box-shadow: inset 1px 0 0 var(--rs-line-strong); }
-.sc-rows thead th.sc-sir { background: #fdf3d6; }
-.sc-rows .sc-start { box-shadow: inset 1px 0 0 var(--rs-line-strong); }
-.sc-rows tbody tr:hover td { background: #f3f8f5; }
-.sc-rows tbody tr:hover td.sc-sir { background: #fcf2d4; }
-.sc-rows td small { display: block; margin-top: 1px; font-size: .76rem; font-weight: 600; }
-.sc-rows td b { font-weight: 650; }
-.sc-rows tfoot td { position: sticky; bottom: 0; border-top: 1px solid var(--rs-line-strong); border-bottom: 0; background: var(--rs-head); font-weight: 700; }
-.sc-rows tfoot td.sc-sir { background: #fdf3d6; }
-.sc-rows .sc-num { width: 1%; color: var(--rs-ink-3); text-align: left; }
+.sc-rows thead th { background: var(--tf-bg); color: var(--tf-text-2); font-size: var(--fs-sm); font-weight: 600; }
+.sc-rows thead tr:first-child th { padding-block: 6px 2px; border-bottom: 0; color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 600; }
+.sc-rows thead th.sc-span { text-align: center; box-shadow: inset 1px 0 0 var(--tf-border); }
+.sc-rows thead th.sc-sir { background: var(--tf-warn-bg); }
+.sc-rows .sc-start { box-shadow: inset 1px 0 0 var(--tf-border); }
+.sc-rows tbody tr:hover td { background: var(--xl-hover); }
+.sc-rows tbody tr:hover td.sc-sir { background: var(--tf-warn-bg); }
+.sc-rows td small { display: block; margin-top: 1px; font-size: var(--fs-xs); font-weight: 600; }
+.sc-rows td b { font-weight: 600; }
+.sc-rows tfoot td { position: sticky; bottom: 0; border-top: 1px solid var(--tf-border); border-bottom: 0; background: var(--tf-bg); font-weight: 600; }
+.sc-rows tfoot td.sc-sir { background: var(--tf-warn-bg); }
+.sc-rows .sc-num { width: 1%; color: var(--tf-muted); text-align: left; }
 .sc-rows .sc-name { width: 40%; max-width: 380px; text-align: left; }
 .sc-rows td.sc-name { white-space: normal; }
-.sc-name-text { display: block; overflow: hidden; color: var(--rs-ink); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.sc-rows td.sc-name code, .sc-rows td.sc-name .copy-code { display: block; margin-top: 1px; color: var(--rs-ink-3); font-size: .78rem; }
-.sc-none { color: var(--rs-ink-3); }
+.sc-name-text { display: block; overflow: hidden; color: var(--tf-text); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.sc-rows td.sc-name code, .sc-rows td.sc-name .copy-code { display: block; margin-top: 1px; color: var(--tf-muted); font-size: var(--fs-xs); }
+.sc-none { color: var(--tf-muted); }
 
 @media (max-width: 760px) {
-  .sc-modal { padding: 14px; }
+  .sc-modal .modal-body { padding: 16px; }
   .sc-totals th, .sc-totals td { padding: 6px 8px; }
   .sc-col-label { width: auto; }
   .sc-status { margin-left: 0; }
 }
 .sc-rows td.sc-name .copy-code { display: flex; width: fit-content; }
+.sc-rows td:not(.sc-name) { font-family: var(--tf-num); }

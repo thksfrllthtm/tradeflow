@@ -2,13 +2,14 @@ import { AgentResult } from './agentApi'
 import './AgentEvidence.css'
 
 const confidenceLabels = { high: 'высокая', medium: 'средняя', low: 'низкая — проверьте код' }
+const confidenceTones = { high: 'ok', medium: 'warn', low: 'error' }
 
 // Уверенность агента в лучшем коде и страницы из интернета, на которые он опирался (карточка товара,
 // решение таможни). Ссылки — только те, что агент действительно открывал: чужие программа убирает.
 export function AgentEvidence({ result }: { result: AgentResult }) {
   if (!result.confidence && !result.sources?.length) return null
   return <div className="ag-evidence">
-    {result.confidence && <span className={`ag-confidence ${result.confidence}`}>Уверенность: {confidenceLabels[result.confidence]}</span>}
+    {result.confidence && <span className={`badge ${confidenceTones[result.confidence]} ag-confidence`}>Уверенность: {confidenceLabels[result.confidence]}</span>}
     {result.confidence && result.confidenceReason && <p className="ag-confidence-why">{result.confidenceReason}</p>}
     {result.sources?.length ? <ul className="ag-sources" aria-label="Источники">
       {result.sources.map((source) => <li key={source.url}>

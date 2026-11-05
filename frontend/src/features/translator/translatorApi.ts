@@ -25,6 +25,8 @@ export const documentStatusLabels: Record<DocumentStatus, string> = {
   translated: 'Переведён',
   failed: 'Ошибка',
 }
+// Тон общего бейджа (.badge) для статуса документа.
+export const documentStatusTone: Record<DocumentStatus, string> = { parsed: '', translating: 'warn', translated: 'ok', failed: 'error' }
 
 export type TranslatorDocument = {
   id: number

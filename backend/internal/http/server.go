@@ -254,6 +254,10 @@ func (s *Server) Router() *gin.Engine {
 	agent.GET("/usage", s.requireAdmin, s.agentUsage)
 	agent.GET("/log", s.requireAdmin, s.agentLog)
 	agent.GET("/log/:id", s.requireAdmin, s.agentLogEntry)
+	// База документов: ответы «Документы для ввоза» по кодам, справки tnved.info и акты в кэше — только администратор.
+	agent.GET("/documents-base", s.requireAdmin, s.documentsBase)
+	agent.GET("/documents-base/codes/:code", s.requireAdmin, s.documentsBaseCode)
+	agent.GET("/documents-base/sources", s.requireAdmin, s.documentsSources)
 	agent.GET("/sessions", s.requireNotTranslator, s.listAgentSessions)
 	agent.POST("/sessions", s.requireNotTranslator, s.startAgentSession)
 	agent.GET("/sessions/:id", s.getAgentSession)

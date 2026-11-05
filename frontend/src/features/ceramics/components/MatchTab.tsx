@@ -6,7 +6,7 @@ import { ceramicsApi } from '../ceramicsApi'
 import { AIStatus, CeramicsType, Resolution, ResolutionStatus } from '../types'
 import { buildGroups, chunk, Draft, draftFromResolution, findHeaderRow, guessMapping, MatchGroup, MatchMapping, PHOTO_FROM_IMAGES, resultCsv } from '../lib/matchGroups'
 import { AI_PHOTO_SIDE, resizePhoto } from '../lib/photos'
-import { ResultsTable } from './ResultsTable'
+import { ResultsTable, statusTone } from './ResultsTable'
 import { SourceSettings } from '@/features/goods/components/ImportStep/ImportStep'
 import { ExcelPreview } from '@/features/goods/components/ImportStep/ExcelPreview'
 
@@ -203,11 +203,11 @@ export function MatchTab({ types, ai }: Props) {
               <input type="checkbox" checked={mapping.photo === PHOTO_FROM_IMAGES} disabled={running}
                 onChange={(event) => setMapping({ ...mapping, photo: event.target.checked ? PHOTO_FROM_IMAGES : '' })} />Фото ({photoCount})
             </label>}
-            {groups.length > 0 && <button type="button" className="rv-btn" onClick={() => setSetupOpen(!setupOpen)} aria-expanded={setupOpen}>{setupOpen ? 'Скрыть строки' : 'Строки файла'}</button>}
-            <label className="rv-btn im-replace">{loading ? 'Читаем…' : 'Заменить файл'}{fileInput}</label>
+            {groups.length > 0 && <button type="button" className="secondary" onClick={() => setSetupOpen(!setupOpen)} aria-expanded={setupOpen}>{setupOpen ? 'Скрыть строки' : 'Строки файла'}</button>}
+            <label className="secondary cer-file-button">{loading ? 'Читаем…' : 'Заменить файл'}{fileInput}</label>
             {running
-              ? <button type="button" className="rv-btn" onClick={stop}>Остановить</button>
-              : <button type="button" className="rv-btn primary" onClick={() => void run()} disabled={loading || rowsIncluded === 0 || (!mapping.mark && !mapping.chineseName)}>{groups.length ? 'Подобрать заново' : 'Подобрать'} <span aria-hidden="true">→</span></button>}
+              ? <button type="button" className="secondary" onClick={stop}>Остановить</button>
+              : <button type="button" onClick={() => void run()} disabled={loading || rowsIncluded === 0 || (!mapping.mark && !mapping.chineseName)}>{groups.length ? 'Подобрать заново' : 'Подобрать'} <span aria-hidden="true">→</span></button>}
           </div>
         </div>
         {running && <div className="cer-progress" role="status">
@@ -230,14 +230,14 @@ export function MatchTab({ types, ai }: Props) {
     {groups.length > 0 && <>
       <section className="cer-sheet-card" aria-label="Результат подбора">
       <div className="cer-filterbar">
-        <div className="cer-filters" role="tablist" aria-label="Статус">
+        <div className="dir-seg cer-filters" role="tablist" aria-label="Статус">
           {filters.filter((item) => item.value === 'all' || counts[item.value]).map((item) => <button key={item.value} type="button" role="tab" aria-selected={filter === item.value}
             className={filter === item.value ? 'active' : undefined} onClick={() => setFilter(item.value)}>
-            {item.value !== 'all' && <span className={`cer-dot ${item.value}`} aria-hidden="true" />}{item.label}<span className="cer-seg-count">{counts[item.value] ?? 0}</span>
+            {item.value !== 'all' && <span className={`status-dot ${statusTone[item.value]}`} aria-hidden="true" />}{item.label}<span className="cer-seg-count">{counts[item.value] ?? 0}</span>
           </button>)}
         </div>
         <span className="cer-toolbar-spacer" />
-        <button type="button" className="cer-secondary" onClick={downloadCsv} title="Таблица по строкам файла">Скачать CSV</button>
+        <button type="button" className="secondary" onClick={downloadCsv} title="Таблица по строкам файла">Скачать CSV</button>
       </div>
       <ResultsTable groups={visible} types={types} running={running}
         onDraft={setDraft}

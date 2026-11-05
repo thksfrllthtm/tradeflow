@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatMoney, formatRuNumber } from '@/shared/lib/formatDisplayNumber'
@@ -74,20 +75,15 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="utilFee" onLogout={onLogout} />
     <section className="directory-page uf-page">
-      <div className="dir-head">
-        <div>
-          <h1>Утильсбор</h1>
-          <p>{mode === 'one'
-            ? 'Введите код ТН ВЭД — программа покажет раздел перечня и коэффициент. Затем заполните массу или категорию — сумма посчитается сама.'
-            : <>1. В Excel выделите колонку кодов и нажмите Ctrl+C. 2. Щёлкните первую ячейку «Код ТН ВЭД» и нажмите Ctrl+V.
-              3. Так же вставьте брутто и, если есть, нетто. Суммы посчитаются сами.</>}</p>
-        </div>
-        <div className="uf-tabs" role="tablist" aria-label="Как считать">
-          <button type="button" role="tab" aria-selected={mode === 'one'} className={mode === 'one' ? 'active' : undefined} onClick={() => setMode('one')}
-            title="Подробный расчёт по одному коду: товар, упаковка из нескольких материалов, транспорт">Один товар</button>
-          <button type="button" role="tab" aria-selected={mode === 'table'} className={mode === 'table' ? 'active' : undefined} onClick={() => setMode('table')}
-            title="Много строк сразу: вставьте коды и вес из Excel поставщика">Таблица из Excel</button>
-        </div>
+      <PageHead title="Утильсбор" subtitle={mode === 'one'
+        ? 'Введите код ТН ВЭД — программа покажет раздел перечня и коэффициент. Затем заполните массу или категорию — сумма посчитается сама.'
+        : <>1. В Excel выделите колонку кодов и нажмите Ctrl+C. 2. Щёлкните первую ячейку «Код ТН ВЭД» и нажмите Ctrl+V.
+          3. Так же вставьте брутто и, если есть, нетто. Суммы посчитаются сами.</>} />
+      <div className="dir-seg uf-tabs" role="tablist" aria-label="Как считать">
+        <button type="button" role="tab" aria-selected={mode === 'one'} className={mode === 'one' ? 'active' : undefined} onClick={() => setMode('one')}
+          title="Подробный расчёт по одному коду: товар, упаковка из нескольких материалов, транспорт">Один товар</button>
+        <button type="button" role="tab" aria-selected={mode === 'table'} className={mode === 'table' ? 'active' : undefined} onClick={() => setMode('table')}
+          title="Много строк сразу: вставьте коды и вес из Excel поставщика">Таблица из Excel</button>
       </div>
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
 
@@ -146,7 +142,7 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
                 return <div className="uf-possible-group" key={sectionNumber}>
                   <p>Если полный код {items.length > 1 ? 'один из этих' : 'такой'} — ещё <b>{payLabels[items[0].kind]}</b>: раздел {sectionNumber}{k !== undefined && <>, k = {formatRuNumber(k)}</>}</p>
                   <small>{items[0].title}</small>
-                  <div className="uf-picks">{items.map((match) => <button type="button" key={match.item} onClick={() => setCode(match.prefix)} title="Посчитать по этому коду">
+                  <div className="uf-picks">{items.map((match) => <button type="button" className="secondary" key={match.item} onClick={() => setCode(match.prefix)} title="Посчитать по этому коду">
                     <code>{groupCode(match.prefix)}</code><small>п. {match.item}</small>
                   </button>)}</div>
                 </div>
@@ -180,10 +176,10 @@ export function UtilFeePage({ user, onLogout }: { user: User; onLogout: () => vo
                   </select>
                   <input value={row.massKg} onChange={(event) => setRow(index, { massKg: event.target.value })} inputMode="decimal" placeholder="0" aria-label="Масса упаковки, кг" />
                   <span className="uf-amount" title={amount ? inUsd(amount.amount) : undefined}>{amount ? money(amount.amount) : ''}</span>
-                  {input.packaging.length > 1 && <button type="button" className="uf-remove" aria-label="Удалить строку" onClick={() => set({ packaging: input.packaging.filter((_, rowIndex) => rowIndex !== index) })}>×</button>}
+                  {input.packaging.length > 1 && <button type="button" className="icon-button ghost sm" aria-label="Удалить строку" onClick={() => set({ packaging: input.packaging.filter((_, rowIndex) => rowIndex !== index) })}>×</button>}
                 </div>
               })}
-              <button type="button" className="uf-add" onClick={() => set({ packaging: [...input.packaging, { material: 'polymer', massKg: '' }] })}>+ Ещё материал</button>
+              <button type="button" className="secondary uf-add" onClick={() => set({ packaging: [...input.packaging, { material: 'polymer', massKg: '' }] })}>+ Ещё материал</button>
             </div>}
 
             {has('vehicle') && <div className="uf-calc-block">
@@ -251,9 +247,9 @@ function ListTable({ sections, query, fields, showList, onPick }: ListProps) {
     <div className="uf-filterbar">
       {fields}
       {showList && <>
-        <p className="uf-count"><b>{shown.length}</b> разделов · <b>{positions}</b> позиций</p>
+        <p className="dir-filter-count uf-count"><b>{shown.length}</b> разделов · <b>{positions}</b> позиций</p>
         <span className="uf-hint uf-tip">Раздел — раскрыть коды; код — открыть расчёт</span>
-        {!searching && <button type="button" className="uf-add" onClick={() => setOpen(allOpen ? new Set() : new Set(sections.map((section) => section.number)))}>{allOpen ? 'Свернуть все' : 'Раскрыть все'}</button>}
+        {!searching && <button type="button" className="secondary" onClick={() => setOpen(allOpen ? new Set() : new Set(sections.map((section) => section.number)))}>{allOpen ? 'Свернуть все' : 'Раскрыть все'}</button>}
       </>}
     </div>
     {/* Своя прокрутка у таблицы: перечень — до низа окна, шапка и поля на месте. */}
@@ -265,7 +261,7 @@ function ListTable({ sections, query, fields, showList, onPick }: ListProps) {
         <th className="c-item">Раздел / пункт</th><th className="c-code">Название раздела / код ТН ВЭД</th><th className="c-kind">Платится</th><th className="c-count">Позиций</th>
         <th className="c-k">k</th><th className="c-note">Примечание</th><th className="c-go" aria-label="Расчёт" />
       </tr></thead>
-      {shown.length === 0 && <tbody><tr><td colSpan={7} className="uf-none">Ничего не найдено. Код не из перечня — утильсбор не платится.</td></tr></tbody>}
+      {shown.length === 0 && <tbody><tr><td colSpan={7} className="dir-empty uf-none">Ничего не найдено. Код не из перечня — утильсбор не платится.</td></tr></tbody>}
       {shown.map((section) => {
         const ks = new Set(section.items.map((item) => item.k))
         const k = ks.size === 1 ? section.items[0].k : undefined
@@ -277,7 +273,7 @@ function ListTable({ sections, query, fields, showList, onPick }: ListProps) {
           <tr className={expanded ? 'uf-section-row open' : 'uf-section-row'} onClick={() => { if (!searching) toggle(section.number) }}>
             <td className="c-item">
               <span className="uf-section-num">
-                <button type="button" className="uf-chevron" aria-expanded={expanded} disabled={searching}
+                <button type="button" className="icon-button ghost sm uf-chevron" aria-expanded={expanded} disabled={searching}
                   aria-label={expanded ? `Свернуть раздел ${section.number}` : `Раскрыть раздел ${section.number}`}
                   onClick={(event) => { event.stopPropagation(); toggle(section.number) }}>
                   <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 3l3 3-3 3" /></svg>

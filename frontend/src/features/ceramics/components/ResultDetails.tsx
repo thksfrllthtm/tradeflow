@@ -21,6 +21,10 @@ const sourceLabels: Record<string, string> = {
   mark_exact: 'Марка', chinese_name: 'Китайское название', chinese_number: 'Число в названии', chinese_name_match: 'Совпадение с базой', mark_pattern: 'Серия марки',
   russian_name: 'Русское название', ai: 'ИИ', price_mode: 'База цен', manual: 'Оператор',
 }
+// Тон общего бейджа (.badge) для источника довода.
+const sourceTone: Record<string, string> = {
+  ai: 'info', mark_exact: 'ok', chinese_name_match: 'ok', manual: 'ok', mark_pattern: 'warn', russian_name: 'warn', chinese_number: 'warn',
+}
 const typeStatusText: Record<string, string> = {
   NEED_REVIEW: 'Не удалось уверенно определить товар. Выберите один из возможных вариантов:',
   NOT_FOUND: 'Подходящий тип среди типов базы не найден. Выберите тип вручную:',
@@ -144,13 +148,13 @@ export function ResultDetails({ group, resolution, types, onDraft, onDraftPrice,
           </p>}
           {evidenceByField.map(({ field, items }) => items.length > 0 && <div key={field} className="cer-why-group">
             <h4>{fieldTitles[field]}</h4>
-            <ul>{items.map((item, index) => <li key={index}><span className={`cer-source-tag ${item.source}`}>{sourceLabels[item.source] ?? item.source}</span>{item.text}</li>)}</ul>
+            <ul>{items.map((item, index) => <li key={index}><span className={`badge cer-source-tag ${sourceTone[item.source] ?? ''}`}>{sourceLabels[item.source] ?? item.source}</span>{item.text}</li>)}</ul>
           </div>)}
           {resolution.warnings.length > 0 && <ul className="cer-warnings">{resolution.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
           {!resolution.evidence.length && !resolution.warnings.length && <p className="muted">Нет данных.</p>}
         </details>
         {missing && <span className="cer-missing">В строке {missing}</span>}
-        {!found && <button type="button" className="cer-secondary" onClick={() => { setPriceTouched(false); setNameTouched(false); onDraftPrice(undefined); onDraft(draftFromResolution(resolution, group.chineseName)) }}>Сбросить</button>}
+        {!found && <button type="button" className="secondary" onClick={() => { setPriceTouched(false); setNameTouched(false); onDraftPrice(undefined); onDraft(draftFromResolution(resolution, group.chineseName)) }}>Сбросить</button>}
         <button type="submit" title="Отметить строку проверенной и открыть следующую">Готово <span aria-hidden="true">→</span></button>
       </div>
     </form>

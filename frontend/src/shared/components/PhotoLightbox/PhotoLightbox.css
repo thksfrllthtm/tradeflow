@@ -1,6 +1,6 @@
 /* Просмотр фото строки. Одно определение вместо трёх копий: значения — те, что
    действовали раньше, когда общие правила перекрывали стили компонентов. */
-.image-gallery-card { padding: 28px 56px 38px; }
+.image-gallery-card { padding: 28px 56px 40px; }
 .image-gallery-arrow {
   position: absolute;
   top: 50%;
@@ -10,16 +10,16 @@
   align-items: center;
   justify-content: center;
   transform: translateY(-50%);
-  border: 1px solid #d4dcd6;
+  border: 1px solid var(--tf-border);
   border-radius: 50%;
-  background: #fff;
-  color: #1f6b45;
-  font-size: 2rem;
+  background: var(--tf-card);
+  color: var(--tf-green);
+  font-size: var(--fs-2xl);
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 2px 10px #0003;
+  box-shadow: var(--tf-shadow-pop);
 }
-.image-gallery-arrow:hover { border-color: #24704a; background: #eef7f0; }
+.image-gallery-arrow:hover { border-color: var(--tf-green); background: var(--tf-green-soft); }
 .image-gallery-prev { left: 10px; }
 .image-gallery-next { right: 10px; }
 .image-gallery-counter {
@@ -27,18 +27,18 @@
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 3px 9px;
+  padding: 4px 8px;
   border-radius: 999px;
-  background: #1f6b45;
+  background: var(--tf-green);
   color: #fff;
-  font-size: .76rem;
+  font-size: var(--fs-xs);
 }
-.image-lightbox-close:hover { color: #a33232; border-color: #a33232; }
+.image-lightbox-close:hover { color: var(--tf-error); border-color: var(--tf-error); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 768px) {
   .image-lightbox-card { padding: 8px; }
-  .image-gallery-card { padding: 22px 42px 32px; }
-  .image-gallery-arrow { width: 32px; height: 32px; font-size: 1.6rem; }
+  .image-gallery-card { padding: 24px 40px 32px; }
+  .image-gallery-arrow { width: 32px; height: 32px; font-size: var(--fs-2xl); }
 }
 .image-lightbox {
   align-items: center;
@@ -47,7 +47,7 @@
   animation: fadeIn .15s ease-out;
   position: fixed;
   inset: 0;
-  z-index: 90; /* выше окна выбора кода (60), из которого фото тоже открывают */
+  z-index: calc(var(--z-overlay) + 1); /* выше окон и панелей (--z-overlay), из которых фото тоже открывают */
   display: grid;
   place-items: center;
   padding: 24px;
@@ -58,13 +58,13 @@
   position: relative;
   max-width: min(92vw, 900px);
   max-height: 92vh;
-  padding: 14px;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 20px 70px rgba(0,0,0,.3);
+  padding: 16px;
+  border-radius: var(--tf-radius);
+  background: var(--tf-card);
+  box-shadow: var(--tf-shadow-modal);
 }
 .image-lightbox-card img {
-  border-radius: 6px;
+  border-radius: var(--tf-radius);
   display: block;
   max-width: min(88vw, 860px);
   max-height: 82vh;
@@ -75,12 +75,12 @@
   height: auto;
   object-fit: contain;
 }
-.image-lightbox-card p { margin: 8px 0 0; color: #647269; font-size: .8rem; }
+.image-lightbox-card p { margin: 8px 0 0; color: var(--tf-faint); font-size: var(--fs-sm); }
 .image-lightbox-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d4dcd6;
+  border: 1px solid var(--tf-border);
   cursor: pointer;
   transition: border-color .15s, color .15s;
   position: absolute;
@@ -91,14 +91,15 @@
   height: 30px;
   padding: 0;
   border-radius: 50%;
-  background: #fff;
-  color: #26382e;
-  box-shadow: 0 1px 5px #0003;
-  font-size: 1.12rem;
+  background: var(--tf-card);
+  color: var(--tf-text);
+  box-shadow: var(--tf-shadow-1);
+  font-size: var(--fs-lg);
   line-height: 1;
 }
 
 /* Увеличение по щелчку: рамка обрезает увеличенное фото, курсор подсказывает, что будет по щелчку. */
-.image-zoom { overflow: hidden; border-radius: 6px; }
+.image-zoom { overflow: hidden; border-radius: var(--tf-radius); }
 .image-lightbox-card .image-zoom img { cursor: zoom-in; transition: transform .15s ease-out; }
 .image-lightbox-card .image-zoom img.zoomed { cursor: zoom-out; transition: none; }
+.image-lightbox:focus { outline: none; }

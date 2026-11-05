@@ -15,8 +15,9 @@ import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { CopyButton } from '@/shared/components/CopyCode/CopyButton'
 import '@/shared/styles/list-page.css'
 import './decisions.css'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { formatCode } from '@/shared/tnved/codes'
-import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
+import { CodeDecision, decisionStatusLabels, decisionStatusTones } from '@/shared/tnved/decisions'
 
 const pageSize = 50
 type Filter = '' | 'pending' | 'verified' | 'rejected' | 'agentWrong'
@@ -93,28 +94,23 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="decisions" onLogout={onLogout} />
     <section className="directory-page dc-page">
-      <div className="dir-head">
-        <div>
-          <h1>База решений</h1>
-          <p>Проверенные примеры «товар из инвойса → код ТН ВЭД» с фото и обоснованием. На них опирается ИИ при подборе кода.</p>
-        </div>
-        {admin && <div className="dc-actions">
-          <button type="button" className="dc-btn" onClick={() => setImportOpen(true)}>Импорт базы из Excel</button>
-          <button type="button" className="dc-btn primary" onClick={() => setManualOpen(true)}>+ Добавить вручную</button>
-        </div>}
-      </div>
+      <PageHead title="База решений" subtitle="Проверенные примеры «товар из инвойса → код ТН ВЭД» с фото и обоснованием. На них опирается ИИ при подборе кода."
+        actions={admin && <>
+          <button type="button" className="secondary" onClick={() => setImportOpen(true)}>Импорт базы из Excel</button>
+          <button type="button" onClick={() => setManualOpen(true)}>+ Добавить вручную</button>
+        </>} />
       {notice && <p className="dir-transfer-ok" role="status">{notice}</p>}
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
       <section className="dc-card" aria-label="Решения">
         <div className="dc-filterbar">
-          <label className="dc-search">
+          <label className="dir-search dc-search">
             <SearchIcon />
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Наименование или код" aria-label="Поиск по базе решений" />
           </label>
-          <div className="dc-tabs" role="radiogroup" aria-label="Статус">
+          <div className="dir-seg dc-tabs" role="radiogroup" aria-label="Статус">
             {filters.map((item) => <button key={item.value} type="button" role="radio" aria-checked={filter === item.value}
               className={`${filter === item.value ? 'active' : ''}${item.value === 'pending' && (stats?.pending ?? 0) > 0 ? ' warn' : ''}`} onClick={() => setFilter(item.value)}>
-              {item.label}{counts[item.value] !== undefined && <b>{counts[item.value]}</b>}
+              {item.label}{counts[item.value] !== undefined && <span className="dir-count">{counts[item.value]}</span>}
             </button>)}
           </div>
         </div>
@@ -128,7 +124,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
               {items.length === 0 ? <tr><td colSpan={8} className="dir-empty">{loading ? 'Загрузка…' : search || filter ? 'Ничего не найдено' : 'База пока пустая. Записи появятся из подбора кода ИИ (кнопка «ИИ» в строке сметы)' + (admin ? ' или из импорта старого инвойса.' : '.')}</td></tr>
                 : items.map((item) => {
                   const name = item.finalName || item.invoiceName || item.supplierName
-                  return <tr key={item.id} onClick={() => setOpenId(item.id)}>
+                  return <tr key={item.id} onClick={() => setOpenId(item.id)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') setOpenId(item.id) }}>
                     <td className="dc-photo-col">{item.thumb
                       ? <button type="button" className="dc-thumb" title="Открыть фото" aria-label="Открыть фото" onClick={(event) => { event.stopPropagation(); void openPhotos(item) }}><img src={item.thumb} alt="" /></button>
                       : <span className="dc-nophoto" aria-hidden="true" />}</td>
@@ -136,7 +132,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
                     <td className="dc-code-col"><CopyCode code={item.code} />{!item.nomenclature && <span className="dc-warn" title="Кода нет в номенклатуре ЕАЭС"> ⚠</span>}</td>
                     <td className="dc-price-col">{item.unitPriceUsd ? <><CopyCode code={item.unitPriceUsd.replace('.', ',')} number /> USD</> : <span className="dir-none">—</span>}</td>
                     <td className="dc-status-col">
-                      <span className={`dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>
+                      <span className={`status-dot ${decisionStatusTones[item.status]} dc-status ${item.status}`}>{decisionStatusLabels[item.status]}</span>
                       {item.agentCorrect === false && <span className="dc-ai bad" title={`ИИ ошибся: предлагал ${formatCode(item.agentCode)}`}>ИИ</span>}
                       {item.agentCorrect === true && <span className="dc-ai ok" title="ИИ подобрал этот код верно">ИИ</span>}
                     </td>
@@ -148,7 +144,7 @@ export function DecisionsPage({ user, onLogout }: { user: User; onLogout: () => 
             </tbody>
           </table>
         </div>
-        {items.length < total && <div className="dc-more">Показано <b>{items.length}</b> из {total}<button type="button" className="dc-btn" onClick={() => void loadMore()}>Показать ещё</button></div>}
+        {items.length < total && <div className="dc-more">Показано <b>{items.length}</b> из {total}<button type="button" className="secondary" onClick={() => void loadMore()}>Показать ещё</button></div>}
       </section>
       <p className="dc-disclaimer">
         <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>

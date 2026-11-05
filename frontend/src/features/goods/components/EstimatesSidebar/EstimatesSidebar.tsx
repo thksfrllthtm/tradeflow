@@ -3,6 +3,8 @@ import { Link } from '@/shared/router/Link'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { estimateSubtitle } from '@/shared/lib/estimateTitle'
 import { formatRuDate } from '@/shared/lib/dates'
+import { SearchIcon } from '@/shared/components/icons'
+import '@/shared/styles/list-page.css'
 import './EstimatesSidebar.css'
 
 type Props = {
@@ -39,22 +41,22 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
 
   const list = <>
     <div className="es-head">
-      <h2>{title}{estimates.length > 0 && <span>{estimates.length}</span>}</h2>
-      {!docked && <button type="button" className="es-icon" onClick={() => setOpen(false)} title="Закрыть список (Esc)" aria-label="Закрыть список смет">×</button>}
+      <h2>{title}{estimates.length > 0 && <span className="dir-count">{estimates.length}</span>}</h2>
+      {!docked && <button type="button" className="icon-button ghost" onClick={() => setOpen(false)} title="Закрыть список (Esc)" aria-label="Закрыть список смет">×</button>}
     </div>
     <div className="es-tools">
-      <button type="button" className="es-create" onClick={() => { setOpen(false); onCreate() }}>
+      <button type="button" className="secondary es-create" onClick={() => { setOpen(false); onCreate() }}>
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M7 2.5v9M2.5 7h9" /></svg>
         Новая смета
       </button>
-      {estimates.length > 5 && <label className="es-search">
-        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="6" cy="6" r="4.2" /><path d="m9.2 9.2 3 3" /></svg>
+      {estimates.length > 5 && <label className="dir-search">
+        <SearchIcon />
         <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Название, клиент, дата" aria-label="Поиск сметы" autoFocus={!docked} />
       </label>}
     </div>
-    {loading ? <p className="es-note">Загрузка…</p>
-      : estimates.length === 0 ? <p className="es-note">Смет пока нет. Создайте первую.</p>
-      : visible.length === 0 ? <p className="es-note">Ничего не найдено.</p>
+    {loading ? <p className="dir-empty es-note">Загрузка…</p>
+      : estimates.length === 0 ? <p className="dir-empty es-note">Смет пока нет. Создайте первую.</p>
+      : visible.length === 0 ? <p className="dir-empty es-note">Ничего не найдено.</p>
       : <nav className="es-list" aria-label="Список смет">
         {visible.map((estimate) => {
           const name = nameOf(estimate)
@@ -64,7 +66,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
             <Link href={hrefOf(estimate.id)} aria-current={estimate.id === selectedId ? 'page' : undefined} title={name}>
               <span className="es-item-top">
                 <strong>{name}</strong>
-                <i className={calculated ? 'es-status done' : 'es-status'}>{estimate.status}</i>
+                <span className={calculated ? 'badge ok es-status' : 'badge es-status'}>{estimate.status}</span>
               </span>
               <span className="es-item-sub">
                 <span className={estimate.client.trim() ? undefined : 'es-none'}>{estimateSubtitle(estimate)}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
@@ -72,7 +74,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
                 {!name.includes(date) && <span>{date}</span>}
               </span>
             </Link>
-            <button type="button" className="es-remove" onClick={() => onRemove(estimate)} title="Удалить смету" aria-label={`Удалить смету ${name}`}>×</button>
+            <button type="button" className="icon-button ghost sm danger es-remove" onClick={() => onRemove(estimate)} title="Удалить смету" aria-label={`Удалить смету ${name}`}>×</button>
           </div>
         })}
       </nav>}
@@ -86,7 +88,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
       <span>Сметы</span>
       {estimates.length > 0 && <b>{estimates.length}</b>}
     </button>
-    <button type="button" className="es-icon es-icon-primary" onClick={onCreate} title="Новая смета" aria-label="Новая смета">+</button>
+    <button type="button" className="icon-button" onClick={onCreate} title="Новая смета" aria-label="Новая смета">+</button>
     {open && <div className="es-panel" role="dialog" aria-label={title}>{list}</div>}
   </aside>
 }

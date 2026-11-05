@@ -1,5 +1,5 @@
 import { formatCode } from '@/shared/tnved/codes'
-import { LogDecision, LogModel, LogRow } from './agentLogApi'
+import { LogModel, LogRow } from './agentLogApi'
 
 // Подписи строк журнала: итог модели, сравнение, доля и время — без React, чтобы проверять тестами.
 
@@ -10,9 +10,6 @@ export const statusLabels: Record<string, string> = {
   searching: 'поиск в базе', ready: 'готов к запуску', running: 'идёт', waiting: 'ждёт ответа', done: 'готово',
   error: 'сбой', cancelled: 'остановлен', skipped: 'пропущено',
 }
-
-// Статус записи базы решений — классом бейджа справочников (точка и текст в таблице).
-export const decisionStatusClass: Record<LogDecision['status'], string> = { pending: 'needs_review', verified: 'operator_verified', rejected: 'archived' }
 
 // Доля в процентах; нет знаменателя — «—».
 export function percent(part: number, whole: number) {

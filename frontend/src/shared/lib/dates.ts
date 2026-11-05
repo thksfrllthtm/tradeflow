@@ -5,9 +5,9 @@ export function todayIso() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
-// YYYY-MM-DD → «21.09.2026» для списка смет.
+// YYYY-MM-DD (или полная дата со временем) → «21.09.2026». Берётся только календарная дата.
 export function formatRuDate(value: string) {
-  return new Intl.DateTimeFormat('ru-RU').format(new Date(`${value}T00:00:00`))
+  return new Intl.DateTimeFormat('ru-RU').format(new Date(`${value.slice(0, 10)}T00:00:00`))
 }
 
 // Время «10:01».

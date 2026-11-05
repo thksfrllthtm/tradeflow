@@ -26,6 +26,7 @@ const pollInterval = 1500
 const historyPollInterval = 5000
 const maxPhotos = 3
 const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
+const verdictTone: Record<AgentCandidate['verdict'], string> = { fits: 'ok', doubtful: 'warn', no: '' }
 const toolIcons: Record<string, string> = { search_nomenclature: '🔍', get_codes: '✔️', list_heading: '📂', open_details: '📄', search_decisions: '🗂️', search_directory: '📚', open_goods_help: '📋', open_link: '🔗', search_in_document: '🔎', web_search: '🌐', web_page: '🌐', review: '🧐', photo: '🖼️', look_at_photo: '📷', search_declarations: '📑', check_trademarks: '®️', general: '🗃️', act: '📖' }
 
 const isWorking = (session: AgentSession | null) => session?.status === 'running' || session?.status === 'searching'
@@ -420,9 +421,9 @@ export function ReferenceChat() {
         </div>
       </div>
       <div className="rc-head-actions">
-        <button type="button" className="rc-ghost rc-history-toggle" onClick={() => setHistoryOpen((value) => !value)} aria-expanded={historyOpen}>История{history.length > 0 && ` · ${history.length}`}</button>
+        <button type="button" className="secondary rc-history-toggle" onClick={() => setHistoryOpen((value) => !value)} aria-expanded={historyOpen}>История{history.length > 0 && ` · ${history.length}`}</button>
         {/* Всегда на месте: с пустого экрана видно, где начать заново (без разговора — неактивна). */}
-        <button type="button" className="rc-ghost" onClick={startNew} disabled={!session} title={session ? 'Начать новый вопрос' : 'Вы уже в новом вопросе'}>+ Новый вопрос</button>
+        <button type="button" className="secondary" onClick={startNew} disabled={!session} title={session ? 'Начать новый вопрос' : 'Вы уже в новом вопросе'}>+ Новый вопрос</button>
       </div>
     </header>
 
@@ -435,10 +436,10 @@ export function ReferenceChat() {
             <ul ref={historyRef}>{history.map((item, index) => <li key={item.id} className={[session?.id === item.id && 'active', item.shared && 'shared'].filter(Boolean).join(' ') || undefined}>
               <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
                 <span className="rc-history-name"><KindIcon kind={item.kind} label={kindLabels[item.kind]} />{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
-                {item.shared && <span className="rc-history-from"><PersonIcon />Чат {authorName(item.sharedBy)}</span>}
+                {item.shared && <span className="badge info rc-history-from"><PersonIcon />Чат {authorName(item.sharedBy)}</span>}
                 <small>{historyState(item)} ·{new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
               </button>
-              <button type="button" className="rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
+              <button type="button" className="icon-button ghost sm rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
             </li>)}</ul>
           </>}
       </aside>
@@ -570,7 +571,7 @@ function Thread({ session, onPhoto, documentsDisabled, onDocuments, onShare }: T
           : <Answer key={message.id} sessionId={session?.id ?? 0} result={message.content} previous={block.previous} documentsDisabled={documentsDisabled} onDocuments={onDocuments} />
         case 'notice': return <p key={message.id} className="rc-notice">{message.content.text}</p>
         case 'error': return <p key={message.id} className="rc-error">{message.content.message}
-          {block.retryDocuments && <button type="button" className="rc-retry" onClick={() => onDocuments(block.retryDocuments!)} disabled={documentsDisabled}>Повторить</button>}
+          {block.retryDocuments && <button type="button" className="secondary sm rc-retry" onClick={() => onDocuments(block.retryDocuments!)} disabled={documentsDisabled}>Повторить</button>}
         </p>
         case 'rerun': return <p key={message.id} className="rc-divider"><span>заново</span></p>
         default: return null
@@ -726,8 +727,8 @@ function NameVariant({ sessionId, label, name }: { sessionId: number; label: str
     {label && <span className="rc-name-label">{label}</span>}
     <span className="rc-name-text">{shown}</span>
     <span className="rc-name-actions">
-      <button type="button" className={copied ? 'rc-copy copied' : 'rc-copy'} onClick={() => void copy()}><CopyIcon copied={copied} />{copied ? 'Скопировано' : 'Копировать'}</button>
-      {!translated && sessionId > 0 && <button type="button" onClick={() => void translate()} disabled={busy}>{busy ? 'Перевод…' : 'Перевести на китайский'}</button>}
+      <button type="button" className="button-link rc-copy" onClick={() => void copy()}><CopyIcon copied={copied} />{copied ? 'Скопировано' : 'Копировать'}</button>
+      {!translated && sessionId > 0 && <button type="button" className="button-link" onClick={() => void translate()} disabled={busy}>{busy ? 'Перевод…' : 'Перевести на китайский'}</button>}
     </span>
     {error && <span className="rc-name-error" role="alert">{error}</span>}
   </div>
@@ -739,7 +740,7 @@ function Candidate({ candidate, documentsDisabled, onDocuments }: { candidate: A
   return <article className={`rc-cand ${candidate.verdict}`}>
     <div className="rc-cand-top">
       <CopyCode code={candidate.code} className="rc-code big" />
-      <i className={`rc-verdict ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i>
+      <i className={`badge rc-verdict ${verdictTone[candidate.verdict]}`}>{verdictLabels[candidate.verdict]}</i>
     </div>
     {parts.length > 0 && <p className="rc-cand-name" title={parts.join(' › ')}>{parts.slice(-2).join(' › ')}</p>}
     {nomenclature && <p className="rc-rates">

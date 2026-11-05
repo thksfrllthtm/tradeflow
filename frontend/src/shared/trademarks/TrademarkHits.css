@@ -1,8 +1,8 @@
-.tm-hits { display: grid; gap: 8px; padding: 10px 12px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: 12px; line-height: 1.4; }
-.tm-hits > strong { font-size: 12px; }
+.tm-hits { display: grid; gap: 8px; padding: 8px 12px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: var(--fs-md); line-height: 1.4; }
+.tm-hits > strong { font-size: var(--fs-md); }
 .tm-hits ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.tm-hit { display: flex; gap: 10px; align-items: flex-start; }
-.tm-hit img { flex: none; width: 56px; height: 56px; object-fit: contain; border: 1px solid var(--tf-border); border-radius: 6px; background: #fff; }
+.tm-hit { display: flex; gap: 8px; align-items: flex-start; }
+.tm-hit img { flex: none; width: 56px; height: 56px; object-fit: contain; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); }
 .tm-hit div { display: grid; gap: 2px; min-width: 0; }
 .tm-hit b { color: var(--tf-text); font-weight: 600; }
 .tm-hit.lookalike b { color: var(--tf-error); }

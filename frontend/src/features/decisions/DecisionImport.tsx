@@ -1,11 +1,11 @@
-import { ChangeEvent, useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, useMemo, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { goodsApi } from '@/shared/api/goodsApi'
 import { GoodsParseResult } from '@/shared/types/goods'
 import { DecisionInput, decisionsApi } from './decisionsApi'
-import '@/shared/styles/drawer.css'
+import { Drawer } from '@/shared/components/Drawer/Drawer'
 
 // Шаблон «База решений.xlsx» (его собирает сборщик в папке «_сборка базы решений»): лист «База»,
 // заголовки в первой строке, фото в ячейке строки. Колонки узнаются по названию, порядок не важен.
@@ -60,12 +60,6 @@ export function DecisionImport({ onClose, onImported }: { onClose: () => void; o
   const [progress, setProgress] = useState('')
   const [error, setError] = useState('')
   const [problems, setProblems] = useState<{ row: number; message: string }[]>([])
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) onClose() }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose, busy])
 
   async function read(target: File) {
     setBusy(true); setError(''); setParsed(null); setColumns(null); setProgress('Читаем файл (большой файл с фото — до минуты)…')
@@ -165,16 +159,17 @@ export function DecisionImport({ onClose, onImported }: { onClose: () => void; o
     }
   }
 
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose() }}>
-    <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="dc-import-title">
-      <header className="drawer-head">
-        <div><h2 id="dc-import-title">Импорт базы решений</h2><p>Файл «База решений.xlsx» из сборщика: лист «{templateSheet}», колонки {Object.values(template).map((title) => `«${title}»`).join(', ')}, фото в ячейке строки. Строки попадут в базу сразу как «Проверено».</p></div>
-        <button type="button" className="drawer-close" onClick={onClose} disabled={busy} aria-label="Закрыть">×</button>
-      </header>
-      <div className="drawer-body">
+  // Пока идёт загрузка, панель не закрывается.
+  const close = () => { if (!busy) onClose() }
+  return <Drawer title="Импорт базы решений" onClose={close}
+    subtitle={<>Файл «База решений.xlsx» из сборщика: лист «{templateSheet}», колонки {Object.values(template).map((title) => `«${title}»`).join(', ')}, фото в ячейке строки. Строки попадут в базу сразу как «Проверено».</>}
+    footer={<>
+      <button type="button" className="secondary" onClick={close} disabled={busy}>Отмена</button>
+      <button type="button" onClick={() => void runImport()} disabled={busy || rows.length === 0}>{busy ? 'Загружаем…' : replace ? `Заменить базу (${rows.length})` : `Импортировать ${rows.length || ''}`.trim()}</button>
+    </>}>
         <section className="drawer-section">
           <h3>Файл</h3>
-          <label className="dc-file">{file ? file.name : 'Выбрать Excel (.xlsx)'}<input type="file" accept=".xlsx" onChange={pick} disabled={busy} /></label>
+          <label className="secondary dc-file">{file ? file.name : 'Выбрать Excel (.xlsx)'}<input type="file" accept=".xlsx" onChange={pick} disabled={busy} /></label>
           {parsed && columns && <p className="drawer-hint">
             К импорту {rows.length} {plural(rows.length, 'строка', 'строки', 'строк')} с 10-значным кодом, с фото — {withPhotos}{duplicates ? `; повторов в файле склеено: ${duplicates}` : ''}.
             {' '}Строки без кода или без наименования пропускаются{replace ? '; остальное загружается как есть, без поиска повторов' : ', уже имеющиеся в базе — тоже'}.
@@ -189,11 +184,5 @@ export function DecisionImport({ onClose, onImported }: { onClose: () => void; o
         {progress && <p className="drawer-hint">{progress}</p>}
         {error && <p className="dc-error" role="alert">{error}</p>}
         {problems.length > 0 && <ul className="dc-problems">{problems.map((item) => <li key={`${item.row}-${item.message}`}><b>Строка {item.row}</b> {item.message}</li>)}</ul>}
-      </div>
-      <footer className="drawer-foot">
-        <button type="button" onClick={() => void runImport()} disabled={busy || rows.length === 0}>{busy ? 'Загружаем…' : replace ? `Заменить базу (${rows.length})` : `Импортировать ${rows.length || ''}`.trim()}</button>
-        <button type="button" className="secondary" onClick={onClose} disabled={busy}>Отмена</button>
-      </footer>
-    </aside>
-  </div>
+  </Drawer>
 }

@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
+import { Drawer } from '@/shared/components/Drawer/Drawer'
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { LinkText } from '@/shared/components/LinkText/LinkText'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { Link } from '@/shared/router/Link'
 import { paths } from '@/shared/router/router'
 import { formatCode } from '@/shared/tnved/codes'
-import { decisionStatusLabels } from '@/shared/tnved/decisions'
+import { decisionStatusLabels, decisionStatusTones } from '@/shared/tnved/decisions'
 import { AgentMessage, AgentResult } from '@/features/goods/agent/agentApi'
 import { AgentEvidence } from '@/features/goods/agent/AgentEvidence'
 import { DocumentsAnswer } from '@/features/goods/agent/DocumentsAnswer'
 import { DeclarationsLink } from '@/features/goods/agent/DeclarationsLink'
 import { CandidateRates, CandidateWhy, chatBlocks, CodeLine, StepsGroup, verdictLabels } from '@/features/goods/agent/AgentPanel'
 import { agentLogApi, LogEntry, LogModel, ShadowMessage, TranscriptMessage } from './agentLogApi'
-import { comparison, costText, decisionStatusClass, durationText, modelOutcome, statusLabels } from './logRows'
+import { comparison, costText, durationText, modelOutcome, statusLabels } from './logRows'
 
 // Карточка подбора: товар с фото, применённый код и проверка, две колонки — основная модель и тень:
 // лента событий как в чате сотрудника и полная переписка с моделью (каждый вызов инструмента с ответом).
@@ -25,11 +26,6 @@ export function AgentLogEntryPanel({ id, onClose }: { id: number; onClose: () =>
     setEntry(null); setError('')
     agentLogApi.entry(id).then(setEntry).catch((reason) => setError(errorMessage(reason)))
   }, [id])
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape' && photo === null) onClose() }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose, photo])
 
   const row = entry?.row
   const item = entry?.session.item
@@ -41,16 +37,10 @@ export function AgentLogEntryPanel({ id, onClose }: { id: number; onClose: () =>
     item.code && `код из файла ${formatCode(item.code)}`,
   ].filter(Boolean) : []
 
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <aside className="drawer alog-entry" role="dialog" aria-modal="true" aria-labelledby="alog-entry-title">
-      <header className="drawer-head">
-        <div>
-          <h2 id="alog-entry-title">{row ? row.name || 'Подбор' : 'Подбор'}</h2>
-          <p>{row ? `${row.user} · ${new Date(row.createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })} · ${row.mode === 'reference' ? 'чат-справочник' : 'строка сметы'}${row.runs > 1 ? ` · ходов: ${row.runs}` : ''}` : 'Загрузка…'}</p>
-        </div>
-        <button type="button" className="drawer-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
-      </header>
-      <div className="drawer-body">
+  // Пока открыто фото, Esc закрывает только его (у просмотра фото свой обработчик Esc).
+  return <>
+    <Drawer className="alog-entry" onClose={onClose} title={row ? row.name || 'Подбор' : 'Подбор'}
+      subtitle={row ? `${row.user} · ${new Date(row.createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })} · ${row.mode === 'reference' ? 'чат-справочник' : 'строка сметы'}${row.runs > 1 ? ` · ходов: ${row.runs}` : ''}` : 'Загрузка…'}>
         {error && <p className="banner error" role="alert">{error}</p>}
         {entry && row && item && <>
           <section className="alog-item">
@@ -61,9 +51,9 @@ export function AgentLogEntryPanel({ id, onClose }: { id: number; onClose: () =>
               {facts.length > 0 && <small>{facts.join(' · ')}</small>}
               <p className="alog-applied">
                 {row.decision
-                  ? <>Сотрудник применил <code>{formatCode(row.decision.code)}</code><span className={`directory-status ${decisionStatusClass[row.decision.status]}`}>{decisionStatusLabels[row.decision.status]}</span></>
+                  ? <>Сотрудник применил <code>{formatCode(row.decision.code)}</code><span className={`badge ${decisionStatusTones[row.decision.status]}`}>{decisionStatusLabels[row.decision.status]}</span></>
                   : <span className="alog-none">Код к строке не применён</span>}
-                {marks.map((mark) => <span key={mark.text} className={`alog-mark ${mark.tone}`}>{mark.text}</span>)}
+                {marks.map((mark) => <span key={mark.text} className={`status-dot ${mark.tone === 'bad' ? 'error' : mark.tone} alog-mark`}>{mark.text}</span>)}
               </p>
               <div className="alog-item-links">
                 {row.estimateId && <Link href={paths.goods(row.estimateId)}>Открыть смету ↗</Link>}
@@ -79,10 +69,9 @@ export function AgentLogEntryPanel({ id, onClose }: { id: number; onClose: () =>
             <ModelColumn title="Теневая модель" model={row.shadow} messages={shadowMessages} transcript={entry.shadow?.transcript ?? []} />
           </div>
         </>}
-      </div>
-    </aside>
+    </Drawer>
     {photo !== null && <PhotoLightbox photos={photos} startIndex={photo} onClose={() => setPhoto(null)} />}
-  </div>
+  </>
 }
 
 function ModelColumn({ title, model, messages, transcript }: { title: string; model: LogModel | null; messages: AgentMessage[]; transcript: TranscriptMessage[] }) {

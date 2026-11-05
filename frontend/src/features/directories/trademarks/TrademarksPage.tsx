@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { SearchIcon } from '@/shared/components/icons'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
 import { formatRuDate } from '@/shared/lib/dates'
@@ -11,6 +12,7 @@ import '../components/DirectoryTransfer.css'
 import '../kzList/KzListPanel.css'
 import '../riskIndicators/RiskIndicatorsPanel.css'
 import './TrademarksPage.css'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 
 // «ТРОИС» — таможенный реестр объектов интеллектуальной собственности КГД. Список и поиск видят все;
 // загрузка файла реестра и подпись логотипов — администратор. Логотипы без текста подписывает ИИ в фоне
@@ -69,14 +71,10 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="trademarks" onLogout={onLogout} />
     <section className="directory-page tm-page">
-      <div className="dir-head">
-        <div>
-          <h1>ТРОИС — таможенный реестр объектов интеллектуальной собственности</h1>
-          <p>{summary?.importedAt
+      <PageHead title="ТРОИС — таможенный реестр объектов интеллектуальной собственности"
+        subtitle={summary?.importedAt
             ? <>Реестр КГД · загружено {formatRuDate(summary.importedAt.slice(0, 10))}{summary.importedByName && `, ${summary.importedByName}`}{summary.logos > 0 && <> · логотипов подписано ИИ {formatDisplayNumber(summary.logosRead)} из {formatDisplayNumber(summary.logos)}</>}</>
-            : 'Товарные знаки под защитой таможни РК.'}</p>
-        </div>
-      </div>
+            : 'Товарные знаки под защитой таможни РК.'} />
       {admin && <div className="kz-step">
         <span className="kz-step-number">↑</span>
         <div><b>Загрузить реестр</b><p>Файл КГД как есть (.xls) — без пересохранения: так логотипы сохраняются в исходном качестве. Новый файл заменяет реестр целиком, подписи логотипов переносятся.</p></div>
@@ -89,7 +87,7 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
       {summary && summary.total === 0 ? <p className="sir-empty">{admin ? 'Реестр ещё не загружен.' : 'Реестр ещё не загружен администратором.'}</p> : <>
         <div className="tm-filters">
-          <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0) }} placeholder="Знак, номер или правообладатель" aria-label="Поиск по реестру" />
+          <label className="dir-search"><SearchIcon /><input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0) }} placeholder="Знак, номер или правообладатель" aria-label="Поиск по реестру" /></label>
           <label><input type="checkbox" checked={unnamed} onChange={(event) => { setUnnamed(event.target.checked); setPage(0) }} /> Логотипы без надписи</label>
           <span>{formatDisplayNumber(total)} найдено</span>
         </div>

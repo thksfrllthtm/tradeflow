@@ -100,17 +100,17 @@ export function BudgetRunButton({ budget, disabled, primary, blockedReason, onRu
   const act = (action: () => void) => () => { setOpen(false); action() }
 
   return <div className={primary ? 'budget-split primary' : 'budget-split'} ref={box}>
-    <button type="button" className="budget-run" onClick={() => onRun('ai')} disabled={runBlocked} title={blockedReason ?? `${AI_RUN_HINT}\n${settings}`}>
+    <button type="button" className={primary ? 'budget-run' : 'secondary budget-run'} onClick={() => onRun('ai')} disabled={runBlocked} title={blockedReason ?? `${AI_RUN_HINT}\n${settings}`}>
       {sparkle}{budget.running === 'ai' ? (budget.evaluations ? `Подбираем… ${budget.evaluations}` : 'Оцениваем товары…') : budget.running === 'math' ? `Подбираем… ${budget.evaluations}` : 'Подобрать цены ИИ'}
     </button>
-    <button type="button" className={open ? 'budget-caret open' : 'budget-caret'} ref={caret} onClick={() => setOpen(!open)} disabled={disabled} aria-expanded={open} aria-haspopup="dialog" title={`Распределить под кассу, отменить подбор, вернуть цены из файла. ${settings}`} aria-label="Другие способы подбора цен">
+    <button type="button" className={[primary ? '' : 'secondary', 'budget-caret', open ? 'open' : ''].filter(Boolean).join(' ')} ref={caret} onClick={() => setOpen(!open)} disabled={disabled} aria-expanded={open} aria-haspopup="dialog" title={`Распределить под кассу, отменить подбор, вернуть цены из файла. ${settings}`} aria-label="Другие способы подбора цен">
       <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 4l2.5 2.5L7.5 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
     </button>
     {open && <div className="budget-settings" role="dialog" aria-label="Подбор цен">
       <p className="budget-settings-title">Распределить под кассу</p>
       <p className="budget-settings-note">Без ИИ: по истории цен, весу нетто или поровну</p>
       <p className="budget-settings-label">Итог</p>
-      <div className="budget-gap-seg" role="radiogroup" aria-label="Итог меньше или больше кассы">
+      <div className="dir-seg budget-gap-seg" role="radiogroup" aria-label="Итог меньше или больше кассы">
         <button type="button" role="radio" aria-checked={!over} className={!over ? 'active' : undefined} onClick={() => budget.setGapMode('under')}>Меньше кассы</button>
         <button type="button" role="radio" aria-checked={over} className={over ? 'active' : undefined} onClick={() => budget.setGapMode('over')}>Больше кассы</button>
       </div>
@@ -126,14 +126,14 @@ export function BudgetRunButton({ budget, disabled, primary, blockedReason, onRu
       </p>
       <div className="budget-settings-row">
         <span>Знаков в цене</span>
-        <div className="budget-gap-seg" role="radiogroup" aria-label="Знаков после запятой в подобранной цене">
+        <div className="dir-seg budget-gap-seg" role="radiogroup" aria-label="Знаков после запятой в подобранной цене">
           <button type="button" role="radio" aria-checked={twoDecimals} className={twoDecimals ? 'active' : undefined} onClick={() => budget.setPriceDecimals(2)} title="Например, 0,62">2</button>
           <button type="button" role="radio" aria-checked={!twoDecimals} className={!twoDecimals ? 'active' : undefined} onClick={() => budget.setPriceDecimals(4)} title="Например, 0,6194">4</button>
         </div>
       </div>
       <div className="budget-gap-foot">
-        <button type="button" className="budget-gap-link" onClick={budget.resetGap} disabled={isDefault}title={`По умолчанию: итог меньше кассы на ${BUDGET_MIN_GAP}–${BUDGET_MAX_GAP} USD, 2 знака`}>Сбросить к умолчанию</button>
-        <button type="button" className="budget-gap-done" onClick={act(() => onRun('math'))} disabled={runBlocked} title={blockedReason ?? `${budgetHint(budget)}\n${settings}`}>Математический подбор</button>
+        <button type="button" className="button-link budget-gap-link" onClick={budget.resetGap} disabled={isDefault}title={`По умолчанию: итог меньше кассы на ${BUDGET_MIN_GAP}–${BUDGET_MAX_GAP} USD, 2 знака`}>Сбросить к умолчанию</button>
+        <button type="button" onClick={act(() => onRun('math'))} disabled={runBlocked} title={blockedReason ?? `${budgetHint(budget)}\n${settings}`}>Математический подбор</button>
       </div>
       <hr />
       <button type="button" className="budget-settings-item" onClick={act(onUndo)} disabled={!canUndo || busy} title={canUndo ? 'Вернуть цены до последнего подбора или сброса' : 'Подбора цен ещё не было'}>Отменить подбор цен</button>

@@ -1,4 +1,6 @@
 import { MouseEvent, useEffect, useState } from 'react'
+import { useDialogFocus } from '@/shared/hooks/useDialogFocus'
+import { useEscape } from '@/shared/hooks/useEscape'
 import './PhotoLightbox.css'
 
 type Props = { photos: string[]; startIndex: number; onClose: () => void }
@@ -19,9 +21,10 @@ export function PhotoLightbox({ photos, startIndex, onClose }: Props) {
     return { x: ((event.clientX - rect.left) / rect.width) * 100, y: ((event.clientY - rect.top) / rect.height) * 100 }
   }
 
+  useEscape(onClose)
+  const dialogRef = useDialogFocus<HTMLDivElement>()
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
       if (event.key === 'ArrowLeft' && many) move(-1)
       if (event.key === 'ArrowRight' && many) move(1)
     }
@@ -29,7 +32,7 @@ export function PhotoLightbox({ photos, startIndex, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  return <div className="image-lightbox product-lightbox" role="dialog" aria-modal="true" aria-label="Фотографии товара" onClick={onClose}>
+  return <div ref={dialogRef} tabIndex={-1} className="image-lightbox product-lightbox" role="dialog" aria-modal="true" aria-label="Фотографии товара" onClick={onClose}>
     <div className="image-lightbox-card image-gallery-card" onClick={(event) => event.stopPropagation()}>
       <button type="button" className="image-lightbox-close" onClick={onClose} aria-label="Закрыть">×</button>
       {many && <button type="button" className="image-gallery-arrow image-gallery-prev" onClick={() => move(-1)} aria-label="Предыдущая фотография">‹</button>}

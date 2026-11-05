@@ -5,27 +5,27 @@
 /* Ширина листа не раздвигает карточку: contain: inline-size — ширина только от родителя, широкий лист
    прокручивается внутри. --xp-top, --xp-below ставит ExcelPreview. */
 .xp-wrap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
-.xp-host { min-width: 0; max-height: max(240px, calc(100vh - var(--xp-top, 0px) - var(--xp-below, 0px))); overflow: auto; contain: inline-size; font-size: .82rem; scrollbar-width: thin; }
+.xp-host { min-width: 0; max-height: max(240px, calc(100vh - var(--xp-top, 0px) - var(--xp-below, 0px))); overflow: auto; contain: inline-size; font-size: var(--fs-sm); scrollbar-width: thin; }
 /* Блоками, а не inline-block (как в библиотеке): у строчного блока под таблицей зазор под хвосты букв. */
 .xp-host .jss_container, .xp-host .jss_content { display: block; width: 100%; height: auto; padding: 0; border: 0; box-shadow: none; overflow: visible; }
 /* Без рамки библиотеки: рамку даёт карточка. Ширина 0 и фиксированная раскладка — колонки по своей ширине. */
-.xp-host table.jss_worksheet { width: 0; table-layout: fixed; border: 0; border-collapse: separate; border-spacing: 0; font-family: inherit; font-size: .82rem; line-height: 1.2; color: var(--tf-text); }
-.xp-host table.jss_worksheet td { height: 28px; padding: 0 8px !important; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); font-size: .82rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.xp-host table.jss_worksheet { width: 0; table-layout: fixed; border: 0; border-collapse: separate; border-spacing: 0; font-family: inherit; font-size: var(--fs-sm); line-height: 1.2; color: var(--tf-text); }
+.xp-host table.jss_worksheet td { height: 28px; padding: 0 8px !important; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); font-size: var(--fs-sm); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 .xp-host table.jss_worksheet td.readonly { color: var(--tf-text); }
 
 /* Шапка прилипает к верху листа; названия колонок — чёрные, жирные, на сером. */
-.xp-host table.jss_worksheet > thead > tr > td { position: sticky; top: 0; z-index: 3; height: 30px; border-bottom-color: var(--tf-border); background: var(--xl-head); color: var(--tf-text); font-size: .78rem; font-weight: 600; text-align: left; }
+.xp-host table.jss_worksheet > thead > tr > td { position: sticky; top: 0; z-index: 3; height: 30px; border-bottom-color: var(--tf-border); background: var(--xl-head); color: var(--tf-text); font-size: var(--fs-xs); font-weight: 600; text-align: left; }
 
 /* Флажок импорта и «Стр.» — серая колонка слева, закреплена при прокрутке вбок. */
 .xp-host table.jss_worksheet td[data-x="0"], .xp-host table.jss_worksheet td[data-x="1"] { position: sticky; z-index: 1; background: var(--xl-head); }
 .xp-host table.jss_worksheet td[data-x="0"] { left: 0; text-align: center; }
-.xp-host table.jss_worksheet td[data-x="1"] { left: 32px; color: var(--tf-muted); font-size: .78rem; font-variant-numeric: tabular-nums; box-shadow: inset -1px 0 0 var(--tf-border); }
+.xp-host table.jss_worksheet td[data-x="1"] { left: 32px; color: var(--tf-muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; font-family: var(--tf-num); box-shadow: inset -1px 0 0 var(--tf-border); }
 .xp-host table.jss_worksheet > thead > tr > td[data-x="0"], .xp-host table.jss_worksheet > thead > tr > td[data-x="1"] { z-index: 4; }
 .xp-host input[type="checkbox"] { display: block; width: 14px; height: 14px; margin: 0 auto; accent-color: var(--tf-green); cursor: pointer; vertical-align: middle; }
 
 /* Строка под курсором и строки не в импорте — бледные и зачёркнутые. */
 .xp-host table.jss_worksheet > tbody > tr:hover > td:not([data-x="0"]):not([data-x="1"]) { background-color: var(--xl-hover); }
-.xp-host tr.xp-excluded > td:not([data-x="0"]) { color: var(--tf-muted) !important; text-decoration: line-through; text-decoration-color: #c5cdc8; }
+.xp-host tr.xp-excluded > td:not([data-x="0"]) { color: var(--tf-muted) !important; text-decoration: line-through; text-decoration-color: var(--tf-border-strong); }
 
 /* Выделение — заметная зелёная заливка и рамка в цвет сайта. */
 .xp-host table.jss_worksheet > tbody > tr > td.highlight { background-color: var(--tf-green-soft); }
@@ -35,9 +35,9 @@
 .xp-host table.jss_worksheet > tbody > tr > td.highlight-left { border-left: 2px solid var(--tf-green); }
 .xp-host table.jss_worksheet > tbody > tr > td.highlight-right { border-right: 2px solid var(--tf-green); }
 .xp-host table.jss_worksheet > thead > tr > td.selected { background-color: var(--tf-green-soft); }
-.xp-host .jss_corner { background: var(--tf-green); border-color: #fff; }
-.xp-host .jss_contextmenu { font-size: .86rem; }
-.xp-error { margin: 12px; padding: 8px 10px; border-radius: 8px; background: #fef3f2; color: #b42318; font-size: .86rem; font-weight: 600; }
+.xp-host .jss_corner { background: var(--tf-green); border-color: var(--tf-card); }
+.xp-host .jss_contextmenu { font-size: var(--fs-md); }
+.xp-error { margin: 12px; padding: 8px 10px; border-radius: var(--tf-radius); background: var(--tf-error-bg); color: var(--tf-error); font-size: var(--fs-md); font-weight: 600; }
 
 /* Заголовок колонки файла — кнопка списка «что в колонке» (стрелка справа); назначенная — зелёная с линией снизу. */
 .xp-host table.jss_worksheet > thead > tr > td.xp-pick { padding-right: 26px !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%235b635e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; color: var(--tf-muted); font-weight: 500; cursor: pointer; }

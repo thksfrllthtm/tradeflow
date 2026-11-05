@@ -1,7 +1,7 @@
 import { DragEvent, useState } from 'react'
+import { Drawer } from '@/shared/components/Drawer/Drawer'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { languages, maxFileMb, translatorApi } from './translatorApi'
-import '@/shared/styles/drawer.css'
 
 const pairKey = 'tradeflow.translator.langs'
 
@@ -70,32 +70,26 @@ export function UploadDrawer({ onClose, onUploaded }: { onClose: () => void; onU
     </select>
   </label>
 
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose() }}>
-    <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="tr-upload-title">
-      <header className="drawer-head">
-        <div><h2 id="tr-upload-title">Загрузить документ</h2><p>Word (.docx) до 20 МБ или Excel (.xlsx) до 100 МБ, до 3 000 абзацев или строк с текстом</p></div>
-        <button type="button" className="drawer-close" onClick={onClose} disabled={busy} aria-label="Закрыть">×</button>
-      </header>
-      <div className="drawer-body">
-        <section className="drawer-section">
-          <label className={dragging ? 'tr-drop dragging' : 'tr-drop'}
-            onDragOver={(event) => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true) } }}
-            onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false) }} onDrop={onDrop}>
-            <input type="file" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={(event) => { pick(event.target.files?.[0]); event.target.value = '' }} />
-            {file ? <><b>{file.name}</b><small>{(file.size / 1024 / 1024).toFixed(1)} МБ · выбрать другой</small></>
-              : <><b>Перетащите .docx или .xlsx сюда</b><small>или нажмите, чтобы выбрать файл</small></>}
-          </label>
-        </section>
-        <section className="drawer-section">
-          <h3>Языки</h3>
-          <div className="drawer-row">{select('source', 'Язык оригинала')}{select('target', 'Перевести на')}</div>
-        </section>
-        {error && <p className="dir-transfer-error" role="alert">{error}</p>}
-      </div>
-      <footer className="drawer-foot">
-        <button type="button" onClick={() => void upload()} disabled={!file || busy}>{busy ? 'Загружаем…' : 'Загрузить'}</button>
-        <button type="button" className="secondary" onClick={onClose} disabled={busy}>Отмена</button>
-      </footer>
-    </aside>
-  </div>
+  const close = () => { if (!busy) onClose() }
+  const footer = <>
+    <button type="button" className="secondary" onClick={close} disabled={busy}>Отмена</button>
+    <button type="button" onClick={() => void upload()} disabled={!file || busy}>{busy ? 'Загрузка…' : 'Загрузить'}</button>
+  </>
+
+  return <Drawer title="Загрузить документ" subtitle="Word (.docx) до 20 МБ или Excel (.xlsx) до 100 МБ, до 3 000 абзацев или строк с текстом" onClose={close} footer={footer}>
+    <section className="drawer-section">
+      <label className={dragging ? 'tr-drop dragging' : 'tr-drop'}
+        onDragOver={(event) => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDragging(true) } }}
+        onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false) }} onDrop={onDrop}>
+        <input type="file" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={busy} onChange={(event) => { pick(event.target.files?.[0]); event.target.value = '' }} />
+        {file ? <><b>{file.name}</b><small>{(file.size / 1024 / 1024).toFixed(1)} МБ · выбрать другой</small></>
+          : <><b>Перетащите .docx или .xlsx сюда</b><small>или нажмите, чтобы выбрать файл</small></>}
+      </label>
+    </section>
+    <section className="drawer-section">
+      <h3>Языки</h3>
+      <div className="drawer-row">{select('source', 'Язык оригинала')}{select('target', 'Перевести на')}</div>
+    </section>
+    {error && <p className="dir-transfer-error" role="alert">{error}</p>}
+  </Drawer>
 }

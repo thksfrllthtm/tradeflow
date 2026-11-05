@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { SearchIcon } from '@/shared/components/icons'
 import { formatRuDate } from '@/shared/lib/dates'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -11,7 +12,7 @@ import { isAdmin, User } from '@/shared/types/user'
 import { HistoryDrawer } from './HistoryDrawer'
 import { SegmentEditor } from './SegmentEditor'
 import { TaggedText } from './TaggedText'
-import { documentStatusLabels, languageLabel, Segment, SegmentStatus, segmentStatusLabels, skippedSummary, TranslatorDocument, translatorApi } from './translatorApi'
+import { documentStatusLabels, documentStatusTone, languageLabel, Segment, SegmentStatus, segmentStatusLabels, skippedSummary, TranslatorDocument, translatorApi } from './translatorApi'
 import '@/shared/styles/list-page.css'
 import './translator.css'
 
@@ -254,19 +255,16 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="translator" onLogout={onLogout} />
     <section className="directory-page tr-page">
-      <div className="dir-head tr-doc-head">
-        <div>
-          <Link className="tr-back" href={paths.translator()}>← Все документы</Link>
-          <h1>{doc?.name ?? 'Документ'}{doc && <span className={`tr-status ${doc.status}`}>{documentStatusLabels[doc.status]}</span>}</h1>
-          {doc && <p>{languageLabel(doc.sourceLang)} → {languageLabel(doc.targetLang)} · загрузил {doc.createdByName || '—'} {formatRuDate(doc.createdAt.slice(0, 10))} · сегментов: {doc.segmentCount}</p>}
-        </div>
-        {doc && <div className="tr-doc-actions">
-          {!translating && segments.length > 0 && done < segments.length && <button type="button" onClick={() => void translate()} disabled={busy}>{done === 0 ? 'Перевести' : 'Перевести оставшиеся'}</button>}
+      <PageHead
+        back={<Link className="secondary tr-back" href={paths.translator()}>← Все документы</Link>}
+        title={<>{doc?.name ?? 'Документ'}{doc && <span className={`badge tr-status ${documentStatusTone[doc.status]}`}>{documentStatusLabels[doc.status]}</span>}</>}
+        subtitle={doc && <>{languageLabel(doc.sourceLang)} → {languageLabel(doc.targetLang)} · загрузил {doc.createdByName || '—'} {formatRuDate(doc.createdAt.slice(0, 10))} · сегментов: {doc.segmentCount}</>}
+        actions={doc && <>
+          {canDelete && <button type="button" className="danger" onClick={() => void remove()} disabled={busy || translating} title="Удалить документ вместе с переводом">Удалить</button>}
           <button type="button" className="secondary" onClick={() => void download('target')} disabled={busy || done === 0} title="Исходный документ, где текст заменён переводом">Скачать перевод</button>
           {doc.format === 'docx' && <button type="button" className="secondary" onClick={() => void download('bilingual')} disabled={busy || done === 0} title="Под каждым абзацем оригинала — перевод серым курсивом">Скачать двуязычный</button>}
-          {canDelete && <button type="button" className="secondary tr-delete" onClick={() => void remove()} disabled={busy || translating} title="Удалить документ вместе с переводом">Удалить</button>}
-        </div>}
-      </div>
+          {!translating && segments.length > 0 && done < segments.length && <button type="button" onClick={() => void translate()} disabled={busy}>{done === 0 ? 'Перевести' : 'Перевести оставшиеся'}</button>}
+        </>} />
       {skipped && <p className="tr-warning" role="status">Не переведено: {skipped}. Эти части останутся в файле на языке оригинала.</p>}
       {doc?.status === 'failed' && doc.error && <p className="dir-transfer-error" role="alert">{doc.error}</p>}
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
@@ -287,7 +285,7 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
         <label className="dir-search tr-search">
           <SearchIcon />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Найти в оригинале или переводе" aria-label="Поиск по сегментам" />
-          {search && <button type="button" onClick={() => setSearch('')} aria-label="Очистить поиск">×</button>}
+          {search && <button type="button" className="icon-button ghost sm" onClick={() => setSearch('')} aria-label="Очистить поиск">×</button>}
         </label>
         <div className="dir-seg" role="radiogroup" aria-label="Показать сегменты">
           {filters.map((item) => <button key={item.value} type="button" role="radio" aria-checked={filter === item.value} className={filter === item.value ? 'active' : undefined} onClick={() => setFilter(item.value)}>
@@ -326,9 +324,9 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
                   <button type="button" className="secondary" onClick={() => void retranslate(segment)} disabled={retranslating === segment.id}>{retranslating === segment.id ? 'Переводим…' : 'Перевести заново'}</button>
                   <button type="button" className="secondary" onClick={() => setHistoryFor(segment)}>История</button>
                   <div className="tr-seg-nav">
-                    <button type="button" onClick={() => move(-1)} disabled={index === 0} title="Предыдущий абзац (Alt+↑)" aria-label="Предыдущий абзац">↑</button>
-                    <button type="button" onClick={() => move(1)} disabled={index === visible.length - 1} title="Следующий абзац (Alt+↓)" aria-label="Следующий абзац">↓</button>
-                    <button type="button" onClick={close} title="Закрыть редактор (Esc)" aria-label="Закрыть редактор">×</button>
+                    <button type="button" className="icon-button" onClick={() => move(-1)} disabled={index === 0} title="Предыдущий абзац (Alt+↑)" aria-label="Предыдущий абзац">↑</button>
+                    <button type="button" className="icon-button" onClick={() => move(1)} disabled={index === visible.length - 1} title="Следующий абзац (Alt+↓)" aria-label="Следующий абзац">↓</button>
+                    <button type="button" className="icon-button" onClick={close} title="Закрыть редактор (Esc)" aria-label="Закрыть редактор">×</button>
                   </div>
                 </div>
               </div>
@@ -339,8 +337,8 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
                 {/* Быстрое действие при наведении: подтвердить прочитанный перевод или снять подтверждение. */}
                 {target && !translating && <span className="tr-quick">
                   {segment.status === 'confirmed'
-                    ? <button type="button" onClick={(event) => { event.stopPropagation(); void quickStatus(segment, 'edited') }} title="Снять подтверждение">Снять</button>
-                    : <button type="button" className="confirm" onClick={(event) => { event.stopPropagation(); void quickStatus(segment, 'confirmed') }} title="Подтвердить, не открывая редактор">✓ Подтвердить</button>}
+                    ? <button type="button" className="secondary sm" onClick={(event) => { event.stopPropagation(); void quickStatus(segment, 'edited') }} title="Снять подтверждение">Снять</button>
+                    : <button type="button" className="secondary sm confirm" onClick={(event) => { event.stopPropagation(); void quickStatus(segment, 'confirmed') }} title="Подтвердить, не открывая редактор">✓ Подтвердить</button>}
                 </span>}
               </div>}
           </div>

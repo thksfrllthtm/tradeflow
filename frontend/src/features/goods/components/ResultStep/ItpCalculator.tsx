@@ -40,7 +40,7 @@ export function ItpCalculator({ result, saved, onSave, onClose }: { result: Good
   return (
     <section className="rs-itp" aria-label="Сверка по ИТП" onKeyDown={(event) => { if (event.key === 'Escape') onClose() }}>
       <div className="rs-itp-pop">
-      <div className="rs-itp-head"><strong>Сверка по ИТП</strong><button type="button" className="rs-icon" onClick={onClose} aria-label="Закрыть сверку по ИТП">✕</button></div>
+      <div className="rs-itp-head"><strong>Сверка по ИТП</strong><button type="button" className="icon-button ghost" onClick={onClose} aria-label="Закрыть сверку по ИТП"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" /></svg></button></div>
       <p className="rs-itp-note">ИТП × нетто × курс — только для сверки, на расчёт не влияет</p>
       <div className="rs-its-grid">
         <label>ИТП, USD за 1 кг<NumberField value={itsValue} onChange={setItsValue} onBlur={() => setItsValue(calculatorInputValue(itsValue))} placeholder="введите" /></label>

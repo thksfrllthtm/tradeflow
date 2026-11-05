@@ -1,9 +1,9 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react'
+import { MouseEvent, ReactNode, useCallback, useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { plural } from '@/shared/lib/plural'
 import { Link } from '@/shared/router/Link'
-import { paths } from '@/shared/router/router'
+import { navigate, paths } from '@/shared/router/router'
 import { canEstimate, isAdmin, User } from '@/shared/types/user'
 import { decisionsApi } from '@/features/decisions/decisionsApi'
 import { goodsEstimatesApi } from '@/features/goods/goodsEstimatesApi'
@@ -11,6 +11,7 @@ import { estimateName, estimateSubtitle } from '@/shared/lib/estimateTitle'
 import { GoodsEstimateSummary } from '@/shared/types/goods'
 import { greeting, longDate, updatedText } from './homeText'
 import { ReferenceChat } from './ReferenceChat/ReferenceChat'
+import '@/shared/styles/list-page.css'
 import './HomePage.css'
 
 // Сколько последних смет в списке: он прокручивается внутри, полный список — «Все сметы».
@@ -31,6 +32,13 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
   const admin = isAdmin(user)
   // Переводчику — номенклатура, утильсбор и справка: без смет.
   const estimator = canEstimate(user)
+  // «Новая смета» сразу создаёт смету и открывает её (Ctrl-клик — как обычная ссылка на список смет);
+  // не получилось создать — открывается список смет с кнопкой «Создать смету».
+  function createEstimate(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    goodsEstimatesApi.createToday().then((estimate) => navigate(paths.goods(estimate.id))).catch(() => navigate(paths.goods()))
+  }
   const [estimates, setEstimates] = useState<GoodsEstimateSummary[] | null>(null)
   const [listError, setListError] = useState('')
   const [decisionCount, setDecisionCount] = useState(0)
@@ -70,7 +78,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
         <div className="home-grid">
           <aside className="home-side" aria-label="Действия и последние сметы">
             <div className="home-actions">
-              {estimator && <Link className="home-action primary" href={paths.goods()} title="Загрузите инвойс Excel и получите расчёт растаможки">
+              {estimator && <Link className="home-action primary" href={paths.goods()} onClick={createEstimate} title="Загрузите инвойс Excel и получите расчёт растаможки">
                 <ActionBody icon={<PlusIcon />} title="Новая смета" text="Загрузите инвойс Excel и получите расчёт растаможки" />
               </Link>}
               <Link className="home-action" href={paths.nomenclature} title="Полная номенклатура ТН ВЭД ЕАЭС: поиск кода, ставки пошлины и НДС">
@@ -92,12 +100,12 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
 
             {estimator && <section className="home-section" aria-labelledby="home-recent">
               <div className="home-section-head">
-                <h2 id="home-recent">Последние сметы{estimates && estimates.length > 0 && <span className="home-count">{estimates.length}</span>}</h2>
+                <h2 id="home-recent">Последние сметы{estimates && estimates.length > 0 && <span className="dir-count home-count">{estimates.length}</span>}</h2>
                 <Link href={paths.goods()}>Все сметы<ArrowIcon /></Link>
               </div>
               {listError ? <div className="home-state error" role="alert">
                 <p><b>Сметы не загрузились.</b> {listError}</p>
-                <button type="button" className="home-retry" onClick={loadEstimates}>Повторить</button>
+                <button type="button" className="button-link" onClick={loadEstimates}>Повторить</button>
               </div>
                 : estimates === null ? <div className="home-list" aria-busy="true" aria-label="Загружаем сметы">{[0, 1, 2].map((key) => <div key={key} className="home-row skeleton" />)}</div>
                 : recent.length === 0 ? <div className="home-state">Смет пока нет. Нажмите «Новая смета» — она появится здесь.</div>
@@ -105,7 +113,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
                   {recent.map((estimate) =>
                     <Link key={estimate.id} className="home-row" href={paths.goods(estimate.id)} title={estimateName(estimate)}>
                       <strong>{estimateName(estimate)}</strong>
-                      <span className={estimate.status === 'Рассчитано' ? 'home-status done' : 'home-status'}>{estimate.status}</span>
+                      <span className={estimate.status === 'Рассчитано' ? 'status-dot ok home-status' : 'status-dot warn home-status'}>{estimate.status}</span>
                       <small>{[estimateSubtitle(estimate), estimate.ownerName].filter(Boolean).join(' · ')}</small>
                       <time dateTime={estimate.updatedAt}>{updatedText(estimate.updatedAt, now)}</time>
                     </Link>

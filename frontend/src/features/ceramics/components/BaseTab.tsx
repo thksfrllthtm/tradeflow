@@ -8,6 +8,7 @@ import { formatSize } from '../lib/sizes'
 import { ProductForm } from './ProductForm'
 import { BaseImport } from './BaseImport'
 import { TypeCombo } from './TypeCombo'
+import { SearchIcon } from '@/shared/components/icons'
 
 const PAGE = 100
 
@@ -85,17 +86,17 @@ export function BaseTab({ user, types, onBaseChanged }: Props) {
 
     <section className="cer-sheet-card" aria-label="База марок">
       <div className="cer-filterbar">
-        <label className="cer-search">
-          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <label className="dir-search cer-search">
+          <SearchIcon />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Марка или наименование" aria-label="Поиск по базе" />
         </label>
         <div className="cer-type-filter">
           <TypeCombo label="Тип товара" value={type} onChange={setType} emptyLabel="Все типы" placeholder="Тип товара"
             names={types.map((item) => item.name)} counts={new Map(types.map((item) => [item.name, item.productCount]))} />
         </div>
-        <p className="cer-filter-count">Показано <b>{items.length}</b> из {total}</p>
+        <span className="dir-filter-count cer-filter-count">Показано <b>{items.length}</b> из {total}</span>
         <span className="cer-toolbar-spacer" />
-        {admin && <button type="button" className="cer-secondary" onClick={() => togglePanel('import')}>Загрузить из Excel</button>}
+        {admin && <button type="button" className="secondary" onClick={() => togglePanel('import')}>Загрузить из Excel</button>}
         <button type="button" onClick={() => togglePanel('add')}>+ Добавить марку</button>
       </div>
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
@@ -114,7 +115,7 @@ export function BaseTab({ user, types, onBaseChanged }: Props) {
                 <td className="c-mark">{product.mark}</td>
                 <td className="c-price">{product.price}</td>
                 <td className="c-actions" onClick={(event) => event.stopPropagation()}>
-                  {admin && <button type="button" className="cer-link cer-delete" onClick={() => void remove(product)}>Удалить</button>}
+                  {admin && <button type="button" className="button-link cer-delete" onClick={() => void remove(product)}>Удалить</button>}
                 </td>
               </tr>
             })}
@@ -122,7 +123,7 @@ export function BaseTab({ user, types, onBaseChanged }: Props) {
         </table>
       </div>
       {items.length < total && <div className="cer-sheet-foot">
-        <button type="button" className="cer-secondary" disabled={loading} onClick={() => void loadMore()}>Показать ещё {Math.min(PAGE, total - items.length)}</button>
+        <button type="button" className="secondary" disabled={loading} onClick={() => void loadMore()}>Показать ещё {Math.min(PAGE, total - items.length)}</button>
       </div>}
     </section>
     <p className="dir-foot">В базе хранятся наименование, марка и цена. Тип и размер система берёт из наименования — по ним подбирается цена.</p>

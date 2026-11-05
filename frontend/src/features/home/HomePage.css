@@ -1,15 +1,9 @@
 /* Главная: приветствие и курсы сверху; слева чат подбора кода ТН ВЭД, справа колонка — быстрые
    действия, проверки и последние сметы. На узком окне (рядом с Excel) действия и сметы — над чатом.
-   Цвета — токены ниже: вспомогательный текст не мельче 12px и не светлее 4,5:1.
+   Цвета — токены --tf-* из base.css: вспомогательный текст не мельче 12px и не светлее 4,5:1.
    Селекторы с .home — чтобы перебить общий стиль button / button:hover. */
 
 .home-shell {
-  --home-ink: var(--tf-text);
-  --home-ink-2: var(--tf-text-2);
-  --home-muted: var(--tf-muted);
-  --home-line: var(--tf-border);
-  --home-green: var(--tf-green);
-  --home-focus: var(--tf-green);
   background: var(--tf-bg);
 }
 .home-scroll { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -17,7 +11,7 @@
 .home { display: flex; flex-direction: column; gap: 16px; width: 100%; margin: 0; padding: 16px 24px 24px; }
 
 /* Видимый фокус клавиатуры: сплошная рамка 2px; внутри прокручиваемых блоков — внутрь. */
-.home :focus-visible { outline: 2px solid var(--home-focus); outline-offset: 2px; }
+.home :focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
 .home .home-list :focus-visible, .home .home-list:focus-visible { outline-offset: -2px; }
 
 /* Чат и боковая колонка: в разметке колонка первая, на широком экране — справа. */
@@ -29,10 +23,8 @@
 /* Приветствие — одной строкой, как заголовки страниц: «Добрый день, admin · Четверг, 22 октября». */
 .home-hero { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; }
 .home-hero > div { display: flex; flex-direction: row-reverse; justify-content: flex-end; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
-.home-date { margin: 0; color: var(--home-muted); font-size: .86rem; font-weight: 500; }
-.home-hero h1 { margin: 0; color: var(--home-ink); font-size: 1.2rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
-.home .home-retry { height: auto; padding: 0; border: 0; background: transparent; color: var(--home-green); font-size: .86rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-.home .home-retry:hover:not(:disabled) { background: transparent; color: var(--tf-green-hover); }
+.home-date { margin: 0; color: var(--tf-muted); font-size: var(--fs-md); font-weight: 500; }
+.home-hero h1 { margin: 0; color: var(--tf-text); font-size: var(--fs-xl); font-weight: 600; letter-spacing: 0; line-height: 1.15; }
 
 
 /* Быстрые действия — переходы; «Новая смета» — основная (зелёная). */
@@ -46,11 +38,11 @@
   align-items: center;
   min-height: 0;
   min-height: 48px;
-  padding: 8px 14px;
-  border: 1px solid var(--home-line);
+  padding: 8px 16px;
+  border: 1px solid var(--tf-border);
   border-radius: var(--tf-radius-card);
-  background: #fff;
-  color: var(--home-ink);
+  background: var(--tf-card);
+  color: var(--tf-text);
   font-weight: 400;
   text-align: left;
   text-decoration: none;
@@ -59,8 +51,8 @@
   transition: border-color .15s, background .15s;
 }
 .home .home-action:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-card); }
-.home-action-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--home-green); }
-.home-action-title { font-size: .95rem; font-weight: 600; letter-spacing: -.01em; }
+.home-action-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--tf-radius); background: var(--tf-green-soft); color: var(--tf-green); }
+.home-action-title { font-size: var(--fs-base); font-weight: 600; letter-spacing: 0; }
 .home-action-text { display: none; }
 
 .home .home-action.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
@@ -71,56 +63,53 @@
 
 
 /* Что ждёт проверки (только у администратора) */
-.home-notice { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid #f5dfa6; border-radius: var(--tf-radius-card); background: #fff7e6; color: var(--tf-warn-text); font-size: .86rem; text-decoration: none; transition: background .15s; }
-.home-notice:hover { border-color: #e9c46a; background: var(--tf-warn-bg); }
+.home-notice { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border: 1px solid var(--tf-warn-border); border-radius: var(--tf-radius-card); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: var(--fs-md); text-decoration: none; transition: background .15s; }
+.home-notice:hover { border-color: var(--tf-warn-border); background: var(--tf-warn-bg); }
 .home-notice > span:nth-child(2) { flex: 1 1 auto; }
 .home-notice b { font-weight: 600; }
-.home-notice-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--tf-ai); box-shadow: 0 0 0 4px #f8e6bd; }
+.home-notice-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--tf-ai); box-shadow: 0 0 0 4px var(--tf-warn-border); }
 
 /* Последние сметы: две строки на смету — название и статус, затем клиент или номер и время. */
 .home-section { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 .home-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.home-section-head h2 { display: flex; align-items: center; margin: 0; color: var(--home-ink); font-size: 1rem; font-weight: 600; letter-spacing: -.01em; }
-.home-count { margin-left: 6px; padding: 0 7px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-weight: 600; line-height: 20px; font-variant-numeric: tabular-nums; }
-.home-section-head a { display: inline-flex; align-items: center; gap: 2px; color: var(--home-green); font-size: .86rem; font-weight: 600; text-decoration: none; }
+.home-section-head h2 { display: flex; align-items: center; margin: 0; color: var(--tf-text); font-size: var(--fs-base); font-weight: 600; letter-spacing: 0; }
+.home-count { margin-left: 6px; }
+.home-section-head a { display: inline-flex; align-items: center; gap: 2px; color: var(--tf-green); font-size: var(--fs-md); font-weight: 600; text-decoration: none; }
 .home-section-head a:hover { color: var(--tf-green-hover); text-decoration: underline; }
 
 /* Список прокручивается внутри; тени сверху и снизу показывают, что есть ещё строки. */
 .home-list {
   overflow: hidden;
-  border: 1px solid var(--home-line);
+  border: 1px solid var(--tf-border);
   border-radius: var(--tf-radius-card);
   background:
-    linear-gradient(#fff 30%, rgba(255, 255, 255, 0)) top / 100% 24px no-repeat local,
-    linear-gradient(rgba(255, 255, 255, 0), #fff 70%) bottom / 100% 24px no-repeat local,
+    linear-gradient(var(--tf-card) 30%, rgba(255, 255, 255, 0)) top / 100% 24px no-repeat local,
+    linear-gradient(rgba(255, 255, 255, 0), var(--tf-card) 70%) bottom / 100% 24px no-repeat local,
     radial-gradient(farthest-side at 50% 0, rgba(20, 47, 31, .14), rgba(20, 47, 31, 0)) top / 100% 10px no-repeat scroll,
     radial-gradient(farthest-side at 50% 100%, rgba(20, 47, 31, .14), rgba(20, 47, 31, 0)) bottom / 100% 10px no-repeat scroll,
-    #fff;
+    var(--tf-card);
 }
-.home-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 10px; padding: 6px 14px; border-top: 1px solid var(--tf-border-inner); color: var(--home-ink); text-decoration: none; transition: background .12s; }
+.home-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1px 8px; padding: 6px 16px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-text); text-decoration: none; transition: background .12s; }
 .home-row:first-child { border-top: 0; }
 a.home-row:hover { background: var(--tf-chip); }
-.home-row strong { overflow: hidden; font-size: .93rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.home-row small { overflow: hidden; color: var(--home-muted); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
-.home-row time { color: var(--home-muted); font-size: .86rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-/* Статус — цветной точкой и словом, как статусы в таблицах сайта. */
-.home-status { display: inline-flex; align-items: center; gap: 6px; justify-self: end; color: var(--tf-text-2); font-size: .82rem; font-weight: 500; white-space: nowrap; }
-.home-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #e0a21b; }
-.home-status.done { color: var(--tf-text); }
-.home-status.done::before { background: var(--tf-green); }
-.home-row.skeleton { min-height: 52px; background: linear-gradient(90deg, #fff 0%, var(--tf-chip) 50%, #fff 100%) 0 0 / 200% 100%; animation: home-shimmer 1.2s ease-in-out infinite; }
+.home-row strong { overflow: hidden; font-size: var(--fs-md); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.home-row small { overflow: hidden; color: var(--tf-muted); font-size: var(--fs-md); text-overflow: ellipsis; white-space: nowrap; }
+.home-row time { color: var(--tf-muted); font-size: var(--fs-md); font-variant-numeric: tabular-nums; font-family: var(--tf-num); text-align: right; white-space: nowrap; }
+/* Статус — общая точка-статус (.status-dot). */
+.home-status { justify-self: end; }
+.home-row.skeleton { min-height: 52px; background: linear-gradient(90deg, var(--tf-card) 0%, var(--tf-chip) 50%, var(--tf-card) 100%) 0 0 / 200% 100%; animation: home-shimmer 1.2s ease-in-out infinite; }
 @keyframes home-shimmer { to { background-position: -200% 0; } }
-.home-state { display: grid; justify-items: start; gap: 8px; padding: 18px 16px; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-card); color: var(--home-muted); font-size: .86rem; line-height: 1.45; }
+.home-state { display: grid; justify-items: start; gap: 8px; padding: 16px 16px; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-card); color: var(--tf-muted); font-size: var(--fs-md); line-height: 1.45; }
 .home-state p { margin: 0; }
-.home-state.error { border: 1px solid #efcaca; background: #fff7f6; color: #7a2a2a; }
-.home-state.error b { color: #8d2929; }
+.home-state.error { border: 1px solid var(--tf-error-border); background: var(--tf-error-bg); color: var(--tf-error); }
+.home-state.error b { color: var(--tf-error); }
 
 /* От 901px по ширине: главная ровно в высоту окна, без прокрутки страницы. Чат забирает
    свободное место, в колонке прокручивается только список смет. */
 @media (min-width: 901px) and (min-height: 620px) {
-  .home { box-sizing: border-box; height: 100%; gap: 12px; padding: 14px 24px 16px; }
+  .home { box-sizing: border-box; height: 100%; gap: 12px; padding: 12px 24px 16px; }
   .home-hero { align-items: center; }
-  .home-hero h1 { font-size: 1.12rem; }
+  .home-hero h1 { font-size: var(--fs-xl); }
   .home-grid { flex: 1 1 auto; align-items: stretch; min-height: 0; }
   .home-chat { height: auto; min-height: 0; }
   .home-side { min-height: 0; }
@@ -140,7 +129,7 @@ a.home-row:hover { background: var(--tf-chip); }
 
 /* До 900px: действия строкой и последние сметы — над чатом, чат не выше 70% окна. */
 @media (max-width: 900px) {
-  .home { gap: 16px; padding: 18px 16px 28px; }
+  .home { gap: 16px; padding: 16px 16px 28px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "chat"; gap: 16px; }
   .home-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .home-list { max-height: 230px; overflow-y: auto; }
@@ -149,7 +138,7 @@ a.home-row:hover { background: var(--tf-chip); }
 
 @media (max-width: 600px) {
   .home-hero { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .home-hero h1 { font-size: 1.12rem; }
+  .home-hero h1 { font-size: var(--fs-xl); }
   .home-actions { grid-template-columns: minmax(0, 1fr); }
   .home-chat { height: 80vh; }
 }

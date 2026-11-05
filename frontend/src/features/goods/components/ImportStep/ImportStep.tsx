@@ -1,6 +1,7 @@
 import { ChangeEvent, ReactNode, useEffect, useRef, useState } from 'react'
 import { GoodsParseRow, SheetInfo } from '@/shared/types/goods'
 import { GoodsMapping } from '../../types'
+import '@/shared/styles/list-page.css'
 import '../../goods.css'
 import '../ReviewStep/ReviewStep.css'
 import './ImportStep.css'
@@ -44,8 +45,9 @@ export function ImportStep({ header, loading, sheets, sheet, headerRow, dataStar
   const fileInput = <input type="file" accept=".xlsx,.xls" onChange={upload} disabled={loading} />
   const titlebar = <div className="estimate-bar rv-titlebar">{header}</div>
 
-  // Файла ещё нет — только зона загрузки, без строки заголовка: клиента и дату можно указать после загрузки.
+  // Файла ещё нет — строка заголовка (название сметы и этапы: видно, что это шаг 1 из 3) и зона загрузки.
   if (headers.length === 0 && sheets.length === 0) return <div className="goods-step-page rv-step im-step">
+    {titlebar}
     <label className={loading ? 'im-drop busy' : 'im-drop'}>
       {fileInput}
       <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15" /></svg>
@@ -69,9 +71,9 @@ export function ImportStep({ header, loading, sheets, sheet, headerRow, dataStar
         <span className="rv-save-state im-count">К импорту <b>{includedCount}</b> из {rawRows.length} строк</span>
         {/* Без колонки «Наименование» строки не применить — подсказка рядом со счётчиком. */}
         {!mapping.name && <span className="rv-save-state unsaved" title="Нажмите на заголовок колонки с названиями товаров и выберите «Наименование»">Выберите колонку «Наименование»</span>}
-        <label className="rv-btn im-replace">{loading ? 'Обработка…' : 'Заменить файл'}{fileInput}</label>
-        <button type="button" className="rv-btn" onClick={addEmptyRow}>+ Строка вручную</button>
-        <button type="button" className="rv-btn primary" onClick={applyMapping} disabled={loading || includedCount === 0}>Применить и перейти к проверке <span aria-hidden="true">→</span></button>
+        <label className="secondary im-replace">{loading ? 'Обработка…' : 'Заменить файл'}{fileInput}</label>
+        <button type="button" className="secondary" onClick={addEmptyRow}>+ Строка вручную</button>
+        <button type="button" onClick={applyMapping} disabled={loading || includedCount === 0}>Применить и перейти к проверке <span aria-hidden="true">→</span></button>
       </div>
     </div>
 
@@ -134,7 +136,7 @@ export function SourceSettings({ loading, fileName, fileInput, sheets, sheet, he
       <div className="rv-param im-sheets">
         <span>Лист</span>
         {sheets.length > 1
-          ? <div className="rv-seg" role="radiogroup" aria-label="Лист файла">
+          ? <div className="dir-seg" role="radiogroup" aria-label="Лист файла">
             {sheets.map((value) => <button key={value.name} type="button" role="radio" aria-checked={value.name === sheet} className={value.name === sheet ? 'active' : undefined}
               onClick={() => setSheet(value.name)} title={`${value.rows} строк`}>{value.name}</button>)}
           </div>
@@ -151,12 +153,12 @@ export function SourceSettings({ loading, fileName, fileInput, sheets, sheet, he
       {selectedFileAvailable
         ? <div className="im-source-actions">
           <span>Лист и строки применятся после перечитывания</span>
-          <button type="button" className="rv-btn primary small" onClick={() => { setOpen(false); reparse() }} disabled={loading}
+          <button type="button" className="sm" onClick={() => { setOpen(false); reparse() }} disabled={loading}
             title="Прочитать файл заново с выбранным листом и строками">Перечитать</button>
         </div>
         : <div className="im-source-missing" role="status">
           <span><b>Файл не загружен в этой вкладке.</b> Чтобы перечитать, выберите его снова.</span>
-          <label className="rv-btn small im-replace">{loading ? 'Обработка…' : 'Выбрать файл'}{fileInput}</label>
+          <label className="secondary sm im-replace">{loading ? 'Обработка…' : 'Выбрать файл'}{fileInput}</label>
         </div>}
     </div>}
   </div>

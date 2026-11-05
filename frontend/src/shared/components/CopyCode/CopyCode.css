@@ -4,7 +4,7 @@
 .copy-icon { display: block; flex: none; }
 
 /* Код ТН ВЭД или сумма, которые копируются по нажатию: значок слева, потом значение. */
-button.copy-code { display: inline-flex; align-items: center; gap: 6px; width: auto; height: auto; margin: 0; padding: 1px 4px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; font-family: var(--tf-mono); font-size: .95em; font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0; text-align: left; cursor: copy; user-select: text; }
+button.copy-code { display: inline-flex; align-items: center; gap: 6px; width: auto; height: auto; margin: 0; padding: 1px 4px; border: 0; border-radius: var(--tf-radius); background: transparent; color: inherit; font: inherit; font-family: var(--tf-mono); font-size: .95em; font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0; text-align: left; cursor: copy; user-select: text; }
 button.copy-code:hover:not(:disabled) { background: var(--tf-chip); color: inherit; }
 button.copy-code:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 1px; }
 button.copy-code .copy-code-icon { display: inline-flex; color: var(--tf-muted); font-style: normal; opacity: .6; transition: opacity .12s; }
@@ -13,7 +13,7 @@ button.copy-code.copied .copy-code-icon { color: var(--tf-green); }
 button.copy-code.number { font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; }
 
 /* Значок рядом с текстом и значок в заголовке колонки — одинаковые. */
-button.copy-btn, button.copy-col { display: inline-grid; flex: none; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tf-muted); font: inherit; line-height: inherit; cursor: copy; opacity: .6; transition: opacity .12s; }
+button.copy-btn, button.copy-col { display: inline-grid; flex: none; place-items: center; margin: 0; padding: 0; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-muted); font: inherit; line-height: inherit; cursor: copy; opacity: .6; transition: opacity .12s; }
 button.copy-btn { width: 26px; height: 26px; }
 /* В заголовке — высотой со строку текста, перед названием колонки. */
 button.copy-col { width: 1.4em; height: 1.4em; margin-right: 4px; vertical-align: top; }
@@ -21,11 +21,11 @@ button.copy-btn:hover:not(:disabled), button.copy-col:hover:not(:disabled) { bac
 button.copy-btn:focus-visible, button.copy-col:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 1px; opacity: 1; }
 button.copy-btn.copied, button.copy-btn.copied:hover:not(:disabled), button.copy-col.copied, button.copy-col.copied:hover:not(:disabled) { color: var(--tf-green); opacity: 1; }
 /* В таблицах сметы у всех кнопок свой мелкий размер и отступы (calculatorPage.css) — значку колонки они не нужны. */
-.goods-page table button.copy-col { padding: 0; border-radius: 6px; font-size: inherit; line-height: inherit; }
+.goods-page table button.copy-col { padding: 0; border-radius: var(--tf-radius); font-size: inherit; line-height: inherit; }
 
 /* «Скопировать ответ» внизу ответа ИИ: справа, после тонкой черты, текстовая кнопка 30px. */
 .copy-answer { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--tf-border-inner); }
-.copy-answer button { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font: inherit; font-size: .82rem; font-weight: 500; cursor: copy; }
+.copy-answer button { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font: inherit; font-size: var(--fs-sm); font-weight: 500; cursor: copy; }
 .copy-answer button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); color: var(--tf-text); }
 .copy-answer button:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 1px; }
 .copy-answer button.copied, .copy-answer button.copied:hover:not(:disabled) { border-color: var(--tf-green); color: var(--tf-green); }

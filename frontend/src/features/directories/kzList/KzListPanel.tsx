@@ -68,7 +68,7 @@ export function useKzListPanel({ current, onImported, onOpen }: { current: KzImp
     </label>
 
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Ставки ниже ЕТТ по обязательствам Казахстана в ВТО">Перечень РК</button>
+    <button type="button" className={open ? 'secondary active' : 'secondary'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Ставки ниже ЕТТ по обязательствам Казахстана в ВТО">Перечень РК</button>
   </div>
 
   const panel = open && <section className="dir-transfer-panel kz-panel">
@@ -77,7 +77,7 @@ export function useKzListPanel({ current, onImported, onOpen }: { current: KzImp
         <strong>Перечень РК — ставки ниже ЕТТ</strong>
         <p>{current ? `Загружен ${formatRuDate(current.importedAt.slice(0, 10))}${current.importedByName ? `, ${current.importedByName}` : ''}: ${current.fileName || (current.source === 'pdf' ? 'PDF' : 'Excel')}, ${formatDisplayNumber(current.rowCount)} ${plural(current.rowCount, 'код', 'кода', 'кодов')}.` : 'Ещё не загружен.'} Актуальный PDF — на сайте ЕЭК, раздел «Применение ставок, отличных от ставок ЕТТ».</p>
       </div>
-      <button type="button" className="dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
+      <button type="button" className="icon-button ghost dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
     </div>
     <div className="kz-steps">
       <div className="kz-step">

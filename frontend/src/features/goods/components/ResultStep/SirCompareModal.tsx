@@ -1,5 +1,6 @@
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { useEffect, useRef, useState } from 'react'
+import { Modal } from '@/shared/components/Modal/Modal'
 import { createPortal } from 'react-dom'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
@@ -46,17 +47,9 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const requestRef = useRef(0)
-  const dialogRef = useRef<HTMLDivElement>(null)
   const previewRef = useRef(preview)
   previewRef.current = preview
   const sameAsSmeta = currentMode === 'sir' && weight === currentWeight && Number(discount || 0) === Number(currentDiscount || 0)
-
-  useEffect(() => {
-    dialogRef.current?.focus()
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   // Расчёт по инвойсу: в режиме инвойса — текущий результат, иначе один пробный расчёт.
   useEffect(() => {
@@ -93,89 +86,80 @@ export function SirCompareModal({ result, items, sir, preview, onClose }: Props)
     if (patch.sirDiscountPercent !== undefined) setDiscount(patch.sirDiscountPercent)
   }
 
-  return createPortal(<div className="rs-step sc-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
-    <div className="sc-modal" role="dialog" aria-modal="true" aria-labelledby="sc-title" tabIndex={-1} ref={dialogRef}>
-      <header className="sc-head">
-        <div>
-          <h2 id="sc-title">Сравнение: по инвойсу и по СУР</h2>
-          <p>Смета сейчас считается {currentMode === 'sir' ? `по СУР (${currentWeight === 'gross' ? 'брутто' : 'нетто'}${discountLabel(currentDiscount)})` : 'по инвойсу'}. Вес и снижение здесь — только для сравнения.</p>
-        </div>
-        <button type="button" className="sc-close" onClick={onClose} aria-label="Закрыть">×</button>
-      </header>
+  const subtitle = `Смета сейчас считается ${currentMode === 'sir' ? `по СУР (${currentWeight === 'gross' ? 'брутто' : 'нетто'}${discountLabel(currentDiscount)})` : 'по инвойсу'}. Вес и снижение здесь — только для сравнения.`
+  return createPortal(<Modal title="Сравнение: по инвойсу и по СУР" subtitle={subtitle} onClose={onClose} width={1240} className="rs-step sc-modal">
+    <div className="sc-options" role="group" aria-label="Условия СУР для сравнения">
+      <span className="sir-field">По СУР:</span>
+      <SirOptions weight={weight} discount={discount} disabled={false} onChange={change} />
+      <span className="sc-country">страна {sir.sirCountry || 'CN'}</span>
+      <span className="sc-status" role="status">{loading ? 'Считаем…' : ''}</span>
+    </div>
 
-      <div className="sc-options" role="group" aria-label="Условия СУР для сравнения">
-        <span className="sir-field">По СУР:</span>
-        <SirOptions weight={weight} discount={discount} disabled={false} onChange={change} />
-        <span className="sc-country">страна {sir.sirCountry || 'CN'}</span>
-        <span className="sc-status" role="status">{loading ? 'Считаем…' : ''}</span>
+    {error && <p className="sc-error" role="alert">{error}</p>}
+    {!ready ? <p className="sc-wait">{error ? '' : 'Считаем оба варианта…'}</p> : <div className={loading ? 'sc-body sc-stale' : 'sc-body'}>
+      <table className="sheet sc-totals">
+        <colgroup><col className="sc-col-label" /><col /><col /><col /></colgroup>
+        <thead><tr><th /><th scope="col">По инвойсу</th><th scope="col" className="sc-sir">{sirTitle}</th><th scope="col">Разница</th></tr></thead>
+        <tbody>
+          <tr className="sc-pay">
+            <th scope="row">Растаможка к оплате</th>
+            <td><b>{money(payments?.invoice ?? null)} KZT</b><small>{money(paymentsUsd?.invoice ?? null)} USD</small></td>
+            <td className="sc-sir"><b>{money(payments?.sir ?? null)} KZT</b><small>{money(paymentsUsd?.sir ?? null)} USD</small></td>
+            <td className={`sc-diff ${tone(payments?.diff ?? null)}`}><b>{signed(payments?.diff ?? null)} KZT</b><small>{signed(paymentsUsd?.diff ?? null)} USD{growth !== null && ` · ${growth > 0 ? '+' : '−'}${percent(Math.abs(growth))}%`}</small></td>
+          </tr>
+          {breakdown.map((line) => <tr key={line.label}>
+            <th scope="row">{line.label}</th>
+            <td>{money(line.invoice)}</td>
+            <td className="sc-sir">{money(line.sir)}</td>
+            <td className={`sc-diff ${tone(line.diff)}`}>{signed(line.diff)}</td>
+          </tr>)}
+        </tbody>
+      </table>
+
+      <div className="sc-rows-head">
+        <p className="sc-note">
+          По СУР — <b>{counts.sir}</b> из {counts.total} строк{counts.sir < counts.total && ', у остальных индикатора нет (по инвойсу)'}.
+          {counts.below > 0 && <> Цена инвойса за 1 кг ниже СУР — <b className="sc-warn">{counts.below === counts.total ? 'у всех строк' : `у ${counts.below}`}</b>: таможня может откорректировать стоимость.</>}
+        </p>
+        <div className="dir-seg" role="radiogroup" aria-label="Порядок строк">
+          <button type="button" role="radio" aria-checked={order === 'smeta'} className={order === 'smeta' ? 'active' : undefined} onClick={() => setOrder('smeta')}>Как в смете</button>
+          <button type="button" role="radio" aria-checked={order === 'diff'} className={order === 'diff' ? 'active' : undefined} onClick={() => setOrder('diff')}>По разнице</button>
+        </div>
       </div>
 
-      {error && <p className="sc-error" role="alert">{error}</p>}
-      {!ready ? <p className="sc-wait">{error ? '' : 'Считаем оба варианта…'}</p> : <div className={loading ? 'sc-body sc-stale' : 'sc-body'}>
-        <table className="sheet sc-totals">
-          <colgroup><col className="sc-col-label" /><col /><col /><col /></colgroup>
-          <thead><tr><th /><th scope="col">По инвойсу</th><th scope="col" className="sc-sir">{sirTitle}</th><th scope="col">Разница</th></tr></thead>
-          <tbody>
-            <tr className="sc-pay">
-              <th scope="row">Растаможка к оплате</th>
-              <td><b>{money(payments?.invoice ?? null)} KZT</b><small>{money(paymentsUsd?.invoice ?? null)} USD</small></td>
-              <td className="sc-sir"><b>{money(payments?.sir ?? null)} KZT</b><small>{money(paymentsUsd?.sir ?? null)} USD</small></td>
-              <td className={`sc-diff ${tone(payments?.diff ?? null)}`}><b>{signed(payments?.diff ?? null)} KZT</b><small>{signed(paymentsUsd?.diff ?? null)} USD{growth !== null && ` · ${growth > 0 ? '+' : '−'}${percent(Math.abs(growth))}%`}</small></td>
+      <div className="sc-rows-wrap">
+        <table className="sheet sc-rows">
+          <thead>
+            <tr className="sc-group">
+              <th colSpan={3} />
+              <th colSpan={hasDiscount ? 3 : 2} className="sc-span">Цена за 1 кг, USD</th>
+              <th colSpan={3} className="sc-span">Таможенная стоимость, KZT</th>
             </tr>
-            {breakdown.map((line) => <tr key={line.label}>
-              <th scope="row">{line.label}</th>
-              <td>{money(line.invoice)}</td>
-              <td className="sc-sir">{money(line.sir)}</td>
-              <td className={`sc-diff ${tone(line.diff)}`}>{signed(line.diff)}</td>
-            </tr>)}
-          </tbody>
+            <tr>
+              <th className="sc-num">№</th>
+              <th className="sc-name">Товар</th>
+              <th>Вес {weightLabel}, кг</th>
+              <th className="sc-start">инвойс</th>
+              <th className="sc-sir" title="Стоимостной индикатор риска из файла профиля">СУР</th>
+              {hasDiscount && <th className="sc-sir">−{formatRuNumber(discount)}%</th>}
+              <th className="sc-start">по инвойсу</th>
+              <th className="sc-sir">по СУР</th>
+              <th>разница</th>
+            </tr>
+          </thead>
+          <tbody>{shownRows.map((row) => <CompareRow key={row.index} row={row} name={itemDisplayName(invoice.items[row.index], items[row.index])} code={invoice.items[row.index].code || items[row.index]?.code || ''} hasDiscount={hasDiscount} />)}</tbody>
+          <tfoot><tr>
+            <td className="sc-num" /><td className="sc-name">Итого</td>
+            <td>{formatRuNumber(weightText(totalOf(rows.map((row) => row.weightKg)) ?? 0, true))}</td>
+            <td className="sc-start" /><td className="sc-sir" />{hasDiscount && <td className="sc-sir" />}
+            <td className="sc-start">{money(totalOf(rows.map((row) => row.customsInvoice)))}</td>
+            <td className="sc-sir">{money(totalOf(rows.map((row) => row.customsSir)))}</td>
+            <td className={`sc-diff ${tone(totalOf(rows.map((row) => row.customsDiff)))}`}>{signed(totalOf(rows.map((row) => row.customsDiff)))}</td>
+          </tr></tfoot>
         </table>
-
-        <div className="sc-rows-head">
-          <p className="sc-note">
-            По СУР — <b>{counts.sir}</b> из {counts.total} строк{counts.sir < counts.total && ', у остальных индикатора нет (по инвойсу)'}.
-            {counts.below > 0 && <> Цена инвойса за 1 кг ниже СУР — <b className="sc-warn">{counts.below === counts.total ? 'у всех строк' : `у ${counts.below}`}</b>: таможня может откорректировать стоимость.</>}
-          </p>
-          <div className="rs-seg" role="radiogroup" aria-label="Порядок строк">
-            <button type="button" role="radio" aria-checked={order === 'smeta'} className={order === 'smeta' ? 'active' : undefined} onClick={() => setOrder('smeta')}>Как в смете</button>
-            <button type="button" role="radio" aria-checked={order === 'diff'} className={order === 'diff' ? 'active' : undefined} onClick={() => setOrder('diff')}>По разнице</button>
-          </div>
-        </div>
-
-        <div className="sc-rows-wrap">
-          <table className="sheet sc-rows">
-            <thead>
-              <tr className="sc-group">
-                <th colSpan={3} />
-                <th colSpan={hasDiscount ? 3 : 2} className="sc-span">Цена за 1 кг, USD</th>
-                <th colSpan={3} className="sc-span">Таможенная стоимость, KZT</th>
-              </tr>
-              <tr>
-                <th className="sc-num">№</th>
-                <th className="sc-name">Товар</th>
-                <th>Вес {weightLabel}, кг</th>
-                <th className="sc-start">инвойс</th>
-                <th className="sc-sir" title="Стоимостной индикатор риска из файла профиля">СУР</th>
-                {hasDiscount && <th className="sc-sir">−{formatRuNumber(discount)}%</th>}
-                <th className="sc-start">по инвойсу</th>
-                <th className="sc-sir">по СУР</th>
-                <th>разница</th>
-              </tr>
-            </thead>
-            <tbody>{shownRows.map((row) => <CompareRow key={row.index} row={row} name={itemDisplayName(invoice.items[row.index], items[row.index])} code={invoice.items[row.index].code || items[row.index]?.code || ''} hasDiscount={hasDiscount} />)}</tbody>
-            <tfoot><tr>
-              <td className="sc-num" /><td className="sc-name">Итого</td>
-              <td>{formatRuNumber(weightText(totalOf(rows.map((row) => row.weightKg)) ?? 0, true))}</td>
-              <td className="sc-start" /><td className="sc-sir" />{hasDiscount && <td className="sc-sir" />}
-              <td className="sc-start">{money(totalOf(rows.map((row) => row.customsInvoice)))}</td>
-              <td className="sc-sir">{money(totalOf(rows.map((row) => row.customsSir)))}</td>
-              <td className={`sc-diff ${tone(totalOf(rows.map((row) => row.customsDiff)))}`}>{signed(totalOf(rows.map((row) => row.customsDiff)))}</td>
-            </tr></tfoot>
-          </table>
-        </div>
-      </div>}
-    </div>
-  </div>, document.body)
+      </div>
+    </div>}
+  </Modal>, document.body)
 }
 
 function CompareRow({ row, name, code, hasDiscount }: { row: SirCompareRow; name: string; code: string; hasDiscount: boolean }) {

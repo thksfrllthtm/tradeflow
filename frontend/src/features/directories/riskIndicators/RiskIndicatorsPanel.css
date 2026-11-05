@@ -1,14 +1,14 @@
 /* Панель «СУР»: рамка, крестик, сообщения — из DirectoryTransfer.css, шаг загрузки — из KzListPanel.css. */
 
-.sir-empty { margin: 0 0 10px; color: var(--tf-text-2); font-size: .86rem; }
-.sir-profiles { width: 100%; margin: 0 0 10px; border-collapse: collapse; font-size: .86rem; }
-.sir-profiles th { padding: 6px 8px; border-bottom: 1px solid var(--tf-border); color: var(--tf-text); font-size: .8rem; font-weight: 600; text-align: left; }
+.sir-empty { margin: 0 0 8px; color: var(--tf-text-2); font-size: var(--fs-md); }
+.sir-profiles { width: 100%; margin: 0 0 8px; border-collapse: collapse; font-size: var(--fs-md); }
+.sir-profiles th { padding: 6px 8px; border-bottom: 1px solid var(--tf-border); color: var(--tf-text); font-size: var(--fs-sm); font-weight: 600; text-align: left; }
 .sir-profiles td { padding: 8px; border-bottom: 1px solid var(--tf-border-inner); color: var(--tf-text); vertical-align: top; }
-.sir-profiles td small { display: block; margin-top: 2px; color: var(--tf-text-2); font-size: .76rem; }
-.sir-profiles .sir-num { font-variant-numeric: tabular-nums; text-align: right; }
+.sir-profiles td small { display: block; margin-top: 2px; color: var(--tf-text-2); font-size: var(--fs-xs); }
+.sir-profiles .sir-num { font-variant-numeric: tabular-nums; font-family: var(--tf-num); text-align: right; }
 .sir-groups { display: flex; flex-wrap: wrap; gap: 4px; }
-.sir-groups span { padding: 1px 7px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; white-space: nowrap; }
-.sir-groups span.cn { background: #fdf3d6; color: #75520a; font-weight: 600; }
+.sir-groups span { padding: 1px 8px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: var(--fs-xs); white-space: nowrap; }
+.sir-groups span.cn { background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 600; }
 
 @media (max-width: 640px) {
   .sir-profiles thead { display: none; }

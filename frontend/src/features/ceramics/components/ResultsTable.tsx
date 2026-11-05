@@ -19,6 +19,10 @@ const shortStatus: Record<string, string> = {
   FOUND_BY_MARK: 'По марке', AUTO: 'Авто', NEED_REVIEW: 'Проверить', NOT_DETERMINED: 'Не найдено',
   pending: 'Ожидает', running: 'Анализ…', error: 'Ошибка',
 }
+// Тон общей точки-статуса (.status-dot) для статуса строки.
+export const statusTone: Record<string, string> = {
+  FOUND_BY_MARK: 'ok', AUTO: 'info', NEED_REVIEW: 'warn', NOT_DETERMINED: 'error', error: 'error', running: 'info cer-running',
+}
 
 // Результат подбора: одна строка на марку. Строка раскрывается — там причины и правка.
 export function ResultsTable({ groups, types, running, onDraft, onDraftPrice, onCheck, onRetry }: Props) {
@@ -77,13 +81,13 @@ export function ResultsTable({ groups, types, running, onDraft, onDraftPrice, on
               <td className="c-size">{size || <span className="dir-none">—</span>}{sizeFlag && <span className="cer-flag" title={resolution.sizeStatus === 'ASSUMED' ? 'Размер предположен — проверьте' : 'Размер неоднозначен'}>?</span>}</td>
               <td className="c-price">{group.draft.price || <span className="dir-none">—</span>}</td>
               <td className="c-status">
-                <span className={`cer-status ${status}`} title={group.error}><span className={`cer-dot ${status}`} aria-hidden="true" />{shortStatus[status] ?? status}</span>
+                <span className={`status-dot ${statusTone[status] ?? ''}`} title={group.error}>{shortStatus[status] ?? status}</span>
                 {group.checked && <small>проверено</small>}
               </td>
               <td className="c-chevron" onClick={(event) => event.stopPropagation()}>
                 {group.state === 'error' && !running
-                  ? <button type="button" className="cer-link" onClick={() => onRetry(group.key)}>Повторить</button>
-                  : resolution && <button type="button" className="cer-chevron" onClick={() => toggle(group.key)} aria-expanded={open} aria-label={open ? 'Свернуть' : 'Подробнее'}>›</button>}
+                  ? <button type="button" className="button-link" onClick={() => onRetry(group.key)}>Повторить</button>
+                  : resolution && <button type="button" className="icon-button ghost sm cer-chevron" onClick={() => toggle(group.key)} aria-expanded={open} aria-label={open ? 'Свернуть' : 'Подробнее'}>›</button>}
               </td>
             </tr>
             {open && resolution && <tr className="cer-details-row sheet-section"><td colSpan={8}>

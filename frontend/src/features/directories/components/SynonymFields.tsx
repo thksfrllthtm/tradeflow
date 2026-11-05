@@ -18,7 +18,7 @@ function SynonymTextarea({ label, lines, onChange }: { label: string; lines: str
 export function SynonymFields({ value, hint, onChange }: { value: Synonyms; hint: string; onChange: (field: keyof Synonyms, lines: string[]) => void }) {
   const count = value.synonymsRu.length + value.synonymsZh.length + value.synonymsEn.length
   return <section className="pe-card">
-    <h3>Синонимы{count > 0 && <span className="pe-count">{count}</span>}</h3>
+    <h3>Синонимы{count > 0 && <span className="dir-count">{count}</span>}</h3>
     <SynonymTextarea label="Русский" lines={value.synonymsRu} onChange={(lines) => onChange('synonymsRu', lines)} />
     <SynonymTextarea label="中文" lines={value.synonymsZh} onChange={(lines) => onChange('synonymsZh', lines)} />
     <SynonymTextarea label="English" lines={value.synonymsEn} onChange={(lines) => onChange('synonymsEn', lines)} />

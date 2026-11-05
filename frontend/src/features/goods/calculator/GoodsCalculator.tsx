@@ -686,6 +686,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         addManualPhoto={addManualPhoto}
         addEmptyRow={addEmptyRow}
         calculate={calculate}
+        onBack={() => setStep(1)}
         saveDraft={saveDraft}
         clearAll={clearAll}
         agentStatuses={agentRows.statuses}

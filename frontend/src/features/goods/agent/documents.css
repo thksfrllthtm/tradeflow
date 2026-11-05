@@ -1,53 +1,48 @@
-/* «Документы для ввоза»: кнопка на карточке кода и ответ агента — общие для чата строки и справочника. */
-.dl-button { height: 30px; padding: 0 12px; border: 1px solid #c4d9c9; border-radius: 8px; background: #fff; color: #1b6b43; font-size: .78rem; font-weight: 650; cursor: pointer; }
-.dl-button:hover:not(:disabled) { border-color: #24704a; background: #eef6f1; }
-.dl-button:disabled { opacity: .55; cursor: default; }
+/* «Документы для ввоза»: ответ агента — общий для чата строки и справочника. Кнопка — .secondary.sm,
+   статус меры — .badge (base.css). */
 
-.dl { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid #d6e4da; border-radius: 12px; background: #fff; scroll-margin-top: 12px; }
+.dl { display: grid; gap: 8px; padding: 12px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); scroll-margin-top: 12px; }
 .dl.dl-flash { animation: dl-flash 1.2s ease-out; }
-@keyframes dl-flash { from { box-shadow: 0 0 0 3px #9fd0b2; } to { box-shadow: 0 0 0 0 transparent; } }
-.dl-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.dl-head h3 { margin: 0; color: #1f2d25; font-size: .9rem; }
-.dl-desc { margin: 0; color: #34443b; font-size: .84rem; line-height: 1.5; white-space: pre-wrap; }
-.dl a { color: #1b6b43; overflow-wrap: anywhere; }
-.dl-title { margin: 4px 0 0; color: #56665c; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+@keyframes dl-flash { from { box-shadow: 0 0 0 3px var(--tf-green-border); } to { box-shadow: 0 0 0 0 transparent; } }
+.dl-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.dl-head h3 { margin: 0; color: var(--tf-text); font-size: var(--fs-md); }
+.dl-desc { margin: 0; color: var(--tf-text-2); font-size: var(--fs-sm); line-height: 1.5; white-space: pre-wrap; }
+.dl a { color: var(--tf-green); overflow-wrap: anywhere; }
+.dl-title { margin: 4px 0 0; color: var(--tf-muted); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 .dl-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.dl-item { display: grid; gap: 3px; padding: 8px 10px; border: 1px solid #e3eae5; border-left-width: 3px; border-radius: 8px; background: #fbfdfc; }
-.dl-item.yes { border-left-color: #2f8a57; }
-.dl-item.maybe { border-left-color: #d4a52c; }
-.dl-item.no { border-left-color: #b9c3bd; background: #f7f8f7; }
+.dl-item { display: grid; gap: 4px; padding: 8px 12px; border: 1px solid var(--tf-border); border-left-width: 3px; border-radius: var(--tf-radius); background: var(--tf-bg); }
+.dl-item.yes { border-left-color: var(--tf-green); }
+.dl-item.maybe { border-left-color: var(--tf-warn-dot); }
+.dl-item.no { border-left-color: var(--tf-border-strong); background: var(--tf-bg); }
 /* Свёрнутая мера: заголовок — кнопка раскрытия, стрелка справа от плашки. */
-.dl-item > summary { display: grid; gap: 3px; list-style: none; cursor: pointer; }
+.dl-item > summary { display: grid; gap: 4px; list-style: none; cursor: pointer; }
 .dl-item > summary::-webkit-details-marker { display: none; }
-.dl-item > summary:focus-visible { outline: 2px solid #2f8a57; outline-offset: 2px; border-radius: 4px; }
-.dl-item > summary .dl-top::after { content: '▾'; flex: none; color: #7a8a80; font-size: .75rem; transform: rotate(-90deg); transition: transform .15s; }
+.dl-item > summary:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; border-radius: var(--tf-radius-sm); }
+.dl-item > summary .dl-top::after { content: '▾'; flex: none; color: var(--tf-faint); font-size: var(--fs-xs); transform: rotate(-90deg); transition: transform .15s; }
 .dl-item[open] > summary .dl-top::after { transform: none; }
-.dl-item[open] > summary { margin-bottom: 3px; }
+.dl-item[open] > summary { margin-bottom: 4px; }
 .dl-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.dl-top b { flex: 1; color: #1f2d25; font-size: .82rem; font-weight: 650; }
-.dl-kind { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 4px; background: #1b6b43; color: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .02em; vertical-align: 1px; }
+.dl-top .badge { flex: none; }
+.dl-top b { flex: 1; color: var(--tf-text); font-size: var(--fs-sm); font-weight: 600; }
+.dl-kind { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: var(--tf-radius-sm); background: var(--tf-green); color: #fff; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .02em; vertical-align: 1px; }
 /* Метка — в цвет статуса: «возможно» оранжевая, «не относится» серая (белый текст — контраст не ниже 4.5:1). */
-.dl-item.maybe .dl-kind { background: #9a6b05; }
-.dl-item.no .dl-kind { background: #6b7770; }
-.dl-pill { flex: none; padding: 1px 7px; border-radius: 999px; font-size: .7rem; font-style: normal; font-weight: 650; }
-.dl-pill.yes { background: #e4f3ea; color: #1d6b40; }
-.dl-pill.maybe { background: #fbf1d6; color: #8a6510; }
-.dl-pill.no { background: #edf0ee; color: #66736b; }
-.dl-act { color: #1b6b43; font-size: .78rem; font-weight: 600; text-decoration: none; }
+.dl-item.maybe .dl-kind { background: var(--tf-warn-text); }
+.dl-item.no .dl-kind { background: var(--tf-faint); }
+.dl-act { color: var(--tf-green); font-size: var(--fs-xs); font-weight: 600; text-decoration: none; }
 a.dl-act:hover { text-decoration: underline; }
-.dl-req { margin: 0; color: #34443b; font-size: .79rem; line-height: 1.45; }
-.dl-req b { font-weight: 650; color: #1f2d25; }
+.dl-req { margin: 0; color: var(--tf-text-2); font-size: var(--fs-sm); line-height: 1.45; }
+.dl-req b { font-weight: 600; color: var(--tf-text); }
 /* Раскрытая мера («нужно», «возможно»): заголовок — не кнопка, цитата — под своим тогглом. */
 .dl-item.dl-open .dl-top::after { content: none; }
-.dl-quote summary { color: #7a877f; font-size: .74rem; cursor: pointer; }
+.dl-quote summary { color: var(--tf-faint); font-size: var(--fs-xs); cursor: pointer; }
 .dl-quote[open] summary { margin-bottom: 2px; }
-.dl-notes { display: grid; gap: 4px; margin: 0; padding-left: 18px; color: #56665c; font-size: .8rem; line-height: 1.45; }
-.dl-basis { margin: 2px 0 0; padding: 5px 8px; border-radius: 6px; background: #f1f5f2; color: #34443b; font-size: .77rem; font-style: italic; line-height: 1.45; }
-.dl-basis cite { display: block; margin-top: 2px; color: #7a8a80; font-size: .7rem; font-style: normal; }
-.dl-name { margin: 2px 0 0; padding: 5px 8px; border-radius: 6px; background: #fff8e6; color: #4d3f12; font-size: .78rem; line-height: 1.45; }
-.dl-name b { font-weight: 650; }
-.dl-more summary { padding: 2px 0; color: #7a877f; font-size: .77rem; cursor: pointer; }
+.dl-notes { display: grid; gap: 4px; margin: 0; padding-left: 20px; color: var(--tf-muted); font-size: var(--fs-sm); line-height: 1.45; }
+.dl-basis { margin: 2px 0 0; padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text-2); font-size: var(--fs-xs); font-style: italic; line-height: 1.45; }
+.dl-basis cite { display: block; margin-top: 2px; color: var(--tf-faint); font-size: var(--fs-xs); font-style: normal; }
+.dl-name { margin: 2px 0 0; padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: var(--fs-xs); line-height: 1.45; }
+.dl-name b { font-weight: 600; }
+.dl-more summary { padding: 2px 0; color: var(--tf-faint); font-size: var(--fs-xs); cursor: pointer; }
 .dl-more[open] { display: grid; gap: 6px; }
-.dl-empty, .dl-note { margin: 0; color: #56665c; font-size: .8rem; line-height: 1.45; }
-.dl-notice { margin: 0; color: #8a6510; font-size: .76rem; }
-.dl-disclaimer { margin: 0; color: #8a968f; font-size: .72rem; }
+.dl-empty, .dl-note { margin: 0; color: var(--tf-muted); font-size: var(--fs-sm); line-height: 1.45; }
+.dl-notice { margin: 0; color: var(--tf-warn-text); font-size: var(--fs-xs); }
+.dl-disclaimer { margin: 0; color: var(--tf-faint); font-size: var(--fs-xs); }

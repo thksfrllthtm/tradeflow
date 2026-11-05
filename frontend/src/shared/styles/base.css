@@ -1,5 +1,20 @@
 /* Глобальная основа: дизайн-токены, сброс, элементы форм, типографика, общие кнопки. */
 
+/* Цифры в числах (суммы, количества, курсы, даты, счётчики) — моноширинным JetBrains Mono, как в кодах
+   ТН ВЭД; буквы рядом — Golos Text. Шрифт «TF Digits» отдаёт только цифры и неразрывные пробелы-разделители
+   тысяч. Подключается через var(--tf-num) только в числовых местах: в наименованиях («ET 200SP»,
+   «6ES7193-6PA00») цифры остаются Golos, иначе слово выглядит собранным из разных шрифтов.
+   Файл — тот же, что подключает index.html (кэш общий). */
+@font-face {
+  font-family: "TF Digits";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2) format("woff2");
+  unicode-range: U+0030-0039, U+00A0, U+202F;
+  size-adjust: 95%; /* высота цифр — как у заглавных Golos */
+}
+
 :root {
   font-family: var(--tf-font);
   font-size: 14px;
@@ -7,52 +22,73 @@
   color: var(--tf-text);
   background: var(--tf-bg);
   font-synthesis: none;
-  /* Старые имена — те же цвета, что у этапов сметы (--tf-* ниже). */
-  --c-green: var(--tf-green);
-  --c-green-dark: var(--tf-green-hover);
-  --c-green-light: var(--tf-green-soft);
-  --c-border: var(--tf-border);
-  --c-border-focus: var(--tf-green);
-  --c-bg: #fff;
-  --c-bg-alt: var(--tf-chip);
-  --c-text-muted: var(--tf-muted);
-  --c-text-label: var(--tf-text-2);
-  --c-error: #a32626;
-  --c-error-bg: #fff4f4;
-  /* Таблицы в стиле Excel (shared/styles/sheet.css) — мягкая сетка, как в этапах сметы */
+
+  /* ── Шрифты. Интерфейс — Golos Text (полная кириллица с казахскими буквами, ровные цифры);
+     коды ТН ВЭД и номера — JetBrains Mono. ── */
+  --tf-font: "Golos Text", system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  --tf-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --tf-num: "TF Digits", var(--tf-font); /* числа: цифры моноширинные, буквы и знаки — Golos */
+
+  /* ── Шкала размеров: только эти 7 значений. Веса — 400, 500, 600. ── */
+  --fs-xs: 11px;   /* бейджи, счётчики */
+  --fs-sm: 12px;   /* подписи полей, шапки таблиц, подсказки */
+  --fs-md: 13px;   /* ячейки таблиц, коды, вторичный текст, компактные кнопки */
+  --fs-base: 14px; /* основной текст, поля, кнопки */
+  --fs-lg: 16px;   /* заголовки панелей, окон, секций */
+  --fs-xl: 20px;   /* заголовок страницы */
+  --fs-2xl: 24px;  /* крупные итоговые суммы, вход */
+
+  /* ── Цвета. Зелёный — главная кнопка, активный пункт, фокус. ── */
+  --tf-bg: #f6f7f5;
+  --tf-card: #fff;
+  --tf-border: #e3e6e2;        /* рамки карточек */
+  --tf-border-inner: #eef0ed;  /* линии внутри таблиц */
+  --tf-border-strong: #8a918c; /* рамки полей ввода (контраст 3:1) */
+  --tf-text: #17201b;
+  --tf-text-2: #4f5752;
+  --tf-muted: #5b635e;
+  --tf-faint: #626a65;         /* самый светлый допустимый текст (4.5:1) */
+  --tf-chip: #f1f3f0;
+  --tf-green: #1e5b3c;
+  --tf-green-hover: #174a30;
+  --tf-green-soft: #edf2ee;
+  --tf-green-border: #b8d3c1;
+  --tf-ok: #1c6b43;            /* статус «готово» */
+  --tf-ok-bg: #eef7f1;
+  --tf-warn-text: #7a4e00;
+  --tf-warn-bg: #fff3d6;
+  --tf-warn-border: #f0d58a;
+  --tf-warn-dot: #e0a21b;      /* точка-индикатор, не для текста */
+  --tf-error: #a32626;
+  --tf-error-bg: #fef2f2;
+  --tf-error-border: #f1c9c9;
+  --tf-info: #2c4f86;
+  --tf-info-bg: #eef2fa;
+  --tf-ai: #c98a12;            /* значок ИИ, не для текста */
+  --tf-ai-text: #8a5a00;       /* текст про ИИ (4.5:1) */
+  --tf-focus-ring: rgba(30, 91, 60, .2);
+  --tf-overlay: rgba(20, 30, 24, .35);
+
+  --tf-radius-sm: 4px;
+  --tf-radius: 8px;
+  --tf-radius-card: 12px;
+  --tf-shadow-1: 0 1px 2px rgba(23, 32, 27, .08);
+  --tf-shadow-pop: 0 12px 32px rgba(23, 32, 27, .14);
+  --tf-shadow-modal: 0 20px 60px rgba(23, 32, 27, .22);
+
+  /* Слои: выпадашки < шапка < окна и панели < всплывающие сообщения. */
+  --z-dropdown: 40;
+  --z-header: 60;
+  --z-overlay: 70;
+  --z-toast: 100;
+
+  /* Таблицы в стиле Excel (shared/styles/sheet.css) */
   --xl-grid: var(--tf-border-inner);
   --xl-head: #eff2ee;
   --xl-head-line: var(--tf-border);
   --xl-head-ink: var(--tf-text);
   --xl-hover: #f6f8f6;
   --xl-active: var(--tf-green);
-  --radius: var(--tf-radius);
-  --radius-lg: var(--tf-radius-card);
-  --shadow-card: 0 1px 4px rgba(20,47,31,.08), 0 4px 16px rgba(20,47,31,.05);
-
-  /* Новый дизайн (шапка, результат сметы, список смет). Зелёный — только главная кнопка,
-     активный пункт, прогресс и статус «ок». Старые --c-* выше остаются для прочих страниц. */
-  --tf-bg: #f6f7f5;
-  --tf-card: #fff;
-  --tf-border: #e3e6e2;
-  --tf-border-inner: #eef0ed;
-  --tf-text: #17201b;
-  --tf-text-2: #4f5752;
-  --tf-muted: #5b635e;
-  --tf-green: #1e5b3c;
-  --tf-green-hover: #174a30;
-  --tf-green-soft: #edf2ee;
-  --tf-chip: #f1f3f0;
-  --tf-warn-bg: #fff3d6;
-  --tf-warn-text: #7a4e00;
-  --tf-ai: #c98a12;
-  --tf-error: #a32626;
-  --tf-radius-card: 12px;
-  --tf-radius: 8px;
-  /* Весь интерфейс — моноширинным JetBrains Mono, как коды ТН ВЭД на этапах сметы. */
-  --tf-font: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-  --tf-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-  --tf-shadow-pop: 0 12px 32px rgba(23, 32, 27, .14);
 }
 
 * { box-sizing: border-box; }
@@ -60,27 +96,29 @@ body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
 /* Поле внутри <label> не наследует её жирность 600: текст и подсказка в поле — обычным шрифтом. */
 input, textarea, select { font-weight: 400; }
-/* Коды ТН ВЭД (code) — моноширинным JetBrains Mono, как в этапах сметы; kbd, pre и меню таблицы
-   «Как в Excel» (jsuites) — основным шрифтом. Все числа — ровными цифрами (tabular-nums), как в этапах. */
-code { font-family: var(--tf-mono); font-weight: 400; letter-spacing: 0; }
-kbd, pre, samp, body .jcontextmenu > div, body .jtooltip { font-family: inherit; }
+/* Коды ТН ВЭД (code, .mono) и клавиши (kbd) — моноширинным JetBrains Mono; остальное — основным шрифтом.
+   Все числа — ровными цифрами (tabular-nums). */
+code, kbd, .mono { font-family: var(--tf-mono); font-weight: 400; letter-spacing: 0; }
+pre, samp, body .jcontextmenu > div, body .jtooltip { font-family: inherit; }
 body { font-variant-numeric: tabular-nums; }
 h1, h2, h3, h4, h5, h6, p { margin-top: 0; }
+/* Числовые поля и даты — шрифтом чисел. Числовые места в стилях помечены font-family: var(--tf-num). */
+time, input[type="number"], input[inputmode="decimal"], input[inputmode="numeric"] { font-family: var(--tf-num); }
 
 /* ── Элементы форм ── */
-button:hover:not(:disabled) { background: var(--c-green-dark); }
+button:hover:not(:disabled) { background: var(--tf-green-hover); }
 button:disabled { opacity: .45; cursor: not-allowed; }
 input, textarea, select {
   display: block;
   width: 100%;
-  margin-top: 5px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  background: var(--c-bg);
-  padding: 7px 10px;
-  color: #1a2620;
+  margin-top: 4px;
+  border: 1px solid var(--tf-border-strong);
+  border-radius: var(--tf-radius);
+  background: var(--tf-card);
+  padding: 6px 12px;
+  color: var(--tf-text);
 }
-input:focus, textarea:focus, select:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--c-border-focus); }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--tf-focus-ring); border-color: var(--tf-green); }
 input:disabled { background: var(--tf-chip); color: var(--tf-muted); }
 
 /* ── Выпадающие списки — единый вид на всём сайте ──
@@ -102,9 +140,9 @@ select:disabled { background-color: var(--tf-chip); color: var(--tf-muted); curs
   /* Закрытое поле — в одну строку: длинный текст обрезается, стрелка всегда справа. */
   select { position: relative; display: flex; align-items: center; overflow: hidden; white-space: nowrap; background-image: none; }
   /* Стрелка — на подложке цвета поля: закрывает конец длинного текста. */
-  select::picker-icon { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 30px; border-radius: 0 var(--radius) var(--radius) 0; background-color: inherit; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%235b635e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; transition: transform .15s; }
+  select::picker-icon { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 30px; border-radius: 0 var(--tf-radius) var(--tf-radius) 0; background-color: inherit; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%235b635e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; transition: transform .15s; }
   select:open::picker-icon { transform: scaleY(-1); }
-  select:open { border-color: var(--tf-green); outline: 2px solid rgba(30, 91, 60, .2); }
+  select:open { border-color: var(--tf-green); outline: 2px solid var(--tf-focus-ring); }
   ::picker(select) {
     max-height: min(360px, 60vh);
     margin-top: 4px;
@@ -116,7 +154,7 @@ select:disabled { background-color: var(--tf-chip); color: var(--tf-muted); curs
     box-shadow: var(--tf-shadow-pop);
     scrollbar-width: thin;
   }
-  option { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 10px; border-radius: 6px; color: var(--tf-text); font-size: .86rem; line-height: 1.3; cursor: pointer; }
+  option { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 12px; border-radius: 6px; color: var(--tf-text); font-size: var(--fs-md); line-height: 1.3; cursor: pointer; }
   option:hover, option:focus-visible { background: var(--tf-chip); outline: none; }
   option:checked { background: var(--tf-green-soft); font-weight: 600; }
   option::checkmark { order: 1; margin-left: auto; color: var(--tf-green); }
@@ -124,35 +162,69 @@ select:disabled { background-color: var(--tf-chip); color: var(--tf-muted); curs
 }
 label {
   display: block;
-  font-size: .8rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--c-text-label);
+  color: var(--tf-text-2);
 }
 
 /* ── Типографика ── */
 .eyebrow {
   margin-bottom: 4px;
-  color: #39805c;
-  font-size: .76rem;
+  color: #2f7553;
+  font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: .1em;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
-.muted { color: var(--c-text-muted); line-height: 1.5; }
-.error { color: var(--c-error); margin: 0; font-size: .86rem; }
+.muted { color: var(--tf-muted); line-height: 1.5; }
+.error { color: var(--tf-error); margin: 0; font-size: var(--fs-md); }
 
-/* ── Общие кнопки ── */
-.secondary { color: var(--tf-text); background: var(--tf-card); border: 1px solid var(--tf-border); }
-.secondary:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+/* ── Кнопки — один набор на весь сайт. Высота 32px.
+   <button> без класса — главная (зелёная). Одна главная на экран/форму, остальные — .secondary.
+   .secondary — белая с рамкой; .danger — удаление; .icon-button — квадратная с иконкой (.ghost — без рамки);
+   .sm — 28px для строк таблиц и тесных панелей; .button-link — действие внутри текста. ── */
 button {
   border: 0;
-  background: var(--c-green);
+  background: var(--tf-green);
   color: #fff;
-  padding: 8px 14px;
+  padding: 6px 12px;
+  font-size: var(--fs-md);
   font-weight: 600;
+  line-height: 20px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background .12s;
+  transition: background .12s, border-color .12s, color .12s;
   border-radius: var(--tf-radius);
   box-shadow: none;
 }
+button:focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
+.secondary, .danger, .icon-button { padding: 5px 11px; border: 1px solid var(--tf-border); background: var(--tf-card); color: var(--tf-text); }
+.secondary:hover:not(:disabled), .icon-button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
+.danger { color: var(--tf-error); }
+.danger:hover:not(:disabled) { border-color: var(--tf-error-border); background: var(--tf-error-bg); }
+.icon-button { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; color: var(--tf-text-2); }
+.icon-button.ghost { border-color: transparent; background: transparent; }
+.icon-button.ghost:hover:not(:disabled) { border-color: transparent; background: var(--tf-chip); color: var(--tf-text); }
+.icon-button.danger:hover:not(:disabled) { color: var(--tf-error); }
+button.sm { padding-block: 4px; line-height: 18px; }
+.secondary.sm, .danger.sm { padding-block: 4px; }
+.icon-button.sm { width: 28px; height: 28px; }
+/* Кнопка-ссылка: действие внутри текста или строки. */
+.button-link { padding: 0; border: 0; background: none; color: var(--tf-green); font-size: inherit; font-weight: 500; line-height: inherit; cursor: pointer; }
+.button-link:hover:not(:disabled) { background: none; text-decoration: underline; }
+.button-link:disabled { color: var(--tf-faint); cursor: not-allowed; }
+
+/* ── Бейдж статуса: .badge + тон (ok, warn, error, info). Точка-статус в таблицах: .status-dot + тон. ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 2px 8px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: var(--fs-xs); font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.badge.ok { background: var(--tf-ok-bg); color: var(--tf-ok); }
+.badge.warn { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.badge.error { background: var(--tf-error-bg); color: var(--tf-error); }
+.badge.info { background: var(--tf-info-bg); color: var(--tf-info); }
+.status-dot { display: inline-flex; align-items: center; gap: 8px; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 500; white-space: nowrap; }
+.status-dot::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--tf-faint); }
+.status-dot.ok::before { background: var(--tf-ok); }
+.status-dot.warn { color: var(--tf-warn-text); font-weight: 600; }
+.status-dot.warn::before { background: var(--tf-warn-dot); }
+.status-dot.error { color: var(--tf-error); font-weight: 600; }
+.status-dot.error::before { background: var(--tf-error); }
+.status-dot.info::before { background: var(--tf-info); }

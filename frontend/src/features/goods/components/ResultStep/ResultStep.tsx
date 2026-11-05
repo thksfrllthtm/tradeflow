@@ -17,8 +17,10 @@ import { SirCompareModal } from './SirCompareModal'
 import { commonProblems, plural, problemGroups, ProblemTone, rowProblems } from './errorGroups'
 import { calculatedRows, customsPaymentsUsd, displayNumber, fixedNumber, excelColumn, excelColumnHtml, hasAntiDumping, itemDisplayName, itemNames, parseCalculatorNumber, RowState, rowPaymentKzt, rowState, rowTotals, sirTitle, textColumn } from './resultValues'
 import { CopyColumn } from '@/shared/components/CopyCode/CopyColumn'
+import { SearchIcon } from '@/shared/components/icons'
 import { spaceBelow } from '../../lib/spaceBelow'
 import '../../goods.css'
+import '@/shared/styles/list-page.css'
 import './ResultStep.css'
 
 type Props = {
@@ -472,7 +474,7 @@ export function ResultStep({
 
   // Меню «⋯» — проверки и вид; подбор и откат цен — в стрелке кнопки «Подобрать цены ИИ».
   const menu = <details className="rs-more" ref={menuRef}>
-    <summary className="rs-icon" title="Ещё действия" aria-label="Ещё действия">
+    <summary className="icon-button" title="Ещё действия" aria-label="Ещё действия">
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
     </summary>
     <div className="rs-menu" onClick={closeMenuOnItem}>
@@ -500,8 +502,9 @@ export function ResultStep({
           {unsaved && !failed && !storageNotice.startsWith('Сохраняем')
             ? <span className="rs-save-state unsaved" role="status">Есть несохранённые изменения</span>
             : <span className={failed ? 'rs-save-state failed' : 'rs-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>}
-          <button type="button" className="rs-btn" onClick={saveDraft} disabled={loading} title="Сохранить на сервере сейчас, не дожидаясь автосохранения (Ctrl+S)">{activity === 'save' ? 'Сохраняем…' : 'Сохранить'}</button>
-          <button type="button" className={noPrices || notCalculated ? 'rs-btn' : 'rs-btn primary'} onClick={exportChecked} disabled={loading || noPrices || notCalculated} title={noPrices || notCalculated ? 'Сначала завершите расчёт' : undefined}>
+          <button type="button" className="secondary" onClick={backToReview} disabled={loading}><span aria-hidden="true">←</span> К проверке строк</button>
+          <button type="button" className="secondary" onClick={saveDraft} disabled={loading} title="Сохранить на сервере сейчас, не дожидаясь автосохранения (Ctrl+S)">{activity === 'save' ? 'Сохраняем…' : 'Сохранить'}</button>
+          <button type="button" className={noPrices || notCalculated ? 'secondary' : undefined} onClick={exportChecked} disabled={loading || noPrices || notCalculated} title={noPrices || notCalculated ? 'Сначала завершите расчёт' : undefined}>
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" /></svg>
             {activity === 'export' ? 'Готовим файл…' : 'Экспорт в Excel'}
           </button>
@@ -522,9 +525,9 @@ export function ResultStep({
       <div className={selectedRow ? 'rs-layout with-panel' : 'rs-layout'}>
         <section className="rs-card" aria-label="Строки расчёта">
           <div className="rs-filterbar">
-            <div className="rs-tabs" role="tablist" aria-label="Какие строки показать">
+            <div className="dir-seg" role="tablist" aria-label="Какие строки показать">
               {tabs.map((tab) => <button key={tab.value} type="button" role="tab" aria-selected={filter === tab.value} className={filter === tab.value ? 'active' : undefined} onClick={() => setFilter(tab.value)} disabled={tab.count === 0 && filter !== tab.value}>
-                {tab.value === 'ai' && <span className="ai-dot" aria-hidden="true" />}{tab.label} <b>{tab.count}</b>
+                {tab.value === 'ai' && <span className="ai-dot" aria-hidden="true" />}{tab.label} <span className="dir-count">{tab.count}</span>
               </button>)}
             </div>
             {filter === 'attention' && (counts.bad > 0 || counts.warn > 0) && <p className="rs-counts">
@@ -532,8 +535,8 @@ export function ResultStep({
               {counts.warn > 0 && <span className="warn"><StateIcon state="warn" /> предупреждения {counts.warn}</span>}
             </p>}
             {changed.length > 0 && <p className="rs-changed" title="Цена единицы отличается от цены в Excel: правка или подбор под кассу">изменено цен: <b>{changed.length}</b></p>}
-            <label className="rs-search">
-              <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5 14 14" /></svg>
+            <label className="dir-search rs-search">
+              <SearchIcon />
               <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Товар или код" aria-label="Найти товар или код" />
             </label>
           </div>
@@ -572,7 +575,7 @@ export function ResultStep({
                 </tr>
               </thead>
               <tbody>
-                {visible.length === 0 && <tr className="rs-empty"><td colSpan={columns}>
+                {visible.length === 0 && <tr className="rs-empty"><td className="dir-empty" colSpan={columns}>
                   {needle ? 'Ничего не найдено.' : filter === 'attention' ? 'Строк, требующих внимания, больше нет.' : 'Таких строк нет.'} <button type="button" className="button-link" onClick={() => { setFilter('all'); setQuery('') }}>Показать все строки</button>
                 </td></tr>}
                 {visible.map(({ item, index, state, problems, antiDumpingInfo, names, code, aiNote }) => {

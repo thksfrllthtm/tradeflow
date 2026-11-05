@@ -1,22 +1,22 @@
 /* Полоса «Таможенная стоимость» под итогом. По СУР — бежевый фон (признак режима), вес, снижение, страна и счётчик строк. */
-.sir-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
-.sir-bar.on { border-color: #ecd59a; background: #fffbef; }
-.sir-label { color: var(--tf-text-2); font-size: .86rem; font-weight: 500; white-space: nowrap; }
-.sir-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; white-space: nowrap; }
+.sir-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 8px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.sir-bar.on { border-color: var(--tf-warn-border); background: var(--tf-warn-bg); }
+.sir-label { color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 500; white-space: nowrap; }
+.sir-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 500; white-space: nowrap; }
 .sir-sep { width: 1px; height: 20px; background: var(--tf-border); }
 .rs-joined.sir-custom input { width: 52px; }
 .rs-joined.sir-custom.active { border-color: var(--tf-text-2); }
-.rs-joined.sir-custom.invalid, .sir-country.invalid { border-color: #b42318; }
+.rs-joined.sir-custom.invalid, .sir-country.invalid { border-color: var(--tf-error); }
 /* Страна — как текст, рамка только при наведении и вводе. */
-.sir-country { box-sizing: border-box; width: 40px; height: 30px; margin: 0; padding: 0 6px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--tf-text); font-size: .86rem; font-weight: 600; text-transform: uppercase; cursor: text; }
-.sir-country:hover:not(:disabled), .sir-country:focus { border-color: var(--tf-border); background: #fff; }
+.sir-country { box-sizing: border-box; width: 40px; height: 30px; margin: 0; padding: 0 6px; border: 1px solid transparent; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text); font-size: var(--fs-md); font-weight: 600; text-transform: uppercase; cursor: text; }
+.sir-country:hover:not(:disabled), .sir-country:focus { border-color: var(--tf-border); background: var(--tf-card); }
 .sir-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
-.sir-count { margin-left: auto; color: var(--tf-text-2); font-size: .86rem; white-space: nowrap; }
+.sir-count { margin-left: auto; color: var(--tf-text-2); font-size: var(--fs-md); white-space: nowrap; }
 .sir-count b { color: var(--tf-text); font-weight: 600; }
-.goods-page .rs-table .rs-sub.sir-sub { color: var(--rs-warn); }
+.goods-page .rs-table .rs-sub.sir-sub { color: var(--tf-warn-text); }
 /* Колонки СУР в таблице — тем же бежевым, что полоса режима. */
-.goods-page .rs-table .rs-sir-col { background: #fffbef; }
-.goods-page .rs-table thead .rs-sir-col, .goods-page .rs-table tfoot .rs-sir-col { background: #fdf6e3; color: var(--tf-warn-text); }
+.goods-page .rs-table .rs-sir-col { background: var(--tf-warn-bg); }
+.goods-page .rs-table thead .rs-sir-col, .goods-page .rs-table tfoot .rs-sir-col { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
 .rs-sir-none { color: var(--tf-muted); }
 
 @media (max-width: 760px) {

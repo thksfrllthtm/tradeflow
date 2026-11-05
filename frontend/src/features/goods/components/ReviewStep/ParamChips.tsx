@@ -135,7 +135,7 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
         <span>Дата</span>
         <div className="rv-param-inputs">
           <input type="date" value={params.assessmentDate} onChange={(event) => setParam('assessmentDate', event.target.value)} aria-label="Дата расчёта" />
-          <button type="button" className="rv-param-link" onClick={() => setParam('assessmentDate', todayIso())} disabled={params.assessmentDate === todayIso()}>Сегодня</button>
+          <button type="button" className="secondary sm rv-param-link" onClick={() => setParam('assessmentDate', todayIso())} disabled={params.assessmentDate === todayIso()}>Сегодня</button>
         </div>
       </div>
 
@@ -143,7 +143,7 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
         <span>Курс USD</span>
         <div className="rv-param-inputs">
           {num('usdKzt', 'Курс за 1 USD', 'KZT')}
-          <button type="button" className={usdRateNotice && params.usdKzt ? 'rv-param-link active' : 'rv-param-link'} onClick={() => void loadUsdRate()} disabled={usdRateLoading || !params.assessmentDate}
+          <button type="button" className={usdRateNotice && params.usdKzt ? 'secondary sm rv-param-link active' : 'secondary sm rv-param-link'} onClick={() => void loadUsdRate()} disabled={usdRateLoading || !params.assessmentDate}
             title={params.assessmentDate ? `Взять курс НБРК на ${formatRuDate(params.assessmentDate)}` : 'Сначала укажите дату расчёта'}>{usdRateLoading ? '…' : 'НБРК'}</button>
         </div>
       </div>
@@ -151,7 +151,7 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
       <div className="rv-param">
         <span>Доставка</span>
         <div className="rv-param-inputs">
-          <div className="rv-seg" role="radiogroup" aria-label="Как учитывать доставку">
+          <div className="dir-seg" role="radiogroup" aria-label="Как учитывать доставку">
             {DELIVERY_MODES.map(([mode, label]) => <button key={mode} type="button" role="radio" aria-checked={params.deliveryMode === mode}
               className={params.deliveryMode === mode ? 'active' : undefined} onClick={() => setParam('deliveryMode', mode)}>{label}</button>)}
           </div>

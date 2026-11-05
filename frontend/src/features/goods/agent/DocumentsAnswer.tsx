@@ -8,12 +8,14 @@ import './documents.css'
 const appliesLabels: Record<AgentDocument['applies'], string> = { yes: 'нужно', maybe: 'возможно', no: 'не относится' }
 // Условный выпуск — не документ, а возможность: «есть» или «нет».
 const conditionalLabels: Record<AgentDocument['applies'], string> = { yes: 'есть', maybe: 'возможно', no: 'нет' }
+// Тон бейджа (.badge): «нужно» — зелёный, «возможно» — жёлтый, «не относится» — серый.
+const appliesBadge: Record<AgentDocument['applies'], string> = { yes: 'badge ok', maybe: 'badge warn', no: 'badge' }
 // Вид документа коротко, как говорят в компании; other — без метки (мера названа в measure).
 export const documentKindLabels: Record<DocumentKind, string> = { cc: 'СС', dc: 'ДС', sgr: 'СГР', conditional: 'Условный выпуск', other: '' }
 
 // Кнопка «Документы для ввоза» на карточке кода (подходит / возможно) — в чате строки и справочнике.
 export function DocumentsButton({ code, disabled, onClick }: { code: string; disabled: boolean; onClick: (code: string) => void }) {
-  return <button type="button" className="dl-button" onClick={() => onClick(code)} disabled={disabled}
+  return <button type="button" className="secondary sm" onClick={() => onClick(code)} disabled={disabled}
     title="Агент прочитает справку по товару tnved.info и акты по ссылкам">Документы для ввоза</button>
 }
 
@@ -97,7 +99,7 @@ function DocumentRow({ item, open = false }: { item: AgentDocument; open?: boole
   const head = <>
     <div className="dl-top">
       <b>{documentBadge(item) && <span className="dl-kind">{documentBadge(item)}</span>}{measureTitle(item.measure || item.act)}</b>
-      <i className={`dl-pill ${item.applies}`}>{(item.kind === 'conditional' ? conditionalLabels : appliesLabels)[item.applies]}</i>
+      <span className={appliesBadge[item.applies]}>{(item.kind === 'conditional' ? conditionalLabels : appliesLabels)[item.applies]}</span>
     </div>
     {item.act && item.measure && (item.url
       ? <a className="dl-act" href={item.url} target="_blank" rel="noreferrer">{item.act} ↗</a>

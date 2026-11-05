@@ -63,7 +63,7 @@ export function useRiskIndicatorsPanel({ admin, onOpen }: { admin: boolean; onOp
 
   const total = profiles?.reduce((sum, profile) => sum + profile.codeCount, 0) ?? 0
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Стоимостные индикаторы риска КГД: стоимость 1 кг товара в USD по кодам ТН ВЭД">СУР{profiles && profiles.length > 0 && ` · ${formatDisplayNumber(total)}`}</button>
+    <button type="button" className={open ? 'secondary active' : 'secondary'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Стоимостные индикаторы риска КГД: стоимость 1 кг товара в USD по кодам ТН ВЭД">СУР{profiles && profiles.length > 0 && ` · ${formatDisplayNumber(total)}`}</button>
   </div>
 
   const panel = open && <section className="dir-transfer-panel kz-panel">
@@ -72,7 +72,7 @@ export function useRiskIndicatorsPanel({ admin, onOpen }: { admin: boolean; onOp
         <strong>СУР — стоимостные индикаторы риска</strong>
         <p>Приложения к профилям риска КГД: стоимость 1 кг товара в USD по коду ТН ВЭД и группам стран. Смета в режиме «ТС по СУР» берёт индикатор кода для страны сметы (обычно CN). Если код есть в нескольких профилях, берётся больший индикатор.</p>
       </div>
-      <button type="button" className="dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
+      <button type="button" className="icon-button ghost dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
     </div>
     {profiles === null ? <p className="sir-empty">{error ? '' : 'Загрузка…'}</p>
       : profiles.length === 0 ? <p className="sir-empty">{admin ? 'Профили ещё не загружены. Загрузите файлы «24_прил CN.xlsx», «25_прил CN.xlsx», «26_прил CN.xlsx».' : 'Профили ещё не загружены администратором.'}</p>

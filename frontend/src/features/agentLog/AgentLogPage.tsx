@@ -4,14 +4,14 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuTime } from '@/shared/lib/dates'
 import { User } from '@/shared/types/user'
 import { formatCode } from '@/shared/tnved/codes'
-import { decisionStatusLabels } from '@/shared/tnved/decisions'
+import { decisionStatusLabels, decisionStatusTones } from '@/shared/tnved/decisions'
 import { Employee, employeesApi } from '@/features/employees/employeesApi'
 import { AgentLogEntryPanel } from './AgentLogEntry'
 import { agentLogApi, LogFilter, LogModel, LogPage, LogRow } from './agentLogApi'
-import { comparison, decisionStatusClass, durationText, isoDaysAgo, metaText, modelOutcome, percent, rangeText } from './logRows'
+import { comparison, durationText, isoDaysAgo, metaText, modelOutcome, percent, rangeText } from './logRows'
 import '@/shared/styles/list-page.css'
-import '@/shared/styles/verification-status.css'
 import './agentLog.css'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 
 const pageSize = 50
 const onlyOptions: { value: LogFilter['only']; label: string }[] = [
@@ -54,12 +54,8 @@ export function AgentLogPage({ user, onLogout }: { user: User; onLogout: () => v
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="agentLog" onLogout={onLogout} />
     <section className="directory-page alog">
-      <div className="dir-head">
-        <div>
-          <h1>Журнал агента{summary && <span className="dir-count">{total}</span>}</h1>
-          <p>Подборы кодов всех сотрудников: что предложила основная модель, что — теневая, какой код применили и что подтвердила проверка.</p>
-        </div>
-      </div>
+      <PageHead title="Журнал агента" count={summary ? total : undefined}
+        subtitle="Подборы кодов всех сотрудников: что предложила основная модель, что — теневая, какой код применили и что подтвердила проверка." />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
       {summary && shadow && <div className="alog-summary">
         <Stat label="Подборов" value={String(total)} note={`с итогом: ${summary.withResult}`} />
@@ -106,8 +102,8 @@ export function AgentLogPage({ user, onLogout }: { user: User; onLogout: () => v
         <div className="alog-more">
           <span>{rangeText(page, pageSize, total)}</span>
           {pages > 1 && <div>
-            <button type="button" onClick={() => setPage(page - 1)} disabled={page <= 1 || loading}>← Новее</button>
-            <button type="button" onClick={() => setPage(page + 1)} disabled={page >= pages || loading}>Старее →</button>
+            <button type="button" className="secondary" onClick={() => setPage(page - 1)} disabled={page <= 1 || loading}>← Новее</button>
+            <button type="button" className="secondary" onClick={() => setPage(page + 1)} disabled={page >= pages || loading}>Старее →</button>
           </div>}
         </div>
       </div>
@@ -120,7 +116,7 @@ export function AgentLogPage({ user, onLogout }: { user: User; onLogout: () => v
 function Tabs({ label, value, options, onChange }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (value: string) => void }) {
   return <div className="alog-tabs" role="group" aria-label={label}>
     <span>{label}</span>
-    {options.map((option) => <button key={option.value} type="button" className={option.value === value ? 'active' : undefined} aria-pressed={option.value === value} onClick={() => onChange(option.value)}>{option.label}</button>)}
+    <div className="dir-seg">{options.map((option) => <button key={option.value} type="button" className={option.value === value ? 'active' : undefined} aria-pressed={option.value === value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>
   </div>
 }
 
@@ -169,8 +165,8 @@ function LogRowView({ row, onOpen }: { row: LogRow; onOpen: () => void }) {
     <ModelCell model={row.shadow} />
     <td className="c-applied">{row.decision ? <code>{formatCode(row.decision.code)}</code> : <span className="alog-none">—</span>}</td>
     <td className="c-verify">{row.decision
-      ? <span className={`directory-status ${decisionStatusClass[row.decision.status]}`}>{decisionStatusLabels[row.decision.status]}</span>
+      ? <span className={`status-dot ${decisionStatusTones[row.decision.status]}`}>{decisionStatusLabels[row.decision.status]}</span>
       : <span className="alog-none">—</span>}</td>
-    <td className="c-cmp">{marks.length === 0 ? <span className="alog-none">—</span> : marks.map((mark) => <span key={mark.text} className={`alog-mark ${mark.tone}`}>{mark.text}</span>)}</td>
+    <td className="c-cmp">{marks.length === 0 ? <span className="alog-none">—</span> : marks.map((mark) => <span key={mark.text} className={`status-dot ${mark.tone === 'bad' ? 'error' : mark.tone} alog-mark`}>{mark.text}</span>)}</td>
   </tr>
 }

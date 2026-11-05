@@ -38,7 +38,7 @@ export function LoginPage({ notice, onLogin, onRegister }: { notice: string; onL
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={loading}>{loading ? 'Входим…' : 'Войти'}</button>
       </form>
-      <button type="button" className="auth-switch" onClick={onRegister}>Нет аккаунта? Зарегистрироваться</button>
+      <button type="button" className="secondary auth-switch" onClick={onRegister}>Нет аккаунта? Зарегистрироваться</button>
       <AuthRates />
     </section>
   </main>

@@ -19,6 +19,7 @@ import { DeclarationsLink } from './DeclarationsLink'
 import { DocumentsAnswer, DocumentsButton, documentsRequested, scrollToDocuments } from './DocumentsAnswer'
 import { resultShortText, resultText } from './answerCopy'
 import { CopyAnswer } from './CopyAnswer'
+import '../goods.css'
 import './agent.css'
 import { CodeDecision, decisionStatusLabels } from '@/shared/tnved/decisions'
 import { nameParts, formatCode } from '@/shared/tnved/codes'
@@ -52,6 +53,8 @@ const toolIcons: Record<string, string> = {
 }
 
 export const verdictLabels: Record<AgentCandidate['verdict'], string> = { fits: 'подходит', doubtful: 'возможно', no: 'не подходит' }
+// Тон бейджа (.badge) по вердикту.
+const verdictBadge: Record<AgentCandidate['verdict'], string> = { fits: 'badge ok', doubtful: 'badge warn', no: 'badge' }
 
 export function agentItemFrom(item: GoodsItemInput): AgentItem {
   return {
@@ -356,14 +359,14 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
         <p>Строка {rowNumber} из {rowCount}</p>
       </div>
       <div className="ag-head-actions" ref={navRef}>
-        <button type="button" className="ag-icon" data-nav="prev" onClick={() => navigate('prev', onPrev)} disabled={!onPrev} aria-label="Предыдущая строка" title="Предыдущая строка">
+        <button type="button" className="icon-button ghost" data-nav="prev" onClick={() => navigate('prev', onPrev)} disabled={!onPrev} aria-label="Предыдущая строка" title="Предыдущая строка">
           <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10l4-4 4 4" /></svg>
         </button>
-        <button type="button" className="ag-icon" data-nav="next" onClick={() => navigate('next', onNext)} disabled={!onNext} aria-label="Следующая строка" title="Следующая строка">
+        <button type="button" className="icon-button ghost" data-nav="next" onClick={() => navigate('next', onNext)} disabled={!onNext} aria-label="Следующая строка" title="Следующая строка">
           <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
         </button>
         <details className="ag-menu" ref={menuRef}>
-          <summary className="ag-icon" aria-label="Ещё действия" title="Ещё действия">
+          <summary className="icon-button ghost" aria-label="Ещё действия" title="Ещё действия">
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
           </summary>
           <div className="ag-menu-list" role="menu">
@@ -374,7 +377,7 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
             {session && session.runs > 0 && <p className="ag-menu-note" title={`Модель ${session.model}, шагов: ${session.steps}`}>Стоимость подбора ${session.costUsd}</p>}
           </div>
         </details>
-        <button type="button" className="ag-icon" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">
+        <button type="button" className="icon-button ghost" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">
           <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
         </button>
       </div>
@@ -394,10 +397,10 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
           {session && !notStarted && <small>{statusText(session)}</small>}
         </header>
         {loading && !session
-          ? <p className="ag-wait"><span className="ag-spinner" aria-hidden="true" />Загрузка…</p>
+          ? <p className="ag-wait"><span className="goods-spinner" aria-hidden="true" />Загрузка…</p>
           : notStarted
             ? <div className="ag-launch">
-              <button type="button" className="ag-primary" onClick={launch} disabled={busy || !configured}>
+              <button type="button" className={skippedByBase ? 'secondary' : undefined} onClick={launch} disabled={busy || !configured}>
                 <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 1.5l1.4 3.6 3.6 1.4-3.6 1.4L8 11.5 6.6 7.9 3 6.5l3.6-1.4zM12.5 10.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" /></svg>
                 {skippedByBase ? 'Всё равно подобрать заново' : 'Подобрать код'}
               </button>
@@ -499,7 +502,7 @@ function AgentChecks({ messages, searching, running, baseFound }: { messages: Ag
 }
 
 function CheckIcon({ state }: { state: CheckState }) {
-  if (state === 'run') return <span className="ag-spinner" aria-label="идёт" />
+  if (state === 'run') return <span className="goods-spinner" aria-label="идёт" />
   if (state === 'fail') return <svg className="ag-check-icon" width="16" height="16" viewBox="0 0 16 16" aria-label="ошибка" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="8" cy="8" r="6.5" /><path d="M5.8 5.8l4.4 4.4M10.2 5.8l-4.4 4.4" /></svg>
   if (state === 'idle') return <svg className="ag-check-icon" width="16" height="16" viewBox="0 0 16 16" aria-label="не было" fill="none" stroke="currentColor" strokeWidth="1.4" strokeDasharray="2 2"><circle cx="8" cy="8" r="6.5" /></svg>
   return <svg className="ag-check-icon" width="16" height="16" viewBox="0 0 16 16" aria-label="готово" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6.5" /><path d="M5.3 8.2l1.9 1.9 3.6-3.8" /></svg>
@@ -636,11 +639,11 @@ function BaseCard({ match, similar, searching, hasPhotos, actions }: { match: Sa
       <small>{searching ? 'ищу…' : found ? `найдено: ${found}` : 'ничего не найдено'}</small>
     </header>
     {match.map(({ decision, byPhoto, byName, photoDiffers }) => <DecisionRow key={`same-${decision.id}`} decision={decision} actions={actions}
-      badge={photoDiffers ? <i className="ag-pill doubtful" title="Наименование то же, но фото другое — фото главнее">то же наименование</i> : <i className="ag-pill fits">тот же товар</i>}
+      badge={photoDiffers ? <span className="badge warn" title="Наименование то же, но фото другое — фото главнее">то же наименование</span> : <span className="badge ok">тот же товар</span>}
       note={photoDiffers ? 'Наименование совпало, но на фото, похоже, другой товар — сверьте фото, прежде чем применять код.' : undefined}
       meta={`узнан ${[byPhoto && 'по фото', byName && 'по наименованию'].filter(Boolean).join(' и ')} · в инвойсе: «${decision.invoiceName || decision.supplierName}»`} />)}
     {similarMatches.map((item) => <DecisionRow key={`similar-${item.decision.id}`} decision={item.decision} actions={actions}
-      badge={<>{item.verdict && <i className={`ag-pill ${item.verdict === 'same' ? 'fits' : 'doubtful'}`}>{similarVerdicts[item.verdict]}</i>}<i className="ag-pill plain" title="Похожесть по фото">{item.score}%</i></>}
+      badge={<>{item.verdict && <span className={item.verdict === 'same' ? 'badge ok' : 'badge warn'}>{similarVerdicts[item.verdict]}</span>}<span className="badge ag-score" title="Похожесть по фото">{item.score}%</span></>}
       meta={[item.byPhoto && 'снимок похож', item.byDescription && item.description && `в базе: ${item.description}`].filter(Boolean).join(' · ')}
       note={item.why} />)}
     {!searching && found === 0 && <p className="ag-empty-line">{hasPhotos ? 'Такого товара и похожих по фото в базе нет.' : 'Такого товара в базе нет. Похожие ищутся по фото — у строки фото нет.'}</p>}
@@ -669,9 +672,9 @@ function DecisionRow({ decision, actions, badge, meta, note }: { decision: CodeD
       {!decision.nomenclature && <p className="ag-warn">Кода нет в текущей номенклатуре — проверьте.</p>}
       <div className="ag-actions">
         {codeDone && nameDone && <span className="ag-done">{name ? '✓ код и наименование применены' : '✓ код применён'}</span>}
-        {!codeDone && <button type="button" className="ag-apply" onClick={() => onApply(decision.code, nameDone ? '' : name)} disabled={busy || noCode}>{nameDone ? 'Применить код' : 'Применить код и наименование'}</button>}
-        {!codeDone && !nameDone && <button type="button" className="ag-text" onClick={() => onApply(decision.code, '')} disabled={busy || noCode}>только код</button>}
-        {codeDone && !nameDone && <button type="button" className="ag-apply ghost" onClick={() => onApply('', name)} disabled={busy}>Применить наименование</button>}
+        {!codeDone && <button type="button" className="sm" onClick={() => onApply(decision.code, nameDone ? '' : name)} disabled={busy || noCode}>{nameDone ? 'Применить код' : 'Применить код и наименование'}</button>}
+        {!codeDone && !nameDone && <button type="button" className="button-link" onClick={() => onApply(decision.code, '')} disabled={busy || noCode}>только код</button>}
+        {codeDone && !nameDone && <button type="button" className="secondary sm" onClick={() => onApply('', name)} disabled={busy}>Применить наименование</button>}
         {decision.nomenclature?.detailsUrl && <a href={decision.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
         <Link href={`${paths.decisions}?id=${decision.id}`}>В базе решений</Link>
       </div>
@@ -698,7 +701,7 @@ function NameEditor({ suggested, applied, busy, onApply }: { suggested: string; 
     <div className="ag-actions">
       {done
         ? <span className="ag-done">✓ применено с переводом на китайский</span>
-        : <button type="button" className="ag-apply ghost" onClick={() => onApply(value)} disabled={busy || !value}>{busy ? 'Перевожу…' : 'Применить наименование'}</button>}
+        : <button type="button" className="secondary sm" onClick={() => onApply(value)} disabled={busy || !value}>{busy ? 'Перевожу…' : 'Применить наименование'}</button>}
       {!done && <span className="ag-muted">перевод на китайский добавится при применении</span>}
     </div>
   </div>
@@ -735,12 +738,12 @@ function CandidateCard({ candidate, applied, busy, onApplyCode, documentsDisable
   return <article className={`ag-cand ${candidate.verdict}`}>
     <div className="ag-row-top">
       <CodeLine code={candidate.code} name={candidate.nomenclature?.name} />
-      <i className={`ag-pill ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i>
+      <span className={verdictBadge[candidate.verdict]}>{verdictLabels[candidate.verdict]}</span>
     </div>
     <CandidateRates candidate={candidate} />
     <CandidateWhy candidate={candidate} />
     <div className="ag-actions">
-      {candidate.verdict !== 'no' && (applied.code === candidate.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="ag-apply ghost" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>Применить код</button>)}
+      {candidate.verdict !== 'no' && (applied.code === candidate.code ? <span className="ag-done">✓ применён</span> : <button type="button" className="secondary sm" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>Применить код</button>)}
       {candidate.verdict !== 'no' && <DocumentsButton code={candidate.code} disabled={documentsDisabled} onClick={onDocuments} />}
       {candidate.nomenclature?.detailsUrl && <a href={candidate.nomenclature.detailsUrl} target="_blank" rel="noreferrer">Подробнее ↗</a>}
       <DeclarationsLink candidate={candidate} />
@@ -757,7 +760,7 @@ function ProposalCard({ candidate, result, fileCode, applied, busy, onApplyCode,
   return <article className="ag-proposal">
     <div className="ag-proposal-top">
       <CopyCode code={candidate.code} className="ag-proposal-code" />
-      <i className={`ag-pill ${candidate.verdict}`}>{verdictLabels[candidate.verdict]}</i>
+      <span className={verdictBadge[candidate.verdict]}>{verdictLabels[candidate.verdict]}</span>
     </div>
     {parts.length > 0 && <p className="ag-proposal-name" title={parts.join(' › ')}>{parts.slice(-2).join(' › ')}</p>}
     <CandidateRates candidate={candidate} />
@@ -766,7 +769,7 @@ function ProposalCard({ candidate, result, fileCode, applied, busy, onApplyCode,
     <div className="ag-proposal-actions">
       {applied.code === candidate.code
         ? <span className="ag-done">✓ Код применён к строке</span>
-        : <button type="button" className="ag-primary" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>{same ? 'Подтвердить код' : 'Применить код'}</button>}
+        : <button type="button" onClick={() => onApplyCode(candidate.code, true)} disabled={busy}>{same ? 'Подтвердить код' : 'Применить код'}</button>}
       <label className="ag-save" htmlFor={checkboxId}>
         <input id={checkboxId} type="checkbox" checked={saveToBase} onChange={(event) => onSaveToBase(event.target.checked)} />
         Сохранить в базу решений

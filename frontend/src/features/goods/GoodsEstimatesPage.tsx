@@ -66,7 +66,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
   async function create() {
     setError('')
     try {
-      const estimate = await goodsEstimatesApi.create({ name: `Смета товаров · ${todayIso()}`, client: '', assessmentDate: todayIso() })
+      const estimate = await goodsEstimatesApi.createToday()
       // Сервер мог взять заново пустую смету и удалить другие пустые — список перечитываем.
       setEstimates(await goodsEstimatesApi.list().catch(() => [estimate, ...estimates.filter((item) => item.id !== estimate.id)]))
       navigate(paths.goods(estimate.id), { replace: fresh })
@@ -121,7 +121,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
     <AppHeader user={user} section="estimates" onLogout={onLogout} />
     {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
     <div className="estimates-workspace">
-      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={estimateName} hrefOf={paths.goods} onCreate={() => navigate(paths.goods())} onRemove={(estimate) => void remove(estimate)} />
+      <EstimatesSidebar title="Сметы товаров" estimates={estimates} selectedId={selected?.id ?? null} docked={!selected && !loading && estimates.length === 0} loading={loading} nameOf={estimateName} hrefOf={paths.goods} onCreate={() => void create()} onRemove={(estimate) => void remove(estimate)} />
       <section className="estimates-content">
         {selected ? <GoodsCalculator
           key={selected.id}
@@ -132,7 +132,7 @@ export function GoodsEstimatesPage({ user, estimateId, onLogout }: Props) {
             <h1 title={estimateName(selected)}>{estimateName(selected)}</h1>
             {/* Дата уже в названии — под ним не повторяется. */}
             <span className="estimate-bar-sub">{estimateName(selected).includes(formatRuDate(selected.assessmentDate)) ? '' : `${formatRuDate(selected.assessmentDate)} · `}{selected.client.trim() ? estimateSubtitle(selected) : 'Клиент не указан'} ·</span>
-            {employeeEstimate && <span className="estimate-owner" title="Изменения и расчёт сохраняются в смете сотрудника">Смета сотрудника: {foreign?.ownerName || 'сотрудник'} · <Link href={paths.employees}>к сотрудникам</Link></span>}
+            {employeeEstimate && <span className="badge warn estimate-owner" title="Изменения и расчёт сохраняются в смете сотрудника">Смета сотрудника: {foreign?.ownerName || 'сотрудник'} · <Link href={paths.employees}>к сотрудникам</Link></span>}
             <details className="estimate-bar-editor"><summary>{selected.client ? 'Изменить' : 'Указать'}</summary><div className="estimate-bar-fields"><label>Название<input value={meta.name} onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))} maxLength={200} placeholder="По клиенту или номеру" /></label><label>Клиент<input value={meta.client} onChange={(event) => setMeta((current) => ({ ...current, client: event.target.value }))} maxLength={200} placeholder="Необязательно" /></label><label>Дата<input type="date" value={meta.assessmentDate} onChange={(event) => setMeta((current) => ({ ...current, assessmentDate: event.target.value }))} /></label><button type="button" className="secondary" onClick={(event) => { const details = event.currentTarget.closest('details'); void saveMeta().then((saved) => { if (saved) details?.removeAttribute('open') }) }} disabled={savingMeta}>{savingMeta ? 'Сохраняем…' : 'Сохранить'}</button></div></details>
           </div>}
         /> : !loading && fresh && <div className="estimates-empty">

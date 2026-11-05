@@ -5,8 +5,9 @@ import { plural } from '@/shared/lib/plural'
 import { Role, roleLabels, User } from '@/shared/types/user'
 import { EmployeeEstimatesPanel } from './EmployeeEstimatesPanel'
 import { Employee, employeesApi, EmployeeUpdate } from './employeesApi'
+import { Drawer } from '@/shared/components/Drawer/Drawer'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import '@/shared/styles/list-page.css'
-import '@/shared/styles/verification-status.css'
 import './employees.css'
 
 const roles = Object.keys(roleLabels) as Role[]
@@ -54,8 +55,7 @@ export function EmployeesPage({ user, onLogout }: { user: User; onLogout: () => 
     }
   }
 
-  async function create(event: FormEvent) {
-    event.preventDefault()
+  async function create() {
     setSaving(true); setError(''); setNotice('')
     try {
       const employee = await employeesApi.create({ ...form, name: form.name.trim(), email: form.email.trim() })
@@ -69,6 +69,8 @@ export function EmployeesPage({ user, onLogout }: { user: User; onLogout: () => 
       setSaving(false)
     }
   }
+
+  function cancelAdding() { setAdding(false); setForm(emptyForm) }
 
   async function savePassword(event: FormEvent, employee: Employee) {
     event.preventDefault()
@@ -107,25 +109,23 @@ export function EmployeesPage({ user, onLogout }: { user: User; onLogout: () => 
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="employees" onLogout={onLogout} />
     <section className="directory-page">
-      <div className="dir-head">
-        <div>
-          <h1>Сотрудники{!loading && <span className="dir-count">{items.length}</span>}</h1>
-          <p>Администратор — полный доступ; в «Сметах» видит свои сметы, сметы сотрудников — здесь. Инвойсер и переводчик — калькуляторы.</p>
-        </div>
-        {!adding && <button type="button" className="dir-add" onClick={() => { setAdding(true); setNotice('') }}>+ Добавить сотрудника</button>}
-      </div>
+      <PageHead title="Сотрудники" count={loading ? undefined : items.length}
+        subtitle="Учётные записи сотрудников: роль, доступ (активен или заблокирован), пароль и их сметы."
+        actions={<button type="button" className="dir-add" onClick={() => { setAdding(true); setNotice('') }}>+ Добавить сотрудника</button>} />
       {error && <p className="banner error" role="alert">{error}<button type="button" onClick={() => setError('')}>×</button></p>}
       {notice && <p className="banner ok" role="status">{notice}<button type="button" onClick={() => setNotice('')}>×</button></p>}
-      {adding && <form className="emp-card" onSubmit={(event) => void create(event)}>
-        <label>Имя<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required maxLength={120} autoFocus /></label>
-        <label>Email<input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required autoComplete="off" /></label>
-        <label>Пароль<input value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required minLength={8} autoComplete="new-password" placeholder="не короче 8 символов" /></label>
-        <label>Роль<select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as Role })}>{roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>
-        <div className="emp-card-actions">
-          <button type="button" className="emp-secondary" onClick={() => { setAdding(false); setForm(emptyForm) }}>Отмена</button>
+      {adding && <Drawer title="Новый сотрудник" subtitle="Передайте сотруднику email и пароль для входа" className="emp-card" onClose={cancelAdding} onSubmit={() => void create()}
+        footer={<>
+          <button type="button" className="secondary" onClick={cancelAdding}>Отмена</button>
           <button type="submit" disabled={saving}>{saving ? 'Сохраняем…' : 'Добавить'}</button>
+        </>}>
+        <div className="drawer-section">
+          <label className="drawer-field"><span>Имя</span><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required maxLength={120} autoFocus /></label>
+          <label className="drawer-field"><span>Email</span><input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required autoComplete="off" /></label>
+          <label className="drawer-field"><span>Пароль</span><input value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required minLength={8} autoComplete="new-password" placeholder="не короче 8 символов" /></label>
+          <label className="drawer-field"><span>Роль</span><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as Role })}>{roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}</select></label>
         </div>
-      </form>}
+      </Drawer>}
       <div className={loading && items.length > 0 ? 'dir-table-wrap dir-loading' : 'dir-table-wrap'}>
         <table className="sheet sheet-rownum dir-table emp-table">
           <thead><tr><th>Сотрудник</th><th>Роль</th><th className="c-status">Статус</th><th className="emp-count-col">Сметы</th><th>Действия</th></tr></thead>
@@ -149,7 +149,7 @@ export function EmployeesPage({ user, onLogout }: { user: User; onLogout: () => 
                       {roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
                     </select>
                   </td>
-                  <td className="c-status"><span className={`directory-status ${employee.disabled ? 'archived' : 'operator_verified'}`}>{employee.disabled ? 'Заблокирован' : 'Активен'}</span></td>
+                  <td className="c-status"><span className={employee.disabled ? 'status-dot' : 'status-dot ok'}>{employee.disabled ? 'Заблокирован' : 'Активен'}</span></td>
                   <td className="emp-count-col">
                     <button type="button" className="emp-count" onClick={() => setEstimatesOf(employee)} disabled={employee.estimateCount === 0} title={employee.estimateCount ? 'Открыть сметы сотрудника' : 'Смет нет'}>{employee.estimateCount}</button>
                   </td>
@@ -159,19 +159,19 @@ export function EmployeesPage({ user, onLogout }: { user: User; onLogout: () => 
                       // «Сохранить» (type="submit") прямо во время клика, и браузер сразу отправит форму.
                       ? <div className="emp-actions" key="editing">
                         <button type="submit" form={`emp-edit-${employee.id}`}>Сохранить</button>
-                        <button type="button" className="emp-secondary" onClick={() => setEditing(null)}>Отмена</button>
+                        <button type="button" className="secondary" onClick={() => setEditing(null)}>Отмена</button>
                       </div>
                       : passwordFor === employee.id
                       ? <form className="emp-password" onSubmit={(event) => void savePassword(event, employee)}>
                         <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} required autoFocus autoComplete="new-password" placeholder="новый пароль" aria-label="Новый пароль" />
                         <button type="submit">Сохранить</button>
-                        <button type="button" className="emp-secondary" onClick={() => { setPasswordFor(null); setNewPassword('') }}>Отмена</button>
+                        <button type="button" className="secondary" onClick={() => { setPasswordFor(null); setNewPassword('') }}>Отмена</button>
                       </form>
                       : <div className="emp-actions" key="idle">
-                        <button type="button" className="emp-secondary" onClick={(event) => { event.preventDefault(); setEditing({ id: employee.id, name: employee.name, email: employee.email }); setPasswordFor(null) }}>Изменить</button>
-                        <button type="button" className="emp-secondary" onClick={() => { setPasswordFor(employee.id); setNewPassword(''); setEditing(null) }}>Сменить пароль</button>
-                        {!self && <button type="button" className={employee.disabled ? 'emp-secondary' : 'emp-secondary danger'} onClick={() => toggleBlocked(employee)}>{employee.disabled ? 'Разблокировать' : 'Заблокировать'}</button>}
-                        {!self && <button type="button" className="emp-secondary danger" onClick={() => void remove(employee)}>Удалить</button>}
+                        <button type="button" className="secondary" onClick={(event) => { event.preventDefault(); setEditing({ id: employee.id, name: employee.name, email: employee.email }); setPasswordFor(null) }}>Изменить</button>
+                        <button type="button" className="secondary" onClick={() => { setPasswordFor(employee.id); setNewPassword(''); setEditing(null) }}>Сменить пароль</button>
+                        {!self && <button type="button" className="secondary" onClick={() => toggleBlocked(employee)}>{employee.disabled ? 'Разблокировать' : 'Заблокировать'}</button>}
+                        {!self && <button type="button" className="danger" onClick={() => void remove(employee)}>Удалить</button>}
                       </div>}
                   </td>
                 </tr>

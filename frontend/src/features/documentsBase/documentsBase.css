@@ -1,0 +1,49 @@
+/* База документов: как журнал агента — сводка, карточка со вкладками и поиском, таблица на оставшуюся высоту;
+   карточка кода — широкая панель справа. Токены --tf-* (base.css). */
+
+.dbase-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.alog-filterbar .dbase-search { flex: 1 1 260px; max-width: 420px; }
+
+.dbase-table { min-width: 960px; }
+.dbase-table td { height: 48px; padding: 8px 12px; vertical-align: middle; }
+.dbase-table tbody tr:not(.dbase-static) { cursor: pointer; }
+.dbase-table td small { display: block; margin-top: 2px; color: var(--tf-muted); font-size: var(--fs-xs); }
+.dbase-table .c-code { width: 140px; white-space: nowrap; }
+.dbase-table .c-code code { font-size: var(--fs-md); }
+.dbase-table .c-name { max-width: 0; }
+.dbase-table .c-name span { display: -webkit-box; overflow: hidden; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.dbase-table .c-measures { width: 130px; }
+.dbase-table .c-kinds { width: 150px; }
+.dbase-table .c-versions { width: 80px; text-align: center; }
+.dbase-table .c-when { width: 160px; white-space: nowrap; }
+.dbase-table .c-size { width: 140px; color: var(--tf-text-2); white-space: nowrap; }
+.dbase-table .c-title { max-width: 0; }
+.dbase-table .c-title span { display: block; overflow: hidden; color: var(--tf-text); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.dbase-table .c-title a { display: block; overflow: hidden; color: var(--tf-green); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
+.dbase-empty { padding: 16px 12px; color: var(--tf-muted); font-size: var(--fs-md); text-align: center; }
+
+/* Счётчики мер — .badge: нужно — ok, возможно — warn, не относится — серый */
+.dbase-counts { display: inline-flex; gap: 4px; }
+.dbase-counts .badge { justify-content: center; min-width: 26px; font-family: var(--tf-num); }
+.dbase-kind { margin: 0 4px 2px 0; font-style: normal; }
+
+/* Карточка кода */
+.dbase-entry { width: min(980px, 100%); }
+.dbase-entry .drawer-head h2 code { font-size: var(--fs-lg); }
+.dbase-versions { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.dbase-versions .dir-seg { flex: 0 1 auto; flex-wrap: wrap; }
+.dbase-versions > span { color: var(--tf-text-2); font-size: var(--fs-sm); font-weight: 500; }
+.dbase-product { display: grid; gap: 2px; margin: 0 0 12px; color: var(--tf-text); font-size: var(--fs-md); line-height: 1.45; }
+.dbase-product small { color: var(--tf-muted); font-size: var(--fs-xs); }
+.dbase-block { display: grid; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--tf-border-inner); }
+.dbase-block h3 { margin: 0; font-size: var(--fs-md); font-weight: 600; }
+.dbase-muted { margin: 0; color: var(--tf-muted); font-size: var(--fs-md); }
+.dbase-acts { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.dbase-acts li { display: grid; gap: 2px; }
+.dbase-acts a { color: var(--tf-green); font-size: var(--fs-md); }
+.dbase-acts small { color: var(--tf-muted); font-size: var(--fs-xs); }
+.dbase-help summary { cursor: pointer; color: var(--tf-text-2); font-size: var(--fs-md); }
+.dbase-help summary a { margin-left: 6px; color: var(--tf-green); }
+.dbase-help pre { max-height: 420px; margin: 8px 0 0; padding: 8px 12px; overflow: auto; border: 1px solid var(--tf-border-inner); border-radius: var(--tf-radius); background: var(--tf-bg); font-size: var(--fs-xs); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+
+@media (max-width: 900px) { .dbase-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

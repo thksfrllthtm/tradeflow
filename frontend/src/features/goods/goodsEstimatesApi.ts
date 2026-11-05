@@ -1,4 +1,5 @@
 import { request } from '@/shared/api/client'
+import { todayIso } from '@/shared/lib/dates'
 import { goodsApi } from '@/shared/api/goodsApi'
 import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimate, GoodsEstimateInput, GoodsEstimateSummary, GoodsParseResult } from '@/shared/types/goods'
 
@@ -15,6 +16,8 @@ export const goodsEstimatesApi = {
   // Сметы сотрудника — только для администратора (страница «Сотрудники»).
   listForUser: async (userId: number) => (await request<{ estimates: GoodsEstimateSummary[] }>(`/api/goods-estimates?userId=${userId}`)).estimates,
   create: async (input: GoodsEstimateInput) => (await request<{ estimate: GoodsEstimateSummary }>('/api/goods-estimates', { method: 'POST', body: JSON.stringify(input) })).estimate,
+  // Новая смета на сегодня. Сервер берёт заново уже имеющуюся пустую смету, поэтому лишних пустых не копится.
+  createToday: () => goodsEstimatesApi.create({ name: `Смета товаров · ${todayIso()}`, client: '', assessmentDate: todayIso() }),
   get: async (id: number) => (await request<{ estimate: GoodsEstimate }>('/api/goods-estimates/' + id)).estimate,
   update: async (id: number, input: GoodsEstimateInput) => (await request<{ estimate: GoodsEstimateSummary }>('/api/goods-estimates/' + id, { method: 'PATCH', body: JSON.stringify(input) })).estimate,
   remove: (id: number) => request<void>('/api/goods-estimates/' + id, { method: 'DELETE' }),

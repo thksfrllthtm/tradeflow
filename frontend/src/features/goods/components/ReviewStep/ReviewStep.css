@@ -1,26 +1,12 @@
 /* Этап 2 «Проверка строк»: строка заголовка, чипы параметров, панель фильтров, строка значения, лист.
-   Цвета — токены --tf-* (shared/styles/base.css); --rv-* и --xl-* — их имена для листа и полей.
-   Кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
+   Цвета — токены --tf-* (shared/styles/base.css); --xl-* — настройки листа.
+   Кнопки, переключатели, поиск — общие классы (base.css, list-page.css); здесь только раскладка. */
 
 .rv-step {
-  --rv-ink: var(--tf-text);
-  --rv-ink-2: var(--tf-text-2);
-  --rv-ink-3: var(--tf-muted);
-  --rv-line: var(--tf-border-inner);
-  --rv-line-strong: var(--tf-border);
-  --rv-green: var(--tf-green);
-  --rv-green-dark: var(--tf-green);
-  --rv-focus: var(--tf-green);
-  --rv-bad: #b42318;
-  --rv-warn: var(--tf-warn-text);
-  --rv-changed: #2c4f86;
-  --rv-field: var(--tf-border);
   /* Лист «как в Excel» — сетка из токенов страницы. */
   --xl-grid: var(--tf-border-inner);
-  --xl-head: #eff2ee;
   --xl-head-line: var(--tf-border);
   --xl-head-ink: var(--tf-muted);
-  --xl-hover: #f6f8f6;
   --xl-active: var(--tf-green);
   display: flex;
   flex-direction: column;
@@ -28,74 +14,63 @@
   color: var(--tf-text);
   font-family: var(--tf-font);
 }
-.rv-step :is(button, input, select, summary):focus-visible { outline: 2px solid var(--rv-focus); outline-offset: 2px; }
+.rv-step :is(button, input, select, summary):focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
 .rv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.rv-step .button-link { color: var(--tf-green); font-size: .86rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-.rv-step .button-link:hover:not(:disabled) { background: none; }
-
-/* Кнопки этапа: вторичная, главная (зелёная), опасная. */
-.rv-step .rv-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; white-space: nowrap; }
-.rv-step .rv-btn:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
-.rv-step .rv-btn.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
-.rv-step .rv-btn.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
-.rv-step .rv-btn.danger { color: #b42318; }
-.rv-step .rv-btn.danger:hover:not(:disabled) { border-color: #f0cccc; background: #fef3f2; }
-.rv-step .rv-btn.small { height: 28px; padding: 0 10px; font-size: .82rem; }
-.rv-step .rv-icon { display: inline-grid; flex: none; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); list-style: none; cursor: pointer; }
-.rv-step .rv-icon::-webkit-details-marker { display: none; }
-.rv-step .rv-icon:hover { background: var(--tf-chip); color: var(--tf-text); }
+/* «⋯» — <summary> с видом .icon-button: без маркера списка, скругление как у кнопок. */
+.rv-more > summary { list-style: none; border-radius: var(--tf-radius); cursor: pointer; }
+.rv-more > summary::-webkit-details-marker { display: none; }
 
 /* ── Строка заголовка: название и этапы ── */
 .rv-step .rv-titlebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; margin: 0; padding: 0; }
 .rv-titlebar .estimate-bar-meta { flex: 0 1 auto; }
 .rv-titlebar .est-steps { margin-left: auto; }
-.rv-titlebar .estimate-bar-meta h1 { color: var(--tf-text); font-size: 1.12rem; font-weight: 600; letter-spacing: -.02em; }
-.rv-titlebar .estimate-bar-sub { color: var(--tf-muted); font-size: .8rem; }
-.rv-titlebar .estimate-bar-editor > summary { color: var(--tf-green); font-size: .8rem; text-decoration: underline; text-underline-offset: 2px; }
+.rv-titlebar .estimate-bar-meta h1 { color: var(--tf-text); font-size: var(--fs-xl); font-weight: 600; letter-spacing: 0; }
+.rv-titlebar .estimate-bar-sub { color: var(--tf-muted); font-size: var(--fs-sm); }
+.rv-titlebar .estimate-bar-editor > summary { color: var(--tf-green); font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 2px; }
 /* ── Панель расчёта: слева параметры, справа статус сохранения, «Сохранить», «Рассчитать →» ── */
 /* Кнопки всегда справа; не хватает места — переносятся параметры внутри своей части. */
-.rv-toolbar { display: flex; align-items: center; gap: 6px 12px; padding: 6px 10px 6px 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.rv-toolbar { display: flex; align-items: center; gap: 6px 12px; padding: 6px 12px 6px 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .rv-title-actions { display: flex; flex: none; align-items: center; gap: 8px; margin-left: auto; }
 @media (max-width: 900px) {
   .rv-toolbar { flex-wrap: wrap; }
   .rv-toolbar .rv-params { flex-basis: 100%; }
 }
 .rv-save { display: grid; justify-items: end; max-width: 300px; }
-.rv-save-state { max-width: 300px; overflow: hidden; color: var(--tf-muted); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.rv-save-state { max-width: 300px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
 .rv-save-state.failed { color: var(--tf-error); font-weight: 600; }
-.rv-save-state.unsaved { padding: 3px 8px; border-radius: 6px; background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 500; }
-.rv-save-nocode { color: #b42318; font-size: .82rem; font-weight: 500; }
+.rv-save-state.unsaved { padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 500; }
+.rv-save-nocode { color: var(--tf-error); font-size: var(--fs-sm); font-weight: 500; }
 
 /* Параметры: все значения видны сразу; по щелчку — список, где каждый параметр правится в своём поле. */
 .rv-params { position: relative; flex: 1 1 0; min-width: 0; }
 /* Каждый параметр — подпись мелко сверху, значение под ней; пустые значения серые, обязательные пустые — красные. */
-.rv-params-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; min-height: 40px; padding: 4px 6px 4px 8px; color: var(--tf-text); font-size: .86rem; }
+.rv-params-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; min-height: 40px; padding: 4px 6px 4px 8px; color: var(--tf-text); font-size: var(--fs-md); }
 .rv-params-item { display: inline-grid; gap: 2px; padding: 0 16px; border-left: 1px solid var(--tf-border-inner); line-height: 1.25; white-space: nowrap; }
 .rv-params-item:first-child { padding-left: 4px; border-left: 0; }
-.rv-params-item > span { color: var(--tf-muted); font-size: .72rem; }
-.rv-params-item b { font-size: .86rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rv-params-item > span { color: var(--tf-muted); font-size: var(--fs-xs); }
+.rv-params-item b { font-size: var(--fs-md); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rv-params-item.empty b { color: var(--tf-muted); font-weight: 400; }
-.rv-params-item.warn b { color: #b42318; }
-.rv-step .rv-params-edit { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0 0 0 8px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-green); font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.rv-params-item.warn b { color: var(--tf-error); }
+.rv-step .rv-params-edit { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0 0 0 8px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-green); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; }
 .rv-step .rv-params-edit:hover:not(:disabled), .rv-step .rv-params-edit.open { border-color: var(--tf-green); background: var(--tf-green-soft); }
 .rv-params-edit svg { transition: transform .15s; }
 .rv-params-edit.open svg { transform: rotate(180deg); }
 /* z-index выше панели «Подбор кода» (55): список раскрывается над ней. Строка — название слева, значение
    справа рядом с ним (поля по ширине содержимого); при наведении подсвечивается вся строка. Рамка поля —
    только при вводе. */
-.rv-params-form { position: absolute; top: calc(100% + 6px); left: 0; z-index: 56; display: grid; gap: 2px; width: 360px; max-width: calc(100vw - 32px); padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
-.rv-param { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; min-height: 38px; padding: 2px 4px 2px 5px; border-radius: 8px; }
+.rv-params-form { position: absolute; top: calc(100% + 6px); left: 0; z-index: var(--z-dropdown); display: grid; gap: 2px; width: 360px; max-width: calc(100vw - 32px); padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
+.rv-param { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; min-height: 38px; padding: 2px 4px 2px 4px; border-radius: var(--tf-radius); }
 /* Отступ слева 5px: подписи списка (1 рамка + 6 списка + 5) стоят ровно под подписями сводки (8 + 4). */
 .rv-param:hover, .rv-param:focus-within { background: var(--tf-chip); }
-.rv-param > span { color: var(--tf-text-2); font-size: .88rem; }
+.rv-param > span { color: var(--tf-text-2); font-size: var(--fs-md); }
 .rv-param-inputs { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .rv-param-more, .rv-param-note { grid-column: 1 / -1; }
 .rv-param-more { padding-bottom: 4px; }
-.rv-param-note { margin: 6px 0 6px; padding-right: 8px; color: var(--tf-muted); font-size: .8rem; text-align: right; }
-.rv-param-note b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.rv-param-op { padding: 0 2px; color: var(--tf-muted); font-size: .85rem; }
-.rv-param-static { padding-right: 8px; font-size: .9rem; font-weight: 600; }
-.rv-param input, .rv-param select { box-sizing: border-box; width: 120px; height: 30px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: 6px; background: var(--tf-card); color: var(--tf-text); font-size: .9rem; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; text-align-last: right; cursor: text; }
+.rv-param-note { margin: 6px 0 6px; padding-right: 8px; color: var(--tf-muted); font-size: var(--fs-sm); text-align: right; }
+.rv-param-note b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.rv-param-op { padding: 0 2px; color: var(--tf-muted); font-size: var(--fs-sm); }
+.rv-param-static { padding-right: 8px; font-size: var(--fs-md); font-weight: 600; }
+.rv-param input, .rv-param select { box-sizing: border-box; width: 120px; height: 30px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; font-variant-numeric: tabular-nums; font-family: var(--tf-num); text-align: right; text-align-last: right; cursor: text; }
 .rv-param select, .rv-param input[type="date"] { cursor: pointer; }
 .rv-param input:hover, .rv-param select:hover { border-color: var(--tf-muted); }
 .rv-param input[type="date"] { width: 132px; }
@@ -103,79 +78,61 @@
 .rv-param .rv-combo input { width: 160px; }
 /* Список стран под полем «Страна»: название слева, код справа, выбранная — зелёным. */
 .rv-combo-list { position: absolute; top: calc(100% + 4px); right: 0; z-index: 2; width: 240px; max-height: 260px; overflow-y: auto; padding: 4px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
-.rv-combo-list [role="option"] { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding: 0 10px; border-radius: 6px; color: var(--tf-text); font-size: .88rem; cursor: pointer; }
+.rv-combo-list [role="option"] { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding: 0 12px; border-radius: var(--tf-radius); color: var(--tf-text); font-size: var(--fs-md); cursor: pointer; }
 .rv-combo-list [role="option"].active { background: var(--tf-chip); }
 .rv-combo-list [role="option"][aria-selected="true"] { color: var(--tf-green); font-weight: 600; }
-.rv-combo-list small { color: var(--tf-muted); font-size: .75rem; font-weight: 500; letter-spacing: .03em; }
+.rv-combo-list small { color: var(--tf-muted); font-size: var(--fs-xs); font-weight: 500; letter-spacing: .03em; }
 .rv-param .rv-unit-field.narrow input { width: 52px; }
 .rv-param input::placeholder { color: var(--tf-muted); font-weight: 400; }
-.rv-param input:focus, .rv-param select:focus { outline: 2px solid rgba(30, 91, 60, .15); outline-offset: 0; border-color: var(--tf-green); background: var(--tf-card); }
+.rv-param input:focus, .rv-param select:focus { outline: 2px solid var(--tf-focus-ring); outline-offset: 0; border-color: var(--tf-green); background: var(--tf-card); }
 .rv-unit-field { position: relative; display: flex; align-items: center; }
-.rv-unit-field i { position: absolute; right: 8px; color: var(--tf-muted); font-size: .82rem; font-style: normal; pointer-events: none; }
+.rv-unit-field i { position: absolute; right: 8px; color: var(--tf-muted); font-size: var(--fs-sm); font-style: normal; pointer-events: none; }
 /* «Сегодня», «НБРК» — тихие ссылки рядом с полем. */
-.rv-step button.rv-param-link { flex: none; height: 30px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: 6px; background: var(--tf-card); color: var(--tf-green); font-size: .8rem; font-weight: 600; }
-.rv-step button.rv-param-link:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green-soft); }
-.rv-step button.rv-param-link:disabled { color: var(--tf-muted); opacity: .6; cursor: default; }
-.rv-step button.rv-param-link.active { color: var(--tf-muted); font-weight: 500; }
+.rv-param-link { flex: none; }
+.rv-step .rv-param-link.active { color: var(--tf-muted); font-weight: 500; }
 
 /* ── Карточка листа ── */
 /* overflow: clip, а не hidden (общий стиль .rv-card) — иначе шапка листа прилипала бы к карточке, а не к окну. */
 .rv-step > .rv-card { overflow: clip; border-color: var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 
 /* Панель над листом: вкладки, чипы проблем, «Следующая проблема», поиск, «⋯»; при выборе — действия. */
-.rv-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
-.rv-panel.selection strong { color: var(--tf-text); font-size: .86rem; }
-.rv-panel-note { color: var(--tf-text-2); font-size: .86rem; }
+.rv-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
+.rv-panel.selection strong { color: var(--tf-text); font-size: var(--fs-md); }
+.rv-panel-note { color: var(--tf-text-2); font-size: var(--fs-md); }
 .rv-panel-end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.rv-tabs { display: flex; gap: 4px; }
-.rv-step .rv-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; }
-.rv-step .rv-tabs button b { color: var(--tf-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-.rv-step .rv-tabs button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
-.rv-step .rv-tabs button.active, .rv-step .rv-tabs button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
-.rv-step .rv-tabs button.active b { color: var(--tf-text); }
-.rv-step .rv-tabs button:disabled { color: var(--tf-muted); opacity: .55; }
-.rv-all-ok { color: var(--tf-green); font-size: .84rem; font-weight: 500; }
+.rv-panel .dir-seg button { display: inline-flex; align-items: center; gap: 6px; }
+.rv-all-ok { color: var(--tf-green); font-size: var(--fs-sm); font-weight: 500; }
 .rv-chips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 /* Чипы-фильтры проблем: красные — ошибки, жёлтые — предупреждения, серый — «Код от ИИ» (не проблема). */
-.rv-step .rv-pchip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 999px; font-size: .82rem; font-weight: 500; white-space: nowrap; }
+.rv-step .rv-pchip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 1px solid transparent; border-radius: 999px; font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; }
 .rv-pchip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.rv-step .rv-pchip.error { border-color: #fecdca; background: #fef3f2; color: #b42318; }
-.rv-step .rv-pchip.warn { border-color: #f5dfa6; background: #fff7e6; color: #7a4e00; }
+.rv-step .rv-pchip.error { border-color: var(--tf-error-border); background: var(--tf-error-bg); color: var(--tf-error); }
+.rv-step .rv-pchip.warn { border-color: var(--tf-warn-border); background: var(--tf-warn-bg); color: var(--tf-warn-text); }
 .rv-step .rv-pchip.neutral { border-color: var(--tf-border); background: var(--tf-chip); color: var(--tf-text-2); }
 .rv-step .rv-pchip:hover:not(:disabled) { filter: brightness(.97); }
 .rv-step .rv-pchip.active { box-shadow: inset 0 0 0 1.5px currentColor; }
-.rv-step button.rv-next { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 500; white-space: nowrap; }
-.rv-step button.rv-next:hover:not(:disabled) { background: var(--tf-chip); }
-.rv-step button.rv-next:disabled { opacity: .5; }
-.rv-next kbd { padding: 0 4px; border: 1px solid var(--tf-border); border-radius: 4px; background: var(--tf-chip); color: var(--tf-muted); font: inherit; font-size: .76rem; }
-.rv-check-source { max-width: 340px; overflow: hidden; color: var(--tf-muted); font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
-.rv-check-source.past { padding: 2px 8px; border-radius: 6px; background: #eef2fa; color: var(--rv-changed); font-weight: 500; }
-.rv-search { position: relative; display: flex; align-items: center; width: 220px; margin: 0; color: var(--tf-muted); }
-.rv-search svg { position: absolute; left: 10px; pointer-events: none; }
-.rv-search input { height: 30px; margin: 0; padding: 0 10px 0 32px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: .84rem; }
-.rv-search input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
+.rv-next { display: inline-flex; align-items: center; gap: 6px; }
+.rv-next kbd { padding: 0 4px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-sm); background: var(--tf-chip); color: var(--tf-muted); font: inherit; font-size: var(--fs-xs); line-height: 14px; }
+.rv-check-source { max-width: 340px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
+.rv-check-source.past { padding: 2px 8px; border-radius: var(--tf-radius); background: var(--tf-info-bg); color: var(--tf-info); font-weight: 500; }
+.rv-panel .rv-search { flex: none; width: 220px; }
 
 /* Меню «⋯»: строка, колонки, вид, очистить смету. */
 .rv-more { position: relative; }
-.rv-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; display: grid; gap: 2px; width: 240px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
+.rv-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: var(--z-dropdown); display: grid; gap: 2px; width: 240px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
 .rv-menu hr { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--tf-border-inner); }
-.rv-menu-label { margin: 4px 10px 2px; color: var(--tf-muted); font-size: .79rem; }
-.rv-step .rv-menu .rv-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: auto; margin: 0; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--tf-text); font-size: .93rem; font-weight: 500; text-align: left; cursor: pointer; }
+.rv-menu-label { margin: 4px 12px 2px; color: var(--tf-muted); font-size: var(--fs-sm); }
+.rv-step .rv-menu .rv-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; height: auto; margin: 0; padding: 8px 12px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; text-align: left; cursor: pointer; }
 .rv-step .rv-menu .rv-menu-item:hover:not(:disabled) { background: var(--tf-chip); }
-.rv-step .rv-menu .rv-menu-item.danger { color: #b42318; }
+.rv-step .rv-menu .rv-menu-item.danger { color: var(--tf-error); }
 .rv-step .rv-menu .rv-menu-item:disabled { opacity: .5; }
 .rv-menu-check input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); }
-.rv-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); }
-.rv-menu .rv-seg { display: grid; grid-template-columns: 1fr 1fr; margin: 0 4px 2px; }
-.rv-step .rv-seg button { height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; white-space: nowrap; }
-.rv-step .rv-seg button:hover:not(:disabled) { background: rgba(255, 255, 255, .6); color: var(--tf-text); }
-.rv-step .rv-seg button.active, .rv-step .rv-seg button.active:hover:not(:disabled) { background: var(--tf-card); color: var(--tf-text); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+.rv-menu .dir-seg { display: grid; grid-template-columns: 1fr 1fr; margin: 0 4px 2px; }
 
 /* Удалённая строка: вернуть на место. */
-.rv-undo { display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-bottom: 1px solid #f5dfa6; background: #fff7e6; color: #7a4e00; font-size: .86rem; }
-.rv-step .rv-undo .button-link { color: var(--tf-green); font-weight: 700; }
-.rv-step .rv-undo button.rv-undo-close { margin-left: auto; padding: 0 6px; border: 0; background: transparent; color: #7a4e00; font-size: 1.1rem; line-height: 1; }
-.rv-step .rv-empty-filter { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--tf-border-inner); color: var(--tf-text-2); font-size: .86rem; }
+.rv-undo { display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-bottom: 1px solid var(--tf-warn-border); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: var(--fs-md); }
+.rv-undo-close { margin-left: auto; }
+.rv-empty-filter { margin: 0; border-bottom: 1px solid var(--tf-border-inner); }
 
 /* Этап проверки — как «Результат»: страница ровно в окно, лист — до низа окна со своей прокруткой
    (шапка листа и «Итого» закреплены, ReviewSheet.css). Рабочая область заполняет окно под шапкой сайта. */
@@ -199,5 +156,5 @@
 .goods-estimates-app:has(.ag-panel) .rv-all-ok,
 .goods-estimates-app:has(.ag-panel) .rv-check-source { display: none; }
 .goods-estimates-app:has(.ag-panel) .rv-panel { padding-block: 8px; }
-.goods-estimates-app:has(.ag-panel) .rv-search { width: 180px; }
-.rv-param select { padding-right: 30px; }
+.goods-estimates-app:has(.ag-panel) .rv-panel .rv-search { width: 180px; }
+.rv-param select { padding-right: 32px; }

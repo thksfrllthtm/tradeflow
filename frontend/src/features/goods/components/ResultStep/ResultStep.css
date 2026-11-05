@@ -1,98 +1,50 @@
 /* Этап 3 «Результат»: строка заголовка, полоса итогов, таблица слева и панель строки справа.
-   Цвета — токены --tf-* (shared/styles/base.css); --rs-* — их имена для плашек, антидемпинга и СУР.
-   Кнопки с двумя классами — чтобы перебить общий стиль button:hover. */
+   Цвета — токены --tf-* (shared/styles/base.css) напрямую.
+   Кнопки, переключатели, поиск — общие классы (base.css, list-page.css); здесь только раскладка. */
 
 .rs-step {
-  --rs-ink: var(--tf-text);
-  --rs-ink-2: var(--tf-text-2);
-  --rs-ink-3: var(--tf-muted);
-  --rs-line: var(--tf-border-inner);
-  --rs-line-strong: var(--tf-border);
-  --rs-head: #fafbf9;
   /* Таблица — как лист этапа проверки: сетка, серая шапка, номера и итог. */
   --xl-grid: var(--tf-border-inner);
-  --xl-head: #eff2ee;
-  --xl-hover: #f6f8f6;
-  --rs-green: var(--tf-green);
-  --rs-green-dark: var(--tf-green);
-  --rs-focus: var(--tf-green);
-  --rs-bad: #a12a2a;
-  --rs-bad-bg: #fdf0f0;
-  --rs-bad-row: #fff7f7;
-  --rs-warn: var(--tf-warn-text);
-  --rs-warn-bg: var(--tf-warn-bg);
-  --rs-warn-row: #fffbf0;
-  --rs-field: var(--tf-border);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   color: var(--tf-text);
   font-family: var(--tf-font);
 }
 
 .rs-step :is(button, input, summary, select):focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
 .rs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.rs-step .button-link { color: var(--tf-green); font-size: .86rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-.rs-step .button-link:hover:not(:disabled) { background: none; color: var(--tf-green-hover); }
-
-/* Общие кнопки экрана: вторичная, главная (единственная зелёная) и квадратная со значком. */
-.rs-step .rs-btn, .rs-step button.budget-run {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--tf-border);
-  border-radius: var(--tf-radius);
-  background: var(--tf-card);
-  color: var(--tf-text);
-  font-size: .86rem;
-  font-weight: 600;
-}
-.rs-step .rs-btn:hover:not(:disabled), .rs-step button.budget-run:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
-.rs-step .rs-btn.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
-.rs-step .rs-btn.primary:hover:not(:disabled) { border-color: var(--tf-green-hover); background: var(--tf-green-hover); }
-.rs-step .rs-icon { display: inline-grid; flex: none; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font-size: .86rem; list-style: none; cursor: pointer; }
-.rs-step .rs-icon::-webkit-details-marker { display: none; }
-.rs-step .rs-icon:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
-.rs-step .rs-icon:disabled { opacity: .35; }
-
-/* Сегменты (СУР: вес, снижение; окно сравнения; меню «⋯»). */
-.rs-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-chip); }
-.rs-step .rs-seg button { height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; white-space: nowrap; }
-.rs-step .rs-seg button:hover:not(:disabled) { background: rgba(255, 255, 255, .6); color: var(--tf-text); }
-/* Выбранный сегмент — белая плашка с тенью на сером фоне, как во всех переключателях. */
-.rs-step .rs-seg button.active, .rs-step .rs-seg button.active:hover:not(:disabled) { background: var(--tf-card); color: var(--tf-text); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
-.rs-step .rs-seg button:disabled { color: var(--tf-muted); opacity: 1; }
+/* «⋯» — <summary> с видом .icon-button: без маркера списка, скругление как у кнопок. */
+.rs-more > summary { list-style: none; border-radius: var(--tf-radius); cursor: pointer; }
+.rs-more > summary::-webkit-details-marker { display: none; }
+.rs-sum-row > button { display: inline-flex; align-items: center; gap: 8px; }
 /* Поля с единицей (своё снижение СУР). */
-.rs-joined { display: inline-flex; align-items: stretch; height: 32px; margin: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; overflow: hidden; }
-.rs-joined:focus-within { border-color: var(--tf-green); box-shadow: 0 0 0 2px rgba(30, 91, 60, .2); }
-.rs-joined input { box-sizing: border-box; width: 72px; height: 100%; margin: 0; padding: 0 4px 0 10px; border: 0; background: transparent; color: var(--tf-text); font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; }
+.rs-joined { display: inline-flex; align-items: stretch; height: 32px; margin: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); overflow: hidden; }
+.rs-joined:focus-within { border-color: var(--tf-green); box-shadow: 0 0 0 2px var(--tf-focus-ring); }
+.rs-joined input { box-sizing: border-box; width: 72px; height: 100%; margin: 0; padding: 0 4px 0 12px; border: 0; background: transparent; color: var(--tf-text); font-size: var(--fs-md); text-align: right; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rs-step .rs-joined input:focus-visible, .rs-step .rs-joined input:focus { outline: none; }
-.rs-joined i { display: flex; align-items: center; padding: 0 9px 0 3px; color: var(--tf-muted); font-size: .8rem; font-style: normal; font-weight: 600; }
+.rs-joined i { display: flex; align-items: center; padding: 0 8px 0 4px; color: var(--tf-muted); font-size: var(--fs-sm); font-style: normal; font-weight: 600; }
 
 /* ── Строка заголовка: название, дата и клиент, этапы; справа сохранение и экспорт ── */
 .rs-step .rs-titlebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 0; padding: 0; }
 .rs-titlebar .estimate-bar-meta { flex: 0 1 auto; }
-.rs-titlebar .estimate-bar-meta h1 { color: var(--tf-text); font-size: 1.12rem; font-weight: 600; letter-spacing: -.02em; }
-.rs-titlebar .estimate-bar-sub { color: var(--tf-muted); font-size: .8rem; }
-.rs-titlebar .estimate-bar-editor > summary { color: var(--tf-green); font-size: .8rem; text-decoration: underline; text-underline-offset: 2px; }
+.rs-titlebar .estimate-bar-meta h1 { color: var(--tf-text); font-size: var(--fs-xl); font-weight: 600; letter-spacing: 0; }
+.rs-titlebar .estimate-bar-sub { color: var(--tf-muted); font-size: var(--fs-sm); }
+.rs-titlebar .estimate-bar-editor > summary { color: var(--tf-green); font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 2px; }
 .rs-titlebar .est-steps { margin-left: auto; }
-.rs-save-state { max-width: 280px; overflow: hidden; color: var(--tf-muted); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.rs-save-state { max-width: 280px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-md); text-overflow: ellipsis; white-space: nowrap; }
 .rs-save-state.failed { color: var(--tf-error); font-weight: 600; }
 
 /* ── Меню «⋯» ── */
 .rs-more { position: relative; flex: none; }
-.rs-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; display: grid; gap: 2px; width: 310px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
+.rs-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: var(--z-dropdown); display: grid; gap: 2px; width: 310px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
 .rs-menu hr { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--tf-border-inner); }
-.rs-menu-label { margin: 4px 10px 2px; color: var(--tf-muted); font-size: .79rem; }
-.rs-menu .rs-seg { display: grid; grid-template-columns: 1fr 1fr; margin: 0 4px 2px; }
-.rs-step .rs-menu .rs-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: auto; margin: 0; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--tf-text); font-size: .86rem; font-weight: 500; text-align: left; white-space: normal; cursor: pointer; }
-.rs-step .rs-menu .rs-seg .rs-menu-item { justify-content: center; padding: 6px; }
+.rs-menu-label { margin: 4px 12px 2px; color: var(--tf-muted); font-size: var(--fs-sm); }
+.rs-step .rs-menu .rs-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; height: auto; margin: 0; padding: 8px 12px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; text-align: left; white-space: normal; cursor: pointer; }
 .rs-step .rs-menu .rs-menu-item:hover:not(:disabled) { background: var(--tf-chip); }
 .rs-step .rs-menu .rs-menu-item.active, .rs-step .rs-menu .rs-menu-item.active:hover:not(:disabled) { background: var(--tf-green-soft); font-weight: 600; }
 .rs-step .rs-menu .rs-menu-item:disabled { color: var(--tf-muted); opacity: .55; }
-.rs-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; color: var(--tf-text); font-size: .86rem; }
+.rs-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; color: var(--tf-text); font-size: var(--fs-md); }
 .rs-menu-check input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); }
 
 /* ── Таблица и панель ── */
@@ -103,52 +55,44 @@
 .rs-card { min-width: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); overflow: clip; }
 .rs-backdrop { display: none; }
 
-.rs-filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
-.rs-filterbar p { margin: 0; color: var(--tf-text-2); font-size: .86rem; white-space: nowrap; }
-.rs-filterbar p b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.rs-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
-.rs-step .rs-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text-2); font-size: .86rem; font-weight: 500; }
-.rs-step .rs-tabs button b { color: var(--tf-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-.rs-step .rs-tabs button:hover:not(:disabled) { background: var(--tf-chip); color: var(--tf-text); }
-.rs-step .rs-tabs button.active, .rs-step .rs-tabs button.active:hover:not(:disabled) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
-.rs-step .rs-tabs button.active b { color: var(--tf-text); }
-.rs-counts { display: inline-flex; gap: 14px; }
-.rs-counts span { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
-.rs-counts .bad { color: var(--rs-bad); }
-.rs-counts .warn { color: var(--rs-warn); }
-.rs-search { position: relative; display: flex; align-items: center; width: min(260px, 100%); margin: 0 0 0 auto; color: var(--tf-muted); }
-.rs-search svg { position: absolute; left: 10px; pointer-events: none; }
-.rs-search input { height: 30px; margin: 0; padding: 0 10px 0 32px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: .86rem; }
-.rs-search input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
+.rs-filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
+.rs-filterbar p { margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); white-space: nowrap; }
+.rs-filterbar p b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.rs-filterbar .dir-seg button { display: inline-flex; align-items: center; gap: 6px; }
+.rs-counts { display: inline-flex; gap: 12px; }
+.rs-counts span { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.rs-counts .bad { color: var(--tf-error); }
+.rs-counts .warn { color: var(--tf-warn-text); }
+.rs-filterbar .rs-search { flex: 0 1 260px; margin-left: auto; }
 
 /* Обычный вид помещается без горизонтальной прокрутки — шапка прилипает к окну. «Все колонки» —
    горизонтальная прокрутка только у таблицы (там шапка не прилипает: ограничение CSS). */
-.goods-page .rs-table { width: 100%; min-width: 0 !important; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: .86rem; line-height: 1.35; }
-.goods-page .rs-table th, .goods-page .rs-table td { height: 36px; padding: 4px 10px !important; overflow: visible; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); background: var(--tf-card); color: var(--tf-text); font-size: .86rem !important; line-height: 1.35; text-align: right; white-space: nowrap; vertical-align: middle; font-variant-numeric: tabular-nums; }
-.goods-page .rs-table th { position: sticky; top: 0; z-index: 3; height: 34px; border-bottom-color: var(--tf-border); background: var(--xl-head); color: var(--tf-text); font-size: .8rem !important; font-weight: 600; }
+.goods-page .rs-table { width: 100%; min-width: 0 !important; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: var(--fs-md); line-height: 1.35; }
+.goods-page .rs-table th, .goods-page .rs-table td { height: 36px; padding: 4px 12px !important; overflow: visible; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-md) !important; line-height: 1.35; text-align: right; white-space: nowrap; vertical-align: middle; font-variant-numeric: tabular-nums; }
+.goods-page .rs-table th { position: sticky; top: 0; z-index: 3; height: 34px; border-bottom-color: var(--tf-border); background: var(--xl-head); color: var(--tf-text); font-size: var(--fs-sm) !important; font-weight: 600; }
 .goods-page .rs-table :is(th, td):last-child { border-right: 0; }
 .goods-page .rs-table tbody tr { cursor: pointer; }
 .goods-page .rs-table tbody tr:nth-child(even) td { background: var(--tf-card); }
 .goods-page .rs-table tbody tr:hover td { background: var(--xl-hover); }
 /* Выбранная строка — светлая, выбранная ячейка — в зелёной рамке, заголовок её колонки подсвечен (как в Excel). */
-.goods-page .rs-table tbody tr.selected td, .goods-page .rs-table tbody tr.selected:hover td { background: #f3f8f4; }
+.goods-page .rs-table tbody tr.selected td, .goods-page .rs-table tbody tr.selected:hover td { background: var(--tf-green-soft); }
 .goods-page .rs-table tbody tr.selected td.rs-active-cell { background: var(--tf-card); box-shadow: inset 0 0 0 2px var(--tf-green); }
 .goods-page .rs-table th.rs-active-col { background: var(--tf-green-soft); }
 .goods-page .rs-table tbody tr.rv-excluded td { color: var(--tf-muted); }
-.goods-page .rs-table tbody tr.rv-excluded .rs-name-main { text-decoration: line-through; text-decoration-color: #9aa59e; }
+.goods-page .rs-table tbody tr.rv-excluded .rs-name-main { text-decoration: line-through; text-decoration-color: var(--tf-faint); }
 .goods-page .rs-table tbody tr.flash td { animation: rs-flash 1.8s ease-out; }
-@keyframes rs-flash { 0%, 30% { background: #d6ecdf; } }
+@keyframes rs-flash { 0%, 30% { background: var(--tf-green-soft); } }
 @media (prefers-reduced-motion: reduce) { .goods-page .rs-table tbody tr.flash td { animation: none; } }
 
 /* № — фиксированная ширина, номер вправо; значок состояния — в своей фиксированной ячейке. */
 /* № и значок — одна серая колонка номеров, как на этапе проверки. */
-.goods-page .rs-table .rs-num { width: 36px; min-width: 36px; padding-inline: 4px 2px !important; border-right: 0; color: var(--tf-muted); font-size: .82rem !important; text-align: right; }
-.goods-page .rs-table .rs-mark { width: 22px; min-width: 22px; padding-inline: 3px !important; text-align: center; line-height: 0; }
+.goods-page .rs-table .rs-num { width: 36px; min-width: 36px; padding-inline: 4px 2px !important; border-right: 0; color: var(--tf-muted); font-size: var(--fs-sm) !important; text-align: right; }
+.goods-page .rs-table .rs-mark { width: 22px; min-width: 22px; padding-inline: 4px !important; text-align: center; line-height: 0; }
 .goods-page .rs-table :is(td, tbody tr:hover td, tbody tr:nth-child(even) td):is(.rs-num, .rs-mark) { background: var(--xl-head); }
 .goods-page .rs-table tbody tr.selected td:is(.rs-num, .rs-mark) { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
 .rs-state { display: inline-grid; vertical-align: middle; flex: 0 0 auto; place-items: center; width: 16px; height: 16px; border-radius: 50%; }
-.rs-state.bad { background: var(--rs-bad); color: #fff; }
-.rs-state.warn { background: #f3c548; color: #3d2c00; }
+.rs-state.bad { background: var(--tf-error); color: #fff; }
+.rs-state.warn { background: var(--tf-warn-dot); color: var(--tf-text); }
 .rs-state.off { background: var(--tf-chip); color: var(--tf-muted); }
 /* Товар забирает всё свободное место; длинное название — с многоточием. */
 .goods-page .rs-table .rs-name { min-width: 220px; text-align: left; white-space: normal; }
@@ -162,25 +106,25 @@
 .rs-name-main, .rs-reason { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-name-main { font-weight: 400; }
 .goods-page .rs-table .rs-name-sub { color: var(--tf-muted); font-weight: 400; }
-.rs-reason { margin-top: 2px; font-size: .82rem; font-weight: 600; }
+.rs-reason { margin-top: 2px; font-size: var(--fs-sm); font-weight: 600; }
 .goods-page .rs-table .rs-code { text-align: left; }
-.goods-page .rs-table .rs-code .copy-code { margin-left: -4px; color: var(--tf-text); font-family: var(--tf-mono); font-size: .82rem; letter-spacing: 0; }
+.goods-page .rs-table .rs-code .copy-code { margin-left: -4px; color: var(--tf-text); font-family: var(--tf-mono); font-size: var(--fs-sm); letter-spacing: 0; }
 .goods-page .rs-table td.rs-pay { font-weight: 600; }
 
 /* Цена — поле, которое выглядит как текст; рамка — при наведении и вводе. */
 .goods-page .rs-table .price-field { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; }
-.goods-page .rs-table .rs-price { display: inline-block; width: 80px; min-width: 44px; field-sizing: content; height: 30px; margin: 0; padding: 0 6px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--tf-text); font-size: .86rem; text-align: right; font-variant-numeric: tabular-nums; cursor: text; }
+.goods-page .rs-table .rs-price { display: inline-block; width: 80px; min-width: 44px; field-sizing: content; height: 30px; margin: 0; padding: 0 6px; border: 1px solid transparent; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text); font-size: var(--fs-md); text-align: right; font-variant-numeric: tabular-nums; font-family: var(--tf-num); cursor: text; }
 /* Поле по ширине числа — точка «оценка ИИ» стоит вплотную к цене. */
 @supports (field-sizing: content) { .goods-page .rs-table .rs-price { width: auto; } }
-.goods-page .rs-table tr:hover .rs-price:not(:disabled), .goods-page .rs-table .rs-price:focus { border-color: var(--tf-border); background: #fff; }
-.goods-page .rs-table .rs-price:focus { outline: 2px solid rgba(30, 91, 60, .25); border-color: var(--tf-green); }
+.goods-page .rs-table tr:hover .rs-price:not(:disabled), .goods-page .rs-table .rs-price:focus { border-color: var(--tf-border); background: var(--tf-card); }
+.goods-page .rs-table .rs-price:focus { outline: 2px solid var(--tf-focus-ring); border-color: var(--tf-green); }
 .goods-page .rs-table .rs-price.edited { font-weight: 600; }
 .goods-page .rs-table .rs-price:disabled { color: var(--tf-muted); }
 
 
-.goods-page .rs-table .rs-empty td { padding: 28px 16px !important; color: var(--tf-text-2); text-align: center; white-space: normal; cursor: default; }
+.goods-page .rs-table .rs-empty td { text-align: center; white-space: normal; }
 /* «Итого» прилипает к низу окна, пока видна таблица. */
-.goods-page .rs-table tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid var(--tf-border); border-bottom: 0; background: var(--xl-head); font-weight: 700; }
+.goods-page .rs-table tfoot td { position: sticky; bottom: 0; z-index: 2; border-top: 1px solid var(--tf-border); border-bottom: 0; background: var(--xl-head); font-weight: 600; }
 .goods-page .rs-table tfoot small { color: var(--tf-muted); font-weight: 400; }
 
 /* ── Панель строки ── */
@@ -188,61 +132,57 @@
 .rp { position: sticky; top: 16px; display: block; max-height: min(calc(100vh - 32px), var(--rs-avail, 100vh)); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .rp > * { margin: 0; padding: 16px 20px; }
 .rp > * + * { border-top: 1px solid var(--tf-border-inner); }
-.rp-head { display: flex; align-items: center; gap: 2px; padding: 10px 10px 10px 20px; color: var(--tf-muted); font-size: .86rem; }
+.rp-head { display: flex; align-items: center; gap: 2px; padding: 8px 12px 8px 20px; color: var(--tf-muted); font-size: var(--fs-md); }
 .rp-head span { flex: 1 1 auto; }
-.rs-step .rp-head .rs-icon { width: 32px; height: 32px; border-color: transparent; background: transparent; }
-.rs-step .rp-head .rs-icon:hover:not(:disabled) { background: var(--tf-chip); }
-.rp-title h2 { margin: 0; color: var(--tf-text); font-size: 1.08rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.rp-title p { margin: 4px 0 0; color: var(--tf-muted); font-size: .86rem; overflow-wrap: anywhere; }
+.rp-title h2 { margin: 0; color: var(--tf-text); font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.rp-title p { margin: 4px 0 0; color: var(--tf-muted); font-size: var(--fs-md); overflow-wrap: anywhere; }
 .rp-block { display: grid; gap: 8px; }
-.rp-block h3 { margin: 0; color: var(--tf-text-2); font-size: .86rem; font-weight: 600; }
+.rp-block h3 { margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 600; }
 .rp-block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.rs-step .rp button.rp-code, .rp .rp-code { justify-self: start; margin: 0 0 0 -4px; color: var(--tf-text); font-family: var(--tf-mono); font-size: 1.2rem; font-weight: 500; letter-spacing: .02em; }
-.rp .rp-empty { margin: 0; color: var(--tf-muted); font-family: inherit; font-size: .86rem; }
-.rp-muted { margin: 0; color: var(--tf-muted); font-size: .86rem; line-height: 1.45; overflow-wrap: anywhere; }
+.rs-step .rp button.rp-code, .rp .rp-code { justify-self: start; margin: 0 0 0 -4px; color: var(--tf-text); font-family: var(--tf-mono); font-size: var(--fs-lg); font-weight: 500; letter-spacing: .02em; }
+.rp .rp-empty { margin: 0; color: var(--tf-muted); font-family: inherit; font-size: var(--fs-md); }
+.rp-muted { margin: 0; color: var(--tf-muted); font-size: var(--fs-md); line-height: 1.45; overflow-wrap: anywhere; }
 .rp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
-.rp-chips span { padding: 3px 8px; border-radius: 6px; background: var(--tf-chip); color: var(--tf-text); font-size: .82rem; font-variant-numeric: tabular-nums; }
-.rp-dump { display: flex; align-items: center; gap: 8px; color: var(--tf-text-2); font-size: .86rem; }
-.rp-badge { padding: 2px 8px; border-radius: 999px; background: var(--tf-warn-bg); color: var(--tf-warn-text); font-size: .79rem; font-weight: 600; }
+.rp-chips span { padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.rp-dump { display: flex; align-items: center; gap: 8px; color: var(--tf-text-2); font-size: var(--fs-md); }
 .rp-price-field { position: relative; display: flex; align-items: center; margin: 0; }
-.rp-price-field input { height: 38px; margin: 0; padding: 0 52px 0 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: 1rem; font-variant-numeric: tabular-nums; }
+.rp-price-field input { height: 38px; margin: 0; padding: 0 52px 0 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); color: var(--tf-text); font-size: var(--fs-base); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rp-price-field input.edited { font-weight: 600; }
-.rp-price-field input:focus { outline: 2px solid rgba(30, 91, 60, .2); border-color: var(--tf-green); }
-.rp-price-field i { position: absolute; right: 14px; color: var(--tf-muted); font-size: .86rem; font-style: normal; pointer-events: none; }
+.rp-price-field input:focus { outline: 2px solid var(--tf-focus-ring); border-color: var(--tf-green); }
+.rp-price-field i { position: absolute; right: 14px; color: var(--tf-muted); font-size: var(--fs-md); font-style: normal; pointer-events: none; }
 .rp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-.rp-grid dt { color: var(--tf-muted); font-size: .82rem; }
-.rp-grid dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+.rp-grid dt { color: var(--tf-muted); font-size: var(--fs-sm); }
+.rp-grid dd { margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rp-grid dd small { color: var(--tf-muted); font-weight: 400; }
 .rp-calc dl { display: grid; gap: 8px; margin: 0; }
-.rp-calc dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 12px; font-size: .86rem; }
+.rp-calc dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 12px; font-size: var(--fs-md); }
 .rp-calc dt { color: var(--tf-text-2); }
-.rp-calc dd { margin: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rp-calc dd { margin: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 
 /* Уже 1100px: панель строки — выезжающая справа поверх таблицы. */
 @media (max-width: 1100px) {
   .rs-layout.with-panel { grid-template-columns: minmax(0, 1fr); }
-  .rp { position: fixed; top: 0; right: 0; bottom: 0; z-index: 70; width: min(440px, 100vw); max-height: none; border-width: 0 0 0 1px; border-radius: 0; box-shadow: -12px 0 32px rgba(23, 32, 27, .16); }
-  .rs-backdrop { position: fixed; inset: 0; z-index: 69; display: block; background: rgba(23, 32, 27, .25); }
+  .rp { position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-overlay); width: min(440px, 100vw); max-height: none; border-width: 0 0 0 1px; border-radius: 0; box-shadow: -12px 0 32px rgba(23, 32, 27, .16); }
+  .rs-backdrop { position: fixed; inset: 0; z-index: var(--z-overlay); display: block; background: var(--tf-overlay); }
 }
 @media (max-width: 760px) {
-  .rs-search { width: 100%; margin-left: 0; }
+  .rs-filterbar .rs-search { flex-basis: 100%; margin-left: 0; }
 }
 
 /* ── Состояние с проблемами: строки без заливки, значок у номера; ошибки — у своих полей в панели ── */
 .rs-state.todo { background: var(--tf-warn-bg); color: var(--tf-ai); }
-.rs-reason.error { color: #b42318; }
+.rs-reason.error { color: var(--tf-error); }
 .rs-reason.todo, .rs-reason.warn { color: var(--tf-warn-text); }
 .goods-page .rs-table .rs-price::placeholder { color: var(--tf-muted); }
-.rp-field-error, .rp-field-todo { margin: 0; font-size: .86rem; font-weight: 500; }
-.rp-field-error { color: #b42318; }
+.rp-field-error, .rp-field-todo { margin: 0; font-size: var(--fs-md); font-weight: 500; }
+.rp-field-error { color: var(--tf-error); }
 .rp-field-todo { color: var(--tf-warn-text); }
-.rs-step .rs-btn.rp-set-code { justify-self: start; height: 32px; }
-.rp-price.todo input { border-color: var(--tf-ai); background: #fffbf0; }
+.rp-price.todo input { border-color: var(--tf-ai); background: var(--tf-warn-bg); }
 /* Итог строки и «Учитывать в расчёте» прилипают к низу панели — не обрезаются при прокрутке. */
 .rp > .rp-foot { position: sticky; bottom: 0; display: grid; gap: 12px; border-top: 1px solid var(--tf-border); background: var(--tf-card); }
-.rp-foot .rp-total { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rp-foot .rp-total { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: var(--fs-base); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rp-foot .rp-total dd { margin: 0; white-space: nowrap; }
-.rp-include { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--tf-text); font-size: .86rem; font-weight: 500; cursor: pointer; }
+.rp-include { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; cursor: pointer; }
 .rp-include input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--tf-green); }
 
 /* «Все колонки»: №, значок и «Товар» закреплены слева при горизонтальной прокрутке; «Товар» — не уже 240px. */
@@ -251,7 +191,7 @@
 .goods-page .rs-table-wrap.wide .rs-table .rs-name { position: sticky; left: 58px; z-index: 2; box-shadow: inset -1px 0 0 var(--tf-border); }
 .goods-page .rs-table-wrap.wide .rs-table th:is(.rs-num, .rs-mark, .rs-name) { z-index: 4; }
 .goods-page .rs-table-wrap.wide .rs-table tfoot :is(.rs-num, .rs-mark, .rs-name) { z-index: 3; }
-.rs-save-state.unsaved { padding: 2px 8px; border-radius: 6px; background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 500; }
+.rs-save-state.unsaved { padding: 2px 8px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 500; }
 
 /* «Все колонки»: фиксированные ширины, «Товар» забирает остальное (не уже 160 px, сумма — --rs-min из разметки).
    Помещается — без прокрутки; нет — прокрутка только у таблицы. «Товар» закреплён слева, «К оплате» — справа. */
@@ -279,6 +219,5 @@
 
 /* Строка без кода в панели итога: «Указать код» и «Подобрать ИИ» рядом. */
 .rp-set { display: flex; flex-wrap: wrap; gap: 8px; }
-.rs-step .rs-btn.rp-set-code.ai { border-color: var(--tf-border); color: var(--tf-green); }
-.rs-step .rs-btn.rp-set-code.ai:hover:not(:disabled) { border-color: var(--tf-green); background: var(--tf-green-soft); }
-.rp-head-actions { display: inline-flex; gap: 10px; }
+.rp-head-actions { display: inline-flex; gap: 8px; }
+.goods-page .rs-table td:not(.rs-name):not(.rs-mark):not(.rs-code) { font-family: var(--tf-num); }

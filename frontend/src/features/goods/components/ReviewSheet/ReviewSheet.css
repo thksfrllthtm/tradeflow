@@ -6,22 +6,22 @@
 
 .xs-wrap { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
 /* Ширина листа берётся только от родителя: широкий лист не раздвигает страницу. */
-.xs-host { min-width: 0; contain: inline-size; font-size: .86rem; }
+.xs-host { min-width: 0; contain: inline-size; font-size: var(--fs-md); }
 /* Блоками, а не inline-block (как в библиотеке): у строчного блока под таблицей зазор под хвосты букв (~4px) —
    «Итого» прилипало к низу таблицы на 4px выше низа прокрутки, под ним была полоса и в конце прокрутки оно прыгало. */
 .xs-host .jss_container, .xs-host .jss_content { display: block; width: 100%; }
 .xs-host .jss_content { padding: 0; border: 0; box-shadow: none; overflow: visible; }
 /* Без рамки библиотеки (снизу и справа 1px): рамку даёт карточка, а «Итого» прилипало бы выше нижней рамки. */
-.xs-host table.jss_worksheet { width: 100%; table-layout: fixed; border: 0; border-collapse: separate; border-spacing: 0; font-family: inherit; font-size: .86rem; line-height: 1.3; color: var(--tf-text); }
-.xs-host table.jss_worksheet td { padding: 0 10px !important; height: 36px; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.xs-host table.jss_worksheet { width: 100%; table-layout: fixed; border: 0; border-collapse: separate; border-spacing: 0; font-family: inherit; font-size: var(--fs-md); line-height: 1.3; color: var(--tf-text); }
+.xs-host table.jss_worksheet td { padding: 0 10px !important; height: 36px; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); font-size: var(--fs-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 .xs-wrap.compact .xs-host table.jss_worksheet > tbody > tr > td { height: 32px; }
 .xs-host table.jss_worksheet td.readonly { color: inherit; }
-.xs-host table.jss_worksheet > tbody > tr > td:is([data-x="3"], [data-x="4"], [data-x="5"], [data-x="6"], [data-x="7"], [data-x="8"], [data-x="9"]) { font-variant-numeric: tabular-nums; text-align: right !important; }
+.xs-host table.jss_worksheet > tbody > tr > td:is([data-x="3"], [data-x="4"], [data-x="5"], [data-x="6"], [data-x="7"], [data-x="8"], [data-x="9"]) { font-variant-numeric: tabular-nums; font-family: var(--tf-num); text-align: right !important; }
 .xs-host table.jss_worksheet td[data-x="10"] { text-align: center !important; }
 
 /* ── Шапка: названия колонок; прилипает к верху окна ── */
 .xs-host table.jss_worksheet > thead { position: sticky; top: 0; z-index: 6; }
-.xs-host table.jss_worksheet > thead > tr > td { position: static; height: 34px; padding: 0 10px !important; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); background: var(--xl-head); color: var(--tf-text); font-size: .8rem; font-weight: 600; text-align: left; white-space: nowrap; }
+.xs-host table.jss_worksheet > thead > tr > td { position: static; height: 34px; padding: 0 10px !important; border-top: 0; border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 1px solid var(--xl-grid); background: var(--xl-head); color: var(--tf-text); font-size: var(--fs-sm); font-weight: 600; text-align: left; white-space: nowrap; }
 .xs-host table.jss_worksheet > thead > tr:last-child > td { border-bottom-color: var(--tf-border); }
 .xs-host table.jss_worksheet > thead > tr:last-child > td:is([data-x="3"], [data-x="4"], [data-x="5"], [data-x="6"], [data-x="7"], [data-x="8"], [data-x="9"]) { text-align: right; }
 .xs-host table.jss_worksheet > thead > tr:last-child > td[data-x="10"] { text-align: center; }
@@ -32,7 +32,7 @@
 .xs-host table.jss_worksheet > thead > tr > td.selected { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
 
 /* ── Номер строки: точка состояния, номер; флажок выбора — при наведении и у выбранных ── */
-.xs-host table.jss_worksheet > tbody > tr > td:first-child { position: relative; padding: 0 12px 0 30px !important; background: var(--xl-head); color: var(--tf-muted); font-size: .82rem; font-variant-numeric: tabular-nums; text-align: right; }
+.xs-host table.jss_worksheet > tbody > tr > td:first-child { position: relative; padding: 0 12px 0 30px !important; background: var(--xl-head); color: var(--tf-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-family: var(--tf-num); text-align: right; }
 /* Флажок «выбрать все» в углу шапки — над флажками строк. */
 .xs-host table.jss_worksheet > thead > tr > td:first-child { position: relative; padding: 0 0 0 10px !important; }
 /* Линия между флажками и номерами — в шапке и в строках. */
@@ -41,10 +41,10 @@
 .xs-host td.xs-index { display: table-cell; }
 .xs-num { display: inline-block; min-width: 18px; text-align: right; }
 .xs-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; vertical-align: middle; }
-.xs-dot.error { background: #b42318; }
+.xs-dot.error { background: var(--tf-error); }
 .xs-dot.warn { background: var(--tf-ai); }
-.xs-dot.changed { background: #2c4f86; }
-.xs-host td.xs-row-error { color: #b42318 !important; font-weight: 600; }
+.xs-dot.changed { background: var(--tf-info); }
+.xs-host td.xs-row-error { color: var(--tf-error) !important; font-weight: 600; }
 .xs-host td.xs-row-warn { color: var(--tf-warn-text) !important; font-weight: 600; }
 /* Флажок выбора — поверх левого края ячейки номера (номер и точка не сдвигаются). */
 .xs-host td input.xs-pick { position: absolute; top: 50%; left: 10px; width: 14px; height: 14px; margin: 0; transform: translateY(-50%); accent-color: var(--tf-green); cursor: pointer; opacity: 0; }
@@ -57,81 +57,81 @@
 .xs-host table.jss_worksheet > tbody > tr:hover > td:not(:first-child) { background-color: var(--xl-hover); }
 .xs-zh { color: var(--tf-muted); }
 .xs-auto { color: var(--tf-muted); }
-.xs-host td.xs-repeat, .xs-host td.xs-repeat .xs-code-text, .xs-host td.xs-repeat .xs-zh { color: #9aa29d; }
+.xs-host td.xs-repeat, .xs-host td.xs-repeat .xs-code-text, .xs-host td.xs-repeat .xs-zh { color: var(--tf-faint); }
 .xs-host tr.xs-group-start > td { box-shadow: inset 0 1px 0 var(--tf-border); }
 .xs-host tr.xs-group-start > td:is([data-x="2"], [data-x="4"], [data-x="7"], [data-x="10"]) { box-shadow: inset 0 1px 0 var(--tf-border), inset 1px 0 0 var(--tf-border); }
-.xs-host td.xs-code { color: var(--tf-text); font-family: var(--tf-mono); font-size: .82rem; }
+.xs-host td.xs-code { color: var(--tf-text); font-family: var(--tf-mono); font-size: var(--fs-sm); }
 .xs-host td.xs-duty { color: var(--tf-text-2); }
 /* Проблема в ячейке: ошибка — красным, предупреждение — жёлтым. */
-.xs-host table.jss_worksheet > tbody > tr > td.xs-err { background-color: #fef3f2; color: #b42318; }
-.xs-host table.jss_worksheet > tbody > tr > td.xs-warn { background-color: #fff7e6; color: #7a4e00; }
-.xs-host td.xs-need { background-color: #fff7e6; }
+.xs-host table.jss_worksheet > tbody > tr > td.xs-err { background-color: var(--tf-error-bg); color: var(--tf-error); }
+.xs-host table.jss_worksheet > tbody > tr > td.xs-warn { background-color: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.xs-host td.xs-need { background-color: var(--tf-warn-bg); }
 .xs-host td.xs-own { color: var(--tf-text); font-weight: 600; }
 .xs-host td.xs-muted { color: var(--tf-muted); }
 .xs-host input[type="checkbox"] { display: inline-block; width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); vertical-align: middle; cursor: pointer; }
 /* Исключённая строка — бледная, в итоги не входит. */
 .xs-host tr.xs-excluded > td:not(:first-child) { opacity: .45; }
 .xs-host tr.xs-excluded > td[data-x="10"] { opacity: 1; }
-.xs-host tr.xs-selected > td:not(:first-child) { background-color: #f3f8f4; }
-.xs-host .jss_contextmenu { font-size: .86rem; }
+.xs-host tr.xs-selected > td:not(:first-child) { background-color: var(--tf-green-soft); }
+.xs-host .jss_contextmenu { font-size: var(--fs-md); }
 
 /* Выделение — как в Excel: заливка диапазона, рамка 2px, активная ячейка белая. */
-.xs-host table.jss_worksheet > tbody > tr > td.highlight { background-color: #eaf2ec; }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-selected { background-color: #fff; }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight { background-color: var(--tf-green-soft); }
+.xs-host table.jss_worksheet > tbody > tr > td.highlight-selected { background-color: var(--tf-card); }
 .xs-host table.jss_worksheet > tbody > tr > td.highlight-top { border-top: 2px solid var(--tf-green); }
 .xs-host table.jss_worksheet > tbody > tr > td.highlight-bottom { border-bottom: 2px solid var(--tf-green); }
 .xs-host table.jss_worksheet > tbody > tr > td.highlight-left { border-left: 2px solid var(--tf-green); }
 .xs-host table.jss_worksheet > tbody > tr > td.highlight-right { border-right: 2px solid var(--tf-green); }
-.xs-host .jss_corner { background: var(--tf-green); border-color: #fff; }
+.xs-host .jss_corner { background: var(--tf-green); border-color: var(--tf-card); }
 .xs-host table.jss_worksheet > tbody > tr > td.editor { padding: 0 !important; }
 .xs-host table.jss_worksheet > tbody > tr > td.editor input { font: inherit; }
 
 /* ── Код: моноширинный, метка «ИИ», значки — у выбранной строки и при наведении; без кода — «Указать код» ── */
 .xs-code-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .xs-code-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.xs-ai { flex: none; padding: 1px 5px; border-radius: 4px; background: #f1f3f0; color: #4f5752; font-family: var(--tf-font); font-size: .7rem; font-weight: 600; }
+.xs-ai { flex: none; padding: 1px 5px; border-radius: var(--tf-radius-sm); background: var(--tf-chip); color: var(--tf-text-2); font-family: var(--tf-font); font-size: var(--fs-xs); font-weight: 600; }
 /* Значки — поверх правого края ячейки (код под ними не сжимается), только у выбранной строки и при наведении. */
 .xs-host td.xs-code { position: relative; }
 .xs-tools { position: absolute; top: 50%; right: 4px; display: inline-flex; align-items: center; gap: 1px; padding-left: 6px; transform: translateY(-50%); background: var(--tf-card); visibility: hidden; }
 .xs-host tr:hover:not(.selected) .xs-tools { background: var(--xl-hover); }
 .xs-host tr:hover .xs-tools, .xs-host tr.selected .xs-tools, .xs-host td.highlight-selected .xs-tools { visibility: visible; }
-.xs-host .xs-tool { --tone: var(--tf-muted); position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--tone); font-weight: 400; letter-spacing: 0; cursor: pointer; }
+.xs-host .xs-tool { --tone: var(--tf-muted); position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: var(--tf-radius-sm); background: transparent; color: var(--tone); font-weight: 400; letter-spacing: 0; cursor: pointer; }
 .xs-host .xs-tool:hover:not(:disabled) { border-color: var(--tf-border); background: var(--tf-chip); color: var(--tf-text); }
 .xs-host .xs-tool:disabled { opacity: .5; cursor: progress; }
-.xs-host .xs-tool i { position: absolute; top: -3px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 6px; background: var(--tone); color: #fff; font-family: var(--tf-font); font-size: .62rem; font-style: normal; font-weight: 800; line-height: 12px; text-align: center; }
+.xs-host .xs-tool i { position: absolute; top: -3px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: var(--tf-radius); background: var(--tone); color: #fff; font-family: var(--tf-font); font-size: var(--fs-xs); font-style: normal; font-weight: 600; line-height: 12px; text-align: center; }
 .xs-host .xs-tool.agent.running { --tone: var(--tf-green); }
 .xs-host .xs-tool.agent.running svg { animation: xs-pulse 1.2s infinite ease-in-out; }
-.xs-host .xs-tool.agent.waiting, .xs-host .xs-tool.agent.suggest { --tone: #a0700c; }
-.xs-host .xs-tool.agent.error { --tone: #b42318; }
+.xs-host .xs-tool.agent.waiting, .xs-host .xs-tool.agent.suggest { --tone: var(--tf-warn-text); }
+.xs-host .xs-tool.agent.error { --tone: var(--tf-error); }
 .xs-host .xs-tool.agent.same, .xs-host .xs-tool.saved { --tone: var(--tf-green); }
 .xs-host .xs-tool.saved { cursor: default; }
 /* Подбор идёт или ждёт ответа — значок виден и без наведения. */
 .xs-host .xs-tools:has(.xs-tool.agent:is(.running, .waiting, .error, .suggest)) { visibility: visible; }
 @keyframes xs-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .xs-host .xs-tool.agent.running svg { animation: none; } }
-.xs-host button.xs-set-code { height: 26px; margin: 0; padding: 0 10px; border: 1px solid #fecdca; border-radius: 6px; background: #fff; color: #b42318; font-family: var(--tf-font); font-size: .82rem; font-weight: 600; cursor: pointer; }
-.xs-host button.xs-set-code:hover:not(:disabled) { border-color: #b42318; background: #fff; }
+.xs-host button.xs-set-code { height: 26px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-error-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-error); font-family: var(--tf-font); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.xs-host button.xs-set-code:hover:not(:disabled) { border-color: var(--tf-error); background: var(--tf-card); }
 
 /* ── Фото: миниатюра и «+» для добавления ── */
 .xs-host table.jss_worksheet > tbody > tr > td[data-x="0"] { padding: 0 4px !important; text-overflow: clip; text-align: center; }
-.xs-thumb { position: relative; display: inline-block; width: 26px; height: 26px; padding: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: 4px; background: #fff; cursor: zoom-in; vertical-align: middle; }
+.xs-thumb { position: relative; display: inline-block; width: 26px; height: 26px; padding: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-sm); background: var(--tf-card); cursor: zoom-in; vertical-align: middle; }
 .xs-wrap:not(.compact) .xs-thumb { width: 32px; height: 32px; }
 .xs-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.xs-thumb b { position: absolute; bottom: 0; left: 0; padding: 0 3px; border-radius: 0 3px 0 0; background: var(--tf-text); color: #fff; font-size: .66rem; line-height: 12px; }
-.xs-photo-add { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: 1px solid var(--tf-border); border-radius: 50%; background: #fff; color: var(--tf-green); font-size: .78rem; font-weight: 700; line-height: 1; cursor: pointer; opacity: 0; vertical-align: middle; }
+.xs-thumb b { position: absolute; bottom: 0; left: 0; padding: 0 3px; border-radius: 0 3px 0 0; background: var(--tf-text); color: #fff; font-size: var(--fs-xs); line-height: 12px; }
+.xs-photo-add { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: 1px solid var(--tf-border); border-radius: 50%; background: var(--tf-card); color: var(--tf-green); font-size: var(--fs-xs); font-weight: 600; line-height: 1; cursor: pointer; opacity: 0; vertical-align: middle; }
 .xs-host tr:hover .xs-photo-add, .xs-photo-add:focus-visible, .xs-host td.highlight-selected .xs-photo-add { opacity: 1; }
-.xs-photo-add.empty { width: 26px; height: 26px; border: 1px dashed var(--tf-border); border-radius: 4px; color: var(--tf-muted); font-weight: 500; }
+.xs-photo-add.empty { width: 26px; height: 26px; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-sm); color: var(--tf-muted); font-weight: 500; }
 .xs-photo-add:hover { border-color: var(--tf-green); color: var(--tf-green); }
 
 /* ── «Итого в расчёте»: суммы под колонками, прилипает к низу окна ── */
 .xs-host tfoot.xs-foot { position: sticky; bottom: 0; z-index: 6; }
-.xs-host tfoot.xs-foot td { height: 36px; padding: 0 10px !important; border-top: 1px solid var(--tf-border); border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 0; background: var(--xl-head); color: var(--tf-text); font-size: .86rem; font-weight: 700; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.xs-host tfoot.xs-foot td { height: 36px; padding: 0 10px !important; border-top: 1px solid var(--tf-border); border-left: 0; border-right: 1px solid var(--xl-grid); border-bottom: 0; background: var(--xl-head); color: var(--tf-text); font-size: var(--fs-md); font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .xs-host tfoot.xs-foot td.xs-foot-name { text-align: left; }
 .xs-host tfoot.xs-foot td.xs-foot-included { text-align: center; }
-.xs-foot-count { color: var(--tf-text); font-weight: 700; }
+.xs-foot-count { color: var(--tf-text); font-weight: 600; }
 
 /* Строка состояния под листом: сумма выделенного, как в Excel. */
-.xs-foot-sel { margin-left: 16px; color: var(--tf-muted); font-size: .8rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.xs-foot-sel { margin-left: 16px; color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 500; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 
 /* Узкое окно: лист шире карточки — прокрутка у листа (шапка там не прилипает к окну). */
 @media (max-width: 1199px) {
@@ -151,6 +151,6 @@
 .xs-host button.xs-set-code.ai:hover:not(:disabled) { border-color: var(--tone); background: var(--tf-green-soft); }
 .xs-host button.xs-set-code.ai svg { width: 13px; height: 13px; }
 .xs-host button.xs-set-code.ai.running svg { animation: xs-pulse 1.2s infinite ease-in-out; }
-.xs-host button.xs-set-code.ai:is(.waiting, .suggest) { --tone: #a0700c; }
-.xs-host button.xs-set-code.ai.error { --tone: #b42318; }
-.xs-host button.xs-set-code.ai i { position: absolute; top: -5px; right: -5px; min-width: 13px; height: 13px; padding: 0 2px; border-radius: 7px; background: var(--tone); color: #fff; font-size: .62rem; font-style: normal; font-weight: 800; line-height: 13px; text-align: center; }
+.xs-host button.xs-set-code.ai:is(.waiting, .suggest) { --tone: var(--tf-warn-text); }
+.xs-host button.xs-set-code.ai.error { --tone: var(--tf-error); }
+.xs-host button.xs-set-code.ai i { position: absolute; top: -5px; right: -5px; min-width: 13px; height: 13px; padding: 0 2px; border-radius: var(--tf-radius); background: var(--tone); color: #fff; font-size: var(--fs-xs); font-style: normal; font-weight: 600; line-height: 13px; text-align: center; }

@@ -1,14 +1,14 @@
 /* Панель «Перечень РК»: рамка, крестик и сообщения — из DirectoryTransfer.css. */
 
 .kz-steps { display: grid; gap: 8px; }
-.kz-step { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); }
-.kz-step b { color: var(--tf-text); font-size: .86rem; font-weight: 600; }
-.kz-step p { margin: 1px 0 0; color: var(--tf-muted); font-size: .76rem; line-height: 1.4; }
-.kz-step-number { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--tf-green); background: var(--tf-green-soft); color: var(--tf-green); font-size: .8rem; font-weight: 600; }
+.kz-step { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); }
+.kz-step b { color: var(--tf-text); font-size: var(--fs-md); font-weight: 600; }
+.kz-step p { margin: 1px 0 0; color: var(--tf-muted); font-size: var(--fs-xs); line-height: 1.4; }
+.kz-step-number { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--tf-green); background: var(--tf-green-soft); color: var(--tf-green); font-size: var(--fs-sm); font-weight: 600; }
 .kz-step-quick { border-style: dashed; }
-.kz-step-quick .kz-step-number { background: var(--tf-chip); color: var(--tf-muted); font-size: .76rem; }
+.kz-step-quick .kz-step-number { background: var(--tf-chip); color: var(--tf-muted); font-size: var(--fs-xs); }
 
-.kz-file { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 128px; height: 32px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: 8px; background: #fff; color: var(--tf-text-2); font-size: .86rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.kz-file { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 128px; height: 32px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 600; white-space: nowrap; cursor: pointer; }
 .kz-file:hover { background: var(--tf-chip); }
 .kz-file.primary { border-color: var(--tf-green); background: var(--tf-green); color: #fff; }
 .kz-file.primary:hover { background: var(--tf-green-hover); }

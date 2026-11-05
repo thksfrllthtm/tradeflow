@@ -97,7 +97,7 @@ export function UtilFeeRows({ materials, usdRate }: { materials: UtilFeeMaterial
         </select>
       </label>
       <span className="uf-tip" />
-      {filled > 0 && <button type="button" className="uf-add" title="Удалить все строки таблицы"
+      {filled > 0 && <button type="button" className="danger" title="Удалить все строки таблицы"
         onClick={() => { if (window.confirm('Очистить таблицу? Все строки будут удалены.')) { set({ rows: [emptyRow()] }); setResult(null) } }}>Очистить таблицу</button>}
     </div>
     {error && <p className="banner error" role="alert">{error}</p>}
@@ -125,7 +125,7 @@ export function UtilFeeRows({ materials, usdRate }: { materials: UtilFeeMaterial
             const note = out?.error || out?.warnings.join('; ') || ''
             return <tr key={index}>
               <td className="c-n">{index + 1}</td>
-              <td className="c-in">{cell(index, 0, row.code, index === filled ? 'вставьте Ctrl+V' : '')}</td>
+              <td className="c-in c-code">{cell(index, 0, row.code, index === filled ? 'вставьте Ctrl+V' : '')}</td>
               <td className="c-in">{cell(index, 1, row.grossKg)}</td>
               <td className="c-in">{cell(index, 2, row.netKg, out?.netCalculated ? kg(out.netKg) : '')}</td>
               <td className="c-num">{out?.packagingKg ? kg(out.packagingKg) : ''}</td>

@@ -3,7 +3,7 @@
 .app-header {
   flex: 0 0 auto;
   position: relative;
-  z-index: 60;
+  z-index: var(--z-header);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -17,20 +17,20 @@
   font-family: var(--tf-font);
 }
 
-.app-header-brand { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; color: var(--tf-text); text-decoration: none; }
+.app-header-brand { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; color: var(--tf-text); text-decoration: none; }
 .app-header-logo {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 7px;
+  border-radius: var(--tf-radius);
   background: var(--tf-green);
   color: #fff;
-  font-size: .7rem;
-  font-weight: 700;
+  font-size: var(--fs-xs);
+  font-weight: 600;
   letter-spacing: .02em;
 }
-.app-header-name { font-size: 1.07rem; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+.app-header-name { font-size: var(--fs-lg); font-weight: 600; letter-spacing: 0; white-space: nowrap; }
 
 /* Меню разделов: не помещается — переносится, а не обрезается. */
 .app-header-nav { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
@@ -38,10 +38,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 8px 12px;
   border-radius: var(--tf-radius);
   color: var(--tf-text-2);
-  font-size: 1rem;
+  font-size: var(--fs-base);
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
@@ -59,7 +59,7 @@
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  z-index: 80;
+  z-index: var(--z-dropdown);
   display: grid;
   min-width: 220px;
   padding: 6px;
@@ -71,10 +71,10 @@
 .app-menu-right { left: auto; right: 0; }
 .app-menu-pop a, .app-header .app-header-logout {
   display: block;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: var(--tf-radius);
   color: var(--tf-text);
-  font-size: .93rem;
+  font-size: var(--fs-md);
   font-weight: 500;
   text-align: left;
   text-decoration: none;
@@ -86,25 +86,25 @@
 
 /* Курс НБРК: «USD 452,59 · EUR 507,67», под ним дата. Нажатие — конвертер. */
 .app-header-rates { position: relative; flex: 0 0 auto; margin-left: auto; }
-.app-header-rates > summary { display: grid; justify-items: end; padding: 3px 8px; border-radius: var(--tf-radius); list-style: none; cursor: pointer; }
+.app-header-rates > summary { display: grid; justify-items: end; padding: 4px 8px; border-radius: var(--tf-radius); list-style: none; cursor: pointer; }
 .app-header-rates > summary::-webkit-details-marker { display: none; }
 .app-header-rates > summary:hover, .app-header-rates[open] > summary { background: var(--tf-chip); }
-.app-header-rate { color: var(--tf-text-2); font-size: .93rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.app-header-rate { color: var(--tf-text-2); font-size: var(--fs-md); white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .app-header-rate b { color: var(--tf-text); font-weight: 600; }
-.app-header-rate-date { color: var(--tf-muted); font-size: .79rem; white-space: nowrap; }
-.app-header-converter { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; display: grid; gap: 10px; width: 380px; max-width: calc(100vw - 32px); padding: 14px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); color: var(--tf-text); }
-.app-header-converter strong { font-size: .93rem; font-weight: 600; }
-.app-header-converter small { color: var(--tf-muted); font-size: .79rem; }
+.app-header-rate-date { color: var(--tf-muted); font-size: var(--fs-sm); white-space: nowrap; }
+.app-header-converter { position: absolute; top: calc(100% + 8px); right: 0; z-index: var(--z-dropdown); display: grid; gap: 8px; width: 380px; max-width: calc(100vw - 32px); padding: 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); color: var(--tf-text); }
+.app-header-converter strong { font-size: var(--fs-md); font-weight: 600; }
+.app-header-converter small { color: var(--tf-muted); font-size: var(--fs-sm); }
 /* Валюты друг под другом во всю ширину — названия не обрезаются; «поменять местами» справа на обе строки. */
 .app-header-converter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "from swap" "to swap"; gap: 6px; }
 .app-header-converter-row > .cur-select:first-child { grid-area: from; }
 .app-header-converter-row > .cur-select:last-child { grid-area: to; }
-.app-header-converter-amount { box-sizing: border-box; width: 100%; height: 40px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: 1.12rem !important; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+.app-header-converter-amount { box-sizing: border-box; width: 100%; height: 40px; margin: 0; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-lg) !important; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 /* Фокус — как у полей этапов: зелёная рамка и мягкая подсветка, без второй тёмной обводки. */
-.app-header .app-header-converter-amount:focus, .app-header .app-header-converter-amount:focus-visible, .app-header .cur-search:focus-visible { outline: 2px solid rgba(30, 91, 60, .2); outline-offset: 0; border-color: var(--tf-green); box-shadow: none; }
-.app-header .app-header-converter-row .cur-swap { grid-area: swap; align-self: stretch; width: 36px; height: auto; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: 1rem; }
+.app-header .app-header-converter-amount:focus, .app-header .app-header-converter-amount:focus-visible, .app-header .cur-search:focus-visible { outline: 2px solid var(--tf-focus-ring); outline-offset: 0; border-color: var(--tf-green); box-shadow: none; }
+.app-header .app-header-converter-row .cur-swap { grid-area: swap; align-self: stretch; width: 36px; height: auto; padding: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-base); }
 .app-header .app-header-converter-row .cur-swap:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
-.app-header-converter-result { color: var(--tf-text); font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.app-header-converter-result { color: var(--tf-text); font-size: var(--fs-xl); font-weight: 600; letter-spacing: 0; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 
 /* Профиль: аватар-кнопка, в меню — email, роль, Сотрудники, Выйти. */
 .app-header-user { flex: 0 0 auto; }
@@ -118,38 +118,41 @@
   border-radius: 50%;
   background: var(--tf-card);
   color: var(--tf-text);
-  font-size: .79rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
-.app-header-who { display: grid; gap: 1px; margin-bottom: 4px; padding: 8px 10px 10px; border-bottom: 1px solid var(--tf-border-inner); font-size: .86rem; }
+.app-header-who { display: grid; gap: 1px; margin-bottom: 4px; padding: 8px 12px 8px; border-bottom: 1px solid var(--tf-border-inner); font-size: var(--fs-md); }
 .app-header-who span { overflow: hidden; color: var(--tf-text); text-overflow: ellipsis; white-space: nowrap; }
-.app-header-who small { color: var(--tf-muted); font-size: .79rem; }
+.app-header-who small { color: var(--tf-muted); font-size: var(--fs-sm); }
 .app-header .app-header-logout { width: 100%; border: 0; background: transparent; cursor: pointer; }
 
 @media (max-width: 900px) {
-  .app-header { column-gap: 14px; padding: 8px 16px; }
+  .app-header { column-gap: 12px; padding: 8px 16px; }
   .app-header-name { display: none; }
 }
 @media (max-width: 560px) {
   .app-header-nav { order: 3; flex-basis: 100%; }
-  .app-header-nav > a, .app-menu > summary { padding: 6px 9px; font-size: .9rem; }
+  .app-header-nav > a, .app-menu > summary { padding: 6px 8px; font-size: var(--fs-md); }
 }
 
 /* Выбор валюты в конвертере: плашка «код + название», список с поиском на всю ширину окна. */
 .cur-select { min-width: 0; }
-.app-header .cur-select-button { display: flex; align-items: center; gap: 7px; width: 100%; height: 36px; padding: 0 9px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: #fff; color: var(--tf-text); font-size: .86rem; text-align: left; }
-.app-header .cur-select-button:hover:not(:disabled), .app-header .cur-select-button.open { border-color: var(--tf-muted); background: #fff; }
-.cur-select-button b, .cur-list li b { flex: none; padding: 2px 6px; border-radius: 5px; background: var(--tf-chip); color: var(--tf-text); font-size: .76rem; font-weight: 600; letter-spacing: .02em; }
+.app-header .cur-select-button { display: flex; align-items: center; gap: 8px; width: 100%; height: 36px; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-md); text-align: left; }
+.app-header .cur-select-button:hover:not(:disabled), .app-header .cur-select-button.open { border-color: var(--tf-muted); background: var(--tf-card); }
+.cur-select-button b, .cur-list li b { flex: none; padding: 2px 6px; border-radius: 5px; background: var(--tf-chip); color: var(--tf-text); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .02em; }
 .cur-select-button span { overflow: hidden; font-weight: 400; color: var(--tf-text-2); text-overflow: ellipsis; white-space: nowrap; }
 .cur-select-button svg { flex: none; margin-left: auto; color: var(--tf-muted); }
-.cur-list { position: absolute; left: 14px; right: 14px; z-index: 2; margin-top: 6px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: #fff; box-shadow: var(--tf-shadow-pop); }
-.cur-search { box-sizing: border-box; width: 100%; height: 34px; margin: 0 0 6px; padding: 0 10px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); font-size: .86rem; }
-.cur-search:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px rgba(30, 91, 60, .15); }
+.cur-list { position: absolute; left: 14px; right: 14px; z-index: 2; margin-top: 6px; padding: 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
+.cur-search { box-sizing: border-box; width: 100%; height: 34px; margin: 0 0 6px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); font-size: var(--fs-md); }
+.cur-search:focus { outline: none; border-color: var(--tf-green); box-shadow: 0 0 0 3px var(--tf-focus-ring); }
 .cur-list ul { max-height: 280px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
-.cur-list li { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 6px; color: var(--tf-text); font-size: .86rem; cursor: pointer; }
+.cur-list li { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-radius: var(--tf-radius); color: var(--tf-text); font-size: var(--fs-md); cursor: pointer; }
 .cur-list li span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cur-list li small { flex: none; color: var(--tf-muted); font-size: .79rem; font-variant-numeric: tabular-nums; }
+.cur-list li small { flex: none; color: var(--tf-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .cur-list li[aria-selected="true"] { background: var(--tf-chip); }
 .cur-list li.chosen b { background: var(--tf-green); color: #fff; }
 .cur-list li.cur-split { margin-bottom: 4px; box-shadow: 0 5px 0 -4px var(--tf-border-inner); }
 .cur-list .cur-empty { color: var(--tf-muted); cursor: default; }
+.app-header-rate-date { font-family: var(--tf-num); }
+.app-menu-current { color: var(--tf-text-2); font-weight: 500; }
+@media (max-width: 1100px) { .app-menu-current { display: none; } }

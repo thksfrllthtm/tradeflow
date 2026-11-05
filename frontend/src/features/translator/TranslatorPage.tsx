@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
+import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { SearchIcon } from '@/shared/components/icons'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { formatRuDate } from '@/shared/lib/dates'
@@ -7,7 +8,7 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { User } from '@/shared/types/user'
 import { Link } from '@/shared/router/Link'
 import { navigate, paths } from '@/shared/router/router'
-import { documentStatusLabels, languageLabel, TranslatorDocument, translatorApi } from './translatorApi'
+import { documentStatusLabels, documentStatusTone, languageLabel, TranslatorDocument, translatorApi } from './translatorApi'
 import { UploadDrawer } from './UploadDrawer'
 import '@/shared/styles/list-page.css'
 import './translator.css'
@@ -34,13 +35,9 @@ export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () =>
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="translator" onLogout={onLogout} />
     <section className="directory-page tr-page">
-      <div className="dir-head">
-        <div>
-          <h1>Переводчик{items.length > 0 && <span className="dir-count">{items.length}</span>}</h1>
-          <p>Перевод документов Word (.docx) и книг Excel (.xlsx) по абзацам и строкам: правка на сайте, выгрузка файла с исходным форматированием.</p>
-        </div>
-        <button type="button" className="dir-add" onClick={() => setUploadOpen(true)}>Загрузить документ</button>
-      </div>
+      <PageHead title="Переводчик" count={items.length > 0 ? items.length : undefined}
+        subtitle="Перевод документов Word (.docx) и книг Excel (.xlsx) по абзацам и строкам: правка на сайте, выгрузка файла с исходным форматированием."
+        actions={<button type="button" className="dir-add" onClick={() => setUploadOpen(true)}>Загрузить документ</button>} />
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
       <div className="dir-toolbar">
         <label className="dir-search">
@@ -61,7 +58,7 @@ export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () =>
                   <span className="tr-progress" aria-hidden="true"><span style={{ width: `${item.segmentCount ? (item.confirmedCount / item.segmentCount) * 100 : 0}%` }} /></span>
                   <small>{item.confirmedCount} из {item.segmentCount}</small>
                 </td>
-                <td className="tr-status-col"><span className={`tr-status ${item.status}`}>{documentStatusLabels[item.status]}</span></td>
+                <td className="tr-status-col"><span className={`badge tr-status ${documentStatusTone[item.status]}`}>{documentStatusLabels[item.status]}</span></td>
               </tr>)}
           </tbody>
         </table>

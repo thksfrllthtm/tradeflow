@@ -40,7 +40,7 @@ export function RegisterPage({ onLogin, onLoginMode }: { onLogin: (user: User) =
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={loading}>{loading ? 'Создаём…' : 'Создать аккаунт'}</button>
       </form>
-      <button type="button" className="auth-switch" onClick={onLoginMode}>Уже есть аккаунт? Войти</button>
+      <button type="button" className="secondary auth-switch" onClick={onLoginMode}>Уже есть аккаунт? Войти</button>
       <AuthRates />
     </section>
   </main>

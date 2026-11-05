@@ -9,6 +9,7 @@ import { ProductDirectoryPage } from '@/features/directories/products/ProductDir
 import { GoodsEstimatesPage } from '@/features/goods/GoodsEstimatesPage'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { AgentLogPage } from '@/features/agentLog/AgentLogPage'
+import { DocumentsBasePage } from '@/features/documentsBase/DocumentsBasePage'
 import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
@@ -31,7 +32,7 @@ export function App() {
   const authPage = route?.page === 'login' || route?.page === 'register'
   // Сотрудники и журнал агента — только администратору, «Переводчик» — переводчику и администратору, сметы,
   // справочник товаров, база решений и керамика — не переводчику; остальных на главную.
-  const adminPages: string[] = ['employees', 'agentLog']
+  const adminPages: string[] = ['employees', 'agentLog', 'documentsBase']
   const knownRoute = route !== null && !(user !== null && (adminPages.includes(route.page) && !isAdmin(user) || route.page === 'translator' && !canTranslate(user) || estimatePages.includes(route.page) && !canEstimate(user)))
 
   useEffect(() => {
@@ -91,6 +92,7 @@ export function App() {
     case 'goods': return <GoodsEstimatesPage user={user} estimateId={route.estimateId} onLogout={() => void logout()} />
     case 'employees': return isAdmin(user) ? <EmployeesPage user={user} onLogout={() => void logout()} /> : null
     case 'agentLog': return isAdmin(user) ? <AgentLogPage user={user} onLogout={() => void logout()} /> : null
+    case 'documentsBase': return isAdmin(user) ? <DocumentsBasePage user={user} onLogout={() => void logout()} /> : null
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
     case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />

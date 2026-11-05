@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { photosOf } from '@/shared/lib/itemPhotos'
 import { GoodsItemInput } from '@/shared/types/goods'
 import { MAX_ROW_PHOTOS } from '../../lib/rowPhotos'
+import { SearchIcon } from '@/shared/components/icons'
+import '@/shared/styles/list-page.css'
 import './RowPhotos.css'
 
 type Props = {
@@ -92,11 +94,11 @@ export function RowPhotos({ items, itemId, startIndex, onClose, onRemove, onMake
             <span className="rp-row">Строка {rowIndex + 1}</span>
             <h2 title={rowName(item)}>{rowName(item)}</h2>
           </div>
-          <button type="button" className="rp-close" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
+          <button type="button" className="icon-button" onClick={onClose} aria-label="Закрыть" title="Закрыть (Esc)">×</button>
         </header>
 
         <section className="rp-section">
-          <h3>Фото строки <small>{photos.length}</small></h3>
+          <h3>Фото строки <span className="dir-count">{photos.length}</span></h3>
           <div className="rp-grid" role="listbox" aria-label="Все фото строки">
             {photos.map((photo, at) => <button key={at} type="button" role="option" aria-selected={at === current} className={at === current ? 'rp-thumb active' : 'rp-thumb'} onClick={() => select(at)} title={at === 0 ? 'Главное фото' : `Фото ${at + 1}`}>
               <img src={photo} alt="" />{at === 0 && <i>главное</i>}
@@ -114,7 +116,7 @@ export function RowPhotos({ items, itemId, startIndex, onClose, onRemove, onMake
               <b aria-hidden="true">⇄</b><span>Перенести в другую строку<small>если фото попало не к тому товару</small></span>
             </button>
             {moving && <div className="rp-targets">
-              <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Номер строки или название" aria-label="Найти строку" />
+              <label className="dir-search"><SearchIcon /><input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Номер строки или название" aria-label="Найти строку" /></label>
               <ul>
                 {targets.map(({ other, at }) => {
                   const count = photosOf(other).length
@@ -137,8 +139,8 @@ export function RowPhotos({ items, itemId, startIndex, onClose, onRemove, onMake
             ? <div className="rp-confirm">
                 <span>Удалить это фото из строки?</span>
                 <div>
-                  <button type="button" className="rp-danger" onClick={() => { onRemove(itemId, current); setConfirmDelete(false) }}>Удалить</button>
-                  <button type="button" className="rp-cancel" onClick={() => setConfirmDelete(false)}>Отмена</button>
+                  <button type="button" className="danger" onClick={() => { onRemove(itemId, current); setConfirmDelete(false) }}>Удалить</button>
+                  <button type="button" className="secondary" onClick={() => setConfirmDelete(false)}>Отмена</button>
                 </div>
               </div>
             : <button type="button" className="rp-action delete" onClick={() => { setConfirmDelete(true); setMoving(false) }}>

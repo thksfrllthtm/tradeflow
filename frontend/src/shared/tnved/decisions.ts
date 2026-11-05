@@ -51,3 +51,5 @@ export type PhotoFeatures = {
 }
 
 export const decisionStatusLabels: Record<DecisionStatus, string> = { pending: 'Не проверено', verified: 'Проверено', rejected: 'Отклонено' }
+// Тон точки-статуса (.status-dot) и бейджа (.badge) из base.css.
+export const decisionStatusTones: Record<DecisionStatus, string> = { pending: 'warn', verified: 'ok', rejected: '' }

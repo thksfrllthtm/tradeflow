@@ -1,31 +1,30 @@
 /* Номенклатура ТН ВЭД: таблица страниц-списков (shared/styles/list-page.css) с многострочным наименованием,
    загрузка файла TWS и «Показать ещё» под таблицей. */
 
-.dir-transfer .nom-upload { position: relative; display: inline-flex; align-items: center; margin: 0; cursor: pointer; }
-.dir-transfer .nom-upload.busy { opacity: .7; cursor: progress; }
+/* Загрузка TWS — <label class="secondary">: стиль button на label не действует, шрифт и скругление — здесь. */
+.nom-upload { position: relative; display: inline-flex; align-items: center; margin: 0; border-radius: var(--tf-radius); font-size: var(--fs-md); font-weight: 600; line-height: 20px; white-space: nowrap; cursor: pointer; }
+.nom-upload.busy { opacity: .7; cursor: progress; }
 .nom-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
 .nom-note { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.nom-note button { flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 1rem; line-height: 1; opacity: .6; }
+.nom-note button { flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: transparent; color: inherit; font-size: var(--fs-base); line-height: 1; opacity: .6; }
 .nom-note button:hover:not(:disabled) { background: rgba(0, 0, 0, .06); opacity: 1; }
 
-.nom-found { flex: 0 0 auto; color: var(--tf-muted); font-size: .86rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nom-found { flex: 0 0 auto; color: var(--tf-muted); font-size: var(--fs-md); font-variant-numeric: tabular-nums; font-family: var(--tf-num); white-space: nowrap; }
 
 .nom-table tbody tr { cursor: default; }
 .nom-table .nom-name { max-width: 0; line-height: 1.35; }
-.nom-table .nom-name small { display: block; margin-bottom: 1px; overflow: hidden; color: var(--tf-muted); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.nom-table .nom-name small { display: block; margin-bottom: 1px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
 .nom-table .nom-name span { display: -webkit-box; overflow: hidden; color: var(--tf-text); font-weight: 400; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.nom-table .nom-rate { width: 170px; color: var(--tf-text); font-variant-numeric: tabular-nums; }
+.nom-table .nom-rate { width: 170px; color: var(--tf-text); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 
-.nom-more { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 14px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-muted); font-size: .86rem; }
-.nom-more .dir-transfer-button { height: 32px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: .86rem; font-weight: 600; }
-.nom-more .dir-transfer-button:hover:not(:disabled) { border-color: var(--tf-muted); background: var(--tf-chip); }
-.nom-table .nom-kz { width: 170px; color: var(--tf-muted); font-variant-numeric: tabular-nums; }
+.nom-more { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; border-top: 1px solid var(--tf-border-inner); color: var(--tf-muted); font-size: var(--fs-md); }
+.nom-table .nom-kz { width: 170px; color: var(--tf-muted); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .nom-table .nom-kz.active { color: var(--tf-green); font-weight: 600; }
-.nom-table .nom-kz small { display: block; margin-top: 1px; color: var(--tf-muted); font-size: .76rem; font-weight: 500; }
-.nom-table .nom-vat { width: 64px; color: var(--tf-text); font-variant-numeric: tabular-nums; }
+.nom-table .nom-kz small { display: block; margin-top: 1px; color: var(--tf-muted); font-size: var(--fs-xs); font-weight: 500; }
+.nom-table .nom-vat { width: 64px; color: var(--tf-text); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .nom-table .nom-link { width: 96px; }
-.nom-table .nom-link a { color: var(--tf-green); font-size: .82rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.nom-table .nom-link a { color: var(--tf-green); font-size: var(--fs-sm); font-weight: 600; text-decoration: none; white-space: nowrap; }
 .nom-table .nom-link a:hover { background: var(--tf-green-soft); }
 .dir-foot a { color: inherit; }
 
@@ -36,50 +35,48 @@
 
 /* Антидемпинг: колонка таблицы и панель всех мер реестра ЕЭК. */
 .nom-table .nom-ad { width: 130px; }
-.nom-table .nom-sir { width: 84px; color: var(--tf-text); font-variant-numeric: tabular-nums; }
-.nom-ad-chip { display: grid; gap: 1px; width: fit-content; max-width: 100%; padding: 3px 8px; border-radius: var(--tf-radius); background: #fdecec; color: #8a2626; text-decoration: none; line-height: 1.2; }
+.nom-table .nom-sir { width: 84px; color: var(--tf-text); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.nom-ad-chip { display: grid; gap: 1px; width: fit-content; max-width: 100%; padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-error-bg); color: var(--tf-error); text-decoration: none; line-height: 1.2; }
 .nom-ad-chip + .nom-ad-chip { margin-top: 4px; }
-.nom-ad-chip b { font-size: .8rem; font-variant-numeric: tabular-nums; }
-.nom-ad-chip small { overflow: hidden; color: #a35a50; font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
-a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
-.nom-ad-chip.maybe { background: #fff6dd; color: #7a5810; }
-.nom-ad-chip.maybe small { color: #9a7a2a; }
+.nom-ad-chip b { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.nom-ad-chip small { overflow: hidden; color: var(--tf-error); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
+a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px var(--tf-error-border); }
+.nom-ad-chip.maybe { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.nom-ad-chip.maybe small { color: var(--tf-warn-text); }
 .nom-ad-chip.off { background: var(--tf-chip); color: var(--tf-muted); }
 .nom-ad-chip.off small { color: var(--tf-muted); }
-.dir-transfer .dir-transfer-button.active { border-color: var(--tf-green); background: var(--tf-green-soft); color: var(--tf-green); }
 
-.dump-panel { display: grid; gap: 10px; margin-bottom: 14px; padding: 14px 16px; border: 1px solid var(--tf-border); border-radius: 12px; background: #fff; }
+.dump-panel { display: grid; gap: 8px; margin-bottom: 12px; padding: 12px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .dump-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.dump-head h2 { margin: 0 0 4px; color: var(--tf-text); font-size: 1rem; font-weight: 600; }
-.dump-head h2 span { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #fdecec; color: #8a2626; font-size: .76rem; }
-.dump-head p { margin: 0; max-width: 820px; color: var(--tf-muted); font-size: .86rem; line-height: 1.45; }
+.dump-head h2 { margin: 0 0 4px; color: var(--tf-text); font-size: var(--fs-base); font-weight: 600; }
+.dump-head h2 .badge { margin-left: 6px; }
+.dump-head p { margin: 0; max-width: 820px; color: var(--tf-muted); font-size: var(--fs-md); line-height: 1.45; }
 .dump-head p a { color: var(--tf-green); }
-.dump-head .dir-transfer-button { flex: 0 0 auto; }
-.dump-empty { margin: 0; color: var(--tf-muted); font-size: .82rem; }
+.dump-head .secondary { flex: 0 0 auto; }
+.dump-empty { margin: 0; color: var(--tf-muted); font-size: var(--fs-sm); }
 .dump-table-wrap { max-height: 520px; overflow: auto; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); }
-.dump-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
-.dump-table th { position: sticky; top: 0; z-index: 1; padding: 7px 10px; border-bottom: 1px solid var(--tf-border); background: var(--xl-head); color: var(--tf-text); font-size: .8rem; font-weight: 600; text-align: left; white-space: nowrap; }
-.dump-table td { padding: 8px 10px; border-bottom: 1px solid var(--tf-border-inner); color: var(--tf-text); vertical-align: top; }
+.dump-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
+.dump-table th { position: sticky; top: 0; z-index: 1; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); background: var(--xl-head); color: var(--tf-text); font-size: var(--fs-sm); font-weight: 600; text-align: left; white-space: nowrap; }
+.dump-table td { padding: 8px 12px; border-bottom: 1px solid var(--tf-border-inner); color: var(--tf-text); vertical-align: top; }
 .dump-table tr.dump-suspended td { background: var(--tf-chip); color: var(--tf-muted); }
 .dump-table .dump-num { width: 56px; color: var(--tf-muted); font-weight: 600; white-space: nowrap; }
 .dump-name { min-width: 200px; }
 .dump-name b { display: block; font-weight: 600; }
-.dump-flag { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 999px; background: var(--tf-chip); color: var(--tf-text-2); font-size: .76rem; font-style: normal; font-weight: 600; }
-.dump-check { display: block; margin-top: 3px; color: #8a6410; font-size: .76rem; }
-.dump-table .dump-more { display: block; height: auto; margin-top: 4px; padding: 0; border: 0; background: none; color: var(--tf-green); font-size: .76rem; font-weight: 600; cursor: pointer; }
-.dump-table .dump-more:hover { text-decoration: underline; }
-.dump-rate-text { margin: 6px 0 0; padding: 8px 10px; border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text-2); font: inherit; font-size: .76rem; line-height: 1.45; white-space: pre-wrap; }
+.dump-flag { margin-top: 4px; font-style: normal; }
+.dump-check { display: block; margin-top: 4px; color: var(--tf-warn-text); font-size: var(--fs-xs); }
+.dump-table .dump-more { display: block; margin-top: 4px; font-size: var(--fs-xs); }
+.dump-rate-text { margin: 6px 0 0; padding: 8px 12px; border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text-2); font: inherit; font-size: var(--fs-xs); line-height: 1.45; white-space: pre-wrap; }
 .dump-rates { min-width: 170px; }
-.dump-rates span { display: flex; justify-content: space-between; gap: 10px; white-space: nowrap; }
+.dump-rates span { display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
 .dump-rates em { color: var(--tf-text-2); font-style: normal; }
-.dump-rates b { color: #8a2626; font-variant-numeric: tabular-nums; }
+.dump-rates b { color: var(--tf-error); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .dump-codes { max-width: 320px; }
-.dump-table .dump-codes button { height: auto; margin: 0 4px 4px 0; padding: 1px 6px; border: 1px solid var(--tf-border); border-radius: 5px; background: #fff; color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: .76rem; cursor: pointer; }
+.dump-table .dump-codes button { height: auto; margin: 0 4px 4px 0; padding: 1px 6px; border: 1px solid var(--tf-border); border-radius: 5px; background: var(--tf-card); color: var(--tf-text); font-family: var(--tf-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); cursor: pointer; }
 .dump-table .dump-codes button:hover { border-color: var(--tf-green); background: var(--tf-green-soft); }
-.dump-table .dump-codes button.heading { border-style: dashed; color: #7a5810; }
+.dump-table .dump-codes button.heading { border-style: dashed; color: var(--tf-warn-text); }
 .dump-table .dump-codes button.dump-codes-more { border: 0; color: var(--tf-green); font-family: inherit; font-weight: 600; }
-.dump-dates { color: var(--tf-text-2); font-size: .76rem; white-space: nowrap; }
-.dump-doc a { color: var(--tf-green); font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.dump-dates { color: var(--tf-text-2); font-size: var(--fs-xs); white-space: nowrap; }
+.dump-doc a { color: var(--tf-green); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
 .dump-doc a::after { content: " ↗"; }
 
 @media (max-width: 760px) {
@@ -87,14 +84,11 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 }
 
 /* Список изменений после загрузки файла TWS. */
-.nom-changes { flex: 0 0 auto; max-height: 240px; margin: 0; padding: 4px 0; overflow-y: auto; border: 1px solid var(--tf-border); border-radius: 8px; background: #fff; list-style: none; font-size: .8rem; }
-.nom-change { display: grid; grid-template-columns: 70px 110px 1fr; gap: 10px; align-items: baseline; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
+.nom-changes { flex: 0 0 auto; max-height: 240px; margin: 0; padding: 4px 0; overflow-y: auto; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); list-style: none; font-size: var(--fs-sm); }
+.nom-change { display: grid; grid-template-columns: 70px 110px 1fr; gap: 8px; align-items: baseline; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
 .nom-change:last-child { border-bottom: 0; }
-.nom-change code { font-variant-numeric: tabular-nums; font-weight: 400; white-space: nowrap; }
-.nom-change-kind { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: .76rem; font-weight: 600; }
-.nom-change.added .nom-change-kind { background: var(--tf-green-soft); color: var(--tf-green); }
-.nom-change.removed .nom-change-kind { background: #fde4e0; color: #9a3024; }
-.nom-change.changed .nom-change-kind { background: #fff1cf; color: #7a5810; }
+.nom-change code { font-variant-numeric: tabular-nums; font-family: var(--tf-num); font-weight: 400; white-space: nowrap; }
+.nom-change-kind { justify-self: start; }
 .nom-change-text { color: var(--tf-text); line-height: 1.4; }
 .nom-change-text s { color: var(--tf-muted); }
 .nom-change-text small { display: block; color: var(--tf-text-2); }
@@ -102,8 +96,8 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 @media (max-width: 640px) { .nom-change { grid-template-columns: auto 1fr; } .nom-change-text { grid-column: 1 / -1; } }
 
 /* Строка-заголовок товарной позиции (первые 4 цифры) и приглушённый префикс позиции в коде. */
-.nom-table tr.nom-heading td { height: 32px; padding: 4px 12px; background: var(--tf-bg); color: var(--tf-muted); font-size: .8rem; font-weight: 500; }
-.nom-table tr.nom-heading b { margin-left: 6px; color: var(--tf-text); font-size: .86rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+.nom-table tr.nom-heading td { height: 32px; padding: 4px 12px; background: var(--tf-bg); color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 500; }
+.nom-table tr.nom-heading b { margin-left: 6px; color: var(--tf-text); font-size: var(--fs-md); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); letter-spacing: .03em; }
 .nom-table tbody tr.nom-heading:hover td { background: var(--tf-bg); box-shadow: none; }
 
 /* ── Как «База решений» и этапы сметы: страница во всю ширину, таблица — карточка до низа окна со своей
@@ -115,27 +109,28 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px #d99a92; }
 .nom-page > .nom-card { flex: 1 1 0; min-height: 360px; }
 .nom-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .nom-card .dir-table-wrap { flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; }
-.nom-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
+.nom-filterbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border-bottom: 1px solid var(--tf-border); }
 .nom-filterbar .dir-search { flex: 1 1 auto; }
 .nom-more { padding: 8px; }
-.nom-disclaimer { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: .82rem; line-height: 1.4; }
+.nom-disclaimer { display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 0 2px; color: var(--tf-muted); font-size: var(--fs-sm); line-height: 1.4; }
 .nom-disclaimer svg { flex: none; margin-top: 2px; }
 .nom-disclaimer a { color: inherit; }
 
 /* Строки в одну линию: путь в дереве — серым перед наименованием, «0 · действует», антидемпинг — в ряд.
    Длинное — с многоточием, целиком — в подсказке. */
-.nom-table td { height: 36px; padding: 3px 10px; white-space: nowrap; }
+.nom-table td { white-space: nowrap; }
 .nom-table .nom-name { overflow: hidden; text-overflow: ellipsis; }
-.nom-table .nom-name small { display: inline; margin: 0; font-size: .82rem; }
+.nom-table .nom-name small { display: inline; margin: 0; font-size: var(--fs-sm); }
 .nom-table .nom-name span { display: inline; }
 .nom-table .nom-rate { width: 120px; }
 .nom-table .nom-kz { width: 150px; overflow: hidden; text-overflow: ellipsis; }
-.nom-table .nom-kz small { display: inline; margin: 0; font-size: .8rem; }
+.nom-table .nom-kz small { display: inline; margin: 0; font-size: var(--fs-sm); }
 .nom-table .nom-ad { width: 180px; overflow: hidden; text-overflow: ellipsis; }
 .nom-table .nom-sir { width: 190px; overflow: hidden; text-overflow: ellipsis; }
-.nom-table .nom-sir small { color: var(--tf-muted); font-size: .8rem; }
+.nom-table .nom-sir small { color: var(--tf-muted); font-size: var(--fs-sm); }
 /* «Подробнее» — значок ↗ в узкой колонке (текст — в подсказке): место — наименованию. */
-.nom-table .nom-link { width: 44px; padding: 3px 4px; text-align: center; }
-.nom-table .nom-link a { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; font-size: .95rem; }
-.nom-ad-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 1px 7px; vertical-align: middle; }
+.nom-table .nom-link { width: 44px; padding: 4px 4px; text-align: center; }
+.nom-table .nom-link a { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--tf-radius); font-size: var(--fs-base); }
+.nom-ad-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 1px 8px; vertical-align: middle; }
 .nom-ad-chip + .nom-ad-chip { margin: 0 0 0 4px; }
+.nom-more { font-family: var(--tf-num); }

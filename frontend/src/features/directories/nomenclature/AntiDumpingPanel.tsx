@@ -39,13 +39,13 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
   return <section className="dump-panel" aria-label="Антидемпинговые меры ЕАЭС">
     <header className="dump-head">
       <div>
-        <h2>Антидемпинговые меры ЕАЭС <span>{measures.length}</span></h2>
+        <h2>Антидемпинговые меры ЕАЭС <span className="badge error">{measures.length}</span></h2>
         <p>
           Пошлина сверх ЕТТ, % от таможенной стоимости, для товара из указанной страны происхождения. В смете начисляется ставка «для прочих производителей» по полю «Страна».
           {source && <> Источник: <a href={source.registryUrl} target="_blank" rel="noreferrer">реестр ЕЭК</a> · {source.source === 'eec' ? `обновлено ${formatRuDate(source.importedAt.slice(0, 10))}${source.importedByName ? `, ${source.importedByName}` : ''}` : 'данные из файла программы (реестр на 02.10.2026)'}</>}
         </p>
       </div>
-      {admin && <button type="button" className="dir-transfer-button" onClick={() => void refresh()} disabled={busy}>{busy ? 'Обновляем…' : 'Обновить из реестра ЕЭК'}</button>}
+      {admin && <button type="button" className="secondary" onClick={() => void refresh()} disabled={busy}>{busy ? 'Обновляем…' : 'Обновить из реестра ЕЭК'}</button>}
     </header>
     {notice && <p className="dir-transfer-ok" role="status">{notice}</p>}
     {error && <p className="dir-transfer-error" role="alert">{error}</p>}
@@ -58,9 +58,9 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
           <td className="dump-num">{measure.number}</td>
           <td className="dump-name">
             <b>{measure.shortName}</b>
-            {measure.suspended && <i className="dump-flag">временно не применяется</i>}
+            {measure.suspended && <i className="badge dump-flag">временно не применяется</i>}
             {measure.needsCheck && <small className="dump-check">{measure.needsCheck}</small>}
-            <button type="button" className="dump-more" onClick={() => setOpen(expanded ? null : measure.number)} aria-expanded={expanded}>{expanded ? 'Скрыть ставки по производителям' : 'Ставки по производителям'}</button>
+            <button type="button" className="button-link dump-more" onClick={() => setOpen(expanded ? null : measure.number)} aria-expanded={expanded}>{expanded ? 'Скрыть ставки по производителям' : 'Ставки по производителям'}</button>
             {expanded && <pre className="dump-rate-text">{measure.rateText}</pre>}
           </td>
           <td className="dump-rates">{measure.countries.map((country) => <span key={country}><em>{countryNames[country] ?? country}</em><b>{percentText(measure.rates[country] ?? '')}</b></span>)}</td>

@@ -1,9 +1,9 @@
-import { ChangeEvent, ClipboardEvent, FormEvent, useEffect, useState } from 'react'
+import { ChangeEvent, ClipboardEvent, useState } from 'react'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { clipboardImages } from '@/shared/lib/clipboardImages'
 import { resizePhoto } from '@/shared/lib/resizePhoto'
 import { decisionsApi } from './decisionsApi'
-import '@/shared/styles/drawer.css'
+import { Drawer } from '@/shared/components/Drawer/Drawer'
 
 const maxPhotos = 3
 
@@ -16,12 +16,6 @@ export function DecisionManual({ onClose, onAdded }: { onClose: () => void; onAd
   const [photos, setPhotos] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape' && !busy) onClose() }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose, busy])
 
   async function addFiles(files: File[]) {
     const images = files.filter((file) => file.type.startsWith('image/')).slice(0, maxPhotos - photos.length)
@@ -46,8 +40,7 @@ export function DecisionManual({ onClose, onAdded }: { onClose: () => void; onAd
   }
 
   const normalized = code.replace(/\D/g, '')
-  async function submit(event: FormEvent) {
-    event.preventDefault()
+  async function submit() {
     setBusy(true); setError('')
     try {
       const thumb = photos[0] ? await resizePhoto(photos[0], 160, 0.7) : ''
@@ -62,17 +55,18 @@ export function DecisionManual({ onClose, onAdded }: { onClose: () => void; onAd
     }
   }
 
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose() }}>
-    <form className="drawer" role="dialog" aria-modal="true" aria-labelledby="dc-manual-title" onSubmit={(event) => void submit(event)} onPaste={paste}>
-      <header className="drawer-head">
-        <div><h2 id="dc-manual-title">Добавить вручную</h2><p>Запись попадёт в базу сразу как «Проверено».</p></div>
-        <button type="button" className="drawer-close" onClick={onClose} disabled={busy} aria-label="Закрыть">×</button>
-      </header>
-      <div className="drawer-body">
+  // Пока идёт сохранение, панель не закрывается.
+  const close = () => { if (!busy) onClose() }
+  return <Drawer title="Добавить вручную" subtitle="Запись попадёт в базу сразу как «Проверено»." onClose={close} onSubmit={() => void submit()}
+    footer={<>
+      <button type="button" className="secondary" onClick={close} disabled={busy}>Отмена</button>
+      <button type="submit" disabled={busy || !invoiceName.trim() || normalized.length !== 10}>{busy ? 'Сохраняем…' : 'Добавить'}</button>
+    </>}>
+      <div className="drawer-fields" onPaste={paste}>
         <section className="drawer-section">
           <h3>Фото</h3>
           {photos.length > 0 && <div className="dc-photos">{photos.map((photo, index) => <button key={index} type="button" className="dc-photo" title="Убрать фото" onClick={() => setPhotos((current) => current.filter((_, other) => other !== index))}><img src={photo} alt={`Фото ${index + 1}`} /></button>)}</div>}
-          {photos.length < maxPhotos && <label className="dc-file">Выбрать фото<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={pick} disabled={busy} /></label>}
+          {photos.length < maxPhotos && <label className="secondary dc-file">Выбрать фото<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={pick} disabled={busy} /></label>}
           <p className="drawer-hint">До {maxPhotos} фото. Можно вставить скриншот через Ctrl+V. Нажмите на фото, чтобы убрать.</p>
         </section>
         <section className="drawer-section">
@@ -83,10 +77,5 @@ export function DecisionManual({ onClose, onAdded }: { onClose: () => void; onAd
         </section>
         {error && <p className="dc-error" role="alert">{error}</p>}
       </div>
-      <footer className="drawer-foot">
-        <button type="submit" disabled={busy || !invoiceName.trim() || normalized.length !== 10}>{busy ? 'Сохраняем…' : 'Добавить'}</button>
-        <button type="button" className="secondary" onClick={onClose} disabled={busy}>Отмена</button>
-      </footer>
-    </form>
-  </div>
+  </Drawer>
 }

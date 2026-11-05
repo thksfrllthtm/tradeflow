@@ -59,7 +59,7 @@ export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: bo
   }
 
   const button = <div className="dir-transfer">
-    <button type="button" className={open ? 'dir-transfer-button active' : 'dir-transfer-button'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Вставить колонку кодов из Excel и проверить по номенклатуре ТН ВЭД ЕАЭС">Проверить коды</button>
+    <button type="button" className={open ? 'secondary active' : 'secondary'} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }} aria-expanded={open} title="Вставить колонку кодов из Excel и проверить по номенклатуре ТН ВЭД ЕАЭС">Проверить коды</button>
   </div>
   const panel = open && <section className="dir-transfer-panel code-check">
     <div className="dir-transfer-row">
@@ -67,15 +67,15 @@ export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: bo
         <strong>Проверка кодов по номенклатуре ТН ВЭД ЕАЭС</strong>
         <p>Скопируйте колонку кодов в Excel и вставьте сюда. Повторы и заголовок колонки можно не убирать.</p>
       </div>
-      <button type="button" className="dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
+      <button type="button" className="icon-button ghost dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
     </div>
     <textarea className="code-check-input" rows={5} value={text} onChange={(event) => setText(event.target.value)} placeholder={'4015190000\n6116102000\n6116990000'} spellCheck={false} ref={input}
       onKeyDown={(event) => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); check() } }} />
     <div className="dir-transfer-row">
       <span className="code-check-note">{pasted ? `Строк с кодами: ${pasted.rows}, разных кодов: ${pasted.codes.length}` : 'Ctrl+Enter — проверить'}</span>
       <div className="code-check-actions">
-        {(text || pasted) && <button type="button" className="code-check-secondary" onClick={reset}>Очистить</button>}
-        <button type="button" className="code-check-primary" onClick={check} disabled={busy || text.trim() === ''}>{busy ? 'Проверяем…' : 'Проверить'}</button>
+        {(text || pasted) && <button type="button" className="secondary" onClick={reset}>Очистить</button>}
+        <button type="button" onClick={check} disabled={busy || text.trim() === ''}>{busy ? 'Проверяем…' : 'Проверить'}</button>
       </div>
     </div>
     {error && <p className="dir-transfer-error" role="alert">{error}</p>}
@@ -83,14 +83,14 @@ export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: bo
       <div className="code-check-summary" role="status">
         {unknown.length > 0 ? <span className="missing">Нет в ТН ВЭД ЕАЭС: {unknown.length}</span> : <span className="ok">Все коды есть в ТН ВЭД ЕАЭС</span>}
         {unknown.length > 0 && <span className="found">Есть в ТН ВЭД: {rows.length - unknown.length}</span>}
-        {unknown.length > 0 && <button type="button" className="code-check-secondary" onClick={() => void copyAbsent()}><CopyIcon copied={copied} />{copied ? 'Скопировано' : 'Копировать отсутствующие'}</button>}
+        {unknown.length > 0 && <button type="button" className="secondary" onClick={() => void copyAbsent()}><CopyIcon copied={copied} />{copied ? 'Скопировано' : 'Копировать отсутствующие'}</button>}
       </div>
       <ul className="code-check-list">
         {rows.map((row) => {
           const item = row.nomenclature
           return <li key={row.code} className={row.status}>
             <CopyCode code={row.code} />
-            <span className={`code-check-status ${row.status}`}>{statusText[row.status]}</span>
+            <span className={`badge ${row.status === 'unknown' ? 'error' : 'ok'} code-check-status ${row.status}`}>{statusText[row.status]}</span>
             <span className="code-check-name">
               {item ? <>{nameParts(item.name).slice(-1)[0]}<em> · ЕТТ {item.tariffText || 'не указана'}{item.kz && ` · РК ${item.kz.rateText}${item.kz.active ? '' : ` (${item.kz.status})`}`}{item.vatPercent && ` · НДС ${item.vatPercent}%`}</em></>
                 : <em>Проверьте код: в номенклатуре{source?.actualDate ? ` на ${formatRuDate(source.actualDate)}` : ''} его нет</em>}
