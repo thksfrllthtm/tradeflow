@@ -441,3 +441,24 @@ func TestOpenDetailsDropsMeasuresAndRepeatedGroupNotes(t *testing.T) {
 		t.Fatalf("цитата из общих положений второй страницы после ответа сотрудника: %q", source)
 	}
 }
+
+// Модель, которая смотрит фото сама (Claude), описания фото от модели для фото не получает — решает по
+// снимку; модель без зрения (DeepSeek) получает описание. В переписке описание остаётся для тени.
+func TestOwnEyesSkipsPhotoNote(t *testing.T) {
+	runner, _ := newTestRunner(&scriptedModel{}, &fakeAgentData{})
+	runner.transcript = append(runner.transcript, map[string]any{"role": "user", "content": photoNotePrefix + ": перчатки с покрытием"})
+	has := func() bool {
+		raw, _ := json.Marshal(runner.materialize())
+		return strings.Contains(string(raw), photoNotePrefix)
+	}
+	if !has() {
+		t.Fatal("модель без своего зрения получает описание фото")
+	}
+	runner.ownEyes = true
+	if has() {
+		t.Fatal("модель со своим зрением описание фото не получает")
+	}
+	if last := runner.transcript[len(runner.transcript)-1]["content"]; last != photoNotePrefix+": перчатки с покрытием" {
+		t.Fatalf("описание остаётся в переписке: %v", last)
+	}
+}

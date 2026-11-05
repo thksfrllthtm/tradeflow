@@ -744,8 +744,10 @@ func nearChosen(chosen []int, line int) bool {
 }
 
 // fragmentsAround — найденные строки (по возрастанию) с одной соседней выше и двумя ниже; найденная
-// обрезана вокруг первой основы. Пересекающиеся окрестности — один фрагмент, а не повтор строк.
+// обрезана вокруг первой основы. Пересекающиеся окрестности — один фрагмент, а не повтор строк. Над
+// фрагментом — подпись раздела документа, в котором он стоит (sectionPrefix).
 func fragmentsAround(lines []string, chosen []int, stems []string) []string {
+	headings := sectionHeadings(lines)
 	picked := map[int]bool{}
 	for _, line := range chosen {
 		picked[line] = true
@@ -764,9 +766,75 @@ func fragmentsAround(lines []string, chosen []int, stems []string) []string {
 				parts = append(parts, service.TruncateRunes(lines[at], agentFragmentRunes/6))
 			}
 		}
-		fragments = append(fragments, strings.Join(parts, "\n"))
+		fragment := strings.Join(parts, "\n")
+		if label := sectionAt(lines, headings, start); label != "" {
+			fragment = sectionPrefix + label + "]\n" + fragment
+		}
+		fragments = append(fragments, fragment)
 	}
 	return fragments
+}
+
+// Разделы большого акта: у похожих списков кодов в разных частях документа разный смысл (в Решении №299
+// раздел II Единого перечня — госрегистрация, раздел 16 Единых требований — гигиенические требования к
+// материалам для контакта с пищей). Фрагмент поиска подписывается заголовком раздела, в котором стоит, —
+// агент не путает части документа, а программа сама ставит раздел у цитаты-основания.
+const (
+	sectionPrefix    = "[Раздел документа: "
+	sectionLabelRune = 140
+)
+
+var sectionHeading = regexp.MustCompile(`^(Раздел|РАЗДЕЛ|Глава|ГЛАВА|Приложение|ПРИЛОЖЕНИЕ)\s+(\d+|[IVXLC]+)\b`)
+
+// sectionHeadings — номера строк-заголовков разделов, глав и приложений по порядку документа.
+func sectionHeadings(lines []string) []int {
+	headings := []int{}
+	for index, line := range lines {
+		if sectionHeading.MatchString(strings.TrimSpace(line)) {
+			headings = append(headings, index)
+		}
+	}
+	return headings
+}
+
+// sectionAt — заголовок ближайшего раздела не ниже строки line ("" — заголовка выше нет). Короткий
+// заголовок («Раздел II ПЕРЕЧЕНЬ») продолжается следующей строкой («продукции (товаров), подлежащей
+// государственной регистрации») — она добавляется.
+func sectionAt(lines []string, headings []int, line int) string {
+	at := sort.SearchInts(headings, line+1) - 1
+	if at < 0 {
+		return ""
+	}
+	heading := headings[at]
+	label := strings.Join(strings.Fields(lines[heading]), " ")
+	if utf8.RuneCountInString(label) < 40 && heading+1 < len(lines) && heading+1 <= line {
+		label += " " + strings.Join(strings.Fields(lines[heading+1]), " ")
+	}
+	return service.TruncateRunes(label, sectionLabelRune)
+}
+
+// sectionOfQuote — раздел акта, в котором агент видел цитату: подпись фрагмента поиска, где она стоит
+// ("" — цитата не во фрагменте с подписью).
+func sectionOfQuote(text, quote string) string {
+	label := ""
+	var chunk strings.Builder
+	found := func() bool { return label != "" && containsQuote(chunk.String(), quote) }
+	for _, line := range strings.Split(text, "\n") {
+		if rest, ok := strings.CutPrefix(line, sectionPrefix); ok {
+			if found() {
+				return label
+			}
+			label = strings.TrimSuffix(rest, "]")
+			chunk.Reset()
+			continue
+		}
+		chunk.WriteString(line)
+		chunk.WriteString("\n")
+	}
+	if found() {
+		return label
+	}
+	return ""
 }
 
 // aroundMatch — длинный абзац (строка таблицы перечня) обрезается вокруг первого слова запроса.
@@ -1650,7 +1718,11 @@ func (t *agentToolbox) quoteOrigin(quote, actURL, act string) string {
 	}
 	has := func(text string) bool { return containsQuote(text, normalized) }
 	if actURL != "" && has(t.web[actURL]) {
-		return firstNonEmpty(act, "акт по ссылке")
+		source := firstNonEmpty(act, "акт по ссылке")
+		if section := sectionOfQuote(t.web[actURL], normalized); section != "" {
+			source += " · " + section
+		}
+		return source
 	}
 	addresses := make([]string, 0, len(t.web))
 	for address := range t.web {

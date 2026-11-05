@@ -186,8 +186,10 @@ func NewTNVEDAgentService(r *repository.Repository, model, visionModel *AgentMod
 func (s *TNVEDAgentService) twoModels() bool { return s.visionModel != s.model }
 
 // modelName — модели подбора для сессии и статуса: «deepseek-flash + deepseek-v4-pro».
+// Модель, которая смотрит фото сама (Claude), — без модели для фото в названии: та только описывает фото
+// для поиска в базе и для тени.
 func (s *TNVEDAgentService) modelName() string {
-	if s.twoModels() {
+	if s.twoModels() && !s.model.Vision() {
 		return s.visionModel.Name() + " + " + s.model.Name()
 	}
 	return s.model.Name()
@@ -629,6 +631,7 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 			system:     s.systemPrompt(session.Mode == modeReference, toolbox.lookPhoto != nil),
 			tools:      agentTools(session.Mode == modeReference),
 			review:     s.settings.SelfCheck,
+			ownEyes:    s.model.Vision() && s.twoModels(),
 			transcript: transcript,
 			photos:     photos,
 			vision:     s.model.Vision(),

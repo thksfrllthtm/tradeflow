@@ -89,7 +89,7 @@ func lastUserMessage(transcript []map[string]any) string {
 // createShadowRun — строка тени для сессии: пропущенная с причиной, если бюджет или дневной лимит исчерпаны.
 func (s *TNVEDAgentService) createShadowRun(store context.Context, session repository.TNVEDAgentSession) (repository.TNVEDAgentShadowRun, error) {
 	now := time.Now().UTC()
-	run := repository.TNVEDAgentShadowRun{SessionID: session.ID, Model: s.shadow.Name(), Status: "running", Transcript: repository.JSON("[]"),
+	run := repository.TNVEDAgentShadowRun{SessionID: session.ID, Model: s.shadowRunName(), Status: "running", Transcript: repository.JSON("[]"),
 		Messages: repository.JSON("[]"), Result: repository.JSON("null"), CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero, StartedAt: now}
 	reason, err := s.shadowLimit(store)
 	if err != nil {
@@ -502,4 +502,13 @@ func withoutPhotoNote(transcript []map[string]any) []map[string]any {
 		kept = append(kept, message)
 	}
 	return kept
+}
+
+// shadowRunName — название тени в журнале: тень без зрения (DeepSeek) видит фото через модель для фото —
+// «gemini-3.8-flash + deepseek-v4-pro»; Claude смотрит сам — только своё название.
+func (s *TNVEDAgentService) shadowRunName() string {
+	if !s.shadow.Vision() && s.twoModels() && s.visionModel.Configured() && s.visionModel.Vision() {
+		return s.visionModel.Name() + " + " + s.shadow.Name()
+	}
+	return s.shadow.Name()
 }

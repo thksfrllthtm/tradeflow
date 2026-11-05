@@ -43,6 +43,9 @@ type agentRunner struct {
 	review bool
 	// finalize — дополнение принятого итога программой перед показом (знаки ТРОИС); nil — нет.
 	finalize func(result *AgentResult)
+	// ownEyes — модель смотрит фото сама и описание фото от модели для фото не получает (оно остаётся в
+	// переписке для тени без зрения и следующих ходов).
+	ownEyes bool
 }
 
 // stepLimit — шагов до принудительного итога: maxSteps, иначе по режиму.
@@ -62,6 +65,9 @@ func (r *agentRunner) stepLimit() int {
 func (r *agentRunner) materialize() []agentMessage {
 	messages := []agentMessage{{Role: "system", Content: r.system}}
 	for _, raw := range r.transcript {
+		if text, ok := raw["content"].(string); ok && r.ownEyes && raw["role"] == "user" && strings.HasPrefix(text, photoNotePrefix) {
+			continue
+		}
 		data, _ := json.Marshal(raw)
 		var message agentMessage
 		if json.Unmarshal(data, &message) != nil {

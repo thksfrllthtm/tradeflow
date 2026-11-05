@@ -218,3 +218,28 @@ func TestMergeDocumentsFailedTaskUsesListPosition(t *testing.T) {
 		t.Fatalf("без позиций — прежняя запись: %+v", plain.Documents[0])
 	}
 }
+
+// Похожие списки кодов в разных разделах акта: фрагмент подписан своим разделом (короткий заголовок —
+// со следующей строкой), а у цитаты-основания программа сама ставит раздел, где агент её видел.
+func TestSearchFragmentsCarryActSection(t *testing.T) {
+	filler := strings.Repeat("Сноска. Текст без кодов.\n", 30)
+	text := "Раздел II ПЕРЕЧЕНЬ\nпродукции (товаров), подлежащей государственной регистрации\nГруппа 63\nИз 6307\nГотовые изделия прочие, предназначенные для контакта с пищевыми продуктами\n" +
+		filler + "Раздел 16. Требования к материалам и изделиям для контакта с пищевыми продуктами\nГруппа 63\nиз 6305\nМешки и пакеты упаковочные, предназначенные для контакта с пищевыми продуктами\n"
+	list, _ := searchDocument(text, "6307")
+	if len(list) != 1 || !strings.HasPrefix(list[0], sectionPrefix+"Раздел II ПЕРЕЧЕНЬ продукции (товаров), подлежащей государственной регистрации]\n") {
+		t.Fatalf("раздел II перечня: %q", list)
+	}
+	hygiene, _ := searchDocument(text, "6305")
+	if len(hygiene) != 1 || !strings.HasPrefix(hygiene[0], sectionPrefix+"Раздел 16. Требования к материалам") {
+		t.Fatalf("раздел 16 требований: %q", hygiene)
+	}
+	toolbox := newAgentToolbox(&fakeAgentData{})
+	const act = "https://adilet.zan.kz/rus/docs/H10T0000299"
+	toolbox.rememberPage(act, strings.Join(append(list, hygiene...), "\n"), nil)
+	if origin := toolbox.quoteOrigin("Мешки и пакеты упаковочные, предназначенные для контакта с пищевыми продуктами", act, "Решение КТС №299"); !strings.Contains(origin, "Решение КТС №299 · Раздел 16.") {
+		t.Fatalf("основание из раздела 16: %q", origin)
+	}
+	if origin := toolbox.quoteOrigin("Готовые изделия прочие, предназначенные для контакта с пищевыми продуктами", act, "Решение КТС №299"); !strings.Contains(origin, "· Раздел II ПЕРЕЧЕНЬ продукции") {
+		t.Fatalf("основание из раздела II: %q", origin)
+	}
+}
