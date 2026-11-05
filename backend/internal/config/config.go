@@ -49,6 +49,8 @@ type Config struct {
 	TNVEDAIEmbedModel string
 	// TNVEDAIEffort — уровень размышлений модели агента (TNVED_AI_EFFORT: low, high, max …; пусто — по умолчанию).
 	TNVEDAIEffort string
+	// TNVEDAIProvider — провайдер модели агента (TNVED_AI_PROVIDER): anthropic — Claude, пусто — OpenAI-совместимый.
+	TNVEDAIProvider string
 	// TNVEDAIDocumentsEffort — уровень размышлений под-агентов «Документов для ввоза» (TNVED_AI_DOCUMENTS_EFFORT);
 	// пусто — high: в документах точность важнее скорости, и снижение TNVED_AI_EFFORT для подбора кода их не задевает.
 	TNVEDAIDocumentsEffort string
@@ -108,7 +110,9 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	shadowVision, err := boolEnv("TNVED_AI_SHADOW_VISION", true)
+	// Тень: Claude смотрит фото сам, модель без зрения (DeepSeek) получает описание фото, как основная.
+	shadowProvider := strings.ToLower(stringEnv("TNVED_AI_SHADOW_PROVIDER", "anthropic"))
+	shadowVision, err := boolEnv("TNVED_AI_SHADOW_VISION", shadowProvider == "anthropic")
 	if err != nil {
 		return Config{}, err
 	}
@@ -130,7 +134,9 @@ func Load() (Config, error) {
 		}
 		prices[name] = value
 	}
-	tnvedAPIKey := stringEnv("TNVED_AI_API_KEY", strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")))
+	// TNVED_AI_PROVIDER — anthropic (Claude) или пусто (OpenAI-совместимый API, DeepSeek); ключ по умолчанию — провайдера.
+	tnvedProvider := strings.ToLower(strings.TrimSpace(os.Getenv("TNVED_AI_PROVIDER")))
+	tnvedAPIKey := stringEnv("TNVED_AI_API_KEY", providerAPIKey(tnvedProvider))
 	tnvedBaseURL := stringEnv("TNVED_AI_BASE_URL", "https://api.deepseek.com")
 
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
@@ -151,6 +157,7 @@ func Load() (Config, error) {
 		CeramicsAIBaseURL:        stringEnv("CERAMICS_AI_BASE_URL", "https://api.deepseek.com"),
 		CeramicsAIModel:          stringEnv("CERAMICS_AI_MODEL", stringEnv("DEEPSEEK_MODEL", "deepseek-flash")),
 		CeramicsAIVision:         ceramicsVision,
+		TNVEDAIProvider:          tnvedProvider,
 		TNVEDAIAPIKey:            tnvedAPIKey,
 		TNVEDAIBaseURL:           tnvedBaseURL,
 		TNVEDAIModel:             stringEnv("TNVED_AI_MODEL", "deepseek-flash"),
@@ -173,9 +180,9 @@ func Load() (Config, error) {
 		TNVEDAIVisionPriceCached: prices["TNVED_AI_VISION_PRICE_CACHED"],
 		TNVEDAIVisionPriceOutput: prices["TNVED_AI_VISION_PRICE_OUTPUT"],
 		TNVEDAIEmbedModel:        strings.TrimSpace(os.Getenv("TNVED_AI_EMBED_MODEL")),
-		TNVEDAIShadowProvider:    strings.ToLower(stringEnv("TNVED_AI_SHADOW_PROVIDER", "anthropic")),
+		TNVEDAIShadowProvider:    shadowProvider,
 		TNVEDAIShadowModel:       strings.TrimSpace(os.Getenv("TNVED_AI_SHADOW_MODEL")),
-		TNVEDAIShadowAPIKey:      stringEnv("TNVED_AI_SHADOW_API_KEY", strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY"))),
+		TNVEDAIShadowAPIKey:      stringEnv("TNVED_AI_SHADOW_API_KEY", providerAPIKey(shadowProvider)),
 		TNVEDAIShadowBaseURL:     strings.TrimSpace(os.Getenv("TNVED_AI_SHADOW_BASE_URL")),
 		TNVEDAIShadowEffort:      strings.ToLower(stringEnv("TNVED_AI_SHADOW_EFFORT", "high")),
 		TNVEDAIShadowVision:      shadowVision,
@@ -186,6 +193,14 @@ func Load() (Config, error) {
 		TNVEDAIShadowDailyLimit:  shadowDailyLimit,
 		RegistrationDisabled:     !allowRegistration,
 	}, nil
+}
+
+// providerAPIKey — ключ по умолчанию: ANTHROPIC_API_KEY для Claude, иначе DEEPSEEK_API_KEY.
+func providerAPIKey(provider string) string {
+	if provider == "anthropic" {
+		return strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY"))
+	}
+	return strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY"))
 }
 
 func stringEnv(name, fallback string) string {

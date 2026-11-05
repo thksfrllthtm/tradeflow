@@ -73,10 +73,12 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 }
 
 // newAgentService — агент ТН ВЭД: модель рассуждений TNVED_AI_MODEL и, если задана, отдельная модель для
-// фото TNVED_AI_VISION_MODEL (тогда модель рассуждений фото не получает).
+// фото TNVED_AI_VISION_MODEL (описание фото, поиск похожих). Модель рассуждений без зрения (DeepSeek) фото не
+// получает; Claude (TNVED_AI_PROVIDER=anthropic) смотрит фото сам и получает ещё и описание.
 func newAgentService(database *repository.Repository, decisions *decisions.CodeDecisionService, cfg config.Config) *tnvedagent.TNVEDAgentService {
 	model := tnvedagent.NewAgentModelClient(tnvedagent.AgentModelConfig{
-		APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Vision: cfg.TNVEDAIVision && cfg.TNVEDAIVisionModel == "", Effort: cfg.TNVEDAIEffort,
+		Provider: cfg.TNVEDAIProvider, APIKey: cfg.TNVEDAIAPIKey, BaseURL: cfg.TNVEDAIBaseURL, Model: cfg.TNVEDAIModel, Effort: cfg.TNVEDAIEffort,
+		Vision:     cfg.TNVEDAIVision && (cfg.TNVEDAIVisionModel == "" || cfg.TNVEDAIProvider == "anthropic"),
 		PriceInput: cfg.TNVEDAIPriceInput, PriceCached: cfg.TNVEDAIPriceCached, PriceOutput: cfg.TNVEDAIPriceOutput,
 	})
 	var vision *tnvedagent.AgentModelClient

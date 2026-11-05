@@ -611,7 +611,10 @@ func (s *TNVEDAgentService) run(ctx context.Context, sessionID int64) {
 	} else {
 		toolbox := newAgentToolbox(s.data)
 		toolbox.search = s.search
-		toolbox.lookPhoto = s.photoQuestions(photos, func(step agentUsage) { usage.add(step, s.visionModel.Cost(step), true) })
+		// Модель, которая видит фото сама (Claude), вопросов модели для фото не задаёт.
+		if !s.model.Vision() {
+			toolbox.lookPhoto = s.photoQuestions(photos, func(step agentUsage) { usage.add(step, s.visionModel.Cost(step), true) })
+		}
 		toolbox.requireDeclarations = true
 		toolbox.fileCode = sessionFileCode(session)
 		if s.trademarks != nil {
