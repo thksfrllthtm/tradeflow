@@ -200,8 +200,14 @@ func askUserTools(reference bool) []agentTool {
 	if reference {
 		return nil
 	}
-	return []agentTool{{Type: "function", Function: agentToolFunction{Name: "ask_user", Description: "Задать сотруднику один короткий вопрос, если без ответа код не определить. После вызова жди ответа.",
-		Parameters: objectSchema(map[string]any{"question": stringProperty("Вопрос по-русски, одно предложение")}, "question")}}}
+	return []agentTool{{Type: "function", Function: agentToolFunction{Name: "ask_user", Description: "Задать сотруднику один короткий вопрос, только если от ответа зависит код: у каждого варианта ответа свой код. Если все ответы ведут к одному коду, программа вопрос не пропустит. Не спрашивай технические характеристики по артикулу или модели производителя: их ищи сам. После вызова жди ответа.",
+		Parameters: objectSchema(map[string]any{
+			"question": stringProperty("Вопрос по-русски, одно предложение: о том, что сотрудник может знать по товару, документам или у поставщика"),
+			"options": map[string]any{"type": "array", "description": "2–4 варианта ответа, у каждого — код, к которому он ведёт; коды разные", "items": objectSchema(map[string]any{
+				"answer": stringProperty("Вариант ответа, коротко"),
+				"code":   stringProperty("10-значный код из номенклатуры при этом ответе"),
+			}, "answer", "code")},
+		}, "question", "options")}}}
 }
 
 // lookPhotoTool — вопрос модели для фото: есть, только когда модель рассуждений фото не видит.

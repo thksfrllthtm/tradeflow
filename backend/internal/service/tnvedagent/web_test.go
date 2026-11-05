@@ -273,7 +273,7 @@ func TestRestoreOpenedWebPageLinks(t *testing.T) {
 	model := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
 		call("s", "web_search", map[string]string{"query": "секатор"}),
 		call("p", "web_page", map[string]string{"url": testMakerURL}),
-		call("q", "ask_user", map[string]string{"question": "Лезвия из стали?"}),
+		ask("q", "Лезвия из стали?"),
 	}}}}
 	runner, _ := newTestRunner(model, data)
 	runner.toolbox.search = &fakeSearcher{}

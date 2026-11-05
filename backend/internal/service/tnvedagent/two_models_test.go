@@ -278,7 +278,7 @@ func TestOpenDetailsSendsRepeatedNotesOnce(t *testing.T) {
 	model := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
 		call("a", "open_details", map[string]string{"code": "6116102000"}),
 		call("b", "open_details", map[string]string{"code": "4015190000"}),
-		call("q", "ask_user", map[string]string{"question": "Покрытие из резины?"}),
+		ask("q", "Покрытие из резины?"),
 	}}}}
 	runner, _ := newTestRunner(model, &fakeAgentData{})
 	runner.toolbox = newAgentToolbox(&longPagesData{})
@@ -415,7 +415,7 @@ func TestOpenDetailsDropsMeasuresAndRepeatedGroupNotes(t *testing.T) {
 	model := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
 		call("a", "open_details", map[string]string{"code": "8538909200"}),
 		call("b", "open_details", map[string]string{"code": "8537109100"}),
-		call("q", "ask_user", map[string]string{"question": "Модуль пассивный?"}),
+		ask("q", "Модуль пассивный?"),
 	}}}}
 	runner, _ := newTestRunner(model, &fakeAgentData{})
 	runner.toolbox = newAgentToolbox(&groupPagesData{})

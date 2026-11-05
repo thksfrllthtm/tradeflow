@@ -73,7 +73,7 @@ func TestReferenceModeHasNoAskUser(t *testing.T) {
 		t.Fatalf("в подборе по строке ask_user есть: %s", names)
 	}
 	prompt := tnvedReferencePrompt("")
-	if strings.Contains(prompt, "задай один короткий вопрос через ask_user") || !strings.Contains(prompt, "Сотрудника не спрашивай") {
+	if strings.Contains(prompt, "Вопрос сотруднику (ask_user)") || !strings.Contains(prompt, "Сотрудника не спрашивай") {
 		t.Fatal("подсказка справочника: без вопросов сотруднику")
 	}
 	model := &scriptedModel{replies: []agentReply{

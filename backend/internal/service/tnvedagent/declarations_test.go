@@ -116,7 +116,7 @@ func TestDeclarationsRequiredBeforeFinish(t *testing.T) {
 
 	asking := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
 		call("d", "search_declarations", map[string]string{"query": "перчатки"}),
-		call("q", "ask_user", map[string]string{"question": "Покрытие из резины?"}),
+		ask("q", "Покрытие из резины?"),
 	}}}}
 	runner, _ = newTestRunner(asking, &fakeAgentData{})
 	runner.toolbox.requireDeclarations = true
@@ -169,7 +169,7 @@ func TestCandidateDeclarationsLink(t *testing.T) {
 
 	asking, _ := newTestRunner(&scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{
 		call("d", "search_declarations", map[string]string{"query": "перчатки трикотажные"}),
-		call("q", "ask_user", map[string]string{"question": "Покрытие из резины?"}),
+		ask("q", "Покрытие из резины?"),
 	}}}}, &fakeAgentData{})
 	asking.execute(context.Background())
 	next, _ := newTestRunner(&scriptedModel{}, &fakeAgentData{})

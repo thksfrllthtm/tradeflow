@@ -260,11 +260,15 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 					r.toolMessage(call.ID, `{"error":"В справочнике вопросов сотруднику нет: дай лучший код по умолчанию, второй вариант с verdict doubtful, а что уточнить — в check; затем finish."}`)
 					continue
 				}
-				if askCall == nil {
-					askCall = &reply.ToolCalls[index]
+				if askCall != nil {
+					r.toolMessage(call.ID, `{"status":"ignored: один вопрос за раз"}`)
 					continue
 				}
-				r.toolMessage(call.ID, `{"status":"ignored: один вопрос за раз"}`)
+				if problem := r.questionProblem(ctx, call.Function.Arguments); problem != "" {
+					r.toolMessage(call.ID, toolJSON(map[string]string{"error": problem}))
+					continue
+				}
+				askCall = &reply.ToolCalls[index]
 			default:
 				if force != "" {
 					r.toolMessage(call.ID, `{"error":"Лимит шагов исчерпан: инструменты больше недоступны — сразу вызови finish по уже собранным данным (чего не хватает — applies maybe или verdict doubtful)."}`)
@@ -313,16 +317,81 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 			return agentOutcome{status: "done", result: result}
 		}
 		if askCall != nil {
-			var args struct {
-				Question string `json:"question"`
-			}
-			_ = json.Unmarshal([]byte(askCall.Function.Arguments), &args)
-			question := service.TruncateRunes(args.Question, 500)
-			r.toolMessage(askCall.ID, `{"status":"Вопрос показан сотруднику. Его ответ придёт следующим сообщением."}`)
+			args := parseQuestion(askCall.Function.Arguments)
+			question := questionText(args)
+			r.toolMessage(askCall.ID, `{"status":"`+askedNote+` Его ответ придёт следующим сообщением."}`)
 			r.onStep(r.transcript, reply.Usage)
 			r.emit("question", map[string]string{"text": question})
 			return agentOutcome{status: "waiting"}
 		}
 		r.onStep(r.transcript, reply.Usage)
 	}
+}
+
+// agentMaxQuestions — вопросов сотруднику за подбор; askedNote — ответ модели на принятый вопрос.
+const (
+	agentMaxQuestions = 2
+	askedNote         = "Вопрос показан сотруднику."
+)
+
+// agentQuestion — аргументы ask_user: вопрос и варианты ответа, каждый со своим кодом.
+type agentQuestion struct {
+	Question string `json:"question"`
+	Options  []struct {
+		Answer string `json:"answer"`
+		Code   string `json:"code"`
+	} `json:"options"`
+}
+
+func parseQuestion(arguments string) agentQuestion {
+	var question agentQuestion
+	_ = json.Unmarshal([]byte(arguments), &question)
+	question.Question = service.TruncateRunes(strings.TrimSpace(question.Question), 500)
+	for index := range question.Options {
+		question.Options[index].Answer = service.TruncateRunes(strings.TrimSpace(question.Options[index].Answer), 120)
+		question.Options[index].Code = nonDigits.ReplaceAllString(question.Options[index].Code, "")
+	}
+	return question
+}
+
+// questionText — вопрос для сотрудника с вариантами и кодом, к которому ведёт каждый.
+func questionText(question agentQuestion) string {
+	lines := []string{question.Question}
+	for _, option := range question.Options {
+		lines = append(lines, "— "+option.Answer+" → "+FormatTNVEDCode(option.Code))
+	}
+	return strings.Join(append(lines, "— не знаю → код по умолчанию, второй вариант «возможно»"), "\n")
+}
+
+// questionProblem — почему вопрос нельзя задавать ("" — можно). Спрашивать стоит, только если от ответа
+// зависит код: у вариантов минимум два разных кода из номенклатуры. И не больше agentMaxQuestions за подбор.
+func (r *agentRunner) questionProblem(ctx context.Context, arguments string) string {
+	asked := 0
+	for _, message := range r.transcript {
+		if content, _ := message["content"].(string); message["role"] == "tool" && strings.Contains(content, askedNote) {
+			asked++
+		}
+	}
+	if asked >= agentMaxQuestions {
+		return "Вопросов уже два: больше не спрашивай. Дай лучший код по умолчанию, второй вариант с verdict doubtful, что уточнить — в check; затем finish."
+	}
+	question := parseQuestion(arguments)
+	codes := map[string]bool{}
+	for _, option := range question.Options {
+		if len(option.Code) == 10 && option.Answer != "" {
+			codes[option.Code] = true
+		}
+	}
+	if question.Question == "" || len(codes) < 2 {
+		return "Вопрос не меняет код: задавай его, только если от ответа зависит код — в options 2–4 ответа, у каждого свой 10-значный код. Иначе не спрашивай, реши сам и вызови finish (что уточнить — в check)."
+	}
+	list := make([]string, 0, len(codes))
+	for code := range codes {
+		list = append(list, code)
+	}
+	found, err := r.toolbox.data.LookupCodes(ctx, list)
+	if err == nil && len(found) < len(list) {
+		return "В options есть коды, которых нет в номенклатуре: проверь их через get_codes и задай вопрос с настоящими кодами."
+	}
+	return ""
 }

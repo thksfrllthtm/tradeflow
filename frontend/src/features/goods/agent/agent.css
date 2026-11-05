@@ -149,7 +149,7 @@
 /* Сообщения */
 .ag-msg { max-width: 88%; padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
 .ag-user { align-self: flex-end; background: var(--tf-green); color: #fff; }
-.ag-question { align-self: flex-start; display: grid; gap: 3px; border: 1px solid #f0d58a; background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.ag-question { align-self: flex-start; display: grid; gap: 3px; white-space: pre-line; border: 1px solid #f0d58a; background: var(--tf-warn-bg); color: var(--tf-warn-text); }
 .ag-question b { font-size: 11px; font-weight: 700; }
 .ag-typing { display: flex; align-items: center; gap: 4px; color: var(--tf-muted); font-size: 12px; }
 .ag-typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--tf-green); animation: ag-dot 1s infinite ease-in-out; }

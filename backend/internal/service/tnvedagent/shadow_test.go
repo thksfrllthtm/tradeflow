@@ -57,7 +57,7 @@ func TestShadowLimit(t *testing.T) {
 // на вопрос сотруднику отвечает себе сама и доводит до итога; итог, лента и расход уходят в save.
 func TestExecuteShadow(t *testing.T) {
 	model := &scriptedModel{replies: []agentReply{
-		{ToolCalls: []agentToolCall{call("q", "ask_user", map[string]string{"question": "Есть покрытие?"})}, Usage: agentUsage{CompletionTokens: 500}},
+		{ToolCalls: []agentToolCall{ask("q", "Есть покрытие?")}, Usage: agentUsage{CompletionTokens: 500}},
 		{ToolCalls: []agentToolCall{finishWith(nil)}, Usage: agentUsage{CompletionTokens: 1500}},
 		{ToolCalls: []agentToolCall{finishWith(nil)}, Usage: agentUsage{CompletionTokens: 1000}},
 	}}

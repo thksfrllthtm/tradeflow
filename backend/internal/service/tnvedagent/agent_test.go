@@ -216,7 +216,7 @@ func TestAgentRunnerChecksCodesAndQuotes(t *testing.T) {
 func TestAgentRunnerAsksUserAndContinuesWithOpenedPages(t *testing.T) {
 	data := &fakeAgentData{}
 	model := &scriptedModel{replies: []agentReply{
-		{ToolCalls: []agentToolCall{call("c1", "open_details", map[string]string{"code": "6116102000"}), call("c2", "ask_user", map[string]string{"question": "Покрытие только на ладони?"})}},
+		{ToolCalls: []agentToolCall{call("c1", "open_details", map[string]string{"code": "6116102000"}), ask("c2", "Покрытие только на ладони?")}},
 	}}
 	runner, events := newTestRunner(model, data)
 	outcome := runner.execute(context.Background())
@@ -329,5 +329,52 @@ func TestSortByVerdictPutsSameProductFirst(t *testing.T) {
 	}
 	if order[0] != 4 || order[1] != 2 || order[2] != 3 || order[3] != 1 {
 		t.Fatalf("order %v", order)
+	}
+}
+
+// ask — вопрос сотруднику, от ответа на который зависит код.
+func ask(id, question string) agentToolCall {
+	return call(id, "ask_user", map[string]any{"question": question, "options": []map[string]string{
+		{"answer": "да", "code": "6116102000"}, {"answer": "нет", "code": "4015190000"},
+	}})
+}
+
+// Вопрос пропускается, только если от ответа зависит код: варианты с одним кодом и с выдуманным кодом
+// возвращаются модели, вопрос с двумя кодами показывается сотруднику с вариантами; третий вопрос — нет.
+func TestQuestionOnlyWhenAnswerChangesCode(t *testing.T) {
+	sameCode := call("same", "ask_user", map[string]any{"question": "Цвет перчаток?", "options": []map[string]string{
+		{"answer": "белые", "code": "6116102000"}, {"answer": "чёрные", "code": "6116 10 200 0"},
+	}})
+	unknown := call("fake", "ask_user", map[string]any{"question": "Покрытие?", "options": []map[string]string{
+		{"answer": "да", "code": "6116102000"}, {"answer": "нет", "code": "9999999999"},
+	}})
+	model := &scriptedModel{replies: []agentReply{
+		{ToolCalls: []agentToolCall{sameCode}},
+		{ToolCalls: []agentToolCall{unknown}},
+		{ToolCalls: []agentToolCall{ask("ok", "Покрытие из резины?")}},
+	}}
+	runner, events := newTestRunner(model, &fakeAgentData{})
+	if outcome := runner.execute(context.Background()); outcome.status != "waiting" || model.calls != 3 {
+		t.Fatalf("ждёт ответа после третьего хода: %+v, вызовов %d", outcome, model.calls)
+	}
+	if answer := toolAnswer(t, runner, "same")["error"].(string); !strings.Contains(answer, "не меняет код") {
+		t.Fatalf("один код на все ответы: %q", answer)
+	}
+	if answer := toolAnswer(t, runner, "fake")["error"].(string); !strings.Contains(answer, "нет в номенклатуре") {
+		t.Fatalf("выдуманный код: %q", answer)
+	}
+	text := ""
+	for _, event := range *events {
+		if event.kind == "question" {
+			text = event.content.(map[string]string)["text"]
+		}
+	}
+	if !strings.Contains(text, "да → 6116 10 200 0") || !strings.Contains(text, "нет → 4015 19 000 0") || !strings.Contains(text, "не знаю") {
+		t.Fatalf("вопрос с вариантами: %q", text)
+	}
+	// Два вопроса уже были — третий не пропускается.
+	runner.transcript = append(runner.transcript, map[string]any{"role": "tool", "content": `{"status":"` + askedNote + `"}`})
+	if problem := runner.questionProblem(context.Background(), ask("x", "Ещё?").Function.Arguments); !strings.Contains(problem, "Вопросов уже два") {
+		t.Fatalf("третий вопрос: %q", problem)
 	}
 }
