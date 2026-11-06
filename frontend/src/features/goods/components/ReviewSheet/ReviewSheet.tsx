@@ -347,16 +347,19 @@ function decorate(ws: Worksheet, props: Props) {
   const hidden = new Set<number>([...(props.showPhoto ? [] : [columnIndex('photo')]), ...(props.showPackage ? [] : [columnIndex('packageWeightKg')])])
   drawTotals(ws, props.totals, hidden)
   if (toggled) fitNameColumn(ws)
-  // Повтор кода строки выше (среди показанных) — название, код и ставка серым; начало новой группы кодов — линия темнее.
+  // Повтор строки выше (среди показанных): то же наименование И тот же код — название и код серым (совпал только
+  // код или только наименование — обычным цветом); начало новой группы кодов — линия темнее.
   let previousCode: string | null = null
+  let previousName = ''
   props.rows.forEach((row, y) => {
     const tr = ws.rows[y]?.element
     if (!tr) return
     tr.style.display = row.visible ? '' : 'none'
     const code = row.item.code.trim()
-    const repeat = row.visible && previousCode !== null && code !== '' && code === previousCode
+    const name = row.item.name.trim()
+    const repeat = row.visible && previousCode !== null && code !== '' && code === previousCode && name !== '' && name === previousName
     const groupStart = row.visible && previousCode !== null && code !== previousCode
-    if (row.visible) previousCode = code
+    if (row.visible) { previousCode = code; previousName = name }
     tr.classList.toggle('xs-excluded', row.item.excluded)
     tr.classList.toggle('xs-selected', row.selected)
     tr.classList.toggle('xs-group-start', groupStart)
