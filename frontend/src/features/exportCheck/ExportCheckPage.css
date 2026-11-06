@@ -1,78 +1,121 @@
-/* Сверка экспортной: на всю ширину экрана. Прокручивается весь документ, шапка таблицы строк
-   закреплена у верхнего края, чтобы на длинной партии всегда было видно, где инвойс, а где экспортная. */
+/* Сверка экспортной: на всю ширину окна. Каркас — .directory-page и .dir-head (list-page.css).
+   Пока отчёта нет, страница прокручивается обычно. С готовой сверкой всё на одном экране: файлы,
+   вердикт и проверки стоят на месте, прокручиваются только строки внутри таблицы (шапка закреплена).
+   На низком экране, где таблице не хватает места, прокручивается вся страница. */
 .app-shell.ec-shell { height: auto; min-height: 100vh; }
-/* Каркас — .directory-page и .dir-head (list-page.css); здесь — во всю ширину окна. */
 .directory-page.ec-page { width: 100%; padding: 16px 24px 40px; }
-.ec-page h2 { margin: 0 0 8px; font-size: var(--fs-lg); font-weight: 600; }
-
+.ec-page h2 { margin: 0; font-size: var(--fs-lg); font-weight: 600; }
 .ec-page .dir-head p { max-width: 900px; }
 
-/* Загрузка: инвойс слева, PDF справа; прочитанные PDF — строками под зоной загрузки. */
-.ec-files { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(320px, 2fr); gap: 12px; align-items: start; }
+.app-shell.ec-shell:has(.ec-report) { height: 100vh; }
+.ec-shell:has(.ec-report) .ec-page { overflow-y: auto; padding-bottom: 16px; gap: 10px; }
+
+/* Загрузка: инвойс слева, PDF справа. Пустая зона — крупная, с подсказкой; загруженный файл — одной строкой. */
+.ec-files { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(320px, 2fr); gap: 10px; align-items: stretch; }
 .ec-drop { position: relative; display: flex; flex-direction: column; gap: 4px; min-height: 66px; padding: 12px 16px; border: 1.5px dashed var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); cursor: pointer; transition: border-color .15s, background .15s; }
 .ec-drop:hover, .ec-drop:focus-within { border-color: var(--tf-green); background: var(--tf-green-soft); }
-.ec-drop.filled { border-style: solid; border-color: var(--tf-green-border); }
 .ec-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .ec-drop-title { font-size: var(--fs-md); font-weight: 600; color: var(--tf-muted); text-transform: uppercase; letter-spacing: .03em; }
 .ec-drop-text { font-size: var(--fs-base); font-weight: 500; color: var(--tf-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ec-drop-hint { font-size: var(--fs-md); color: var(--tf-muted); }
 .ec-drop-group { display: flex; flex-direction: column; gap: 6px; }
-.ec-drop-group.filled .ec-drop { min-height: 0; border-style: dashed; }
 
-.ec-decls { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.ec-decl { display: grid; grid-template-columns: minmax(120px, 260px) 1fr auto; gap: 12px; align-items: center; padding: 6px 8px 6px 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); font-size: var(--fs-md); }
-.ec-decl b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ec-decl span { color: var(--tf-text-2); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.ec-drop.filled, .ec-drop-group.filled .ec-drop { flex-direction: row; align-items: center; gap: 12px; min-height: 0; padding: 7px 14px; }
+.ec-drop.filled { border-style: solid; border-color: var(--tf-green-border); }
+.ec-drop.filled .ec-drop-title, .ec-drop-group.filled .ec-drop-title { flex: none; white-space: nowrap; }
+.ec-drop.filled .ec-drop-text { flex: 1 1 auto; min-width: 0; }
+.ec-drop-group.filled { flex-direction: row; }
+.ec-drop-group.filled .ec-drop { flex: none; }
+
+/* Прочитанные части — плашками в ряд, при нехватке места переносятся. */
+.ec-decls { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.ec-decl { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; padding: 2px 4px 2px 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); font-size: var(--fs-md); cursor: default; }
+.ec-decl b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ec-decl span { flex: none; color: var(--tf-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ec-decl.error { border-color: var(--tf-error-border); background: var(--tf-error-bg); }
-.ec-decl.error span { color: var(--tf-error); }
+.ec-decl.error span { flex: 0 1 auto; color: var(--tf-error); white-space: normal; }
 .ec-decl .icon-button { font-size: var(--fs-xl); font-weight: 400; line-height: 1; }
 
 .ec-status-line { margin: 0; padding: 12px 16px; border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text-2); font-size: var(--fs-base); }
 
-.ec-report { display: flex; flex-direction: column; gap: 12px; transition: opacity .15s; }
+.ec-report { display: flex; flex-direction: column; gap: 10px; transition: opacity .15s; }
+.ec-shell:has(.ec-report) .ec-report { flex: 1 1 0; min-height: 520px; }
 .ec-report.ec-stale { opacity: .55; }
 
-/* Вердикт: одним взглядом — можно отправлять или нет. */
-.ec-verdict { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-radius: var(--tf-radius-card); border: 1px solid; }
-.ec-verdict.ok { background: var(--tf-ok-bg); border-color: var(--tf-green-border); color: var(--tf-ok); }
-.ec-verdict.error { background: var(--tf-error-bg); border-color: var(--tf-error-border); color: var(--tf-error); }
-.ec-verdict-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 50%; color: #fff; font-size: var(--fs-xl); font-weight: 600; }
+/* Карточка сверки: сверху вердикт (можно отправлять или нет), под ним проверки документа ячейками в ряд. */
+.ec-summary { flex: none; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); overflow: hidden; }
+.ec-summary.ok { border-color: var(--tf-green-border); }
+.ec-summary.warn { border-color: var(--tf-warn-border); }
+.ec-summary.error { border-color: var(--tf-error-border); }
+
+.ec-verdict { display: flex; align-items: center; gap: 12px; padding: 8px 16px; }
+.ec-verdict.ok { background: var(--tf-ok-bg); color: var(--tf-ok); }
+.ec-verdict.warn { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.ec-verdict.error { background: var(--tf-error-bg); color: var(--tf-error); }
+.ec-verdict-icon { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; color: #fff; font-size: var(--fs-lg); font-weight: 600; }
 .ec-verdict.ok .ec-verdict-icon { background: var(--tf-ok); }
+.ec-verdict.warn .ec-verdict-icon { background: var(--tf-warn-text); }
 .ec-verdict.error .ec-verdict-icon { background: var(--tf-error); }
-.ec-verdict b { display: block; font-size: var(--fs-xl); font-weight: 600; }
+.ec-verdict > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 16px; }
+.ec-verdict b { font-size: var(--fs-xl); font-weight: 600; }
 .ec-verdict span { font-size: var(--fs-md); }
 .ec-verdict-warn { color: var(--tf-warn-text); font-weight: 600; }
+.ec-verdict-unread { flex-basis: 100%; margin-top: 2px; font-weight: 600; }
 
-.ec-messages { display: grid; gap: 6px; }
-.ec-list { margin: 0; padding: 8px 16px 8px 32px; border-radius: var(--tf-radius); font-size: var(--fs-md); }
+/* Ячейка проверки: название, значение с ✓; при расхождении — инвойс и экспортная строками.
+   Значения не обрезаются — длинные реквизиты переносятся; реквизиты занимают по две доли ширины. */
+.ec-cells { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 1px solid var(--tf-border-inner); }
+.ec-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 8px 16px; border-left: 1px solid var(--tf-border-inner); cursor: default; }
+.ec-cell.ec-cell-wide { grid-column: span 2; }
+.ec-cell:first-child { border-left: 0; }
+.ec-cell.ec-cell-group { border-left: 1px solid var(--tf-border); }
+.ec-cell-label, .ec-cell small { font-size: var(--fs-sm); color: var(--tf-muted); }
+.ec-cell b { min-width: 0; overflow-wrap: anywhere; font-size: var(--fs-base); font-weight: 600; line-height: 1.35; color: var(--tf-text); font-variant-numeric: tabular-nums; }
+.ec-cell-mark { margin-left: 6px; color: var(--tf-ok); font-size: var(--fs-md); font-weight: 600; }
+.ec-cell-side { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ec-cell-side i { flex: none; width: 12px; font-style: normal; font-size: var(--fs-sm); color: var(--tf-muted); }
+.ec-cell-side b { font-size: var(--fs-md); }
+/* Числа (итоги) — одной строкой; переносятся только реквизиты. */
+.ec-cell:not(.ec-cell-wide) b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ec-cell.ec-skip b { font-weight: 500; color: var(--tf-text-2); }
+.ec-cell.ec-error { background: var(--tf-error-bg); }
+.ec-cell.ec-error :is(b, small) { color: var(--tf-error); }
+.ec-cell.ec-warn { background: var(--tf-warn-bg); }
+.ec-cell.ec-warn :is(b, small) { color: var(--tf-warn-text); }
+
+.ec-messages { display: grid; gap: 6px; flex: none; }
+/* Длинный список (не тот файл — сотня «лишних» товаров) прокручивается внутри, не выталкивая таблицу. */
+.ec-list { max-height: 132px; overflow-y: auto; margin: 0; padding: 8px 16px 8px 32px; border-radius: var(--tf-radius); font-size: var(--fs-md); }
 .ec-list.error { background: var(--tf-error-bg); color: var(--tf-error); }
 .ec-list.warn { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
 .ec-list li + li { margin-top: 4px; }
 
-.ec-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-.ec-card { padding: 12px 16px 6px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); min-width: 0; }
+/* Вкладки строк: число в каждой, пустые неактивны. Сегменты — .dir-seg; число в кнопке — пилюлей. */
+.ec-rows-head { display: flex; align-items: center; gap: 16px; flex: none; }
+.ec-tab { display: inline-flex; align-items: center; gap: 6px; }
+.ec-tab span { min-width: 22px; padding: 0 6px; border-radius: 999px; background: rgba(0, 0, 0, .06); font-size: var(--fs-xs); font-weight: 600; line-height: 18px; text-align: center; }
+.ec-tab-error.active span { background: var(--tf-error-bg); color: var(--tf-error); }
+.ec-tab-warn.active span { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.ec-empty { margin: 0; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-card); }
 
-/* Таблицы */
+/* Таблица строк: по каждому показателю пара колонок — инвойс и экспортная. */
 .ec-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-md); }
-.ec-table th { padding: 8px 12px; background: var(--xl-head); color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 600; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--tf-border); }
+.ec-table th { padding: 6px 12px; background: var(--xl-head); color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 600; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--tf-border); }
 .ec-table th small { display: block; font-size: var(--fs-sm); font-weight: 400; color: var(--tf-muted); }
-.ec-table td { padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); vertical-align: middle; }
+.ec-table td { padding: 5px 12px; border-bottom: 1px solid var(--tf-border-inner); vertical-align: middle; }
 .ec-table tbody tr:last-child td { border-bottom: 0; }
-.ec-table td small { display: block; margin-top: 2px; font-size: var(--fs-sm); font-weight: 400; color: var(--tf-muted); }
-.ec-checks th { background: transparent; padding-left: 6px; }
-.ec-checks td { padding-left: 6px; }
-.ec-right { text-align: right !important; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.ec-table td small { display: block; margin-top: 1px; font-size: var(--fs-sm); font-weight: 400; color: var(--tf-muted); }
 
 .ec-table-wrap { border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); overflow: clip; }
+.ec-shell:has(.ec-report) .ec-table-wrap { flex: 0 1 auto; min-height: 0; overflow: auto; }
 .ec-rows { table-layout: fixed; min-width: 1180px; }
 .ec-rows thead th { position: sticky; z-index: 2; top: 0; }
-.ec-rows thead tr:nth-child(2) th { top: 33px; }
+.ec-rows thead tr:nth-child(2) th { top: 31px; }
 .ec-rows th.ec-group { text-align: center; }
 .ec-col-no { width: 44px; }
-.ec-col-name { width: 26%; }
+.ec-col-name { width: 24%; }
 .ec-col-code { width: 128px; }
 .ec-col-result { width: 250px; }
-.ec-table th.ec-sub { font-weight: 400; font-size: var(--fs-sm); color: var(--tf-muted); text-align: right; }
+.ec-table th.ec-sub { padding-left: 8px; padding-right: 8px; font-weight: 400; font-size: var(--fs-sm); color: var(--tf-muted); text-align: right; }
 .ec-table th.ec-pair, .ec-table td.ec-pair { border-left: 1px solid var(--tf-border); }
 .ec-rows tbody tr:hover > td { background: var(--xl-hover); }
 .ec-rows tr.ec-error > td { background: var(--tf-error-bg); }
@@ -86,33 +129,11 @@
 .ec-table td.ec-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .ec-table td.ec-num small { white-space: normal; text-align: right; }
 .ec-table td.ec-decl-side.ec-ok { color: var(--tf-muted); }
-.ec-table td.ec-num.ec-error, .ec-table td.ec-value.ec-error { background: var(--tf-error-bg) !important; color: var(--tf-error); font-weight: 600; }
-.ec-table td.ec-num.ec-warn, .ec-table td.ec-value.ec-warn { background: var(--tf-warn-bg) !important; color: var(--tf-warn-text); font-weight: 600; }
+.ec-table td.ec-num.ec-error { background: var(--tf-error-bg) !important; color: var(--tf-error); font-weight: 600; }
+.ec-table td.ec-num.ec-warn { background: var(--tf-warn-bg) !important; color: var(--tf-warn-text); font-weight: 600; }
 .ec-table td.ec-missing { color: var(--tf-error); font-weight: 600; }
 .ec-table td.ec-code { font-family: var(--tf-mono); font-size: var(--fs-md); color: var(--tf-text-2); white-space: nowrap; }
-.ec-table td.ec-code small { font-family: var(--tf-mono); font-size: var(--fs-md); }
-
-/* Вкладки строк: число в каждой, пустые неактивны. */
-.ec-rows-head { display: flex; align-items: center; gap: 16px; margin-top: 4px; }
-.ec-rows-head h2 { margin: 0; }
-/* Сегменты — .dir-seg; число в кнопке — пилюлей. */
-.ec-tab { display: inline-flex; align-items: center; gap: 6px; }
-.ec-tab span { min-width: 22px; padding: 0 6px; border-radius: 999px; background: rgba(0, 0, 0, .06); font-size: var(--fs-xs); font-weight: 600; line-height: 18px; text-align: center; }
-.ec-tab-error.active span { background: var(--tf-error-bg); color: var(--tf-error); }
-.ec-tab-warn.active span { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
-.ec-empty { margin: 0; border: 1px dashed var(--tf-border); border-radius: var(--tf-radius-card); }
-
-@media (max-width: 1100px) {
-  .directory-page.ec-page { padding: 12px 12px 32px; }
-  .ec-files, .ec-summary-grid { grid-template-columns: 1fr; }
-  .ec-table-wrap { overflow-x: auto; }
-}
-
-/* Итоги и реквизиты: постоянные колонки, чтобы короткие значения не переносились. */
-.ec-checks { table-layout: fixed; }
-.ec-col-label { width: 19%; }
-.ec-col-verdict { width: 23%; }
-.ec-checks td { overflow-wrap: anywhere; }
+.ec-table td.ec-code small { margin-top: 0; font-family: var(--tf-mono); font-size: var(--fs-md); }
 
 /* Колонка «Результат» строк: значок и под ним пояснения по колонкам. */
 .ec-result .ec-note { margin-top: 4px; font-size: var(--fs-sm); line-height: 1.35; }
@@ -120,7 +141,10 @@
 .ec-result .ec-note.ec-error { color: var(--tf-error); }
 .ec-result .ec-note.ec-warn { color: var(--tf-warn-text); }
 
-/* Вердикт «Сверка неполная»: какой-то PDF не прочитан — янтарный, не зелёный. */
-.ec-verdict.warn { background: var(--tf-warn-bg); border-color: var(--tf-warn-border); color: var(--tf-warn-text); }
-.ec-verdict.warn .ec-verdict-icon { background: var(--tf-warn-text); }
-.ec-verdict-unread { display: block; margin-top: 2px; font-weight: 600; }
+@media (max-width: 1100px) {
+  .directory-page.ec-page { padding: 12px 12px 32px; }
+  .ec-files { grid-template-columns: 1fr; }
+  .ec-cells { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .ec-cell.ec-cell-group { border-left: 1px solid var(--tf-border-inner); }
+  .ec-table-wrap { overflow-x: auto; }
+}

@@ -17,6 +17,15 @@ type Tab = SavedCheck['tab']
 const badgeText: Record<CheckStatus, string> = { ok: '✓ совпадает', error: '✕ расхождение', warn: '! проверьте', skip: 'не сверяется' }
 const Badge = ({ status }: { status: CheckStatus }) => <span className={`badge ${status === 'skip' ? '' : status}`}>{badgeText[status]}</span>
 const pairColumns = ['Штук', 'Нетто, кг', 'Цена, USD', 'Сумма, USD']
+// Короткие подписи проверок в карточке. Полное название с сервера остаётся для форматирования чисел
+// (shownValue) и для подсказки.
+const shortLabel: Record<string, string> = {
+  'Количество мест': 'Места',
+  'Вес брутто, кг': 'Брутто, кг',
+  'Вес нетто, кг': 'Нетто, кг',
+  'Общая стоимость, USD': 'Сумма, USD',
+  'Номер контракта': 'Контракт',
+}
 
 // Сверка нашего инвойса с экспортной КНР: инвойс Excel и один или несколько PDF (партия больше 50 товаров
 // разбита на файлы). PDF читается в браузере, сравнивает сервер; сверка запускается сама, как только
@@ -112,15 +121,14 @@ export function ExportCheckPage({ user, onLogout }: { user: User; onLogout: () =
     <AppHeader user={user} section="exportCheck" onLogout={onLogout} />
     <section className="directory-page ec-page">
       <PageHead title="Сверка экспортной"
-        subtitle={<>Загрузите наш инвойс Excel и экспортную от китайской стороны (PDF с текстом, если товаров больше 50 — все части).
+        subtitle={!report && <>Загрузите наш инвойс Excel и экспортную от китайской стороны (PDF с текстом, если товаров больше 50 — все части).
           Сверка запустится сама: итоги, получатель и контракт, затем каждая строка — штуки, нетто, цена и сумма.</>}
         actions={(invoice || loaded.length > 0) && <button type="button" className="danger" onClick={reset} title="Убрать файлы и результат. Без этого сверка сохраняется при обновлении страницы и переходах">Очистить сверку</button>} />
 
       <div className="ec-files">
-        <label className={invoice ? 'ec-drop filled' : 'ec-drop'}>
+        <label className={invoice ? 'ec-drop filled' : 'ec-drop'} title={invoice ? `${invoice.name}\nНажмите, чтобы заменить` : undefined}>
           <span className="ec-drop-title">1. Инвойс Excel</span>
           <span className="ec-drop-text">{invoice ? invoice.name : 'Перетащите файл .xlsx / .xls или нажмите'}</span>
-          {invoice && <span className="ec-drop-hint">Нажмите, чтобы заменить</span>}
           <input type="file" accept=".xlsx,.xls" onChange={onInvoice} aria-label="Инвойс Excel" />
         </label>
         <div className={loaded.length > 0 ? 'ec-drop-group filled' : 'ec-drop-group'}>
@@ -130,9 +138,12 @@ export function ExportCheckPage({ user, onLogout }: { user: User; onLogout: () =
             <input type="file" accept=".pdf,application/pdf" multiple onChange={(event) => void onDeclarations(event)} aria-label="Экспортные PDF" />
           </label>
           {loaded.length > 0 && <ul className="ec-decls" aria-label="Загруженные экспортные">
-            {loaded.map(({ file, declaration, error: readError }) => <li key={file.name} className={readError ? 'ec-decl error' : 'ec-decl'}>
-              <b title={file.name}>{file.name}</b>
-              {declaration && <span>{declaration.items.length} {plural(declaration.items.length, 'товар', 'товара', 'товаров')} · мест {declaration.places || '—'} · брутто {shownValue('кг', declaration.grossKg)} · нетто {shownValue('кг', declaration.netKg)}</span>}
+            {/* Части — плашками в ряд: имя и число товаров; места, брутто и нетто части — в подсказке
+                (итоги по всем частям сверяются в карточке ниже). */}
+            {loaded.map(({ file, declaration, error: readError }) => <li key={file.name} className={readError ? 'ec-decl error' : 'ec-decl'}
+              title={declaration ? `${file.name}\n${declaration.items.length} ${plural(declaration.items.length, 'товар', 'товара', 'товаров')} · мест ${declaration.places || '—'} · брутто ${shownValue('кг', declaration.grossKg)} · нетто ${shownValue('кг', declaration.netKg)}` : file.name}>
+              <b>{file.name}</b>
+              {declaration && <span>{declaration.items.length} {plural(declaration.items.length, 'товар', 'товара', 'товаров')}</span>}
               {readError && <span>{readError}</span>}
               <button type="button" className="icon-button ghost sm" onClick={() => remove(file.name)} aria-label={`Убрать ${file.name}`} title="Убрать файл">×</button>
             </li>)}
@@ -165,25 +176,28 @@ function ReportView({ report, files, unread, checking, tab, onTab }: { report: R
     { value: 'warn', label: 'Проверьте' },
     { value: 'all', label: 'Все строки' },
   ]
+  // Вердикт и все проверки документа — одной карточкой: итоги и реквизиты ячейками в ряд,
+  // чтобы основное место на экране осталось строкам.
   return <div className={checking ? 'ec-report ec-stale' : 'ec-report'}>
-    <div className={`ec-verdict ${verdict}`} role="status">
-      <span className="ec-verdict-icon" aria-hidden="true">{verdict === 'ok' ? '✓' : verdict === 'warn' ? '!' : '✕'}</span>
-      <div>
-        <b>{title}{report.warnings > 0 && <span className="ec-verdict-warn"> · {report.warnings} {plural(report.warnings, 'предупреждение', 'предупреждения', 'предупреждений')}</span>}</b>
-        <span>Инвойс {report.invoiceNumber || 'без номера'}: {report.invoiceRows} {plural(report.invoiceRows, 'строка', 'строки', 'строк')} · в {files} {plural(files, 'экспортной', 'экспортных', 'экспортных')} {report.declarationItems} {plural(report.declarationItems, 'товар', 'товара', 'товаров')}</span>
-        {unread.length > 0 && <span className="ec-verdict-unread">Не прочитан{unread.length > 1 ? 'ы' : ''}: {unread.join(', ')}. Уберите {unread.length > 1 ? 'эти файлы' : 'этот файл'} или загрузите правильный PDF.</span>}
+    <section className={`ec-summary ${verdict}`} aria-label="Итоги и реквизиты">
+      <div className={`ec-verdict ${verdict}`} role="status">
+        <span className="ec-verdict-icon" aria-hidden="true">{verdict === 'ok' ? '✓' : verdict === 'warn' ? '!' : '✕'}</span>
+        <div>
+          <b>{title}{report.warnings > 0 && <span className="ec-verdict-warn"> · {report.warnings} {plural(report.warnings, 'предупреждение', 'предупреждения', 'предупреждений')}</span>}</b>
+          <span>Инвойс {report.invoiceNumber || 'без номера'}: {report.invoiceRows} {plural(report.invoiceRows, 'строка', 'строки', 'строк')} · в {files} {plural(files, 'экспортной', 'экспортных', 'экспортных')} {report.declarationItems} {plural(report.declarationItems, 'товар', 'товара', 'товаров')}</span>
+          {unread.length > 0 && <span className="ec-verdict-unread">Не прочитан{unread.length > 1 ? 'ы' : ''}: {unread.join(', ')}. Уберите {unread.length > 1 ? 'эти файлы' : 'этот файл'} или загрузите правильный PDF.</span>}
+        </div>
       </div>
-    </div>
+      <div className="ec-cells">
+        {report.totals.map((check) => <CheckCell key={check.label} check={check} />)}
+        {report.details.map((check, index) => <CheckCell key={check.label} check={check} first={index === 0} wide />)}
+      </div>
+    </section>
 
     {(report.problems.length > 0 || report.notes.length > 0) && <div className="ec-messages">
       {report.problems.length > 0 && <ul className="ec-list error">{report.problems.map((text) => <li key={text}>{text}</li>)}</ul>}
       {report.notes.length > 0 && <ul className="ec-list warn">{report.notes.map((text) => <li key={text}>{text}</li>)}</ul>}
     </div>}
-
-    <div className="ec-summary-grid">
-      <ChecksTable title="Итоги" checks={report.totals} />
-      <ChecksTable title="Реквизиты" checks={report.details} />
-    </div>
 
     <div className="ec-rows-head">
       <h2>Строки</h2>
@@ -218,26 +232,22 @@ function ReportView({ report, files, unread, checking, tab, onTab }: { report: R
   </div>
 }
 
-function ChecksTable({ title, checks }: { title: string; checks: Check[] }) {
-  const isNumber = (text: string) => /^-?\d+(\.\d+)?$/.test(text)
-  const numericTable = checks.every((check) => isNumber(check.invoice) || isNumber(check.declaration))
-  const align = numericTable ? 'ec-right' : undefined
-  return <section className="ec-card" aria-label={title}>
-    <h2>{title}</h2>
-    <table className="ec-table ec-checks">
-      <colgroup><col className="ec-col-label" /><col /><col /><col className="ec-col-verdict" /></colgroup>
-      <thead><tr><th>Показатель</th><th className={align}>Инвойс</th><th className={align}>Экспортная</th><th>Результат</th></tr></thead>
-      <tbody>{checks.map((check) => {
-        const numeric = numericTable && (isNumber(check.invoice) || isNumber(check.declaration))
-        return <tr key={check.label} className={`ec-${check.status}`}>
-          <td>{check.label}</td>
-          <td className={`ec-value ec-${check.status}${numeric ? ' ec-right' : ''}`}>{numeric ? shownValue(check.label, check.invoice) : check.invoice || '—'}</td>
-          <td className={`ec-value ec-${check.status}${numeric ? ' ec-right' : ''}`}>{numeric ? shownValue(check.label, check.declaration) : check.declaration || '—'}</td>
-          <td><Badge status={check.status} />{check.note && <small>{check.note}</small>}</td>
-        </tr>
-      })}</tbody>
-    </table>
-  </section>
+// Одна проверка документа: всегда обе стороны — инвойс и экспортная — подписанными строками, чтобы
+// можно было сверить глазами; значения целиком (длинные переносятся). Итог — у названия: ✓ или
+// «не сверяется»; расхождение — красная ячейка с пояснением. Реквизиты (wide) — шире чисел.
+function CheckCell({ check, first, wide }: { check: Check; first?: boolean; wide?: boolean }) {
+  const invoice = shownValue(check.label, check.invoice)
+  const declaration = shownValue(check.label, check.declaration)
+  const hint = `${check.label}\nИнвойс: ${invoice}\nЭкспортная: ${declaration}${check.note ? `\n${check.note}` : ''}`
+  return <div className={`ec-cell ec-${check.status}${first ? ' ec-cell-group' : ''}${wide ? ' ec-cell-wide' : ''}`} title={hint}>
+    <span className="ec-cell-label">
+      {shortLabel[check.label] ?? check.label}{check.status === 'skip' && ' · не сверяется'}
+      {check.status === 'ok' && <span className="ec-cell-mark" aria-label="совпадает">✓</span>}
+    </span>
+    <span className="ec-cell-side"><i title="Инвойс">И</i><b>{invoice}</b></span>
+    <span className="ec-cell-side"><i title="Экспортная">Э</i><b>{declaration}</b></span>
+    {check.note && check.status !== 'skip' && <small>{check.note}</small>}
+  </div>
 }
 
 function RowView({ row, showFile }: { row: RowCheck; showFile: boolean }) {
