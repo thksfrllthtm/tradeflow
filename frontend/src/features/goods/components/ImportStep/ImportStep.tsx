@@ -36,7 +36,7 @@ type Props = {
 }
 
 // Подписи полей — короткие, те же, что в заголовках таблицы на этапе проверки.
-const shortLabel: Record<keyof GoodsMapping, string> = { name: 'Наименование', name2: 'Наименование 2', name3: 'Наименование 3', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт / пар', places: 'Места', pairsPerPlace: 'Шт. / пар в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
+const shortLabel: Record<keyof GoodsMapping, string> = { name: 'Наименование', data1: 'Данные 1', data2: 'Данные 2', data3: 'Данные 3', data4: 'Данные 4', data5: 'Данные 5', code: 'Код ТН ВЭД', pairs: 'Кол-во, шт / пар', places: 'Места', pairsPerPlace: 'Шт. / пар в месте', grossKg: 'Брутто, кг', netKg: 'Нетто, кг', pricePerPair: 'Цена, USD' }
 
 // Этап 1 «Файл и колонки» — в одном стиле с этапами проверки и результата (классы rv-*): строка заголовка,
 // панель файла (лист, строки заголовков и товаров, «Применить») и лист «как в Excel» до низа окна. Колонке

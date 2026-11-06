@@ -1,16 +1,24 @@
-/* Полоса итогов: «К оплате» крупно, слагаемые, бюджет и инструменты — одна карточка, одна строка. */
-.rs-summary { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 0; padding: 12px 20px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
-/* Итоги — как сводка параметров на этапе проверки: подпись мелко сверху, значение под ней, между — линия. */
-.rs-sum-total { position: relative; display: grid; gap: 2px; padding-right: 24px; }
-.rs-sum-label { color: var(--tf-muted); font-size: var(--fs-xs); }
-.rs-sum-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-.rs-sum-value strong { color: var(--tf-text); font-size: var(--fs-2xl); font-weight: 600; letter-spacing: 0; line-height: 1.15; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); transition: opacity .15s; }
+/* Полоса итогов — одна карточка. Уже порога — две строки: «К оплате», слагаемые и справа инструменты;
+   под ними «Таможенная стоимость» с кассой и подбором цен. Шире — всё одной строкой (@container ниже).
+   Карточка — контейнер запросов по своей ширине: с панелью «Подбор кода» она уже окна. z-index — чтобы
+   меню «⋯» и «Подбор цен» были над прилипающей шапкой таблицы (контейнер — свой слой). */
+.rs-summary { container: rs-sum / inline-size; position: relative; z-index: 5; padding: 0 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.rs-sum-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; }
+
+/* Итог — как слагаемые: подпись мелко сверху, значение под ней. */
+.rs-sum-total { position: relative; display: grid; padding: 6px 0; }
+.rs-sum-label { color: var(--tf-muted); font-size: var(--fs-xs); white-space: nowrap; }
+.rs-sum-label .rs-sum-sub { font-size: var(--fs-xs); }
+.rs-sum-value { display: flex; align-items: baseline; gap: 8px; }
+.rs-sum-value strong { color: var(--tf-text); font-size: var(--fs-xl); font-weight: 600; letter-spacing: 0; line-height: 1.2; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); transition: opacity .15s; }
 .rs-sum-value strong button.copy-code { padding: 0; }
 .rs-summary.calculating .rs-sum-value strong { opacity: .45; }
-.rs-sum-sub { color: var(--tf-muted); font-size: var(--fs-md); white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+/* Итог не посчитан: «—» размером с остальные суммы, «расчёт не завершён» — мелко рядом. */
+.rs-sum-value strong.empty { font-size: var(--fs-base); line-height: 1.5; }
+.rs-sum-sub { color: var(--tf-muted); font-size: var(--fs-sm); white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rs-sum-sub em { font-style: normal; }
 /* Подсказка при наведении на «К оплате»: таможенная стоимость, доставка, курс. */
-.rs-sum-tip { position: absolute; top: calc(100% + 8px); left: 0; z-index: var(--z-dropdown); display: none; gap: 6px; min-width: 320px; margin: 0; padding: 12px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
+.rs-sum-tip { position: absolute; top: calc(100% + 2px); left: 0; z-index: var(--z-dropdown); display: none; gap: 6px; min-width: 320px; margin: 0; padding: 12px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); box-shadow: var(--tf-shadow-pop); }
 .rs-sum-value:hover ~ .rs-sum-tip, .rs-sum-value:focus-within ~ .rs-sum-tip { display: grid; }
 .rs-step .rs-sum-diff { padding: 0; font-size: inherit; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rs-sum-tip div { display: flex; justify-content: space-between; gap: 16px; font-size: var(--fs-md); }
@@ -18,13 +26,32 @@
 .rs-sum-tip dd { margin: 0; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rs-sum-tip dd small { color: var(--tf-muted); font-weight: 400; }
 
-.rs-sum-parts { display: flex; flex-wrap: wrap; gap: 12px 0; margin: 0; }
-.rs-part { display: grid; align-content: start; gap: 2px; min-width: 110px; padding: 0 24px; border-left: 1px solid var(--tf-border-inner); }
-.rs-part dt { color: var(--tf-muted); font-size: var(--fs-xs); }
-.rs-part dd { margin: 0; color: var(--tf-text); font-size: var(--fs-base); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
-/* Справа — сохранение, экспорт и «⋯»; бюджет и подбор цен — в нижней строке карточки (SirControls). */
-.rs-sum-tools { display: flex; flex-direction: column; align-self: center; align-items: flex-end; gap: 8px; margin-left: auto; padding-left: 24px; }
-.rs-sum-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
+.rs-sum-parts { display: flex; flex-wrap: wrap; margin: 0; }
+.rs-part { display: grid; align-content: start; padding: 6px 16px; border-left: 1px solid var(--tf-border-inner); }
+.rs-part dt { color: var(--tf-muted); font-size: var(--fs-xs); white-space: nowrap; }
+.rs-part dd { margin: 0; color: var(--tf-text); font-size: var(--fs-base); font-weight: 600; line-height: 1.5; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+
+/* Справа — сохранение, «К проверке строк», экспорт и «⋯». */
+.rs-sum-tools { order: 2; display: flex; margin-left: auto; padding: 6px 0; }
+.rs-sum-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+/* «Таможенная стоимость [По инвойсу | По СУР]» и касса — второй строкой через тонкую линию; по СУР — бежевая. */
+.rs-sum-in > .sir-bar { order: 3; flex: 1 0 100%; margin: 0 -16px; padding: 6px 16px; border: 0; border-top: 1px solid var(--tf-border-inner); border-radius: 0 0 var(--tf-radius-card) var(--tf-radius-card); background: transparent; }
+.rs-sum-in > .sir-bar.on { border-top-color: var(--tf-warn-border); background: var(--tf-warn-bg); }
+.rs-summary .budget-meter { min-width: 0; }
+.rs-summary .budget-meter-top { gap: 8px; }
+
+/* Широкая карточка — одна строка: итоги, «ТС [По инвойсу | По СУР]», касса и подбор цен, справа инструменты.
+   Порог — по ширине содержимого: посчитанные суммы длиннее прочерков; условия СУР в одну строку не входят. */
+@container rs-sum (min-width: 1500px) {
+  .rs-sum-in:not(.done):not(:has(.sir-bar.on)) > .sir-bar { order: 1; flex: 0 1 auto; margin: 0; padding: 0 0 0 16px; border: 0; border-left: 1px solid var(--tf-border-inner); border-radius: 0; }
+  .rs-sum-in:not(.done):not(:has(.sir-bar.on)) .sir-label-full { display: none; }
+  .rs-sum-in:not(.done):not(:has(.sir-bar.on)) .sir-label-short { display: inline; }
+}
+@container rs-sum (min-width: 2080px) {
+  .rs-sum-in.done:not(:has(.sir-bar.on)) > .sir-bar { order: 1; flex: 0 1 auto; margin: 0; padding: 0 0 0 16px; border: 0; border-left: 1px solid var(--tf-border-inner); border-radius: 0; }
+  .rs-sum-in.done:not(:has(.sir-bar.on)) .sir-label-full { display: none; }
+  .rs-sum-in.done:not(:has(.sir-bar.on)) .sir-label-short { display: inline; }
+}
 
 /* «Сверка по ИТП» — карточка под полосой итогов, открывается из меню «⋯». */
 .rs-itp-pop { display: grid; gap: 8px; padding: 12px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
@@ -40,33 +67,8 @@
 .rs-its-total small { color: var(--tf-muted); font-size: var(--fs-sm); }
 
 @media (max-width: 760px) {
-  .rs-sum-tools { align-items: flex-start; margin-left: 0; padding-left: 0; }
-  .rs-part { padding-inline: 16px; }
+  .rs-sum-tools { margin-left: 0; }
   .rs-sum-row { justify-content: flex-start; }
   .rs-its-grid { grid-template-columns: 1fr; }
   .rs-its-grid > .rs-op { display: none; }
 }
-
-/* От 1280px — одна строка: итоги слева, бюджет и кнопки справа; «≈ USD» — под суммой, отступы плотнее.
-   Перенос не запрещён: если не поместится (длинная строка разницы СУР) — кнопки уйдут вниз, а не наедут. */
-@media (min-width: 1280px) {
-  .rs-sum-value { flex-direction: column; align-items: flex-start; gap: 0; }
-  .rs-sum-row { gap: 8px; }
-  .rs-summary .budget-meter { min-width: 0; }
-  .rs-summary .budget-meter-top { gap: 8px; }
-  .rs-summary .budget-input input { width: 96px; }
-}
-@media (min-width: 1280px) and (max-width: 1439px) {
-  .rs-sum-value strong { font-size: var(--fs-xl); }
-  .rs-part dd { font-size: var(--fs-base); }
-}
-
-/* Итог не посчитан: «—» размером с остальные суммы (подписи выровнены по верху — значения на одной линии),
-   «расчёт не завершён» — мелко под ним. */
-.rs-sum-value:has(strong.empty) { flex-direction: column; align-items: flex-start; gap: 0; }
-.rs-sum-value strong.empty { font-size: var(--fs-base); line-height: 1.5; }
-.rs-sum-value:has(strong.empty) .rs-sum-sub { font-size: var(--fs-sm); }
-
-/* Нижняя строка карточки: «Таможенная стоимость [По инвойсу | По СУР]», по СУР — условия; бежевая — признак режима. */
-.rs-summary > .sir-bar { flex: 1 0 100%; margin: 0 -20px -12px; padding: 8px 20px; border: 0; border-top: 1px solid var(--tf-border-inner); border-radius: 0 0 var(--tf-radius-card) var(--tf-radius-card); background: transparent; }
-.rs-summary > .sir-bar.on { border-top-color: var(--tf-warn-border); background: var(--tf-warn-bg); }

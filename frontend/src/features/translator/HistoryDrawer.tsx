@@ -38,7 +38,7 @@ export function HistoryDrawer({ segment, onClose, onRestore }: { segment: Segmen
     <ol className="tr-history">
       {versions?.map((version) => <li key={version.id}>
         <div><TaggedText text={version.targetText} tags={segment.tags} /></div>
-        <footer><small>{version.changedByName || '—'} · {formatTime(version.changedAt)}</small>{restoreButton(version.targetText)}</footer>
+        <footer><small>{version.changedByName || '—'} · <time dateTime={version.changedAt}>{formatTime(version.changedAt)}</time></small>{restoreButton(version.targetText)}</footer>
       </li>)}
       {segment.mtText && <li>
         <div><TaggedText text={segment.mtText} tags={segment.tags} /></div>

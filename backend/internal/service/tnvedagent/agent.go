@@ -64,7 +64,9 @@ type AgentItemInput struct {
 	Name         string `json:"name"`
 	SupplierName string `json:"supplierName"`
 	// OtherNames — другие колонки наименования из файла (например, китайское и русское).
-	OtherNames   []string `json:"otherNames,omitempty"`
+	OtherNames []string `json:"otherNames,omitempty"`
+	// Details — «Данные» из файла: свойства товара с подписью колонки («Материал: сталь», «Модель: X-200»).
+	Details      []string `json:"details,omitempty"`
 	Code         string   `json:"code"`
 	Quantity     string   `json:"quantity"`
 	Places       string   `json:"places"`
@@ -324,8 +326,14 @@ func cleanItem(item AgentItemInput) AgentItemInput {
 			others = append(others, other)
 		}
 	}
+	details := []string{}
+	for _, detail := range item.Details {
+		if detail = clean(detail, 300); detail != "" && len(details) < 10 {
+			details = append(details, detail)
+		}
+	}
 	return AgentItemInput{
-		Name: name, SupplierName: supplier, OtherNames: others, Code: decisions.NormalizeCode(clean(item.Code, 20)),
+		Name: name, SupplierName: supplier, OtherNames: others, Details: details, Code: decisions.NormalizeCode(clean(item.Code, 20)),
 		Quantity: clean(item.Quantity, 30), Places: clean(item.Places, 30), GrossKg: clean(item.GrossKg, 30), NetKg: clean(item.NetKg, 30),
 		PricePerUnit: clean(item.PricePerUnit, 30), Unit: clean(item.Unit, 20),
 	}
@@ -486,6 +494,9 @@ func initialAgentMessage(item AgentItemInput, photoCount int, matches []decision
 	data := map[string]any{"invoiceName": item.Name, "supplierName": item.SupplierName}
 	if len(item.OtherNames) > 0 {
 		data["otherNames"] = item.OtherNames
+	}
+	if len(item.Details) > 0 {
+		data["details"] = item.Details
 	}
 	if item.Code != "" {
 		data["codeFromFile"] = item.Code

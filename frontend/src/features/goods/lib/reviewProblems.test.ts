@@ -13,6 +13,12 @@ describe('reviewProblems', () => {
     ])
   })
 
+  it('row without a code gets only «Нет кода», not a duplicate «Проверьте код» from server messages', () => {
+    const problems = reviewProblems(item(), status({ tone: 'bad', noCode: true, issues: ['Кода нет в номенклатуре ТН ВЭД ЕАЭС — проверьте код', 'нет ставки пошлины'] }))
+    expect(problems.map((problem) => problem.type)).toEqual(['noCode'])
+    expect(problemChips([problems]).map((chip) => chip.label)).toEqual(['Нет кода'])
+  })
+
   it('maps weight, quantity and code messages to their cells', () => {
     const problems = reviewProblems(item({ code: '8305200000' }), status({ issues: [
       'нетто должно быть больше 0 и не больше брутто',

@@ -31,3 +31,17 @@ table.sheet-rownum tbody tr:not(.sheet-section):not(:has(> .dir-empty)) > :first
 table.sheet-rownum tbody tr:hover > :first-child::before { background: var(--tf-chip); color: var(--tf-text); }
 table.sheet-rownum tbody tr.sheet-section > :first-child { padding-left: 12px; }
 
+
+/* ── Рамка выделения в листах Jspreadsheet (проверка строк, предпросмотр файла) ──
+   Рисуется внутри ячейки (box-shadow inset), а не утолщёнными границами: границы ячейки остаются 1px, ячейка не
+   раздувается и не съезжает, квадратик в углу рамки стоит точно на углу. Край рамки — у ячеек на краю выделения. */
+table.jss_worksheet > tbody > tr > td.highlight-top { --sel-t: 2px; }
+table.jss_worksheet > tbody > tr > td.highlight-bottom { --sel-b: 2px; }
+table.jss_worksheet > tbody > tr > td.highlight-left { --sel-l: 2px; }
+table.jss_worksheet > tbody > tr > td.highlight-right { --sel-r: 2px; }
+/* Два класса .jss_worksheet — чтобы перебить тени самой библиотеки (.jss_worksheet .highlight-top.highlight-left). */
+.jss_worksheet.jss_worksheet > tbody > tr > td:is(.highlight-top, .highlight-bottom, .highlight-left, .highlight-right) {
+  box-shadow: inset 0 var(--sel-t, 0px) var(--tf-green), inset calc(var(--sel-r, 0px) * -1) 0 var(--tf-green),
+    inset 0 calc(var(--sel-b, 0px) * -1) var(--tf-green), inset var(--sel-l, 0px) 0 var(--tf-green);
+}
+.jss_corner { width: 7px !important; height: 7px !important; border: 1px solid var(--tf-card) !important; background: var(--tf-green) !important; }

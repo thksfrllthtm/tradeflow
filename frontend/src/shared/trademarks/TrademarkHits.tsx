@@ -14,7 +14,7 @@ export function TrademarkHits({ hits }: { hits: TrademarkHit[] }) {
         <b>{hit.kind === 'lookalike' ? `Похоже на ${trademarkName(hit)} — возможная имитация` : `Знак ${trademarkName(hit)}`}</b>
         <span>{hit.byPicture ? `по изображению${hit.why ? `: ${hit.why}` : ''}` : `в товаре: «${hit.found}»`}{goodsNote(hit) && ` · ${goodsNote(hit).toLowerCase()}`}</span>
         {registryGoods(hit.goods) && <small>Зарегистрирован на: {registryGoods(hit.goods)}</small>}
-        <small>№ {hit.regNo}{hit.holder && ` · ${shortHolder(hit.holder)}`}{hit.protectedUntil && ` · защита до ${formatRuDate(hit.protectedUntil)}`}</small>
+        <small>№ {hit.regNo}{hit.holder && ` · ${shortHolder(hit.holder)}`}{hit.protectedUntil && <> · защита до <time dateTime={hit.protectedUntil.slice(0, 10)}>{formatRuDate(hit.protectedUntil)}</time></>}</small>
       </div>
     </li>)}</ul>
   </section>

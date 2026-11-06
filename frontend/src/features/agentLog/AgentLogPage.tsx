@@ -158,7 +158,7 @@ function ModelCell({ model }: { model: LogModel | null }) {
 function LogRowView({ row, onOpen }: { row: LogRow; onOpen: () => void }) {
   const marks = comparison(row)
   return <tr onClick={onOpen} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') onOpen() }}>
-    <td className="c-when">{when(row.createdAt)}{row.runs > 1 && <small>ходов: {row.runs}</small>}</td>
+    <td className="c-when"><time dateTime={row.createdAt}>{when(row.createdAt)}</time>{row.runs > 1 && <small>ходов: {row.runs}</small>}</td>
     <td className="c-user" title={row.user}>{row.user}</td>
     <td className="c-name"><span title={row.name}>{row.name || '—'}</span><small>{modeLabels[row.mode] ?? row.mode}</small></td>
     <ModelCell model={row.main} />

@@ -109,26 +109,30 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
     : params.deliveryMode === 'total' ? formatMoney(params.deliveryTotalUsd, 'USD')
       : params.deliveryMode === 'wagons' ? `${formatRuNumber(params.wagons) || '—'} ваг. × ${formatMoney(params.wagonTariffUsd, 'USD')}`
         : ''
-  // Все параметры видны сразу; пустые дата и курс — красным (без них расчёт не пойдёт), прочие пустые — серым.
+  // Сводка в одну строку: подпись мелко, значение рядом. Пустые дата и курс — красным (без них расчёт не пойдёт),
+  // прочие пустые — серым прочерком. Полный список — в подсказке: на узком окне строка обрезается.
   const shown: { label: string; text: string; warn?: boolean; empty?: boolean }[] = [
     { label: 'Дата', text: params.assessmentDate ? formatRuDate(params.assessmentDate) : 'не указана', warn: !params.assessmentDate },
     { label: 'Курс USD', text: params.usdKzt ? formatMoney(params.usdKzt, 'KZT') : 'не указан', warn: !params.usdKzt },
-    { label: 'Доставка', text: delivery || 'не указана', empty: !delivery },
-    { label: 'Упаковка', text: params.packageWeightKg ? `${formatRuNumber(params.packageWeightKg)} кг/место` : 'не указана', empty: !params.packageWeightKg },
+    { label: 'Доставка', text: delivery || '—', empty: !delivery || params.deliveryMode === 'none' },
+    { label: 'Упаковка', text: params.packageWeightKg ? `${formatRuNumber(params.packageWeightKg)} кг/место` : '—', empty: !params.packageWeightKg },
     { label: 'Сбор', text: fee, empty: fee === '—' },
-    { label: 'Страна', text: params.origin || 'не указана', empty: !params.origin },
-    ...(params.customsValueMode === 'sir' ? [{ label: 'Там. стоимость', text: `по СУР${Number(params.sirDiscountPercent) > 0 ? ` −${params.sirDiscountPercent}%` : ''}` }] : []),
+    { label: 'Страна', text: params.origin || '—', empty: !params.origin },
   ]
 
-  return <div className="rv-params" ref={menu}>
-    {/* Сводка только показывает значения; список открывает одна кнопка «Изменить параметры». */}
-    <div className="rv-params-summary">
-      {shown.map((item) => <span key={item.label} className={`rv-params-item${item.warn ? ' warn' : item.empty ? ' empty' : ''}`}><span>{item.label}</span><b>{item.text}</b></span>)}
-      <button type="button" className={menuOpen ? 'rv-params-edit open' : 'rv-params-edit'}
-        onClick={() => menuOpen ? close(true) : setMenuOpen(true)} aria-expanded={menuOpen} aria-haspopup="true">Изменить параметры
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3" /></svg>
-      </button>
+  return <div className="rv-params rv-pline" ref={menu}>
+    {/* Сводка только показывает значения; список открывает кнопка «Изменить параметры». */}
+    <div className="rv-params-summary" title={shown.map((item) => `${item.label}: ${item.text}`).join('\n')}>
+      {shown.map((item) => {
+        // «450,69 KZT» → значение и серая единица отдельно.
+        const unit = /\s(KZT|USD)$/.exec(item.text)
+        return <span key={item.label} className={`rv-params-item${item.warn ? ' warn' : item.empty ? ' empty' : ''}`}><span>{item.label}</span> <b>{unit ? item.text.slice(0, unit.index) : item.text}{unit && <small> {unit[1]}</small>}</b></span>
+      })}
     </div>
+    <button type="button" className={menuOpen ? 'rv-params-edit open' : 'rv-params-edit'}
+      onClick={() => menuOpen ? close(true) : setMenuOpen(true)} aria-expanded={menuOpen} aria-haspopup="true">Изменить параметры
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4.5l3 3 3-3" /></svg>
+    </button>
 
     {menuOpen && <div className="rv-params-form" role="group" aria-label="Параметры расчёта">
       <div className="rv-param">
@@ -191,10 +195,6 @@ export function ParamChips({ params, setParam, loadUsdRate, usdRateLoading, usdR
         </div>
       </div>
 
-      {params.customsValueMode === 'sir' && <div className="rv-param" title="Как считать таможенную стоимость — переключатель на этапе «Результат»">
-        <span>Там. стоимость</span>
-        <b className="rv-param-static">по СУР{Number(params.sirDiscountPercent) > 0 ? ` −${params.sirDiscountPercent}%` : ''}</b>
-      </div>}
     </div>}
   </div>
 }

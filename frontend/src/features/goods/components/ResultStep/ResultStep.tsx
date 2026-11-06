@@ -1,5 +1,6 @@
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { KeyboardEvent, MouseEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { trackFooterGap } from '../../lib/footerGap'
 import { GoodsCalculationResult, GoodsItemInput, ItpSaved, SirParams } from '@/shared/types/goods'
 import { moneyText } from '@/shared/lib/rounding'
 import { AiDot, budgetAmount, BudgetMeter, BudgetRunButton, BudgetStatus, RunMode } from '../BudgetTool/BudgetTool'
@@ -44,6 +45,10 @@ type Props = {
   onChangeCode: (index: number) => void
   // Чат подбора кода ИИ для строки (нет — кнопки нет).
   onAgent?: (index: number) => void
+  // Панель «Подбор кода» открыта. Справа одна панель: с ней панель строки закрыта, а от 1440px под агента
+  // оставлено место справа. Открыли панель строки — агент закрывается (onCloseAgent).
+  agentOpen?: boolean
+  onCloseAgent?: () => void
   // «Учитывать строку в расчёте»; смета пересчитывается.
   onToggleIncluded: (index: number, included: boolean) => void
   // Таможенная стоимость по инвойсу или по СУР и параметры СУР; смета пересчитывается.
@@ -108,6 +113,8 @@ export function ResultStep({
   onAntiDumpingChoice,
   onChangeCode,
   onAgent,
+  agentOpen = false,
+  onCloseAgent,
   onToggleIncluded,
   sir,
   onSirChange,
@@ -125,8 +132,16 @@ export function ResultStep({
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [allColumns, setAllColumns] = useState(storedAllColumns)
-  // Панель строки открывается только по щелчку по строке — при входе на этап таблица видна целиком.
+  // Выбранная строка (рамка ячейки, как в Excel) и открыта ли её карточка справа — отдельно: щелчок по цене,
+  // количеству и другим ячейкам только выбирает ячейку (менять цену, копировать), карточку открывают щелчок по
+  // номеру или наименованию, Enter и номер строки из плашки ошибок.
   const [selected, setSelected] = useState<number | null>(null)
+  const [panelOpen, setPanelOpen] = useState(false)
+  // Справа одна панель: открылся агент — панель строки закрывается; открылась панель строки — закрывается агент.
+  useEffect(() => { if (agentOpen) setPanelOpen(false) }, [agentOpen])
+  const closeAgentRef = useRef(onCloseAgent)
+  closeAgentRef.current = agentOpen ? onCloseAgent : undefined
+  useEffect(() => { if (panelOpen && selected !== null) closeAgentRef.current?.() }, [panelOpen, selected])
   const [flashRow, setFlashRow] = useState<number | null>(null)
   const [compareOpen, setCompareOpen] = useState(false)
   const [itpOpen, setItpOpen] = useState(false)
@@ -178,6 +193,11 @@ export function ResultStep({
     window.addEventListener('resize', measureTable)
     return () => { observer.disconnect(); window.removeEventListener('resize', measureTable) }
   }, [measureTable])
+  // «Итого» — внизу области таблицы, даже когда строк мало.
+  useEffect(() => {
+    const wrap = tableWrapRef.current, table = tableRef.current
+    return wrap && table ? trackFooterGap(wrap, table) : undefined
+  }, [])
   const closeCompare = useCallback(() => setCompareOpen(false), [])
   // По СУР: итог того же расчёта по инвойсу — для строки разницы под «К оплате». Пробный расчёт, смета не меняется.
   const [invoiceTotal, setInvoiceTotal] = useState<string | null>(null)
@@ -290,9 +310,17 @@ export function ResultStep({
   }
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(event.key)) return
       if (event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
+      // Стрелки в панели «Подбор кода» — её, а не таблицы.
+      if (event.target instanceof Element && event.target.closest('.ag-panel')) return
       if (document.querySelector('[aria-modal="true"], [role="dialog"]')) return
+      // Enter на выбранной строке (фокус не на кнопке или ссылке) — открыть её карточку.
+      if (event.key === 'Enter') {
+        if (event.target instanceof Element && event.target.closest('button, a, summary, [role="tab"]')) return
+        setPanelOpen(true)
+        return
+      }
       event.preventDefault()
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         const last = (tableRef.current?.tHead?.rows[0]?.cells.length ?? 3) - 1
@@ -335,6 +363,7 @@ export function ResultStep({
     const index = rowNumber - 1
     if (filter !== 'all' || query) { setFilter('all'); setQuery('') }
     setSelected(index)
+    setPanelOpen(true)
     setFlashRow(index)
     window.requestAnimationFrame(() => {
       const row = document.getElementById(`rs-row-${index}`)
@@ -489,7 +518,7 @@ export function ResultStep({
 
 
   return (
-    <div className="goods-step-page rs-step">
+    <div className={agentOpen ? 'goods-step-page rs-step with-agent' : 'goods-step-page rs-step'}>
       <div className="estimate-bar rs-titlebar">
         {header}
       </div>
@@ -502,7 +531,6 @@ export function ResultStep({
           {unsaved && !failed && !storageNotice.startsWith('Сохраняем')
             ? <span className="rs-save-state unsaved" role="status">Есть несохранённые изменения</span>
             : <span className={failed ? 'rs-save-state failed' : 'rs-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>}
-          <button type="button" className="secondary" onClick={backToReview} disabled={loading}><span aria-hidden="true">←</span> К проверке строк</button>
           <button type="button" className="secondary" onClick={saveDraft} disabled={loading} title="Сохранить на сервере сейчас, не дожидаясь автосохранения (Ctrl+S)">{activity === 'save' ? 'Сохраняем…' : 'Сохранить'}</button>
           <button type="button" className={noPrices || notCalculated ? 'secondary' : undefined} onClick={exportChecked} disabled={loading || noPrices || notCalculated} title={noPrices || notCalculated ? 'Сначала завершите расчёт' : undefined}>
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" /></svg>
@@ -522,7 +550,7 @@ export function ResultStep({
       {!sirMode && !blocking && <BudgetStatus budget={budget} />}
       {itpOpen && <ItpCalculator result={result} saved={itp} onSave={onItpChange} onClose={() => setItpOpen(false)} />}
 
-      <div className={selectedRow ? 'rs-layout with-panel' : 'rs-layout'}>
+      <div className={selectedRow && panelOpen ? 'rs-layout with-panel' : 'rs-layout'}>
         <section className="rs-card" aria-label="Строки расчёта">
           <div className="rs-filterbar">
             <div className="dir-seg" role="tablist" aria-label="Какие строки показать">
@@ -593,7 +621,7 @@ export function ResultStep({
                   ].filter(Boolean).join(' ')
 
                   return (
-                    <tr key={`${item.productId}-${index}`} id={`rs-row-${index}`} className={rowClass} onClick={(event) => { const cell = (event.target as HTMLElement).closest('td'); if (cell && cell.cellIndex > 1) setActiveCol(cell.cellIndex); setSelected(index) }} aria-current={selected === index ? 'true' : undefined}>
+                    <tr key={`${item.productId}-${index}`} id={`rs-row-${index}`} className={rowClass} onClick={(event) => { const target = event.target as HTMLElement; const cell = target.closest('td'); if (cell && cell.cellIndex > 1) setActiveCol(cell.cellIndex); setSelected(index); if (cell && cell.cellIndex <= 2 && !target.closest('input, button, a')) setPanelOpen(true) }} aria-current={selected === index ? 'true' : undefined}>
                       <td className="rs-num">{index + 1}</td>
                       <td className="rs-mark">{mark && <span className={`rs-state ${mark}`} role="img" aria-label={MARK_LABEL[mark]} title={(item.excluded ? [] : reason).map((problem) => problem.text).join('\n') || MARK_LABEL[mark]}><StateIcon state={mark} /></span>}</td>
                       <td className="rs-name">
@@ -650,8 +678,8 @@ export function ResultStep({
           </div>
         </section>
 
-        {selectedRow && <>
-          <div className="rs-backdrop" onClick={() => setSelected(null)} aria-hidden="true" />
+        {selectedRow && panelOpen && <>
+          <div className="rs-backdrop" onClick={() => setPanelOpen(false)} aria-hidden="true" />
           <RowPanel
             key={selectedRow.index}
             item={selectedRow.item}
@@ -663,14 +691,14 @@ export function ResultStep({
             count={selectedPosition >= 0 ? visible.length : rows.length}
             onPrev={selectedPosition > 0 ? () => moveRef.current(-1) : undefined}
             onNext={selectedPosition >= 0 && selectedPosition < visible.length - 1 ? () => moveRef.current(1) : undefined}
-            onClose={() => setSelected(null)}
+            onClose={() => setPanelOpen(false)}
             priceField={<label className="rp-price-field">{priceInput(selectedRow.index, false, 'Цена за штуку, USD')}<i>USD</i></label>}
             aiNote={selectedRow.aiNote}
             edited={!selectedRow.item.excluded && !selectedRow.aiNote && priceDiffers(items[selectedRow.index]?.sourcePricePerPair, priceOf(selectedRow.index))}
             sirMode={sirMode}
             loading={loading}
             onChangeCode={() => onChangeCode(selectedRow.index)}
-            onAgent={onAgent ? () => onAgent(selectedRow.index) : undefined}
+            onAgent={onAgent ? () => { const index = selectedRow.index; setPanelOpen(false); onAgent(index) } : undefined}
             onToggleIncluded={(included) => onToggleIncluded(selectedRow.index, included)}
             onAntiDumpingChoice={(key) => onAntiDumpingChoice(selectedRow.index, key)}
           />

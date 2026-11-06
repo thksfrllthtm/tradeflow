@@ -27,8 +27,10 @@ export type GoodsSourceSnapshot = { filename: string; signature: string; sheet: 
 export type GoodsItemInput = {
   id?: string; productId?: number; sourceRow?: number; productDirectoryId?: number; directorySnapshot?: Record<string, unknown>
   name: string; supplierName: string; standardName: string; photoUrl: string; photoUrls?: string[]; code: string
-  // Другие колонки наименования из файла («Наименование 2/3»).
+  // Другие колонки наименования из файла — у старых смет (раньше «Наименование 2/3»).
   otherNames?: string[]
+  // «Данные» из файла: свойства товара с подписью колонки («Материал: сталь») — для подбора кода ИИ.
+  details?: string[]
   // Вариант антидемпинга, выбранный сотрудником на этапе результата ('none' — не начислять).
   antiDumpingChoice?: string
   pairs: string; places: string; pairsPerPlace: string; grossKg: string; grossWeightUnit?: string; netKg: string; netWeightUnit?: string; netSource: string; packageWeightKg: string; coefficient: string

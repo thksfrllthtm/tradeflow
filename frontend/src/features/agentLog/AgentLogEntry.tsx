@@ -40,7 +40,7 @@ export function AgentLogEntryPanel({ id, onClose }: { id: number; onClose: () =>
   // Пока открыто фото, Esc закрывает только его (у просмотра фото свой обработчик Esc).
   return <>
     <Drawer className="alog-entry" onClose={onClose} title={row ? row.name || 'Подбор' : 'Подбор'}
-      subtitle={row ? `${row.user} · ${new Date(row.createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })} · ${row.mode === 'reference' ? 'чат-справочник' : 'строка сметы'}${row.runs > 1 ? ` · ходов: ${row.runs}` : ''}` : 'Загрузка…'}>
+      subtitle={row ? <>{row.user} · <time dateTime={row.createdAt}>{new Date(row.createdAt).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</time> · {row.mode === 'reference' ? 'чат-справочник' : 'строка сметы'}{row.runs > 1 ? ` · ходов: ${row.runs}` : ''}</> : 'Загрузка…'}>
         {error && <p className="banner error" role="alert">{error}</p>}
         {entry && row && item && <>
           <section className="alog-item">
@@ -48,6 +48,7 @@ export function AgentLogEntryPanel({ id, onClose }: { id: number; onClose: () =>
               {item.name && <p><b>{item.name}</b></p>}
               {item.supplierName && <p>{item.supplierName}</p>}
               {item.otherNames?.map((name) => <p key={name}>{name}</p>)}
+              {item.details?.map((detail) => <p key={detail} className="alog-detail">{detail}</p>)}
               {facts.length > 0 && <small>{facts.join(' · ')}</small>}
               <p className="alog-applied">
                 {row.decision

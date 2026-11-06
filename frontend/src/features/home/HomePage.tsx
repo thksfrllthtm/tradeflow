@@ -70,7 +70,7 @@ export function HomePage({ user, onLogout }: { user: User; onLogout: () => void 
       <div className="home">
         <header className="home-hero">
           <div>
-            <p className="home-date">{longDate(now)}</p>
+            <p className="home-date"><time>{longDate(now)}</time></p>
             <h1>{greeting(now.getHours())}{firstName ? `, ${firstName}` : ''}</h1>
           </div>
         </header>

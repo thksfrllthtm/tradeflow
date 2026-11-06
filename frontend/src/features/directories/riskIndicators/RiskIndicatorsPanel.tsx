@@ -82,7 +82,7 @@ export function useRiskIndicatorsPanel({ admin, onOpen }: { admin: boolean; onOp
           <td><b>{profile.number}</b>{profile.fileName && <small>{profile.fileName}</small>}</td>
           <td className="sir-num">{formatDisplayNumber(profile.codeCount)}</td>
           <td><span className="sir-groups">{profile.groups.map((group, index) => <span key={`${index}-${group}`} className={group.split(', ').includes('CN') ? 'cn' : undefined}>{group}</span>)}</span></td>
-          <td>{formatRuDate(profile.importedAt.slice(0, 10))}{profile.importedByName && <small>{profile.importedByName}</small>}</td>
+          <td><time dateTime={profile.importedAt}>{formatRuDate(profile.importedAt.slice(0, 10))}</time>{profile.importedByName && <small>{profile.importedByName}</small>}</td>
           {admin && <td><button type="button" className="button-link" onClick={() => void remove(profile)} disabled={busy !== ''}>Удалить</button></td>}
         </tr>)}</tbody>
       </table>}

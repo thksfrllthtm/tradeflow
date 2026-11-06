@@ -73,7 +73,7 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
     <section className="directory-page tm-page">
       <PageHead title="ТРОИС — таможенный реестр объектов интеллектуальной собственности"
         subtitle={summary?.importedAt
-            ? <>Реестр КГД · загружено {formatRuDate(summary.importedAt.slice(0, 10))}{summary.importedByName && `, ${summary.importedByName}`}{summary.logos > 0 && <> · логотипов подписано ИИ {formatDisplayNumber(summary.logosRead)} из {formatDisplayNumber(summary.logos)}</>}</>
+            ? <>Реестр КГД · загружено <time dateTime={summary.importedAt}>{formatRuDate(summary.importedAt.slice(0, 10))}</time>{summary.importedByName && `, ${summary.importedByName}`}{summary.logos > 0 && <> · логотипов подписано ИИ {formatDisplayNumber(summary.logosRead)} из {formatDisplayNumber(summary.logos)}</>}</>
             : 'Товарные знаки под защитой таможни РК.'} />
       {admin && <div className="kz-step">
         <span className="kz-step-number">↑</span>
@@ -107,7 +107,7 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
               <td>{item.regNo}</td>
               <td className="tm-goods">{item.goods}</td>
               <td>{shortHolder(item.holder)}</td>
-              <td>{item.protectedUntil ? formatRuDate(item.protectedUntil) : '—'}</td>
+              <td>{item.protectedUntil ? <time dateTime={item.protectedUntil.slice(0, 10)}>{formatRuDate(item.protectedUntil)}</time> : '—'}</td>
             </tr>)}</tbody>
           </table>
           {items.length < total && <button type="button" className="button-link tm-more" onClick={() => setPage(page + 1)}>Показать ещё</button>}

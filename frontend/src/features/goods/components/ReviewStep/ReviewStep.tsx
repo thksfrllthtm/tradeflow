@@ -13,7 +13,6 @@ import { RowDecisionState } from '../../hooks/useRowDecisions'
 import { emptyItem } from '../../lib/rowActions'
 import { rowId } from '../../lib/excelColumns'
 import { lookupNomenclature, withNomenclatureRates } from '../../lib/nomenclatureRates'
-import { plural } from '../ResultStep/errorGroups'
 import { itemNames } from '../ResultStep/resultValues'
 import { ReviewSheet, RowAction, SheetApi, SheetRowView } from '../ReviewSheet/ReviewSheet'
 import { applySheetChanges, SheetChange } from '../ReviewSheet/sheetModel'
@@ -54,8 +53,6 @@ type Props = {
   addManualPhoto: (id: string, event: ChangeEvent<HTMLInputElement>) => void
   addEmptyRow: () => void
   calculate: () => void
-  // «← Файл»: вернуться к этапу «Файл и колонки».
-  onBack: () => void
   saveDraft: () => void
   clearAll: () => void
   // Подбор кода ИИ: состояние по строкам, открыть чат строки, подобрать для всех строк без кода.
@@ -65,6 +62,8 @@ type Props = {
   agentBatch: { done: number; total: number } | null
   openAgent: (id: string) => void
   startAgentBatch: () => void
+  // Строка, открытая в панели «Подбор кода»: выделена в листе.
+  agentRowId?: string | null
 }
 
 // Фильтр строк: все, требующие внимания, проблема одного типа (чип), код от ИИ.
@@ -125,7 +124,7 @@ function useItemsHistory(items: GoodsItemInput[], replace: (items: GoodsItemInpu
 
 // Этап 2 «Проверка строк»: строка заголовка, чипы параметров, панель фильтров, строка значения и
 // лист «как в Excel». Прокручивается страница: шапка листа прилипает к верху, «Итого» — к низу окна.
-export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, loading, usdRateLoading, usdRateNotice, storageNotice, unsaved, header, includedCount, editItems, setSelectedForDirectory, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, onBack, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch }: Props) {
+export function ReviewStep({ params, items, result, reviewCheck, selectedForDirectory, loading, usdRateLoading, usdRateNotice, storageNotice, unsaved, header, includedCount, editItems, setSelectedForDirectory, setParam, loadUsdRate, openDirectoryPicker, removeRow, removedRow, restoreRemovedRow, dismissRemovedRow, openRowPhotos, addManualPhoto, addEmptyRow, calculate, saveDraft, clearAll, agentStatuses, rowDecisions, agentBatch, openAgent, startAgentBatch, agentRowId }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [density, setDensity] = useState<Density>(storedDensity)
@@ -307,7 +306,6 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
   const tab = (value: Filter, label: string, count: number, hint: string) => (
     <button type="button" role="tab" aria-selected={filter === value} className={filter === value ? 'active' : undefined} onClick={() => setFilter(value)} disabled={count === 0 && filter !== value} title={hint}>{label} <span className="dir-count">{count}</span></button>
   )
-  const noCodeText = counts.noCode > 0 ? `${counts.noCode} ${plural(counts.noCode, ['строка', 'строки', 'строк'])} без кода` : ''
 
   const menu = <details className="rv-more" ref={menuRef}>
     <summary className="icon-button" title="Ещё" aria-label="Ещё действия">
@@ -334,16 +332,12 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
     <div className="estimate-bar rv-titlebar">{header}</div>
 
     {/* Панель расчёта: слева параметры, справа сохранение и «Рассчитать». */}
-    <div className="rv-toolbar">
+    <div className="rv-toolbar rv-calcbar">
       <ParamChips params={params} setParam={setParam} loadUsdRate={loadUsdRate} usdRateLoading={usdRateLoading} usdRateNotice={usdRateNotice} ownPackageCount={ownPackageCount} />
       <div className="rv-title-actions">
-        <span className="rv-save">
-          {unsaved && !failed && !storageNotice.startsWith('Сохраняем')
-            ? <span className="rv-save-state unsaved" role="status">Есть несохранённые изменения</span>
-            : <span className={failed ? 'rv-save-state failed' : 'rv-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice}>{storageNotice || 'Изменения сохраняются автоматически'}</span>}
-          {noCodeText && <span className="rv-save-nocode">{noCodeText}</span>}
-        </span>
-        <button type="button" className="secondary" onClick={onBack} disabled={loading}><span aria-hidden="true">←</span> Файл</button>
+        {unsaved && !failed && !storageNotice.startsWith('Сохраняем')
+          ? <span className="rv-save-state unsaved" role="status" title="Есть несохранённые изменения">Есть несохранённые изменения</span>
+          : <span className={failed ? 'rv-save-state failed' : 'rv-save-state'} role={failed ? 'alert' : 'status'} title={storageNotice || 'Изменения сохраняются автоматически'}>{storageNotice || 'Изменения сохраняются автоматически'}</span>}
         <button type="button" className="secondary" onClick={() => void saveDraft()} disabled={loading || items.length === 0} title="Сохранить на сервере сейчас (Ctrl+S)">Сохранить</button>
         <button type="button" onClick={() => void calculate()} disabled={loading || includedCount === 0}>{loading ? 'Считаем…' : 'Рассчитать'} <span aria-hidden="true">→</span></button>
       </div>
@@ -364,21 +358,23 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
           {tab('all', 'Все', items.length, 'Все строки сметы')}
           {tab('attention', 'Требуют внимания', counts.attention, 'Ошибки и предупреждения расчёта, строки без кода, изменённые после расчёта строки с ошибками')}
         </div>
-        {chips.length === 0 && counts.attention === 0
-          ? items.length > 0 && <span className="rv-all-ok">✓ Все коды указаны, количества и вес сходятся</span>
-          : <span className="rv-chips">
-            {chips.map((chip) => <button key={chip.type} type="button" className={[`rv-pchip ${chip.tone}`, filter === `type:${chip.type}` ? 'active' : ''].filter(Boolean).join(' ')} onClick={() => setFilter(filter === `type:${chip.type}` ? 'all' : `type:${chip.type}`)} aria-pressed={filter === `type:${chip.type}`} title={chip.label}>
-              <i aria-hidden="true" />{chip.label} · {chip.rows}
-            </button>)}
-            <button type="button" className="secondary sm rv-next" onClick={nextProblem} disabled={counts.attention === 0} title="Следующая строка, требующая внимания (F8)">Следующая проблема <kbd>F8</kbd></button>
-          </span>}
-        {counts.ai > 0 && <button type="button" className={filter === 'ai' ? 'rv-pchip neutral active' : 'rv-pchip neutral'} onClick={() => setFilter(filter === 'ai' ? 'all' : 'ai')} aria-pressed={filter === 'ai'} title="Строки, где код предложил подбор ИИ — просмотреть и подтвердить">Код от ИИ · {counts.ai}</button>}
-        {agentBatch ? <span className="rv-panel-note">Запуск подбора: {agentBatch.done} из {agentBatch.total}</span>
-          : agentPending > 0 && <button type="button" className="secondary sm" onClick={startAgentBatch} disabled={loading} title={`Подобрать коды для включённых строк без кода, где подбор ещё не запускали${agentStarted > 0 ? ` (ещё ${agentStarted} уже в подборе)` : ''}; результат — в чате строки`}>Подобрать коды ИИ ({agentPending})</button>}
+        {/* Пилюли проблем в одну строку: не помещаются — прокручиваются вбок, ряд не растёт. */}
+        <span className="rv-chips">
+          {chips.length === 0 && counts.attention === 0 && items.length > 0 && <span className="rv-all-ok">✓ Все коды указаны, количества и вес сходятся</span>}
+          {chips.map((chip) => <button key={chip.type} type="button" className={[`rv-pchip ${chip.tone}`, filter === `type:${chip.type}` ? 'active' : ''].filter(Boolean).join(' ')} onClick={() => setFilter(filter === `type:${chip.type}` ? 'all' : `type:${chip.type}`)} aria-pressed={filter === `type:${chip.type}`} title={chip.label}>
+            <i aria-hidden="true" />{chip.label} · {chip.rows}
+          </button>)}
+          {counts.ai > 0 && <button type="button" className={filter === 'ai' ? 'rv-pchip neutral active' : 'rv-pchip neutral'} onClick={() => setFilter(filter === 'ai' ? 'all' : 'ai')} aria-pressed={filter === 'ai'} title="Строки, где код предложил подбор ИИ — просмотреть и подтвердить">Код от ИИ · {counts.ai}</button>}
+        </span>
+        {counts.attention > 0 && <button type="button" className="secondary sm rv-next" onClick={nextProblem} aria-label="Следующая проблема (F8)" title="Следующая проблема (F8)">
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" /></svg><kbd>F8</kbd>
+        </button>}
         <span className="rv-panel-end">
           {(result || pastCheck) && <span className={pastCheck ? 'rv-check-source past' : 'rv-check-source'} title={result ? 'Статусы строк — по актуальному расчёту' : 'Строки менялись после расчёта: ошибки — из прошлого расчёта, нужен пересчёт'}>
-            {result ? 'Актуальный расчёт' : <>Прошлый расчёт{pastCheck && checkTime(pastCheck.at) && ` ${checkTime(pastCheck.at)}`}{counts.changed > 0 && <> · изменено {counts.changed}</>} · нужен пересчёт</>}
+            {result ? 'Актуальный расчёт' : <>Прошлый расчёт{pastCheck && checkTime(pastCheck.at) && <> <time dateTime={pastCheck.at}>{checkTime(pastCheck.at)}</time></>}{counts.changed > 0 && <> · изменено {counts.changed}</>} · нужен пересчёт</>}
           </span>}
+          {agentBatch ? <span className="rv-panel-note">Запуск подбора: {agentBatch.done} из {agentBatch.total}</span>
+            : agentPending > 0 && <button type="button" className="secondary sm rv-ai-batch" onClick={startAgentBatch} disabled={loading} title={`Подобрать коды для включённых строк без кода, где подбор ещё не запускали${agentStarted > 0 ? ` (ещё ${agentStarted} уже в подборе)` : ''}; результат — в чате строки`}>Подобрать коды ИИ ({agentPending})</button>}
           <label className="dir-search rv-search">
             <SearchIcon />
             <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Товар или код" aria-label="Найти товар или код" />
@@ -398,7 +394,7 @@ export function ReviewStep({ params, items, result, reviewCheck, selectedForDire
       <ReviewSheet rows={sheetRows} defaultPackageWeight={params.packageWeightKg} showPhoto={showPhoto} showPackage={showPackage} compact={density === 'compact'} apiRef={sheetApi}
         totals={{ ...totals, included: includedCount, all: items.length }}
         onChanges={applyChanges} onAction={rowAction} onSelectAll={toggleAllVisible} onInsertRow={insertRow} onDeleteRows={deleteRows}
-        onPickRows={(indexes) => openDirectoryPicker(indexes.map((index) => items[index]?.id ?? '').filter(Boolean))} onUndo={history.undo} onRedo={history.redo} />
+        agentRowId={agentRowId} onPickRows={(indexes) => openDirectoryPicker(indexes.map((index) => items[index]?.id ?? '').filter(Boolean))} onUndo={history.undo} onRedo={history.redo} />
       <input ref={photoInput} type="file" accept="image/jpeg,image/png" style={{ display: 'none' }} onChange={(event) => { if (photoTarget.current) addManualPhoto(photoTarget.current, event) }} />
     </section>
   </div>

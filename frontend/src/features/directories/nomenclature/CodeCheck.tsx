@@ -93,7 +93,7 @@ export function useCodeCheck({ initialOpen = false, onOpen }: { initialOpen?: bo
             <span className={`badge ${row.status === 'unknown' ? 'error' : 'ok'} code-check-status ${row.status}`}>{statusText[row.status]}</span>
             <span className="code-check-name">
               {item ? <>{nameParts(item.name).slice(-1)[0]}<em> · ЕТТ {item.tariffText || 'не указана'}{item.kz && ` · РК ${item.kz.rateText}${item.kz.active ? '' : ` (${item.kz.status})`}`}{item.vatPercent && ` · НДС ${item.vatPercent}%`}</em></>
-                : <em>Проверьте код: в номенклатуре{source?.actualDate ? ` на ${formatRuDate(source.actualDate)}` : ''} его нет</em>}
+                : <em>Проверьте код: в номенклатуре{source?.actualDate ? <> на <time dateTime={source.actualDate.slice(0, 10)}>{formatRuDate(source.actualDate)}</time></> : ''} его нет</em>}
               {row.padded && <em> · в Excel потерян ведущий ноль</em>}
               {row.count > 1 && <em> · строк: {row.count}</em>}
             </span>

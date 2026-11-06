@@ -15,6 +15,7 @@ import './documentsBase.css'
 type Tab = 'codes' | 'acts'
 
 const dateTime = (value: string | null) => value ? new Date(value).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+const When = ({ value }: { value: string | null }) => <time dateTime={value ?? undefined}>{dateTime(value)}</time>
 const sizeText = (size: number) => size >= 1_000_000 ? `${(size / 1_000_000).toFixed(1)} млн знаков` : size >= 1000 ? `${Math.round(size / 1000)} тыс. знаков` : `${size} знаков`
 
 // База документов: что программа уже собрала по «Документам для ввоза». Ответы по кодам (последний и все
@@ -101,7 +102,7 @@ function CodesTable({ items, onOpen }: { items: DocumentsBaseItem[] | null; onOp
           </span></td>
           <td className="c-kinds">{item.kinds.length > 0 ? item.kinds.map((kind) => <i key={kind} className="badge dbase-kind">{documentKindLabels[kind] || kind}</i>) : <span className="alog-none">—</span>}</td>
           <td className="c-versions">{item.versions}</td>
-          <td className="c-when">{dateTime(item.savedAt)}<small>{item.author || '—'}</small></td>
+          <td className="c-when"><When value={item.savedAt} /><small>{item.author || '—'}</small></td>
         </tr>)}
     </tbody>
   </table>
@@ -115,7 +116,7 @@ function ActsTable({ acts }: { acts: CachedPage[] | null }) {
         : acts.length === 0 ? <tr><td colSpan={3} className="dbase-empty">Актов в кэше не найдено.</td></tr>
         : acts.map((act) => <tr key={act.url} className="dbase-static">
           <td className="c-title"><span>{act.title || act.url}</span><a href={act.url} target="_blank" rel="noreferrer">{act.url}</a></td>
-          <td className="c-when">{dateTime(act.fetchedAt)}</td>
+          <td className="c-when"><When value={act.fetchedAt} /></td>
           <td className="c-size">{sizeText(act.size)}</td>
         </tr>)}
     </tbody>
@@ -144,10 +145,10 @@ function CodePanel({ code, onClose }: { code: string; onClose: () => void }) {
           {entry.versions.length > 1 && <div className="dbase-versions">
             <span>Версии</span>
             <div className="dir-seg" role="group" aria-label="Версии ответа">{entry.versions.map((item, index) => <button key={item.id} type="button" className={index === version ? 'active' : undefined} aria-pressed={index === version} onClick={() => setVersion(index)}>
-              {dateTime(item.savedAt)}{index === 0 && ' · последняя'}
+              <When value={item.savedAt} />{index === 0 && ' · последняя'}
             </button>)}</div>
           </div>}
-          {shown && <p className="dbase-product"><b>Товар:</b> {shown.product || '—'}<small>{dateTime(shown.savedAt)} · {shown.author || '—'}{shown.sessionId ? ` · подбор №${shown.sessionId}` : ''}</small></p>}
+          {shown && <p className="dbase-product"><b>Товар:</b> {shown.product || '—'}<small><When value={shown.savedAt} /> · {shown.author || '—'}{shown.sessionId ? ` · подбор №${shown.sessionId}` : ''}</small></p>}
           {answer ? <DocumentsAnswer result={answer} /> : <p className="dbase-empty">По этому коду ответов ещё нет.</p>}
 
           <section className="dbase-block">
@@ -155,14 +156,14 @@ function CodePanel({ code, onClose }: { code: string; onClose: () => void }) {
             {entry.acts.length === 0 ? <p className="dbase-muted">Ссылок на акты в ответах нет.</p>
               : <ul className="dbase-acts">{entry.acts.map((act) => <li key={act.url}>
                 <a href={act.url} target="_blank" rel="noreferrer">{act.title || act.url}</a>
-                <small>{act.cached ? `в кэше с ${dateTime(act.fetchedAt)} · ${sizeText(act.size)}` : 'текста в кэше нет'}</small>
+                <small>{act.cached ? <>в кэше с <When value={act.fetchedAt} /> · {sizeText(act.size)}</> : 'текста в кэше нет'}</small>
               </li>)}</ul>}
           </section>
 
           <section className="dbase-block">
             <h3>Справка tnved.info</h3>
             {entry.help ? <details className="dbase-help">
-              <summary>Получена {dateTime(entry.help.fetchedAt)} · {sizeText(entry.help.text.length)} <a href={entry.help.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>на сайте ↗</a></summary>
+              <summary>Получена <When value={entry.help.fetchedAt} /> · {sizeText(entry.help.text.length)} <a href={entry.help.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>на сайте ↗</a></summary>
               <pre>{entry.help.text}</pre>
             </details> : <p className="dbase-muted">Справки по коду в кэше нет.</p>}
           </section>

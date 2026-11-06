@@ -81,7 +81,7 @@ export function ExcelPreview({ headers, rows, fields, fieldForHeader, onFieldCha
             columns: [
               { type: 'checkbox', title: '✓', width: 32 },
               { type: 'text', title: 'Стр.', width: 48, readOnly: true, align: 'right' },
-              ...headers.map((_header, index) => ({ type: 'text' as const, title: titles[index], width: 160, readOnly: true, align: 'left' as const })),
+              ...headers.map((_header, index) => ({ type: 'text' as const, title: titles[index], width: 180, readOnly: true, align: 'left' as const })),
             ],
             // Прокрутка — у .xp-host (высота до низа окна, ниже), а не у библиотеки: так шапка прилипает к верху листа.
             tableOverflow: false,

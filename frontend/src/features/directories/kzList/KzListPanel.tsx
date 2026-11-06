@@ -75,7 +75,7 @@ export function useKzListPanel({ current, onImported, onOpen }: { current: KzImp
     <div className="dir-transfer-row">
       <div>
         <strong>Перечень РК — ставки ниже ЕТТ</strong>
-        <p>{current ? `Загружен ${formatRuDate(current.importedAt.slice(0, 10))}${current.importedByName ? `, ${current.importedByName}` : ''}: ${current.fileName || (current.source === 'pdf' ? 'PDF' : 'Excel')}, ${formatDisplayNumber(current.rowCount)} ${plural(current.rowCount, 'код', 'кода', 'кодов')}.` : 'Ещё не загружен.'} Актуальный PDF — на сайте ЕЭК, раздел «Применение ставок, отличных от ставок ЕТТ».</p>
+        <p>{current ? <>Загружен <time dateTime={current.importedAt}>{formatRuDate(current.importedAt.slice(0, 10))}</time>{`${current.importedByName ? `, ${current.importedByName}` : ''}: ${current.fileName || (current.source === 'pdf' ? 'PDF' : 'Excel')}, ${formatDisplayNumber(current.rowCount)} ${plural(current.rowCount, 'код', 'кода', 'кодов')}.`}</> : 'Ещё не загружен.'} Актуальный PDF — на сайте ЕЭК, раздел «Применение ставок, отличных от ставок ЕТТ».</p>
       </div>
       <button type="button" className="icon-button ghost dir-transfer-close" onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
     </div>

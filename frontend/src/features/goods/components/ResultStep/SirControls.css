@@ -2,6 +2,7 @@
 .sir-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 8px 16px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .sir-bar.on { border-color: var(--tf-warn-border); background: var(--tf-warn-bg); }
 .sir-label { color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 500; white-space: nowrap; }
+.sir-label-short { display: none; }
 .sir-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 500; white-space: nowrap; }
 .sir-sep { width: 1px; height: 20px; background: var(--tf-border); }
 .rs-joined.sir-custom input { width: 52px; }

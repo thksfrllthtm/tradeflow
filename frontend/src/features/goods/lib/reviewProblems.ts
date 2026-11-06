@@ -28,7 +28,8 @@ export function reviewProblems(item: GoodsItemInput, status: ReviewStatus): Revi
     } else if (QUANTITY.test(text)) {
       add({ type: 'quantity', label: 'Количество не сходится', tone: bad ? 'error' : 'warn', column: 'pairs', text })
     } else if (CODE.test(text)) {
-      add({ type: 'code', label: 'Проверьте код', tone: bad ? 'error' : 'warn', column: 'code', text })
+      // Строка без кода уже отмечена «Нет кода» — «Проверьте код» её только дублирует.
+      if (!status.noCode) add({ type: 'code', label: 'Проверьте код', tone: bad ? 'error' : 'warn', column: 'code', text })
     } else {
       add({ type: `other:${text}`, label: text, tone: bad ? 'error' : 'warn', column: 'name', text })
     }

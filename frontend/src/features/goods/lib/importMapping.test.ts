@@ -1,21 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { buildGloveItems, emptyMapping } from './importMapping'
+import { buildGloveItems, emptyMapping, upgradeLegacyMapping } from './importMapping'
 
 const row = (sourceRow: number, values: Record<string, string>) => ({ sourceRow, included: true, values })
 
-describe('несколько колонок наименования', () => {
-  it('первое непустое — наименование, остальные — дополнительные', () => {
-    const mapping = { ...emptyMapping(), name: '名称', name2: 'НАИМЕНОВАНИЕ' }
-    const [first, second, third] = buildGloveItems([
-      row(2, { '名称': '桶红本色头，0.7公斤', 'НАИМЕНОВАНИЕ': '0,7 Лопата оран штыковой B-1' }),
-      row(3, { '名称': '', 'НАИМЕНОВАНИЕ': '0,7 Лопата оран совковый B-2' }),
-      row(4, { '名称': 'Лопата', 'НАИМЕНОВАНИЕ': 'Лопата' }),
+describe('«Данные» из файла для подбора кода', () => {
+  it('значения колонок «Данные» — с подписью из заголовка, без заголовка — только значение, пустые пропускаются', () => {
+    const mapping = { ...emptyMapping(), name: '名称', data1: 'Материал', data2: 'Колонка 5', data3: 'Модель' }
+    const [first, second] = buildGloveItems([
+      row(2, { '名称': 'Лопата штыковая', 'Материал': 'сталь', 'Колонка 5': 'для сада', 'Модель': '' }),
+      row(3, { '名称': 'Грабли', 'Материал': '', 'Колонка 5': '', 'Модель': '' }),
     ], [], mapping, '0', 0)
-    expect(first.name).toBe('桶红本色头，0.7公斤')
-    expect(first.otherNames).toEqual(['0,7 Лопата оран штыковой B-1'])
-    expect(second.name).toBe('0,7 Лопата оран совковый B-2')
-    expect(second.otherNames).toBeUndefined()
-    expect(third.otherNames).toBeUndefined()
+    expect(first.name).toBe('Лопата штыковая')
+    expect(first.details).toEqual(['Материал: сталь', 'для сада'])
+    expect(second.details).toBeUndefined()
+  })
+
+  it('старое сопоставление «Наименование 2/3» становится «Данные 1/2»', () => {
+    const upgraded = upgradeLegacyMapping({ ...emptyMapping(), name: 'A', name2: 'B', name3: 'C' })
+    expect(upgraded).toMatchObject({ name: 'A', data1: 'B', data2: 'C' })
+    expect('name2' in upgraded).toBe(false)
   })
 })
 

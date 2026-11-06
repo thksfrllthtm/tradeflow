@@ -1,15 +1,17 @@
-/* Баннер проблем расчёта над итогами: одна строка на проблему, номера строк — по раскрытию. */
-.rs-problems { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+/* Баннер проблем расчёта над итогами: свёрнутый — одна строка 36px, «Показать» — все проблемы и номера строк. */
+.rs-problems { display: grid; overflow: hidden; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+.rs-problem-line, .rs-problems-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 36px; padding: 4px 12px; font-size: var(--fs-md); }
 .rs-problems-list { display: grid; margin: 0; padding: 0; list-style: none; }
-.rs-problems-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px; font-size: var(--fs-md); }
-.rs-problems-list li + li { border-top: 1px solid var(--tf-border-inner); }
-.rs-problems-list li.error { background: var(--tf-error-bg); color: var(--tf-error); }
-.rs-problems-list li.todo, .rs-problems-list li.warn { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
+.rs-problems-list li { border-top: 1px solid var(--tf-border-inner); }
+.rs-problems .error { background: var(--tf-error-bg); color: var(--tf-error); }
+.rs-problems :is(.todo, .warn) { background: var(--tf-warn-bg); color: var(--tf-warn-text); }
 .rs-problem-icon { display: inline-grid; flex: none; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: var(--fs-xs); font-weight: 600; line-height: 1; }
-.rs-problems-list li.error .rs-problem-icon { background: var(--tf-error); color: #fff; }
-.rs-problems-list li.todo .rs-problem-icon, .rs-problems-list li.warn .rs-problem-icon { background: var(--tf-ai); color: #fff; }
+.rs-problems .error .rs-problem-icon { background: var(--tf-error); color: #fff; }
+.rs-problems :is(.todo, .warn) .rs-problem-icon { background: var(--tf-ai); color: #fff; }
 .rs-problem-text { flex: 1 1 260px; }
 .rs-problem-text b { font-weight: 600; }
-.rs-problems-rows { border-top: 1px solid var(--tf-border-inner); }
-.rs-problems-rows > summary { padding: 8px 16px; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 500; cursor: pointer; }
-.rs-problems-rows ul { display: grid; gap: 6px; max-width: 100%; margin: 0; padding: 0 16px 12px; list-style: none; color: var(--tf-text-2); font-size: var(--fs-md); }
+.rs-problems .rs-problem-toggle { padding: 0; font-size: inherit; }
+/* Строки первой проблемы — под её строкой, с отступом на ширину значка. */
+.rs-problems-list li:not(:has(.rs-problem-icon)) { padding-left: 42px; }
+.rs-problem-rows { color: var(--tf-text-2); }
+.rs-problem-rows .button-link { padding: 0; font-size: inherit; }

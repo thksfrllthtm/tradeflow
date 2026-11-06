@@ -58,7 +58,7 @@ const verdictBadge: Record<AgentCandidate['verdict'], string> = { fits: 'badge o
 
 export function agentItemFrom(item: GoodsItemInput): AgentItem {
   return {
-    name: item.name ?? '', supplierName: item.supplierName && item.supplierName !== item.name ? item.supplierName : '', otherNames: item.otherNames ?? [], code: item.code ?? '',
+    name: item.name ?? '', supplierName: item.supplierName && item.supplierName !== item.name ? item.supplierName : '', otherNames: item.otherNames ?? [], details: item.details ?? [], code: item.code ?? '',
     quantity: item.pairs ?? '', places: item.places ?? '', grossKg: item.grossKg ?? '', netKg: item.netKg ?? '', pricePerUnit: item.pricePerPair ?? '', unit: 'шт',
   }
 }
@@ -71,21 +71,49 @@ export async function agentPhotosFrom(item: GoodsItemInput): Promise<string[]> {
 // Отступ панели сверху: под строкой сметы с названием и кнопками (этап проверки), иначе под шапкой
 // сайта. Берётся место на странице, а не в окне, — при прокрутке панель не двигается (раньше
 // догоняла уезжающую шапку и дёргалась).
+// Уже 1440 px (как в agent.css) таблица не сдвигается и панель ложится поверх неё — тогда верх панели под
+// рядом фильтров над таблицей: кнопки расчёта, фильтры, «Подобрать коды ИИ» и поиск остаются доступны.
 function usePanelTop() {
   const [top, setTop] = useState(0)
   useLayoutEffect(() => {
-    const header = document.querySelector<HTMLElement>('.app-header')
-    const anchor = document.querySelector<HTMLElement>('.rv-titlebar') ?? header
-    if (!anchor) return
-    const update = () => setTop(anchor.getBoundingClientRect().bottom + window.scrollY)
+    const wide = window.matchMedia('(min-width: 1440px)')
+    const update = () => {
+      const anchor = (!wide.matches && (document.querySelector<HTMLElement>('.rv-step .rv-panel') ?? document.querySelector<HTMLElement>('.rv-calcbar')))
+        || document.querySelector<HTMLElement>('.rv-titlebar') || document.querySelector<HTMLElement>('.app-header')
+      if (anchor) setTop(anchor.getBoundingClientRect().bottom + window.scrollY)
+    }
     update()
     const observer = new ResizeObserver(update)
-    observer.observe(anchor)
-    if (header) observer.observe(header)
-    return () => observer.disconnect()
+    document.querySelectorAll<HTMLElement>('.app-header, .rv-titlebar, .rv-calcbar, .rv-step .rv-panel').forEach((element) => observer.observe(element))
+    wide.addEventListener('change', update)
+    return () => { observer.disconnect(); wide.removeEventListener('change', update) }
   }, [])
   return top
 }
+
+// Ширина панели: тянется за левый край (или ←/→ на ручке), запоминается. Пока панель открыта, ширина —
+// в --ag-width у <html>: по ней шаги сметы оставляют место справа.
+const widthKey = 'tradeflow.agentPanelWidth'
+const minWidth = 360, maxWidth = 640, defaultWidth = 440
+const clampWidth = (value: number) => Math.min(maxWidth, Math.max(minWidth, Math.round(value)))
+
+function usePanelWidth() {
+  const [width, setWidth] = useState(() => {
+    try { const saved = Number(localStorage.getItem(widthKey)); return saved ? clampWidth(saved) : defaultWidth } catch { return defaultWidth }
+  })
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--ag-width', `${width}px`)
+    return () => { root.style.removeProperty('--ag-width') }
+  }, [width])
+  useEffect(() => {
+    try { localStorage.setItem(widthKey, String(width)) } catch { /* без сохранения */ }
+  }, [width])
+  return [width, setWidth] as const
+}
+
+// Нет ни наименования, ни фото — сервер подбор не начнёт (ему не по чему искать).
+const isEmptyItem = (item: GoodsItemInput) => !item.name?.trim() && !item.supplierName?.trim() && photosOf(item).length === 0
 
 // Подбор кода ТН ВЭД для одной строки сметы — боковая панель справа, не модальная: таблица остаётся
 // доступной. При открытии программа только ищет товар в базе решений (тот же товар и похожие по фото);
@@ -93,6 +121,8 @@ function usePanelTop() {
 export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNext, onClose, onApplyCode, onApplyName, onAddPhoto, onChanged }: Props) {
   const itemId = item.id ?? ''
   const panelTop = usePanelTop()
+  const [width, setWidth] = usePanelWidth()
+  const empty = isEmptyItem(item)
   const [session, setSession] = useState<AgentSession | null>(null)
   const [status, setStatus] = useState<AgentStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -161,12 +191,12 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
       setStatus(agentStatus)
       const row = rows.items.find((entry) => entry.itemId === itemId)
       if (row) accept(await agentApi.get(row.sessionId), true)
-      else if (agentStatus?.configured) await start()
+      else if (agentStatus?.configured && !empty) await start()
     }).catch((reason) => { if (active) setError(errorMessage(reason)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-    // Только при открытии панели для строки.
+    // При открытии панели для строки и когда у пустой строки появилось наименование или фото.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estimateId, itemId])
+  }, [estimateId, itemId, empty])
 
   // Пока идёт поиск или подбор — забираем новые сообщения.
   const sessionId = session?.id
@@ -186,9 +216,10 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
     return () => { active = false; window.clearInterval(timer) }
   }, [sessionId, working, accept])
 
-  // Новые сообщения — прокрутка вниз.
+  // Новые сообщения — прокрутка вниз. Без сообщений — нет: иначе при открытии уезжает вверх карточка товара.
   const messageCount = session?.messages.length ?? 0
   useEffect(() => {
+    if (messageCount === 0) return
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' })
   }, [messageCount, session?.status])
 
@@ -351,8 +382,25 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
     else void act(() => skippedByBase ? agentApi.rerun(session.id) : agentApi.begin(session.id))
   }
   const rowCodeSaved = savedRowCode === item.code
+  const noInput = empty && !session
+  // Поле сообщения — только когда агенту можно писать (или он работает); до подбора его нет.
+  const showCompose = canWrite || running
+  const resize = (next: number) => setWidth(clampWidth(next))
 
-  return <aside className="ag-panel" style={{ top: panelTop + 16 }} role="complementary" aria-labelledby="ag-title">
+  return <aside className="ag-panel" style={{ top: panelTop + 16, maxHeight: `calc(100dvh - ${panelTop + 32}px)` }} role="complementary" aria-labelledby="ag-title">
+    <div className="ag-resize" role="separator" aria-orientation="vertical" aria-label="Ширина панели" aria-valuemin={minWidth} aria-valuemax={maxWidth} aria-valuenow={width} tabIndex={0}
+      title="Потяните, чтобы изменить ширину (← →)"
+      onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId) }}
+      onPointerMove={(event) => {
+        const panel = event.currentTarget.parentElement
+        if (panel && event.currentTarget.hasPointerCapture(event.pointerId)) resize(panel.getBoundingClientRect().right - event.clientX)
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+        event.preventDefault()
+        const step = event.key === 'ArrowLeft' ? 16 : -16
+        setWidth((current) => clampWidth(current + step))
+      }} />
     <header className="ag-head">
       <div className="ag-head-text">
         <h2 id="ag-title">Подбор кода</h2>
@@ -370,7 +418,7 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
             <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
           </summary>
           <div className="ag-menu-list" role="menu">
-            <button type="button" role="menuitem" onClick={() => menuAction(() => void start())} disabled={!session || working || busy || !configured}>Начать заново</button>
+            <button type="button" role="menuitem" onClick={() => menuAction(() => void start())} disabled={!session || working || busy || !configured || empty}>Начать заново</button>
             {running && <button type="button" role="menuitem" onClick={() => menuAction(() => session && void act(() => agentApi.cancel(session.id)))} disabled={busy}>Остановить подбор</button>}
             {/^\d{10}$/.test(item.code) && <button type="button" role="menuitem" onClick={() => menuAction(() => void saveRowCode())} disabled={busy || rowCodeSaved}
               title="Записать код, который сейчас стоит в строке, в базу решений (ждёт проверки администратором)">{rowCodeSaved ? '✓ Код строки в базе решений' : 'Записать код строки в базу решений'}</button>}
@@ -398,6 +446,17 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
         </header>
         {loading && !session
           ? <p className="ag-wait"><span className="goods-spinner" aria-hidden="true" />Загрузка…</p>
+          : noInput
+            ? <div className="ag-empty">
+              <p>Нет наименования и фото — агенту не по чему искать. Впишите наименование товара в таблице или добавьте фото.</p>
+              <div className="ag-launch">
+                <button type="button" onClick={() => photoInput.current?.click()}>Добавить фото</button>
+                <button type="button" className="secondary" disabled title="Нет наименования и фото — подбирать не по чему">
+                  <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 1.5l1.4 3.6 3.6 1.4-3.6 1.4L8 11.5 6.6 7.9 3 6.5l3.6-1.4zM12.5 10.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" /></svg>
+                  Подобрать код
+                </button>
+              </div>
+            </div>
           : notStarted
             ? <div className="ag-launch">
               <button type="button" className={skippedByBase ? 'secondary' : undefined} onClick={launch} disabled={busy || !configured}>
@@ -418,19 +477,19 @@ export function AgentPanel({ estimateId, item, rowNumber, rowCount, onPrev, onNe
       {error && <p className="ag-error" role="alert">{error}</p>}
     </div>
 
-    <footer className="ag-foot">
-      <form className="ag-compose" onSubmit={(event) => void send(event)}>
+    {!noInput && <footer className="ag-foot">
+      {showCompose && <form className="ag-compose" onSubmit={(event) => void send(event)}>
         <textarea ref={composeRef} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={onComposeKeyDown} maxLength={1000} rows={2} disabled={busy || !canWrite}
-          placeholder={session?.status === 'waiting' ? 'Ответьте на вопрос агента…' : running ? 'Агент работает…' : canWrite ? 'Уточните для агента: материал, назначение, размер…' : 'Сначала запустите подбор кода'} aria-label="Сообщение агенту" />
+          placeholder={session?.status === 'waiting' ? 'Ответьте на вопрос агента…' : running ? 'Агент работает…' : 'Уточните для агента: материал, назначение, размер…'} aria-label="Сообщение агенту" />
         <button type="submit" className="ag-send" disabled={busy || !canWrite || !text.trim()} aria-label="Отправить" title="Отправить (Enter)">
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" /></svg>
         </button>
-      </form>
+      </form>}
       <div className="ag-foot-row">
         {status && status.dailyLimit > 0 && <span>Подборов сегодня: {status.usedToday} из {status.dailyLimit}</span>}
         <span className="ag-disclaimer">Окончательный код выбирает декларант</span>
       </div>
-    </footer>
+    </footer>}
     {lightbox && <PhotoLightbox photos={lightbox.photos} startIndex={lightbox.index} onClose={() => setLightbox(null)} />}
   </aside>
 }
@@ -585,6 +644,7 @@ function ItemCard({ item, photos, onOpenPhoto, onAddPhoto }: { item: AgentItem; 
     <div className="ag-item-text">
       <strong>{title}</strong>
       {others.map((other) => <span key={other}>{other}</span>)}
+      {item.details?.map((detail) => <span key={detail} className="ag-item-detail">{detail}</span>)}
       <div className="ag-chips">
         {item.quantity && <span className="ag-chip">{formatRuNumber(item.quantity)} {item.unit}</span>}
         {unitNet && <span className="ag-chip">{unitNet} кг / {item.unit}</span>}

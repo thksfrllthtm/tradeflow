@@ -75,7 +75,8 @@ export function SirControls({ sir, sirRows, totalRows, disabled, onChange, child
   }
 
   return <div className={mode === 'sir' ? 'sir-bar on' : 'sir-bar'} role="group" aria-label="Таможенная стоимость">
-    <span className="sir-label">Таможенная стоимость</span>
+    {/* В одну строку с итогами — коротко «ТС» (ResultSummary.css). */}
+    <span className="sir-label" title="Таможенная стоимость"><span className="sir-label-full">Таможенная стоимость</span><span className="sir-label-short" aria-hidden="true">ТС</span></span>
     <div className="dir-seg" role="radiogroup" aria-label="Как считать таможенную стоимость">
       <button type="button" role="radio" aria-checked={mode === 'invoice'} className={mode === 'invoice' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'invoice' })} disabled={disabled} title="Таможенная стоимость = стоимость по инвойсу + доставка">По инвойсу</button>
       <button type="button" role="radio" aria-checked={mode === 'sir'} className={mode === 'sir' ? 'active' : undefined} onClick={() => onChange({ customsValueMode: 'sir' })} disabled={disabled} title="Таможенная стоимость = вес × стоимостной индикатор риска КГД (USD за 1 кг) × (1 − снижение) + доставка">По СУР</button>

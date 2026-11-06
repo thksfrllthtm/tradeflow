@@ -6,8 +6,11 @@ import { lookupNomenclature, normalizeTnvedCode, withNomenclatureRates } from '.
 // Этап 1: сопоставление колонок Excel с полями строки и сборка строк сметы.
 const mappingPatterns: Record<keyof GoodsMapping, string[]> = {
   name: ['Наименование', 'Название', 'Товар', '品名', '品类', '品种', '名称', 'name'],
-  name2: [],
-  name3: [],
+  data1: [],
+  data2: [],
+  data3: [],
+  data4: [],
+  data5: [],
   code: ['Код ТН ВЭД', 'Код ТНВЭД', 'ТН ВЭД', 'Код', '海关编码', '税号', 'HS Code', 'HS код', 'tnved', 'hs code'],
   pairs: ['Количество товара', 'Количество', 'Пары', 'Количество пар', '数量', '总双数', '双数', 'quantity', 'pieces', 'pairs'],
   places: ['Места', 'Количество мест', '件数', '箱数', 'places', 'carton'],
@@ -17,12 +20,10 @@ const mappingPatterns: Record<keyof GoodsMapping, string[]> = {
   pricePerPair: ['Цена за пару', 'Цена за единицу', 'Цена', '单价', 'unit price', 'price'],
 }
 
-export function emptyMapping(): GoodsMapping { return { name: '', name2: '', name3: '', code: '', pairs: '', places: '', pairsPerPlace: '', grossKg: '', netKg: '', pricePerPair: '' } }
+export function emptyMapping(): GoodsMapping { return { name: '', data1: '', data2: '', data3: '', data4: '', data5: '', code: '', pairs: '', places: '', pairsPerPlace: '', grossKg: '', netKg: '', pricePerPair: '' } }
 
 export const mappingFieldOptions: Array<{ value: keyof GoodsMapping; label: string }> = [
   { value: 'name', label: 'Наименование' },
-  { value: 'name2', label: 'Наименование 2' },
-  { value: 'name3', label: 'Наименование 3' },
   { value: 'code', label: 'Код ТН ВЭД' },
   { value: 'pairs', label: 'Количество товара' },
   { value: 'places', label: 'Количество мест' },
@@ -30,16 +31,37 @@ export const mappingFieldOptions: Array<{ value: keyof GoodsMapping; label: stri
   { value: 'grossKg', label: 'Вес брутто, кг' },
   { value: 'netKg', label: 'Вес нетто, кг' }, 
   { value: 'pricePerPair', label: 'Цена за единицу (пару), USD' },
+  { value: 'data1', label: 'Данные 1' },
+  { value: 'data2', label: 'Данные 2' },
+  { value: 'data3', label: 'Данные 3' },
+  { value: 'data4', label: 'Данные 4' },
+  { value: 'data5', label: 'Данные 5' },
 ]
+
+const DATA_FIELDS = ['data1', 'data2', 'data3', 'data4', 'data5'] as const
+
+// «Данные» строки: значения колонок data1…data5 с подписью из заголовка колонки («Материал: сталь»); у колонки
+// без заголовка («Колонка 5») — только значение. Пустые ячейки пропускаются.
+export function rowDetails(values: Record<string, string>, mapping: GoodsMapping): string[] {
+  return DATA_FIELDS.flatMap((field) => {
+    const header = mapping[field]
+    const value = header ? (values[header] ?? '').trim() : ''
+    if (!value) return []
+    return [/^Колонка \d+$/.test(header) ? value : `${header}: ${value}`]
+  })
+}
+
+// Сохранённое раньше сопоставление: «Наименование 2/3» (name2, name3) стали «Данные 1/2».
+export function upgradeLegacyMapping(mapping: GoodsMapping & { name2?: string; name3?: string }): GoodsMapping {
+  const { name2, name3, ...rest } = mapping
+  return { ...rest, data1: rest.data1 || name2 || '', data2: rest.data2 || name3 || '' }
+}
 
 export function buildGloveItems(rows: GoodsParseRow[], images: { sourceRow: number; data: string; mimeType: string }[], mapping: GoodsMapping, packageWeightKg: string, offset: number): GoodsItemInput[] {
   const included = rows.filter((row) => row.included)
   const items = included.map((row, index): GoodsItemInput => {
-    // Несколько колонок наименования: первое непустое — наименование строки, остальные (если
-    // отличаются) — дополнительные: по ним ИИ подбирает код и ищется тот же товар в базе.
-    const names = [...new Set([mapping.name, mapping.name2, mapping.name3].filter(Boolean).map((header) => (row.values[header] ?? '').trim()).filter(Boolean))]
-    const name = names[0] ?? mappedValue(row.values, mapping.name, mappingPatterns.name)
-    const otherNames = names.slice(1)
+    const name = mappedValue(row.values, mapping.name, mappingPatterns.name)
+    const details = rowDetails(row.values, mapping)
     const code = mappedValue(row.values, mapping.code, mappingPatterns.code)
     const rowImages = images.filter((candidate) => candidate.sourceRow === row.sourceRow)
     const pairs = mappedValue(row.values, mapping.pairs, mappingPatterns.pairs)
@@ -49,7 +71,7 @@ export function buildGloveItems(rows: GoodsParseRow[], images: { sourceRow: numb
     const netKg = mappedValue(row.values, mapping.netKg, mappingPatterns.netKg)
     const price = excelPrice(mappedValue(row.values, mapping.pricePerPair, mappingPatterns.pricePerPair))
     return {
-      id: rowId(row.sourceRow, index + offset), sourceRow: row.sourceRow, name, supplierName: name, ...(otherNames.length ? { otherNames } : {}), standardName: '', code,
+      id: rowId(row.sourceRow, index + offset), sourceRow: row.sourceRow, name, supplierName: name, ...(details.length ? { details } : {}), standardName: '', code,
       pairs, places, pairsPerPlace, grossKg, grossWeightUnit: grossKg ? 'kg' : '', netKg, netWeightUnit: netKg ? 'kg' : '', netSource: netKg ? 'excel' : '', packageWeightKg,
       coefficient: '', deliveryUsd: '', deliveryManual: false, deliveryIncluded: false, excluded: false, exclusionReason: '',
       deliveryAlreadyInCost: false,

@@ -258,7 +258,7 @@ export function TranslatorDocumentPage({ user, documentId, onLogout }: { user: U
       <PageHead
         back={<Link className="secondary tr-back" href={paths.translator()}>← Все документы</Link>}
         title={<>{doc?.name ?? 'Документ'}{doc && <span className={`badge tr-status ${documentStatusTone[doc.status]}`}>{documentStatusLabels[doc.status]}</span>}</>}
-        subtitle={doc && <>{languageLabel(doc.sourceLang)} → {languageLabel(doc.targetLang)} · загрузил {doc.createdByName || '—'} {formatRuDate(doc.createdAt.slice(0, 10))} · сегментов: {doc.segmentCount}</>}
+        subtitle={doc && <>{languageLabel(doc.sourceLang)} → {languageLabel(doc.targetLang)} · загрузил {doc.createdByName || '—'} <time dateTime={doc.createdAt}>{formatRuDate(doc.createdAt.slice(0, 10))}</time> · сегментов: {doc.segmentCount}</>}
         actions={doc && <>
           {canDelete && <button type="button" className="danger" onClick={() => void remove()} disabled={busy || translating} title="Удалить документ вместе с переводом">Удалить</button>}
           <button type="button" className="secondary" onClick={() => void download('target')} disabled={busy || done === 0} title="Исходный документ, где текст заменён переводом">Скачать перевод</button>

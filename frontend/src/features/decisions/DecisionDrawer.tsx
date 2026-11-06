@@ -88,8 +88,8 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
     {decision
       ? <span className="dc-head-meta">
         <span className={`status-dot ${decisionStatusTones[decision.status]} dc-status ${decision.status}`}>{decisionStatusLabels[decision.status]}</span>
-        <span>{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · {formatRuDate(decision.createdAt.slice(0, 10))}</span>
-        {decision.verifiedByName && decision.verifiedAt && <span>проверил {decision.verifiedByName} · {formatRuDate(decision.verifiedAt.slice(0, 10))}</span>}
+        <span>{decisionSourceLabels[decision.source]}{decision.createdByName && ` · ${decision.createdByName}`} · <time dateTime={decision.createdAt}>{formatRuDate(decision.createdAt.slice(0, 10))}</time></span>
+        {decision.verifiedByName && decision.verifiedAt && <span>проверил {decision.verifiedByName} · <time dateTime={decision.verifiedAt}>{formatRuDate(decision.verifiedAt.slice(0, 10))}</time></span>}
       </span>
       : <span className="dc-head-meta">Загрузка…</span>}
   </>
@@ -165,7 +165,7 @@ export function DecisionDrawer({ id, admin, onClose, onChanged }: Props) {
 
           {savedDocuments && <section className="drawer-section">
             <h3>Документы для ввоза</h3>
-            <p className="dc-sub">Ответ агента от {formatRuDate(savedDocuments.savedAt)}{savedDocuments.product ? ` по товару «${savedDocuments.product}»` : ''} — для другого товара под этим кодом меры могут отличаться.</p>
+            <p className="dc-sub">Ответ агента от <time dateTime={savedDocuments.savedAt}>{formatRuDate(savedDocuments.savedAt)}</time>{savedDocuments.product ? ` по товару «${savedDocuments.product}»` : ''} — для другого товара под этим кодом меры могут отличаться.</p>
             <DocumentsAnswer result={savedDocuments} />
           </section>}
 

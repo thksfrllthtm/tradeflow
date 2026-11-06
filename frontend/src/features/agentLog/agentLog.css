@@ -106,3 +106,4 @@ span.alog-mark { display: flex; font-size: var(--fs-sm); line-height: 1.4; }
   .alog-item { flex-direction: column; }
 }
 .alog-more { font-family: var(--tf-num); }
+.alog-item .alog-detail { color: var(--tf-text-2); font-size: var(--fs-sm); }

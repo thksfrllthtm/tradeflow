@@ -47,9 +47,9 @@
 .sc-rows thead { position: sticky; top: 0; z-index: 1; }
 .sc-rows thead th { background: var(--tf-bg); color: var(--tf-text-2); font-size: var(--fs-sm); font-weight: 600; }
 .sc-rows thead tr:first-child th { padding-block: 6px 2px; border-bottom: 0; color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 600; }
-.sc-rows thead th.sc-span { text-align: center; box-shadow: inset 1px 0 0 var(--tf-border); }
+.sc-rows thead th.sc-span { text-align: center; border-left: 1px solid var(--tf-border); }
 .sc-rows thead th.sc-sir { background: var(--tf-warn-bg); }
-.sc-rows .sc-start { box-shadow: inset 1px 0 0 var(--tf-border); }
+.sc-rows .sc-start { border-left: 1px solid var(--tf-border); }
 .sc-rows tbody tr:hover td { background: var(--xl-hover); }
 .sc-rows tbody tr:hover td.sc-sir { background: var(--tf-warn-bg); }
 .sc-rows td small { display: block; margin-top: 1px; font-size: var(--fs-xs); font-weight: 600; }

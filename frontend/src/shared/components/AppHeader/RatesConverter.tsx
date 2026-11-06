@@ -105,7 +105,7 @@ export function RatesConverter({ rates }: { rates: TodayRate[] }) {
         <CurrencySelect value={to} codes={codes} rates={rates} label="В валюту" onChange={setTo} />
       </div>
       <output className="app-header-converter-result">{result === null ? '—' : `${amountText(result)} ${to}`}</output>
-      <small>{unit !== null && from !== to && `1 ${from} = ${amountText(unit)} ${to} · `}по курсу НБРК на {formatRuDate(rates[0].date)}</small>
+      <small>{unit !== null && from !== to && `1 ${from} = ${amountText(unit)} ${to} · `}по курсу НБРК на <time dateTime={rates[0].date.slice(0, 10)}>{formatRuDate(rates[0].date)}</time></small>
     </div>}
   </details>
 }

@@ -71,7 +71,10 @@ export async function typeInCell(page: Page, x: number, y: number, text: string)
 export async function mapColumn(page: Page, header: string, field: string) {
   await page.locator('.xp-host thead td.xp-pick').filter({ hasText: new RegExp(`^${header}$`) }).click()
   const menu = page.getByRole('listbox', { name: `Что в колонке «${header}»` })
-  if (field === 'Основное') await menu.getByRole('button', { name: 'Наименование' }).click()
+  // «Данные: Первое» — сначала раскрыть группу «Данные», потом пункт внутри.
+  const [group, sub] = field.startsWith('Данные: ') ? ['Данные', field.slice(8)] : ['', field]
+  if (group) await menu.getByRole('button', { name: group }).click()
+  field = sub
   await menu.getByRole('option', { name: new RegExp(`^${field}`) }).click()
   await expect(menu).toBeHidden()
 }

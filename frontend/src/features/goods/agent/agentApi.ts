@@ -18,6 +18,8 @@ export type AgentItem = {
   name: string
   supplierName: string
   otherNames?: string[]
+  // «Данные» из файла (свойства товара с подписью колонки) — для подбора кода.
+  details?: string[]
   code: string
   quantity: string
   places: string

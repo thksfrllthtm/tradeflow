@@ -61,7 +61,7 @@ test('новая смета: Excel с фото → колонки → прове
   await page.keyboard.press('Escape')
 
   // Колонки: щелчок по заголовку и поле сметы.
-  await mapColumn(page, 'Наименование', 'Основное')
+  await mapColumn(page, 'Наименование', 'Наименование')
   await mapColumn(page, 'Код ТН ВЭД', 'Код ТН ВЭД')
   await mapColumn(page, 'Количество', 'Кол-во, шт / пар')
   await mapColumn(page, 'Брутто', 'Брутто, кг')

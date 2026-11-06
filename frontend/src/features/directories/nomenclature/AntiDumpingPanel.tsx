@@ -42,7 +42,7 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
         <h2>Антидемпинговые меры ЕАЭС <span className="badge error">{measures.length}</span></h2>
         <p>
           Пошлина сверх ЕТТ, % от таможенной стоимости, для товара из указанной страны происхождения. В смете начисляется ставка «для прочих производителей» по полю «Страна».
-          {source && <> Источник: <a href={source.registryUrl} target="_blank" rel="noreferrer">реестр ЕЭК</a> · {source.source === 'eec' ? `обновлено ${formatRuDate(source.importedAt.slice(0, 10))}${source.importedByName ? `, ${source.importedByName}` : ''}` : 'данные из файла программы (реестр на 02.10.2026)'}</>}
+          {source && <> Источник: <a href={source.registryUrl} target="_blank" rel="noreferrer">реестр ЕЭК</a> · {source.source === 'eec' ? <>обновлено <time dateTime={source.importedAt}>{formatRuDate(source.importedAt.slice(0, 10))}</time>{source.importedByName ? `, ${source.importedByName}` : ''}</> : <>данные из файла программы (реестр на <time dateTime="2026-10-02">02.10.2026</time>)</>}</>}
         </p>
       </div>
       {admin && <button type="button" className="secondary" onClick={() => void refresh()} disabled={busy}>{busy ? 'Обновляем…' : 'Обновить из реестра ЕЭК'}</button>}
@@ -66,7 +66,7 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
           <td className="dump-rates">{measure.countries.map((country) => <span key={country}><em>{countryNames[country] ?? country}</em><b>{percentText(measure.rates[country] ?? '')}</b></span>)}</td>
           <td className="dump-codes">{codes.slice(0, expanded ? codes.length : 6).map((code) => <button key={code} type="button" onClick={() => onPickCode(code)} title={code.length === 10 ? 'Найти код в номенклатуре' : 'Товарная позиция: мера на часть её товаров — найти коды позиции'} className={code.length === 10 ? '' : 'heading'}>{formatMeasureCode(code)}</button>)}
             {!expanded && codes.length > 6 && <button type="button" className="dump-codes-more" onClick={() => setOpen(measure.number)}>ещё {codes.length - 6}</button>}</td>
-          <td className="dump-dates">{measure.startDate && formatRuDate(measure.startDate)}<br />по {measure.endDate && formatRuDate(measure.endDate)}</td>
+          <td className="dump-dates">{measure.startDate && <time dateTime={measure.startDate.slice(0, 10)}>{formatRuDate(measure.startDate)}</time>}<br />по {measure.endDate && <time dateTime={measure.endDate.slice(0, 10)}>{formatRuDate(measure.endDate)}</time>}</td>
           <td className="dump-doc">{measure.documentUrl && <a href={measure.documentUrl} target="_blank" rel="noreferrer">Решение ЕЭК</a>}</td>
         </tr>
       })}</tbody>

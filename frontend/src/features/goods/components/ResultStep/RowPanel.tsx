@@ -37,6 +37,7 @@ type Props = {
 }
 
 const arrow = (d: string) => <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+const sparkle = <span className="rp-sparkle" aria-hidden="true">✦</span>
 
 // Панель выбранной строки справа (на узком экране — выезжающая): код и ставки, цена с пояснением ИИ,
 // количество и вес, расчёт по строке, включение строки в расчёт.
@@ -69,23 +70,22 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
   ]
 
   return <aside className="rp" aria-label={`Строка ${index + 1}`}>
+    {/* Наименование — одной строкой с многоточием: целиком оно в ячейке «Товар» и в подсказке. */}
     <div className="rp-head">
-      <span>Строка {position} из {count}</span>
+      <div className="rp-head-text">
+        <span>Строка {position} из {count}</span>
+        <h2 title={names.sub ? `${names.main} / ${names.sub}` : names.main}>{names.main}</h2>
+      </div>
       <button type="button" className="icon-button ghost" onClick={onPrev} disabled={!onPrev} title="Предыдущая строка (↑)" aria-label="Предыдущая строка">{arrow('M4 10l4-4 4 4')}</button>
       <button type="button" className="icon-button ghost" onClick={onNext} disabled={!onNext} title="Следующая строка (↓)" aria-label="Следующая строка">{arrow('M4 6l4 4 4-4')}</button>
       <button type="button" className="icon-button ghost" onClick={onClose} title="Закрыть панель" aria-label="Закрыть панель строки">{arrow('M4.5 4.5l7 7M11.5 4.5l-7 7')}</button>
-    </div>
-
-    <div className="rp-title">
-      <h2>{names.main}</h2>
-      {names.sub && <p>{names.sub}</p>}
     </div>
 
     <section className="rp-block">
       <div className="rp-block-head">
         <h3>Код ТН ВЭД</h3>
         {code && <span className="rp-head-actions">
-          {onAgent && <button type="button" className="button-link" onClick={onAgent} disabled={loading}>Чат ИИ</button>}
+          {onAgent && <button type="button" className="secondary sm rp-agent" onClick={onAgent} disabled={loading} title="Чат подбора кода ТН ВЭД с ИИ по этой строке">{sparkle}Подбор кода ИИ</button>}
           <button type="button" className="button-link" onClick={onChangeCode} disabled={loading}>Сменить</button>
         </span>}
       </div>
@@ -93,7 +93,7 @@ export function RowPanel({ item, source, index, problems, antiDumpingInfo, posit
       {code && codeProblem && <p className="rp-field-error">{codeProblem.text}</p>}
       {!code && <div className="rp-set">
         <button type="button" className="secondary" onClick={onChangeCode} disabled={loading}>Указать код</button>
-        {onAgent && <button type="button" className="secondary" onClick={onAgent} disabled={loading} title="Подобрать код ТН ВЭД с ИИ: чат по строке с фото и наименованиями">Подобрать ИИ</button>}
+        {onAgent && <button type="button" className="secondary rp-agent" onClick={onAgent} disabled={loading} title="Подобрать код ТН ВЭД с ИИ: чат по строке с фото и наименованиями">{sparkle}Подобрать ИИ</button>}
       </div>}
       {description && <p className="rp-muted">{description}</p>}
       {(duty || vat) && <p className="rp-chips">{duty && <span>Пошлина {duty}</span>}{vat && <span>НДС {vat}</span>}</p>}

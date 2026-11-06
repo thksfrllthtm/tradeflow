@@ -97,8 +97,10 @@ type GoodsItemInput struct {
 	ProductDirectoryID *int64 `json:"productDirectoryId,omitempty"`
 	Name               string `json:"name"`
 	SupplierName       string `json:"supplierName"`
-	// OtherNames — другие колонки наименования из файла («Наименование 2/3»): для подбора кода.
+	// OtherNames — другие колонки наименования из файла (у старых смет — «Наименование 2/3»): для подбора кода.
 	OtherNames []string `json:"otherNames,omitempty"`
+	// Details — «Данные» из файла: свойства товара с подписью колонки («Материал: сталь») — для подбора кода ИИ.
+	Details []string `json:"details,omitempty"`
 	// AntiDumpingChoice — вариант антидемпинга, выбранный сотрудником ("none" — не начислять).
 	AntiDumpingChoice string   `json:"antiDumpingChoice,omitempty"`
 	StandardName      string   `json:"standardName"`

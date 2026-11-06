@@ -16,7 +16,7 @@ export const NUMBER_FIELDS: NumberField[] = ['places', 'pairsPerPlace', 'pairs',
 export const SHEET_COLUMNS: SheetColumn[] = [
   { key: 'photo', title: 'Фото', width: 58, type: 'text', readOnly: true, align: 'center' },
   { key: 'name', title: 'Товар', width: 260, type: 'text', align: 'left' },
-  { key: 'code', title: 'Код ТН ВЭД', width: 176, type: 'text', align: 'left', hint: 'Код можно ввести или вставить; ставки подставятся из номенклатуры. Значки справа: справочник, подбор ИИ, база решений' },
+  { key: 'code', title: 'Код ТН ВЭД', width: 204, type: 'text', align: 'left', hint: 'Код можно ввести или вставить; ставки подставятся из номенклатуры. Значки справа: справочник, подбор ИИ, база решений' },
   { key: 'duty', title: 'Пошлина', width: 92, type: 'text', readOnly: true, align: 'right', hint: 'Ставка пошлины ЕТТ по коду из номенклатуры ТН ВЭД ЕАЭС' },
   { key: 'places', title: 'Места', width: 76, type: 'text', align: 'right', hint: 'Количество мест' },
   { key: 'pairsPerPlace', title: 'Шт. в месте', width: 96, type: 'text', align: 'right', hint: 'Количество товара в одном месте' },

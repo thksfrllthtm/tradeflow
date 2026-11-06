@@ -28,7 +28,7 @@ export function EmployeeEstimatesPanel({ employee, onClose }: { employee: Employ
           {items.map((estimate) => <li key={estimate.id}>
             <Link href={paths.goods(estimate.id)}>
               <span className="emp-estimate-top"><strong>{estimateName(estimate)}</strong><i className={estimate.status === 'Рассчитано' ? 'badge ok' : 'badge'}>{estimate.status}</i></span>
-              <small>{estimateSubtitle(estimate)} · {formatRuDate(estimate.assessmentDate)} · изменена {formatRuDate(estimate.updatedAt.slice(0, 10))}</small>
+              <small>{estimateSubtitle(estimate)} · <time dateTime={estimate.assessmentDate.slice(0, 10)}>{formatRuDate(estimate.assessmentDate)}</time> · изменена <time dateTime={estimate.updatedAt}>{formatRuDate(estimate.updatedAt.slice(0, 10))}</time></small>
             </Link>
           </li>)}
         </ul>}

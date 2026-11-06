@@ -71,7 +71,7 @@ export function EstimatesSidebar({ title, estimates, selectedId, docked, loading
               <span className="es-item-sub">
                 <span className={estimate.client.trim() ? undefined : 'es-none'}>{estimateSubtitle(estimate)}{estimate.ownerName && <em className="es-owner" title="Сотрудник, создавший смету"> · {estimate.ownerName}</em>}</span>
                 {/* Дата уже в своём названии («Поставка · 21.10.2026») — второй раз не пишем. */}
-                {!name.includes(date) && <span>{date}</span>}
+                {!name.includes(date) && <span><time dateTime={estimate.assessmentDate.slice(0, 10)}>{date}</time></span>}
               </span>
             </Link>
             <button type="button" className="icon-button ghost sm danger es-remove" onClick={() => onRemove(estimate)} title="Удалить смету" aria-label={`Удалить смету ${name}`}>×</button>

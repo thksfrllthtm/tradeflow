@@ -437,7 +437,7 @@ export function ReferenceChat() {
               <button type="button" className="rc-history-open" tabIndex={index === rovingIndex ? 0 : -1} onFocus={() => setHistoryFocus(index)} onKeyDown={(event) => onHistoryKey(event, index, item.id)} onClick={() => void open(item.id)} title={item.title} aria-describedby="rc-history-help" aria-current={session?.id === item.id ? 'true' : undefined} aria-keyshortcuts="Delete">
                 <span className="rc-history-name"><KindIcon kind={item.kind} label={kindLabels[item.kind]} />{item.hasPhoto && <svg className="rc-history-photo" width="12" height="12" viewBox="0 0 12 12" aria-label="с фото" role="img" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1.5" y="3" width="9" height="7" rx="1.5" /><circle cx="6" cy="6.5" r="1.6" /><path d="M4.2 3 5 1.8h2L7.8 3" /></svg>}{item.title}</span>
                 {item.shared && <span className="badge info rc-history-from"><PersonIcon />Чат {authorName(item.sharedBy)}</span>}
-                <small>{historyState(item)} ·{new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</small>
+                <small>{historyState(item)} ·<time dateTime={item.updatedAt}>{new Date(item.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</time></small>
               </button>
               <button type="button" className="icon-button ghost sm rc-history-remove" tabIndex={-1} onClick={() => void remove(item.id)} aria-label={`Удалить вопрос «${item.title}»`} title="Удалить (Delete)">×</button>
             </li>)}</ul>

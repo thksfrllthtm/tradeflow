@@ -35,11 +35,9 @@
   .rv-toolbar { flex-wrap: wrap; }
   .rv-toolbar .rv-params { flex-basis: 100%; }
 }
-.rv-save { display: grid; justify-items: end; max-width: 300px; }
-.rv-save-state { max-width: 300px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
+.rv-save-state { max-width: 300px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; font-family: var(--tf-num); }
 .rv-save-state.failed { color: var(--tf-error); font-weight: 600; }
 .rv-save-state.unsaved { padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 500; }
-.rv-save-nocode { color: var(--tf-error); font-size: var(--fs-sm); font-weight: 500; }
 
 /* Параметры: все значения видны сразу; по щелчку — список, где каждый параметр правится в своём поле. */
 .rv-params { position: relative; flex: 1 1 0; min-width: 0; }
@@ -48,7 +46,7 @@
 .rv-params-item { display: inline-grid; gap: 2px; padding: 0 16px; border-left: 1px solid var(--tf-border-inner); line-height: 1.25; white-space: nowrap; }
 .rv-params-item:first-child { padding-left: 4px; border-left: 0; }
 .rv-params-item > span { color: var(--tf-muted); font-size: var(--fs-xs); }
-.rv-params-item b { font-size: var(--fs-md); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.rv-params-item b { color: var(--tf-text); font-size: var(--fs-md); font-weight: 400; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rv-params-item.empty b { color: var(--tf-muted); font-weight: 400; }
 .rv-params-item.warn b { color: var(--tf-error); }
 .rv-step .rv-params-edit { display: inline-flex; align-items: center; gap: 6px; height: 30px; margin: 0 0 0 8px; padding: 0 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-green); font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; }
@@ -67,9 +65,9 @@
 .rv-param-more, .rv-param-note { grid-column: 1 / -1; }
 .rv-param-more { padding-bottom: 4px; }
 .rv-param-note { margin: 6px 0 6px; padding-right: 8px; color: var(--tf-muted); font-size: var(--fs-sm); text-align: right; }
-.rv-param-note b { color: var(--tf-text); font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
+.rv-param-note b { color: var(--tf-text); font-weight: 500; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .rv-param-op { padding: 0 2px; color: var(--tf-muted); font-size: var(--fs-sm); }
-.rv-param-static { padding-right: 8px; font-size: var(--fs-md); font-weight: 600; }
+.rv-param-static { padding-right: 8px; font-size: var(--fs-md); font-weight: 400; }
 .rv-param input, .rv-param select { box-sizing: border-box; width: 120px; height: 30px; margin: 0; padding: 0 8px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; font-variant-numeric: tabular-nums; font-family: var(--tf-num); text-align: right; text-align-last: right; cursor: text; }
 .rv-param select, .rv-param input[type="date"] { cursor: pointer; }
 .rv-param input:hover, .rv-param select:hover { border-color: var(--tf-muted); }
@@ -115,7 +113,6 @@
 .rv-next kbd { padding: 0 4px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-sm); background: var(--tf-chip); color: var(--tf-muted); font: inherit; font-size: var(--fs-xs); line-height: 14px; }
 .rv-check-source { max-width: 340px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
 .rv-check-source.past { padding: 2px 8px; border-radius: var(--tf-radius); background: var(--tf-info-bg); color: var(--tf-info); font-weight: 500; }
-.rv-panel .rv-search { flex: none; width: 220px; }
 
 /* Меню «⋯»: строка, колонки, вид, очистить смету. */
 .rv-more { position: relative; }
@@ -146,15 +143,47 @@
 @media (max-width: 760px) {
   .goods-calculator-embedded.is-review .goods-page { padding: 16px; }
 }
-@media (max-width: 1100px) {
-  .rv-panel-end { margin-left: 0; }
-}
 
 /* Открыта панель «Подбор кода»: таблице нужна высота. Прячем то, что дублирует панель или вкладки:
    «✓ Все коды указаны…» (видно по «Требуют
    внимания 0») и метку прошлого расчёта. Панель фильтров — в одну строку. Проблемы-фильтры остаются. */
 .goods-estimates-app:has(.ag-panel) .rv-all-ok,
 .goods-estimates-app:has(.ag-panel) .rv-check-source { display: none; }
-.goods-estimates-app:has(.ag-panel) .rv-panel { padding-block: 8px; }
-.goods-estimates-app:has(.ag-panel) .rv-panel .rv-search { width: 180px; }
 .rv-param select { padding-right: 32px; }
+
+/* ── Этап «Проверка строк»: всё управление — в два ряда ── */
+/* Ряд расчёта: параметры одной строкой (обрезаются с «…», полный список — в подсказке) и справа статус
+   сохранения, «← Файл», «Сохранить», «Рассчитать →». Узко — кнопки переносятся под параметры. */
+.rv-step .rv-calcbar { flex-wrap: wrap; padding: 4px 8px 4px 12px; }
+.rv-calcbar .rv-save-state { max-width: 220px; }
+.rv-pline { display: flex; flex: 1 1 360px; align-items: center; gap: 4px; min-width: 0; }
+.rv-pline .rv-params-summary { display: block; flex: 0 1 auto; min-width: 0; min-height: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-pline .rv-params-item { display: inline; padding: 0; border: 0; }
+.rv-pline .rv-params-item + .rv-params-item::before { content: "·"; margin: 0 8px; color: var(--tf-faint); }
+.rv-pline .rv-params-item.warn b { padding: 0 4px; border-radius: var(--tf-radius-sm); background: var(--tf-error-bg); }
+.rv-step .rv-pline .rv-params-edit { flex: none; height: 28px; margin: 0; padding: 0 8px; border-color: transparent; background: transparent; }
+
+/* Ряд над листом: вкладки, пилюли проблем, «↓ F8» … справа подбор ИИ, поиск, «⋯». Карточка уже 1300px
+   (открыта панель подбора, ноутбук) — пилюли уходят отдельной ровной строкой под ряд, не обрезаются. */
+.rv-step > .rv-card { container: rv-card / inline-size; }
+.rv-panel:not(.selection) { flex-wrap: nowrap; }
+.rv-panel .rv-chips { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; padding: 2px; }
+.rv-panel .rv-chips:empty { display: none; }
+.rv-all-ok { white-space: nowrap; }
+.rv-step .rv-next { flex: none; gap: 4px; padding-inline: 8px; }
+.rv-panel-end { flex: 0 1 auto; }
+.rv-panel-end > * { flex: none; }
+.rv-panel .rv-check-source { flex: 0 1 auto; min-width: 0; }
+.rv-panel .rv-search { flex: 0 1 220px; width: auto; min-width: 160px; }
+@container rv-card (max-width: 1300px) {
+  .rv-panel:not(.selection) { flex-wrap: wrap; }
+  .rv-panel .rv-chips { flex-basis: 100%; order: 10; }
+}
+
+/* Сводка параметров: подпись — мелко и серым, заданное значение — тёмным и полужирным, единица — серым,
+   незаданное («—», «не учитывается») — бледным. Так видно, что задано, а что нет. */
+.rv-pline .rv-params-item > span { color: var(--tf-muted); font-size: var(--fs-sm); }
+.rv-pline .rv-params-item b { color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; }
+.rv-pline .rv-params-item b small { color: var(--tf-muted); font-family: var(--tf-font); font-size: var(--fs-sm); font-weight: 400; }
+.rv-pline .rv-params-item.empty b { color: var(--tf-faint); font-weight: 400; }
+.rv-pline .rv-params-item.warn b { color: var(--tf-error); font-weight: 500; }

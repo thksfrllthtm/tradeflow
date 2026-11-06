@@ -9,7 +9,7 @@ export function AuthRates() {
   if (!rates || rates.length === 0) return null
   const date = rates[0].date
   return <section className="auth-rates" aria-label="Курс Национального банка РК" title="Официальный курс Национального банка РК">
-    <span className="auth-rates-title">Курс НБРК{date && ` на ${formatRuDate(date)}`}</span>
+    <span className="auth-rates-title">Курс НБРК{date && <> на <time dateTime={date.slice(0, 10)}>{formatRuDate(date)}</time></>}</span>
     <div className="auth-rates-list">
       {rates.map((rate) => <span key={rate.currency} className="auth-rate"><small>1 {rate.currency}</small><b>{formatRuNumber(rate.rate)} KZT</b></span>)}
     </div>

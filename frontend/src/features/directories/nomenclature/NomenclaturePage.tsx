@@ -106,7 +106,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
     <AppHeader user={user} section="nomenclature" onLogout={onLogout} />
     <section className="directory-page nom-page">
       <PageHead title="Номенклатура ТН ВЭД ЕАЭС"
-        subtitle={source ? <>Источник: {source.source}{source.actualDate && <> · данные на {formatRuDate(source.actualDate)}</>} · загружено {formatRuDate(source.importedAt.slice(0, 10))}{source.importedByName && `, ${source.importedByName}`}</> : 'Все коды со ставками ввозной пошлины Единого таможенного тарифа.'}
+        subtitle={source ? <>Источник: {source.source}{source.actualDate && <> · данные на <time dateTime={source.actualDate.slice(0, 10)}>{formatRuDate(source.actualDate)}</time></>} · загружено <time dateTime={source.importedAt}>{formatRuDate(source.importedAt.slice(0, 10))}</time>{source.importedByName && `, ${source.importedByName}`}</> : 'Все коды со ставками ввозной пошлины Единого таможенного тарифа.'}
         actions={<>
           {codeCheck.button}
           <button type="button" className={antiDumpingOpen ? 'secondary active' : 'secondary'} onClick={() => { if (!antiDumpingOpen) closePanels(); setAntiDumpingOpen(!antiDumpingOpen) }} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>

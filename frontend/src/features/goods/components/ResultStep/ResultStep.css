@@ -32,7 +32,7 @@
 .rs-titlebar .estimate-bar-sub { color: var(--tf-muted); font-size: var(--fs-sm); }
 .rs-titlebar .estimate-bar-editor > summary { color: var(--tf-green); font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 2px; }
 .rs-titlebar .est-steps { margin-left: auto; }
-.rs-save-state { max-width: 280px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-md); text-overflow: ellipsis; white-space: nowrap; }
+.rs-save-state { max-width: 280px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-md); text-overflow: ellipsis; white-space: nowrap; font-family: var(--tf-num); }
 .rs-save-state.failed { color: var(--tf-error); font-weight: 600; }
 
 /* ── Меню «⋯» ── */
@@ -50,7 +50,13 @@
 /* ── Таблица и панель ── */
 /* --rs-avail — высота от верха блока до низа окна за вычетом подписи под ним (--rs-* ставит ResultStep). */
 .rs-layout { --rs-avail: max(360px, calc(100vh - var(--rs-top, 0px) - var(--rs-after, 0px))); display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
-.rs-layout.with-panel { grid-template-columns: minmax(0, 1fr) clamp(380px, 30vw, 440px); }
+/* Панель строки — колонкой справа от 1440px; уже — выезжает поверх таблицы (@media ниже). */
+@media (min-width: 1440px) {
+  .rs-layout.with-panel { grid-template-columns: minmax(0, 1fr) clamp(360px, 28vw, 440px); }
+  /* Справа одна панель: открыт «Подбор кода» (fixed, ширина --ag-width у <html>) — шаг оставляет под него место.
+     Панель начинается под шапкой сайта, поэтому место — у всего шага, включая строку с названием сметы. */
+  .rs-step.with-agent { margin-right: calc(var(--ag-width, 440px) + 8px); }
+}
 /* overflow: clip, а не hidden — иначе шапка таблицы прилипала бы к карточке, а не к окну. */
 .rs-card { min-width: 0; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); overflow: clip; }
 .rs-backdrop { display: none; }
@@ -95,14 +101,15 @@
 .rs-state.warn { background: var(--tf-warn-dot); color: var(--tf-text); }
 .rs-state.off { background: var(--tf-chip); color: var(--tf-muted); }
 /* Товар забирает всё свободное место; длинное название — с многоточием. */
-.goods-page .rs-table .rs-name { min-width: 220px; text-align: left; white-space: normal; }
-/* Обычный вид — таблица на всю ширину карточки: № 36 | значок 22 | Товар — всё остальное (не уже 240px) | Код 150 |
-   Кол-во 110 | Цена 110 | Стоимость 136 | К оплате 160. Название обрезается многоточием внутри своей ячейки. */
-.goods-page .rs-table-wrap:not(.wide) .rs-table { table-layout: fixed; min-width: 864px !important; }
-.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-code { width: 150px; }
-.goods-page .rs-table-wrap:not(.wide) .rs-table th:is(.rs-qty, .rs-price-col, .rs-sir-col) { width: 110px; }
-.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-usd { width: 136px; }
-.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-pay { width: 160px; }
+.goods-page .rs-table .rs-name { min-width: 160px; text-align: left; white-space: normal; }
+/* Обычный вид — таблица на всю ширину карточки: № 36 | значок 22 | Товар — всё остальное (не уже 160px) | Код 144 |
+   Кол-во 88 | Цена 112 | Стоимость 140 | К оплате 136 — сумма 838px. Название обрезается многоточием в своей ячейке. */
+.goods-page .rs-table-wrap:not(.wide) .rs-table { table-layout: fixed; min-width: 838px !important; }
+.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-code { width: 144px; }
+.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-qty { width: 88px; }
+.goods-page .rs-table-wrap:not(.wide) .rs-table th:is(.rs-price-col, .rs-sir-col) { width: 112px; }
+.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-usd { width: 140px; }
+.goods-page .rs-table-wrap:not(.wide) .rs-table th.rs-pay { width: 136px; }
 .rs-name-main, .rs-reason { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-name-main { font-weight: 400; }
 .goods-page .rs-table .rs-name-sub { color: var(--tf-muted); font-weight: 400; }
@@ -132,10 +139,9 @@
 .rp { position: sticky; top: 16px; display: block; max-height: min(calc(100vh - 32px), var(--rs-avail, 100vh)); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
 .rp > * { margin: 0; padding: 16px 20px; }
 .rp > * + * { border-top: 1px solid var(--tf-border-inner); }
-.rp-head { display: flex; align-items: center; gap: 2px; padding: 8px 12px 8px 20px; color: var(--tf-muted); font-size: var(--fs-md); }
-.rp-head span { flex: 1 1 auto; }
-.rp-title h2 { margin: 0; color: var(--tf-text); font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.rp-title p { margin: 4px 0 0; color: var(--tf-muted); font-size: var(--fs-md); overflow-wrap: anywhere; }
+.rp-head { display: flex; align-items: center; gap: 2px; padding: 8px 12px 8px 20px; color: var(--tf-muted); font-size: var(--fs-sm); }
+.rp-head-text { display: grid; flex: 1 1 auto; min-width: 0; }
+.rp-head h2 { margin: 0; overflow: hidden; color: var(--tf-text); font-size: var(--fs-base); font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .rp-block { display: grid; gap: 8px; }
 .rp-block h3 { margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 600; }
 .rp-block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -159,10 +165,9 @@
 .rp-calc dt { color: var(--tf-text-2); }
 .rp-calc dd { margin: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 
-/* Уже 1100px: панель строки — выезжающая справа поверх таблицы. */
-@media (max-width: 1100px) {
-  .rs-layout.with-panel { grid-template-columns: minmax(0, 1fr); }
-  .rp { position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-overlay); width: min(440px, 100vw); max-height: none; border-width: 0 0 0 1px; border-radius: 0; box-shadow: -12px 0 32px rgba(23, 32, 27, .16); }
+/* Уже 1440px: панель строки — выезжающая справа поверх таблицы. */
+@media (max-width: 1439px) {
+  .rp { position: fixed; top: 0; right: 0; bottom: 0; z-index: var(--z-overlay); width: min(clamp(360px, 28vw, 440px), 100vw); max-height: none; border-width: 0 0 0 1px; border-radius: 0; box-shadow: -12px 0 32px rgba(23, 32, 27, .16); }
   .rs-backdrop { position: fixed; inset: 0; z-index: var(--z-overlay); display: block; background: var(--tf-overlay); }
 }
 @media (max-width: 760px) {
@@ -188,7 +193,7 @@
 /* «Все колонки»: №, значок и «Товар» закреплены слева при горизонтальной прокрутке; «Товар» — не уже 240px. */
 .goods-page .rs-table-wrap.wide .rs-table .rs-num { position: sticky; left: 0; z-index: 2; }
 .goods-page .rs-table-wrap.wide .rs-table .rs-mark { position: sticky; left: 36px; z-index: 2; }
-.goods-page .rs-table-wrap.wide .rs-table .rs-name { position: sticky; left: 58px; z-index: 2; box-shadow: inset -1px 0 0 var(--tf-border); }
+.goods-page .rs-table-wrap.wide .rs-table .rs-name { position: sticky; left: 58px; z-index: 2; border-right-color: var(--tf-border); }
 .goods-page .rs-table-wrap.wide .rs-table th:is(.rs-num, .rs-mark, .rs-name) { z-index: 4; }
 .goods-page .rs-table-wrap.wide .rs-table tfoot :is(.rs-num, .rs-mark, .rs-name) { z-index: 3; }
 .rs-save-state.unsaved { padding: 2px 8px; border-radius: var(--tf-radius); background: var(--tf-warn-bg); color: var(--tf-warn-text); font-weight: 500; }
@@ -197,7 +202,7 @@
    Помещается — без прокрутки; нет — прокрутка только у таблицы. «Товар» закреплён слева, «К оплате» — справа. */
 /* Таблица — до низа окна (--rs-avail, --rs-around — у .rs-layout): строки прокручиваются внутри, шапка и
    «Итого» всегда на виду, полосы прокрутки — свои, у таблицы. */
-.rs-table-wrap { max-height: calc(var(--rs-avail) - var(--rs-around, 0px)); overflow: auto; scrollbar-width: thin; }
+.rs-table-wrap { height: calc(var(--rs-avail) - var(--rs-around, 0px)); overflow: auto; scrollbar-width: thin; }
 .goods-page .rs-table-wrap.wide .rs-table { table-layout: fixed; min-width: var(--rs-min) !important; }
 /* Узкие колонки: длинный заголовок («Стоимость, USD») переносится на вторую строку, а не обрезается. */
 .goods-page .rs-table-wrap.wide .rs-table th { white-space: normal; vertical-align: middle; }
@@ -211,13 +216,18 @@
 .goods-page .rs-table-wrap.wide .rs-table th.rs-tax { width: 112px; }
 .goods-page .rs-table-wrap.wide .rs-table th.rs-fee { width: 96px; }
 .goods-page .rs-table-wrap.wide .rs-table th.rs-pay { width: 136px; }
-.goods-page .rs-table-wrap.wide .rs-table .rs-pay { position: sticky; right: 0; z-index: 2; box-shadow: inset 1px 0 0 var(--tf-border); }
-.goods-page .rs-table-wrap.wide .rs-table th.rs-pay { z-index: 4; }
-.goods-page .rs-table-wrap.wide .rs-table tfoot .rs-pay { z-index: 3; }
+/* «К оплате» закреплена справа в обоих видах: главное число не уходит за край при прокрутке вбок. */
+.goods-page .rs-table .rs-pay { position: sticky; right: 0; z-index: 2; border-left: 1px solid var(--tf-border); }
+/* Граница перед «К оплате» — одна (у самой колонки), а не две рядом. */
+.goods-page .rs-table :is(td, th):has(+ .rs-pay) { border-right: 0; }
+.goods-page .rs-table th.rs-pay { z-index: 4; }
+.goods-page .rs-table tfoot .rs-pay { z-index: 3; }
 .goods-page .rs-table-wrap.wide .rs-table .rs-price { width: 64px; }
 
 
 /* Строка без кода в панели итога: «Указать код» и «Подобрать ИИ» рядом. */
 .rp-set { display: flex; flex-wrap: wrap; gap: 8px; }
-.rp-head-actions { display: inline-flex; gap: 8px; }
+.rp-head-actions { display: inline-flex; align-items: center; gap: 8px; }
+.rp-agent { display: inline-flex; align-items: center; gap: 6px; }
+.rp-sparkle { color: var(--tf-ai); }
 .goods-page .rs-table td:not(.rs-name):not(.rs-mark):not(.rs-code) { font-family: var(--tf-num); }

@@ -6,7 +6,7 @@ import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimateSummary, Go
 import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { CalculatorActivity, GoodsMapping } from '../types'
 import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
-import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes } from '../lib/importMapping'
+import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes, upgradeLegacyMapping } from '../lib/importMapping'
 import { lookupNomenclature, withNomenclatureRates } from '../lib/nomenclatureRates'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 import { savedAtText } from '@/shared/lib/dates'
@@ -151,7 +151,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
       const serverParams = normalizeParams(savedParams)
       const restoredItems = Array.isArray(draft.input?.items) ? ensureItemIds(draft.input.items) : []
       const serverSource = draft.input?.source
-        ? { ...draft.input.source, mapping: normalizeStoredMapping(emptyMapping(), draft.input.source.mapping as Partial<GoodsMapping> | undefined) }
+        ? { ...draft.input.source, mapping: upgradeLegacyMapping(normalizeStoredMapping(emptyMapping(), draft.input.source.mapping as Partial<GoodsMapping> | undefined)) }
         : null
       markSaved(serverParams, restoredItems, draft.result ?? null)
       autosave.setBaseline({ params: serverParams, items: restoredItems, result: draft.result ?? null, source: serverSource })
@@ -686,7 +686,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         addManualPhoto={addManualPhoto}
         addEmptyRow={addEmptyRow}
         calculate={calculate}
-        onBack={() => setStep(1)}
+        agentRowId={agentRowId}
         saveDraft={saveDraft}
         clearAll={clearAll}
         agentStatuses={agentRows.statuses}
@@ -696,7 +696,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         startAgentBatch={() => void startAgentBatch()}
       />}
 
-      {step === 3 && result && <ResultStep result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} header={<>{headerSlot}{calculatorStepper}</>} unsaved={autosave.unsaved} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping}
+      {step === 3 && result && <ResultStep agentOpen={Boolean(agentRowId)} onCloseAgent={() => setAgentRowId(null)} result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} header={<>{headerSlot}{calculatorStepper}</>} unsaved={autosave.unsaved} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping}
         onChangeCode={(index) => { const id = items[index]?.id; if (id) openDirectoryPicker([id]) }} onAgent={(index) => { const id = items[index]?.id; if (id) setAgentRowId(id) }} onToggleIncluded={setResultIncluded} sir={params} onSirChange={changeSir} previewSir={previewSir} itp={params.resultTools?.itp} onItpChange={(value) => setResultTool('itp', value)} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoPrices={() => { budget.reset(); undoLastPriceChange() }} canUndoPrices={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <DirectoryPickerModal

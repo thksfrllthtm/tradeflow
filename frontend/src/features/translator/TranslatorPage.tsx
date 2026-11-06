@@ -53,7 +53,7 @@ export function TranslatorPage({ user, onLogout }: { user: User; onLogout: () =>
               : items.map((item) => <tr key={item.id} onClick={() => navigate(paths.translator(item.id))}>
                 <td><Link className="dir-name" href={paths.translator(item.id)} onClick={(event) => event.stopPropagation()}>{item.name}<small className="tr-ext">.{item.format}</small></Link></td>
                 <td className="tr-langs-col">{languageLabel(item.sourceLang)} → {languageLabel(item.targetLang)}</td>
-                <td className="tr-who-col"><span>{item.createdByName || '—'}</span><small>{formatRuDate(item.createdAt.slice(0, 10))}</small></td>
+                <td className="tr-who-col"><span>{item.createdByName || '—'}</span><small><time dateTime={item.createdAt}>{formatRuDate(item.createdAt.slice(0, 10))}</time></small></td>
                 <td className="tr-progress-col">
                   <span className="tr-progress" aria-hidden="true"><span style={{ width: `${item.segmentCount ? (item.confirmedCount / item.segmentCount) * 100 : 0}%` }} /></span>
                   <small>{item.confirmedCount} из {item.segmentCount}</small>

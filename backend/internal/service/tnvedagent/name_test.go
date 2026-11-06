@@ -73,3 +73,24 @@ func TestFixGenericWord(t *testing.T) {
 		}
 	}
 }
+
+// «Данные» из файла (свойства товара с подписью колонки) доходят до агента: пустые убраны, не больше 10, каждое ≤ 300 символов.
+func TestCleanItemKeepsDetailsForTheAgent(t *testing.T) {
+	details := []string{" Материал: сталь ", "", "Модель: X-200"}
+	for i := 0; i < 12; i++ {
+		details = append(details, "Назначение: сад")
+	}
+	details = append(details, strings.Repeat("я", 400))
+	item := cleanItem(AgentItemInput{Name: "Лопата", Details: details})
+	if len(item.Details) != 10 || item.Details[0] != "Материал: сталь" || item.Details[1] != "Модель: X-200" {
+		t.Fatalf("details: %q", item.Details)
+	}
+	long := cleanItem(AgentItemInput{Name: "Лопата", Details: []string{strings.Repeat("я", 400)}})
+	if got := len([]rune(long.Details[0])); got != 300 {
+		t.Fatalf("detail length %d, want 300", got)
+	}
+	text := initialAgentMessage(item, 0, nil)["content"].([]map[string]any)[0]["text"].(string)
+	if !strings.Contains(text, "Материал: сталь") || !strings.Contains(text, "Модель: X-200") {
+		t.Fatalf("the agent must get the details: %s", text)
+	}
+}

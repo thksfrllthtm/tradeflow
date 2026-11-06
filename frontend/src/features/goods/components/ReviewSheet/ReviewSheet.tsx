@@ -13,6 +13,7 @@ import { AgentRowStatus } from '../../agent/agentApi'
 import { canSaveRowDecision, RowDecisionState } from '../../hooks/useRowDecisions'
 import { columnIndex, copyValue, NUMBER_FIELDS, SHEET_COLUMNS, SheetChange, SheetKey, sheetRow } from './sheetModel'
 import { spaceBelow } from '../../lib/spaceBelow'
+import { trackFooterGap } from '../../lib/footerGap'
 import './ReviewSheet.css'
 
 export type SheetRowView = {
@@ -53,6 +54,8 @@ type Props = {
   onPickRows: (indexes: number[]) => void
   onUndo: () => void
   onRedo: () => void
+  // Строка, открытая в панели «Подбор кода»: выделена фоном и полоской слева.
+  agentRowId?: string | null
 }
 
 type Worksheet = jspreadsheet.WorksheetInstance
@@ -96,6 +99,7 @@ export function ReviewSheet(props: Props) {
     let cancelled = false
     let created: typeof jspreadsheet | null = null
     let resized: ResizeObserver | null = null
+    let stopGap: (() => void) | undefined
     const element = host.current
     if (!element) return
     // Кнопки внутри ячеек (фото, значки у кода, «Указать код», выбор строки, флажок «все»).
@@ -198,6 +202,8 @@ export function ReviewSheet(props: Props) {
         foot.className = 'xs-foot'
         foot.innerHTML = '<tr></tr>'
         ws.table.appendChild(foot)
+        // «Итого» — внизу области листа, даже когда строк мало.
+        stopGap = trackFooterGap(element, ws.table)
         latest.current.apiRef.current = {
           focusCell: (index, key) => {
             const x = columnIndex(key)
@@ -243,6 +249,7 @@ export function ReviewSheet(props: Props) {
       element.removeEventListener('mousedown', onMouseDown, true)
       document.removeEventListener('keydown', onKeyDownOutside, true)
       resized?.disconnect()
+      stopGap?.()
       if (created) created.destroy(element as unknown as jspreadsheet.JspreadsheetInstanceElement, true)
       element.innerHTML = ''
     }
@@ -353,6 +360,7 @@ function decorate(ws: Worksheet, props: Props) {
     tr.classList.toggle('xs-excluded', row.item.excluded)
     tr.classList.toggle('xs-selected', row.selected)
     tr.classList.toggle('xs-group-start', groupStart)
+    tr.classList.toggle('xs-agent-row', Boolean(props.agentRowId) && row.item.id === props.agentRowId)
     // Ячейку номера библиотека переписывает сама (вставка строк) — сверяем разметку, как у ячеек со значением.
     const index = tr.children[0] as HTMLElement | undefined
     if (index) draw(index, numberView(row, y), false)
@@ -429,18 +437,20 @@ function cellView(key: SheetKey, row: SheetRowView, defaultPackageWeight: string
     case 'name': {
       // Русское название и через точку серым — китайское (или исходное из Excel).
       const names = itemNames(item, item)
-      const other = item.otherNames?.length ? `\nДругие наименования из файла: ${item.otherNames.join(' · ')}` : ''
+      const other = (item.otherNames?.length ? `\nДругие наименования из файла: ${item.otherNames.join(' · ')}` : '')
+        + (item.details?.length ? `\nДанные для ИИ: ${item.details.join(' · ')}` : '')
       const html = item.name ? `${escape(names.main)}${names.sub ? ` <span class="xs-zh">· ${escape(names.sub)}</span>` : ''}` : auto('Название товара')
       return withProblem({ html, title: item.name + other, className: repeat ? 'xs-repeat' : '' })
     }
     case 'code': {
-      // Нет кода — кнопки «Указать код» (справочник) и «ИИ» (чат подбора, со значком его состояния); код —
-      // моноширинным, метка «ИИ», если его предложил подбор; значки справочника, подбора ИИ и базы решений —
-      // у выбранной строки и при наведении.
+      // Нет кода — тихая ссылка «Указать код» (справочник) и значок ИИ (чат подбора, с отметкой его состояния):
+      // о проблеме говорят точка у номера и фон ячейки. Код — моноширинным, метка «ИИ», если его предложил
+      // подбор; значки справочника, подбора ИИ и базы решений — у выбранной строки и при наведении.
       if (!item.code) {
         const empty = agentView(row.agent, '')
-        const html = item.excluded ? '' : '<span class="xs-set"><button type="button" class="xs-set-code" data-act="picker" title="Выбрать товар или код ТН ВЭД из справочника">Указать код</button>'
-          + `<button type="button" class="xs-set-code ai ${empty.tone}" data-act="agent" title="${escape(empty.title)}">${ICONS.agent}ИИ${empty.mark ? `<i>${escape(empty.mark)}</i>` : ''}</button></span>`
+        const agentTitle = row.agent ? empty.title : 'Подобрать код ИИ'
+        const html = item.excluded ? '' : '<span class="xs-set"><button type="button" class="button-link xs-set-code" data-act="picker" title="Выбрать товар или код ТН ВЭД из справочника">Указать код</button>'
+          + `<button type="button" class="icon-button ghost sm xs-tool agent ${empty.tone}" data-act="agent" title="${escape(agentTitle)}" aria-label="${escape(agentTitle)}">${ICONS.agent}${empty.mark ? `<i>${escape(empty.mark)}</i>` : ''}</button></span>`
         return withProblem({ html, title: 'Выберите код в справочнике, подберите его с ИИ или введите (двойной щелчок или просто начните печатать)', className: 'xs-code-empty' })
       }
       const agent = agentView(row.agent, item.code)

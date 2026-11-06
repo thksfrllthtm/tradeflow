@@ -25,9 +25,11 @@
 .xs-host table.jss_worksheet > thead > tr:last-child > td { border-bottom-color: var(--tf-border); }
 .xs-host table.jss_worksheet > thead > tr:last-child > td:is([data-x="3"], [data-x="4"], [data-x="5"], [data-x="6"], [data-x="7"], [data-x="8"], [data-x="9"]) { text-align: right; }
 .xs-host table.jss_worksheet > thead > tr:last-child > td[data-x="10"] { text-align: center; }
-/* Между группами колонок (код, количество, вес, «В расчёте») — линия темнее. */
-.xs-host table.jss_worksheet tr > td:is([data-x="2"], [data-x="4"], [data-x="7"], [data-x="10"]),
-.xs-host tfoot.xs-foot td:is(.xs-foot-code, .xs-foot-places, .xs-foot-grossKg, .xs-foot-included) { box-shadow: inset 1px 0 0 var(--tf-border); }
+/* Между группами колонок (код, количество, вес, «В расчёте») — линия темнее. Это цвет правой границы колонки
+   перед группой, а не тень: линия одна и в один пиксель (тень при масштабе Windows 125 % ложилась второй,
+   размытой линией рядом с границей — сетка выглядела кривой). */
+.xs-host table.jss_worksheet tr > td:is([data-x="1"], [data-x="3"], [data-x="6"], [data-x="9"]),
+.xs-host tfoot.xs-foot td:is(.xs-foot-name, .xs-foot-duty, .xs-foot-pairs, .xs-foot-netKg) { border-right-color: var(--tf-border); }
 /* Активная колонка и строка подсвечены в шапке и в номере. */
 .xs-host table.jss_worksheet > thead > tr > td.selected { background: var(--tf-green-soft); color: var(--tf-text); font-weight: 600; }
 
@@ -44,8 +46,6 @@
 .xs-dot.error { background: var(--tf-error); }
 .xs-dot.warn { background: var(--tf-ai); }
 .xs-dot.changed { background: var(--tf-info); }
-.xs-host td.xs-row-error { color: var(--tf-error) !important; font-weight: 600; }
-.xs-host td.xs-row-warn { color: var(--tf-warn-text) !important; font-weight: 600; }
 /* Флажок выбора — поверх левого края ячейки номера (номер и точка не сдвигаются). */
 .xs-host td input.xs-pick { position: absolute; top: 50%; left: 10px; width: 14px; height: 14px; margin: 0; transform: translateY(-50%); accent-color: var(--tf-green); cursor: pointer; opacity: 0; }
 .xs-host input.xs-pick-all { display: block; width: 14px; height: 14px; margin: 0; accent-color: var(--tf-green); cursor: pointer; }
@@ -58,8 +58,8 @@
 .xs-zh { color: var(--tf-muted); }
 .xs-auto { color: var(--tf-muted); }
 .xs-host td.xs-repeat, .xs-host td.xs-repeat .xs-code-text, .xs-host td.xs-repeat .xs-zh { color: var(--tf-faint); }
-.xs-host tr.xs-group-start > td { box-shadow: inset 0 1px 0 var(--tf-border); }
-.xs-host tr.xs-group-start > td:is([data-x="2"], [data-x="4"], [data-x="7"], [data-x="10"]) { box-shadow: inset 0 1px 0 var(--tf-border), inset 1px 0 0 var(--tf-border); }
+/* Начало новой группы строк — темнее нижняя граница строки над ней (одна линия, не тень). */
+.xs-host table.jss_worksheet > tbody > tr:has(+ tr.xs-group-start) > td { border-bottom-color: var(--tf-border); }
 .xs-host td.xs-code { color: var(--tf-text); font-family: var(--tf-mono); font-size: var(--fs-sm); }
 .xs-host td.xs-duty { color: var(--tf-text-2); }
 /* Проблема в ячейке: ошибка — красным, предупреждение — жёлтым. */
@@ -75,13 +75,14 @@
 .xs-host tr.xs-selected > td:not(:first-child) { background-color: var(--tf-green-soft); }
 .xs-host .jss_contextmenu { font-size: var(--fs-md); }
 
+/* Строка, открытая в панели «Подбор кода»: фон и полоска слева у номера. Выделение листа, ошибки ячеек и
+   наведение — поверх (специфичность ниже, чем у них). */
+.xs-host tr.xs-agent-row > td:not(:first-child) { background-color: var(--tf-green-soft); }
+.xs-host table.jss_worksheet > tbody > tr.xs-agent-row > td:first-child { background: var(--tf-green-soft); box-shadow: inset 3px 0 0 var(--tf-green); color: var(--tf-text); font-weight: 600; }
+
 /* Выделение — как в Excel: заливка диапазона, рамка 2px, активная ячейка белая. */
 .xs-host table.jss_worksheet > tbody > tr > td.highlight { background-color: var(--tf-green-soft); }
 .xs-host table.jss_worksheet > tbody > tr > td.highlight-selected { background-color: var(--tf-card); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-top { border-top: 2px solid var(--tf-green); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-bottom { border-bottom: 2px solid var(--tf-green); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-left { border-left: 2px solid var(--tf-green); }
-.xs-host table.jss_worksheet > tbody > tr > td.highlight-right { border-right: 2px solid var(--tf-green); }
 .xs-host .jss_corner { background: var(--tf-green); border-color: var(--tf-card); }
 .xs-host table.jss_worksheet > tbody > tr > td.editor { padding: 0 !important; }
 .xs-host table.jss_worksheet > tbody > tr > td.editor input { font: inherit; }
@@ -92,8 +93,9 @@
 .xs-ai { flex: none; padding: 1px 5px; border-radius: var(--tf-radius-sm); background: var(--tf-chip); color: var(--tf-text-2); font-family: var(--tf-font); font-size: var(--fs-xs); font-weight: 600; }
 /* Значки — поверх правого края ячейки (код под ними не сжимается), только у выбранной строки и при наведении. */
 .xs-host td.xs-code { position: relative; }
-.xs-tools { position: absolute; top: 50%; right: 4px; display: inline-flex; align-items: center; gap: 1px; padding-left: 6px; transform: translateY(-50%); background: var(--tf-card); visibility: hidden; }
-.xs-host tr:hover:not(.selected) .xs-tools { background: var(--xl-hover); }
+/* Значки справочника, ИИ и закладки — в строку после кода, место под них зарезервировано: появляясь при наведении,
+   они не закрывают код. */
+.xs-tools { display: inline-flex; flex: none; align-items: center; gap: 1px; margin-left: auto; visibility: hidden; }
 .xs-host tr:hover .xs-tools, .xs-host tr.selected .xs-tools, .xs-host td.highlight-selected .xs-tools { visibility: visible; }
 .xs-host .xs-tool { --tone: var(--tf-muted); position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: var(--tf-radius-sm); background: transparent; color: var(--tone); font-weight: 400; letter-spacing: 0; cursor: pointer; }
 .xs-host .xs-tool:hover:not(:disabled) { border-color: var(--tf-border); background: var(--tf-chip); color: var(--tf-text); }
@@ -109,8 +111,6 @@
 .xs-host .xs-tools:has(.xs-tool.agent:is(.running, .waiting, .error, .suggest)) { visibility: visible; }
 @keyframes xs-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .xs-host .xs-tool.agent.running svg { animation: none; } }
-.xs-host button.xs-set-code { height: 26px; margin: 0; padding: 0 10px; border: 1px solid var(--tf-error-border); border-radius: var(--tf-radius); background: var(--tf-card); color: var(--tf-error); font-family: var(--tf-font); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
-.xs-host button.xs-set-code:hover:not(:disabled) { border-color: var(--tf-error); background: var(--tf-card); }
 
 /* ── Фото: миниатюра и «+» для добавления ── */
 .xs-host table.jss_worksheet > tbody > tr > td[data-x="0"] { padding: 0 4px !important; text-overflow: clip; text-align: center; }
@@ -141,16 +141,13 @@
    (--xs-top, --xs-below ставит ReviewSheet): страница не прокручивается, шапка листа, «Итого» и полоса
    прокрутки вбок всегда на экране. С панелью «Подбор кода» полоса смет слева — по высоте сметы, а не окна
    (иначе страница длиннее окна на высоту шапки сайта). */
-.is-review .xs-host, .goods-estimates-app:has(.ag-panel) .xs-host { max-height: max(240px, calc(100vh - var(--xs-top, 0px) - var(--xs-below, 0px))); overflow: auto; }
+.is-review .xs-host, .goods-estimates-app:has(.ag-panel) .xs-host { height: max(240px, calc(100vh - var(--xs-top, 0px) - var(--xs-below, 0px))); overflow: auto; }
 .app-shell.goods-estimates-app:has(.ag-panel) .estimates-workspace { min-height: 0; }
 .app-shell.goods-estimates-app:has(.ag-panel) .es-sidebar.es-rail { align-self: stretch; height: auto; }
 
-/* Строка без кода: «Указать код» (справочник) и «ИИ» (чат подбора) рядом; у «ИИ» — тон состояния подбора. */
-.xs-host .xs-set { display: inline-flex; align-items: center; gap: 6px; }
-.xs-host button.xs-set-code.ai { --tone: var(--tf-green); position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 0 9px; border-color: var(--tf-border); color: var(--tone); }
-.xs-host button.xs-set-code.ai:hover:not(:disabled) { border-color: var(--tone); background: var(--tf-green-soft); }
-.xs-host button.xs-set-code.ai svg { width: 13px; height: 13px; }
-.xs-host button.xs-set-code.ai.running svg { animation: xs-pulse 1.2s infinite ease-in-out; }
-.xs-host button.xs-set-code.ai:is(.waiting, .suggest) { --tone: var(--tf-warn-text); }
-.xs-host button.xs-set-code.ai.error { --tone: var(--tf-error); }
-.xs-host button.xs-set-code.ai i { position: absolute; top: -5px; right: -5px; min-width: 13px; height: 13px; padding: 0 2px; border-radius: var(--tf-radius); background: var(--tone); color: #fff; font-size: var(--fs-xs); font-style: normal; font-weight: 600; line-height: 13px; text-align: center; }
+
+/* Строка без кода: серая ссылка «Указать код» (справочник) и значок ИИ (чат подбора, с отметкой состояния).
+   О проблеме говорят точка у номера и фон ячейки — без красных рамок и текста. */
+.xs-host .xs-set { display: inline-flex; align-items: center; gap: 4px; }
+.xs-host button.xs-set-code { margin: 0; color: var(--tf-muted); font-family: var(--tf-font); font-size: var(--fs-sm); }
+.xs-host button.xs-set-code:hover { color: var(--tf-text); }
