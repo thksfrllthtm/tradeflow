@@ -42,6 +42,7 @@ type Server struct {
 	decisions         *decisions.CodeDecisionService
 	agent             *tnvedagent.TNVEDAgentService
 	translator        *translator.Service
+	actions           *repository.Repository
 	authMu            sync.Mutex
 	authRates         map[string]authRate
 }
@@ -67,6 +68,7 @@ func NewServer(database *repository.Repository, cfg config.Config) *Server {
 		decisions:  decisions,
 		translator: translator.NewService(database, translator.NewClient(cfg.TranslatorAIAPIKey, cfg.TranslatorAIBaseURL, cfg.TranslatorAIModel)),
 		agent:      newAgentService(database, decisions, cfg),
+		actions:    database,
 	}
 	server.agent.SetTrademarks(server.trademarks)
 	return server
@@ -114,6 +116,7 @@ func (s *Server) StartBackground(ctx context.Context) {
 	if err := s.antiDumping.SeedIfEmpty(ctx); err != nil {
 		log.Printf("anti-dumping measures: initial load failed: %v", err)
 	}
+	s.CleanupUserActions(ctx)
 	go s.decisions.FillMissingThumbs(ctx)
 	s.agent.StartPhotoWorker(ctx)
 	go s.agent.WarmGeneralActs(ctx)
@@ -132,7 +135,8 @@ func (s *Server) Router() *gin.Engine {
 	// Файлы больше 8 МБ из multipart-запросов gin сохраняет во временный файл, а не держит
 	// в памяти: на бесплатном Render всего 512 МБ, а Excel со сметой бывает до 100 МБ.
 	router.MaxMultipartMemory = 8 << 20
-	router.Use(gin.Logger(), gin.Recovery())
+	// recordAction до Recovery: упавший запрос попадёт в журнал с кодом 500.
+	router.Use(gin.Logger(), s.recordAction, gin.Recovery())
 	router.GET("/api/health", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	auth := router.Group("/api/auth")
@@ -147,6 +151,9 @@ func (s *Server) Router() *gin.Engine {
 	employees.POST("", s.createEmployee)
 	employees.PATCH("/:id", s.updateEmployee)
 	employees.DELETE("/:id", s.deleteEmployee)
+
+	// Журнал действий сотрудников — только администратор.
+	router.GET("/api/user-actions", s.requireUser, s.requireAdmin, s.listUserActions)
 
 	// Подсказки для подбора цен под бюджет в сметах товаров.
 	pricing := router.Group("/api/estimates")

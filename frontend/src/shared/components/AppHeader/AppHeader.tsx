@@ -7,7 +7,7 @@ import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная, на неё ведут логотип и пункт «Главная».
-type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'agentLog' | 'documentsBase' | 'translator'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'agentLog' | 'userActions' | 'documentsBase' | 'translator'
 type Item = { value: AppSection; label: string; href: string; hint?: string }
 type Group = { label: string; items: Item[] }
 
@@ -28,13 +28,14 @@ const groups: Group[] = [
   { label: 'Администрирование', items: [
     { value: 'employees', label: 'Сотрудники', href: paths.employees, hint: 'Учётные записи, роли и сметы сотрудников' },
     { value: 'agentLog', label: 'Журнал агента', href: paths.agentLog, hint: 'Подборы кодов ИИ-агентом у всех сотрудников' },
+    { value: 'userActions', label: 'Журнал действий', href: paths.userActions, hint: 'Изменения, вход и выход сотрудников' },
     { value: 'documentsBase', label: 'База документов', href: paths.documentsBase, hint: 'Ответы «Документы для ввоза» по кодам и акты' },
   ] },
 ]
 
 // Разделы, закрытые переводчику; разделы только для администратора.
 const estimateSections: AppSection[] = ['estimates', 'products', 'decisions', 'ceramics']
-const adminSections: AppSection[] = ['employees', 'agentLog', 'documentsBase']
+const adminSections: AppSection[] = ['employees', 'agentLog', 'userActions', 'documentsBase']
 
 function initials(user: User) {
   const source = user.name?.trim() || user.email

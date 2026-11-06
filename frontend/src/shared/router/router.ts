@@ -10,7 +10,8 @@ import { useEffect, useState } from 'react'
 //   /decisions               — база решений «товар из инвойса → код ТН ВЭД»
 //   /employees               — сотрудники и роли (только администратор)
 //   /agent-log               — журнал агента ТН ВЭД: подборы всех сотрудников и теневая модель (только администратор)
-//   /documents-base          — база документов: ответы «Документы для ввоза» по кодам, справки и акты (только администратор)
+//   /user-actions            — журнал действий сотрудников: изменения, вход и выход (только администратор)
+//   /documents-base         — база документов: ответы «Документы для ввоза» по кодам, справки и акты (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /util-fee                — калькулятор утильсбора
 //   /export-check            — сверка инвойса с экспортной декларацией КНР
@@ -25,6 +26,7 @@ type Route =
   | { page: 'decisions' }
   | { page: 'employees' }
   | { page: 'agentLog' }
+  | { page: 'userActions' }
   | { page: 'documentsBase' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'utilFee' }
@@ -42,6 +44,7 @@ export const paths = {
   decisions: '/decisions',
   employees: '/employees',
   agentLog: '/agent-log',
+  userActions: '/user-actions',
   documentsBase: '/documents-base',
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
@@ -64,6 +67,7 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.decisions) return { page: 'decisions' }
   if (path === paths.employees) return { page: 'employees' }
   if (path === paths.agentLog) return { page: 'agentLog' }
+  if (path === paths.userActions) return { page: 'userActions' }
   if (path === paths.documentsBase) return { page: 'documentsBase' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }

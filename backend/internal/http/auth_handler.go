@@ -42,6 +42,9 @@ func (s *Server) login(c *gin.Context) {
 	if err != nil {
 		if err == auth.ErrInvalidCredentials {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"message": "Неверный email или пароль", "code": "invalid_credentials"}})
+			// Неудачный вход — с введённым адресом (не длиннее поля users.email).
+			email := []rune(strings.TrimSpace(input.Email))
+			s.writeAction(c, nil, string(email[:min(len(email), 320)]))
 			return
 		}
 		internalError(c)
@@ -49,6 +52,7 @@ func (s *Server) login(c *gin.Context) {
 	}
 	s.setSessionCookie(c, token, expiresAt)
 	c.JSON(http.StatusOK, gin.H{"user": userResponse(user)})
+	s.writeAction(c, &user.ID, user.Email)
 }
 
 func (s *Server) setSessionCookie(c *gin.Context, token string, expiresAt time.Time) {
@@ -129,6 +133,10 @@ func (s *Server) register(c *gin.Context) {
 
 func (s *Server) logout(c *gin.Context) {
 	if token, err := c.Cookie(s.config.SessionCookieName); err == nil {
+		// После удаления сессии сотрудника уже не узнать: запоминаем до, пишем после ответа.
+		if user, err := s.auth.UserForToken(c.Request.Context(), token); err == nil {
+			defer s.writeAction(c, &user.ID, user.Email)
+		}
 		if err := s.auth.Logout(c.Request.Context(), token); err != nil {
 			internalError(c)
 			return
