@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 //   /agent-log               — журнал агента ТН ВЭД: подборы всех сотрудников и теневая модель (только администратор)
 //   /user-actions            — журнал действий сотрудников: изменения, вход и выход (только администратор)
 //   /documents-base         — база документов: ответы «Документы для ввоза» по кодам, справки и акты (только администратор)
+//   /data-updates            — обновление данных: номенклатура, перечень РК, антидемпинг, СУР, ТРОИС (только администратор)
 //   /ceramics[/base]         — подбор наименования и цены керамики (отдельно от смет)
 //   /util-fee                — калькулятор утильсбора
 //   /export-check            — сверка инвойса с экспортной декларацией КНР
@@ -28,6 +29,7 @@ type Route =
   | { page: 'agentLog' }
   | { page: 'userActions' }
   | { page: 'documentsBase' }
+  | { page: 'dataUpdates' }
   | { page: 'ceramics'; tab: 'match' | 'base' }
   | { page: 'utilFee' }
   | { page: 'exportCheck' }
@@ -46,6 +48,7 @@ export const paths = {
   agentLog: '/agent-log',
   userActions: '/user-actions',
   documentsBase: '/documents-base',
+  dataUpdates: '/data-updates',
   ceramics: '/ceramics',
   ceramicsBase: '/ceramics/base',
   utilFee: '/util-fee',
@@ -69,6 +72,7 @@ export function parseRoute(pathname: string): Route | null {
   if (path === paths.agentLog) return { page: 'agentLog' }
   if (path === paths.userActions) return { page: 'userActions' }
   if (path === paths.documentsBase) return { page: 'documentsBase' }
+  if (path === paths.dataUpdates) return { page: 'dataUpdates' }
   if (path === paths.ceramics) return { page: 'ceramics', tab: 'match' }
   if (path === paths.ceramicsBase) return { page: 'ceramics', tab: 'base' }
   if (path === paths.utilFee) return { page: 'utilFee' }

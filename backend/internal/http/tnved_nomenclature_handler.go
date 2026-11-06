@@ -88,5 +88,6 @@ func (s *Server) importTNVEDNomenclature(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "Файл не загружен: исправьте строки и загрузите снова", "field": "file"}, "result": result})
 		return
 	}
+	s.saveDataUpdate(c, "nomenclature", result)
 	c.JSON(http.StatusOK, result)
 }

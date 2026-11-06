@@ -1,18 +1,15 @@
-import { ChangeEvent, Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
-import { plural } from '@/shared/lib/plural'
-import { isAdmin, User } from '@/shared/types/user'
+import { User } from '@/shared/types/user'
 import { formatRuDate } from '@/shared/lib/dates'
 import { SearchIcon } from '@/shared/components/icons'
-import { DirectoryImportResult } from '../common/directoryTransfer'
-import { useKzListPanel } from '../kzList/KzListPanel'
 import { KzImport } from '../kzList/kzListApi'
 import { useRiskIndicatorsPanel } from '../riskIndicators/RiskIndicatorsPanel'
-import { NomenclatureChange, NomenclatureUpload, nomenclatureApi } from './nomenclatureApi'
+import { nomenclatureApi } from './nomenclatureApi'
 import { useCodeCheck } from './CodeCheck'
 import { AntiDumpingPanel } from './AntiDumpingPanel'
 import { countryNames, formatMeasureCode, percentText } from './antiDumping'
@@ -21,32 +18,13 @@ import '../components/DirectoryTransfer.css'
 import './nomenclature.css'
 import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { AntiDumpingRef, NomenclatureCode, NomenclatureImport } from '@/shared/tnved/nomenclature'
-import { formatCode, nameParts } from '@/shared/tnved/codes'
+import { nameParts } from '@/shared/tnved/codes'
 
 const pageSize = 100
-const changeLabels: Record<NomenclatureChange['kind'], string> = { added: 'Новый', removed: 'Удалён', changed: 'Изменён' }
-const changeTones: Record<NomenclatureChange['kind'], string> = { added: 'ok', removed: 'error', changed: 'warn' }
 
-// Строка изменения: у изменённого кода — что было и что стало (только то, что поменялось).
-function ChangeRow({ change }: { change: NomenclatureChange }) {
-  const nameChanged = change.kind === 'changed' && change.oldName !== change.name
-  const rateChanged = change.kind === 'changed' && change.oldTariffText !== change.tariffText
-  return <li className={`nom-change ${change.kind}`}>
-    <span className={`badge ${changeTones[change.kind]} nom-change-kind`}>{changeLabels[change.kind]}</span>
-    <code>{formatCode(change.code)}</code>
-    <span className="nom-change-text">
-      {change.kind === 'changed'
-        ? <>{nameChanged ? <><s>{change.oldName}</s> → {change.name}</> : change.name}{rateChanged && <small>Ставка: <s>{change.oldTariffText || '—'}</s> → {change.tariffText || '—'}</small>}</>
-        : <>{change.kind === 'added' ? change.name : change.oldName}<small>Ставка: {(change.kind === 'added' ? change.tariffText : change.oldTariffText) || '—'}</small></>}
-    </span>
-  </li>
-}
-
-// Полная номенклатура ТН ВЭД ЕАЭС: поиск по коду или словам, пошлина ЕТТ, ставка РК, НДС и
-// антидемпинг. Список заменяет администратор выгрузкой TWS.BY, ставки ниже ЕТТ — загрузкой
-// «Перечня РК» (PDF ЕЭК или Excel из него), индикаторы риска — файлами профилей КГД («СУР»).
+// Полная номенклатура ТН ВЭД ЕАЭС: поиск по коду или словам, пошлина ЕТТ, ставка РК, НДС,
+// антидемпинг и СУР. Загружает и обновляет все эти данные администратор на странице «Обновление данных».
 export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () => void }) {
-  const admin = isAdmin(user)
   const [query, setQuery] = useState('')
   const search = useDebouncedValue(query.trim(), 300)
   const [items, setItems] = useState<NomenclatureCode[]>([])
@@ -56,10 +34,6 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
-  const [refreshKey, setRefreshKey] = useState(0)
-  const [uploading, setUploading] = useState(false)
-  const [uploaded, setUploaded] = useState<NomenclatureUpload | null>(null)
-  const [rowErrors, setRowErrors] = useState<DirectoryImportResult['errors']>([])
   const [antiDumpingOpen, setAntiDumpingOpen] = useState(false)
   const [antiDumpingCount, setAntiDumpingCount] = useState<number | null>(null)
 
@@ -71,7 +45,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
       .catch((reason) => { if (active) setError(errorMessage(reason)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [search, refreshKey])
+  }, [search])
 
   async function loadMore() {
     setLoadingMore(true)
@@ -81,26 +55,11 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
     } catch (reason) { setError(errorMessage(reason)) } finally { setLoadingMore(false) }
   }
 
-  async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    setUploading(true); setError(''); setUploaded(null); setRowErrors([])
-    try {
-      setUploaded(await nomenclatureApi.upload(file))
-      setRefreshKey((value) => value + 1)
-    } catch (reason) {
-      setError(errorMessage(reason))
-      setRowErrors((reason as { rows?: DirectoryImportResult['errors'] }).rows ?? [])
-    } finally { setUploading(false) }
-  }
-
   // Проверка вставленной колонки кодов; с главной открывается сразу (?check=1).
   // Панели в шапке переключаются: открыта только одна.
-  function closePanels() { codeCheck.close(); setAntiDumpingOpen(false); riskIndicators.close(); kzList.close() }
+  function closePanels() { codeCheck.close(); setAntiDumpingOpen(false); riskIndicators.close() }
   const codeCheck = useCodeCheck({ initialOpen: new URLSearchParams(window.location.search).has('check'), onOpen: closePanels })
-  const riskIndicators = useRiskIndicatorsPanel({ admin, onOpen: closePanels })
-  const kzList = useKzListPanel({ current: kzSource, onImported: () => setRefreshKey((value) => value + 1), onOpen: closePanels })
+  const riskIndicators = useRiskIndicatorsPanel({ onOpen: closePanels })
   const empty = !loading && total === 0
   return <main className="app-shell directory-shell">
     <AppHeader user={user} section="nomenclature" onLogout={onLogout} />
@@ -111,28 +70,13 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
           {codeCheck.button}
           <button type="button" className={antiDumpingOpen ? 'secondary active' : 'secondary'} onClick={() => { if (!antiDumpingOpen) closePanels(); setAntiDumpingOpen(!antiDumpingOpen) }} aria-expanded={antiDumpingOpen}>Антидемпинг ЕАЭС{antiDumpingCount !== null && ` · ${antiDumpingCount}`}</button>
           {riskIndicators.button}
-          {admin && kzList.button}
-          {admin && <label className={uploading ? 'secondary nom-upload busy' : 'secondary nom-upload'} title="Excel с сайта tws.by/tws/tnved/download">
-            {uploading ? 'Загружаем…' : source ? 'Обновить из файла TWS' : 'Загрузить файл TWS'}
-            <input type="file" accept=".xlsx" onChange={(event) => void upload(event)} disabled={uploading} />
-          </label>}
         </>} />
 
       {codeCheck.panel}
-      {antiDumpingOpen && <AntiDumpingPanel admin={admin} onLoaded={setAntiDumpingCount} onRefreshed={() => setRefreshKey((value) => value + 1)}
+      {antiDumpingOpen && <AntiDumpingPanel onLoaded={setAntiDumpingCount}
         onPickCode={(code) => { setQuery(formatMeasureCode(code)); window.scrollTo({ top: 0, behavior: 'smooth' }) }} />}
       {riskIndicators.panel}
-      {admin && kzList.panel}
-      {uploaded && <p className="dir-transfer-ok nom-note" role="status">
-        Загружено {formatDisplayNumber(uploaded.codeCount)} {plural(uploaded.codeCount, 'код', 'кода', 'кодов')}: новых {formatDisplayNumber(uploaded.addedCount)}, удалено {formatDisplayNumber(uploaded.removedCount)}, изменились наименование или ставка — {formatDisplayNumber(uploaded.changedCount)}.
-        <button type="button" onClick={() => setUploaded(null)} aria-label="Закрыть">×</button>
-      </p>}
-      {uploaded && uploaded.changes.length > 0 && <ul className="nom-changes">
-        {uploaded.changes.map((change) => <ChangeRow key={change.code} change={change} />)}
-        {uploaded.changes.length < uploaded.addedCount + uploaded.removedCount + uploaded.changedCount && <li className="nom-change-more">Показаны первые {formatDisplayNumber(uploaded.changes.length)} из {formatDisplayNumber(uploaded.addedCount + uploaded.removedCount + uploaded.changedCount)}</li>}
-      </ul>}
-      {error && <p className="dir-transfer-error nom-note" role="alert">{error}<button type="button" onClick={() => { setError(''); setRowErrors([]) }} aria-label="Закрыть">×</button></p>}
-      {rowErrors.length > 0 && <ul className="dir-transfer-errors">{rowErrors.map((item) => <li key={`${item.row}-${item.message}`}><b>Строка {item.row}</b> {item.message}</li>)}</ul>}
+      {error && <p className="dir-transfer-error nom-note" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Закрыть">×</button></p>}
 
       {/* Как «База решений» и этапы сметы: карточка до низа окна, в ней поиск, таблица и «Показать ещё». */}
       <section className="nom-card" aria-label="Коды ТН ВЭД">
@@ -149,7 +93,7 @@ export function NomenclaturePage({ user, onLogout }: { user: User; onLogout: () 
           <thead><tr><th className="c-code">Код ТН ВЭД</th><th>Наименование</th><th className="nom-rate">Пошлина ЕТТ</th><th className="nom-kz" title="Ставка ниже ЕТТ по обязательствам Казахстана в ВТО">Ставка РК</th><th className="nom-vat">НДС</th><th className="nom-ad" title="Антидемпинговая пошлина ЕАЭС сверх ЕТТ, % для прочих производителей">Антидемпинг</th><th className="nom-sir" title="Стоимостной индикатор риска КГД для Китая (CN), USD за 1 кг; из нескольких профилей — больший">СУР, USD/кг</th><th className="nom-link" aria-label="Подробнее" /></tr></thead>
           <tbody>
             {items.length === 0 ? <tr><td colSpan={8} className="dir-empty">{loading ? 'Загрузка…'
-              : !source ? admin ? <>Номенклатура ещё не загружена. Скачайте Excel на <a href="https://www.tws.by/tws/tnved/download" target="_blank" rel="noreferrer">tws.by</a> и нажмите «Загрузить файл TWS».</> : 'Номенклатура ещё не загружена администратором.'
+              : !source ? 'Номенклатура ещё не загружена: администратор загружает её на странице «Обновление данных».'
               : empty ? 'Ничего не найдено. Проверьте код или попробуйте другие слова.' : ''}</td></tr>
               : items.map((item, index) => {
                 const parts = nameParts(item.name)

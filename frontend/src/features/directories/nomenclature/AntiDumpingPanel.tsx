@@ -3,18 +3,16 @@ import { errorMessage } from '@/shared/lib/errorMessage'
 import { formatRuDate } from '@/shared/lib/dates'
 import { AntiDumpingImport, AntiDumpingMeasure, antiDumpingApi, countryNames, formatMeasureCode, percentText } from './antiDumping'
 
-type Props = { admin: boolean; onPickCode: (code: string) => void; onRefreshed: () => void; onLoaded: (count: number) => void }
+type Props = { onPickCode: (code: string) => void; onLoaded: (count: number) => void }
 
 // Панель «Антидемпинг ЕАЭС» на странице номенклатуры: все действующие меры из реестра ЕЭК —
 // товар, страны и ставки для прочих производителей, коды (нажатие ищет код в номенклатуре),
-// сроки и решение ЕЭК. Администратор обновляет меры с сайта ЕЭК.
-export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: Props) {
+// сроки и решение ЕЭК. Обновляет меры с сайта ЕЭК администратор на странице «Обновление данных».
+export function AntiDumpingPanel({ onPickCode, onLoaded }: Props) {
   const [measures, setMeasures] = useState<AntiDumpingMeasure[]>([])
   const [source, setSource] = useState<AntiDumpingImport | null>(null)
   const [loading, setLoading] = useState(true)
-  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const [open, setOpen] = useState<string | null>(null)
 
   useEffect(() => {
@@ -26,16 +24,6 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function refresh() {
-    setBusy(true); setError(''); setNotice('')
-    try {
-      const list = await antiDumpingApi.refresh()
-      setMeasures(list.measures); setSource(list.import); onLoaded(list.measures.length)
-      setNotice(`Обновлено из реестра ЕЭК: действующих мер — ${list.measures.length}.`)
-      onRefreshed()
-    } catch (reason) { setError(errorMessage(reason)) } finally { setBusy(false) }
-  }
-
   return <section className="dump-panel" aria-label="Антидемпинговые меры ЕАЭС">
     <header className="dump-head">
       <div>
@@ -45,9 +33,7 @@ export function AntiDumpingPanel({ admin, onPickCode, onRefreshed, onLoaded }: P
           {source && <> Источник: <a href={source.registryUrl} target="_blank" rel="noreferrer">реестр ЕЭК</a> · {source.source === 'eec' ? <>обновлено <time dateTime={source.importedAt}>{formatRuDate(source.importedAt.slice(0, 10))}</time>{source.importedByName ? `, ${source.importedByName}` : ''}</> : <>данные из файла программы (реестр на <time dateTime="2026-10-02">02.10.2026</time>)</>}</>}
         </p>
       </div>
-      {admin && <button type="button" className="secondary" onClick={() => void refresh()} disabled={busy}>{busy ? 'Обновляем…' : 'Обновить из реестра ЕЭК'}</button>}
     </header>
-    {notice && <p className="dir-transfer-ok" role="status">{notice}</p>}
     {error && <p className="dir-transfer-error" role="alert">{error}</p>}
     {loading ? <p className="dump-empty">Загрузка…</p> : measures.length === 0 ? <p className="dump-empty">Мер нет.</p> : <div className="dump-table-wrap"><table className="sheet dump-table">
       <thead><tr><th>Мера</th><th>Товар</th><th>Страна → ставка для прочих производителей</th><th>Коды ТН ВЭД</th><th>Действует</th><th aria-label="Решение" /></tr></thead>

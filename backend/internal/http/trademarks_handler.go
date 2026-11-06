@@ -79,6 +79,7 @@ func (s *Server) importTrademarks(c *gin.Context) {
 		internalError(c)
 		return
 	}
+	s.saveDataUpdate(c, "trademarks", result)
 	c.JSON(http.StatusOK, result)
 }
 

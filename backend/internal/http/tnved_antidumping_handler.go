@@ -24,6 +24,12 @@ func (s *Server) listAntiDumping(c *gin.Context) {
 
 // refreshAntiDumping скачивает действующие меры с сайта реестра ЕЭК.
 func (s *Server) refreshAntiDumping(c *gin.Context) {
+	// Меры до обновления — чтобы сохранить, что изменилось.
+	before, err := s.antiDumping.Measures(c.Request.Context())
+	if err != nil {
+		internalError(c)
+		return
+	}
 	info, err := s.antiDumping.Refresh(c.Request.Context(), currentUser(c).ID)
 	if err != nil {
 		if validation, ok := err.(*service.ValidationError); ok {
@@ -38,5 +44,6 @@ func (s *Server) refreshAntiDumping(c *gin.Context) {
 		internalError(c)
 		return
 	}
+	s.saveDataUpdate(c, "antidumping", diffMeasures(before, measures))
 	c.JSON(http.StatusOK, gin.H{"measures": measures, "import": info})
 }

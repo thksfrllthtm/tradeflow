@@ -78,6 +78,7 @@ func (s *Server) importKZRatesPDF(c *gin.Context) {
 		kzRowsError(c, result.Errors)
 		return
 	}
+	s.saveDataUpdate(c, "kz", result)
 	c.JSON(http.StatusOK, result)
 }
 
@@ -97,5 +98,6 @@ func (s *Server) importKZRatesExcel(c *gin.Context) {
 		kzRowsError(c, result.Errors)
 		return
 	}
+	s.saveDataUpdate(c, "kz", result)
 	c.JSON(http.StatusOK, result)
 }

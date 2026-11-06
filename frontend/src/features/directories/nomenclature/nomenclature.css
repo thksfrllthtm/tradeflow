@@ -1,10 +1,5 @@
 /* Номенклатура ТН ВЭД: таблица страниц-списков (shared/styles/list-page.css) с многострочным наименованием,
-   загрузка файла TWS и «Показать ещё» под таблицей. */
-
-/* Загрузка TWS — <label class="secondary">: стиль button на label не действует, шрифт и скругление — здесь. */
-.nom-upload { position: relative; display: inline-flex; align-items: center; margin: 0; border-radius: var(--tf-radius); font-size: var(--fs-md); font-weight: 600; line-height: 20px; white-space: nowrap; cursor: pointer; }
-.nom-upload.busy { opacity: .7; cursor: progress; }
-.nom-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+   «Показать ещё» под таблицей. */
 
 .nom-note { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .nom-note button { flex: 0 0 auto; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: transparent; color: inherit; font-size: var(--fs-base); line-height: 1; opacity: .6; }
@@ -82,18 +77,6 @@ a.nom-ad-chip:hover { box-shadow: inset 0 0 0 1px var(--tf-error-border); }
 @media (max-width: 760px) {
   .dump-head { flex-direction: column; }
 }
-
-/* Список изменений после загрузки файла TWS. */
-.nom-changes { flex: 0 0 auto; max-height: 240px; margin: 0; padding: 4px 0; overflow-y: auto; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); list-style: none; font-size: var(--fs-sm); }
-.nom-change { display: grid; grid-template-columns: 70px 110px 1fr; gap: 8px; align-items: baseline; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
-.nom-change:last-child { border-bottom: 0; }
-.nom-change code { font-variant-numeric: tabular-nums; font-family: var(--tf-num); font-weight: 400; white-space: nowrap; }
-.nom-change-kind { justify-self: start; }
-.nom-change-text { color: var(--tf-text); line-height: 1.4; }
-.nom-change-text s { color: var(--tf-muted); }
-.nom-change-text small { display: block; color: var(--tf-text-2); }
-.nom-change-more { padding: 6px 12px; color: var(--tf-muted); }
-@media (max-width: 640px) { .nom-change { grid-template-columns: auto 1fr; } .nom-change-text { grid-column: 1 / -1; } }
 
 /* Строка-заголовок товарной позиции (первые 4 цифры) и приглушённый префикс позиции в коде. */
 .nom-table tr.nom-heading td { height: 32px; padding: 4px 12px; background: var(--tf-bg); color: var(--tf-muted); font-size: var(--fs-sm); font-weight: 500; }

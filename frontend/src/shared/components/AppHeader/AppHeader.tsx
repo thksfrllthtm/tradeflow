@@ -7,7 +7,7 @@ import { RatesConverter } from './RatesConverter'
 import './AppHeader.css'
 
 // home — главная, на неё ведут логотип и пункт «Главная».
-type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'agentLog' | 'userActions' | 'documentsBase' | 'translator'
+type AppSection = 'home' | 'estimates' | 'products' | 'nomenclature' | 'trademarks' | 'decisions' | 'ceramics' | 'utilFee' | 'exportCheck' | 'employees' | 'agentLog' | 'userActions' | 'documentsBase' | 'dataUpdates' | 'translator'
 type Item = { value: AppSection; label: string; href: string; hint?: string }
 type Group = { label: string; items: Item[] }
 
@@ -30,12 +30,13 @@ const groups: Group[] = [
     { value: 'agentLog', label: 'Журнал агента', href: paths.agentLog, hint: 'Подборы кодов ИИ-агентом у всех сотрудников' },
     { value: 'userActions', label: 'Журнал действий', href: paths.userActions, hint: 'Изменения, вход и выход сотрудников' },
     { value: 'documentsBase', label: 'База документов', href: paths.documentsBase, hint: 'Ответы «Документы для ввоза» по кодам и акты' },
+    { value: 'dataUpdates', label: 'Обновление данных', href: paths.dataUpdates, hint: 'Номенклатура, перечень РК, антидемпинг, СУР, ТРОИС: даты, источники, загрузка' },
   ] },
 ]
 
 // Разделы, закрытые переводчику; разделы только для администратора.
 const estimateSections: AppSection[] = ['estimates', 'products', 'decisions', 'ceramics']
-const adminSections: AppSection[] = ['employees', 'agentLog', 'userActions', 'documentsBase']
+const adminSections: AppSection[] = ['employees', 'agentLog', 'userActions', 'documentsBase', 'dataUpdates']
 
 function initials(user: User) {
   const source = user.name?.trim() || user.email

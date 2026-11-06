@@ -1,0 +1,41 @@
+/* «Обновление данных»: одна карточка, в ней строка на набор данных — название и дата, источник, кнопка.
+   Сообщения и таблица профилей СУР — под строкой на всю ширину. Страница прокручивается целиком. */
+.du-page { overflow-y: auto; }
+.du-list { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 32px; margin: 0; padding: 0; list-style: none; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
+/* Колонки общие для всех строк (subgrid): источники и кнопки стоят ровно друг под другом. */
+.du-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; row-gap: 4px; padding: 12px 16px; border-bottom: 1px solid var(--tf-border-inner); }
+.du-row:last-child { border-bottom: 0; }
+.du-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.du-main b { color: var(--tf-text); font-size: var(--fs-md); font-weight: 600; }
+.du-meta { color: var(--tf-muted); font-size: var(--fs-sm); }
+.du-meta time { font-variant-numeric: tabular-nums; }
+.du-meta .button-link { font-size: inherit; }
+.du-source { color: var(--tf-text-2); font-size: var(--fs-sm); white-space: nowrap; }
+.du-source:hover { color: var(--tf-green); }
+.du-action { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.du-extra:empty { display: none; }
+.du-extra { grid-column: 1 / -1; display: grid; gap: 8px; margin-top: 8px; }
+.du-extra .sir-profiles { justify-self: start; width: auto; min-width: 560px; }
+/* Второстепенный выбор файла — как ссылка («Excel для проверки» у перечня РК). */
+.du-file-link { position: relative; margin: 0; color: var(--tf-text-2); font-size: var(--fs-sm); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; cursor: pointer; }
+.du-file-link:hover { color: var(--tf-green); }
+.du-file-link.disabled { opacity: .7; cursor: progress; }
+.du-file-link input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+@media (max-width: 760px) {
+  .du-list { grid-template-columns: minmax(0, 1fr) auto; }
+  .du-row { grid-template-columns: subgrid; }
+  .du-action { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
+/* Список изменений после загрузки файла TWS. */
+.nom-changes { flex: 0 0 auto; max-height: 240px; margin: 0; padding: 4px 0; overflow-y: auto; border: 1px solid var(--tf-border); border-radius: var(--tf-radius); background: var(--tf-card); list-style: none; font-size: var(--fs-sm); }
+.nom-change { display: grid; grid-template-columns: 70px 110px 1fr; gap: 8px; align-items: baseline; padding: 6px 12px; border-bottom: 1px solid var(--tf-border-inner); }
+.nom-change:last-child { border-bottom: 0; }
+.nom-change code { font-variant-numeric: tabular-nums; font-family: var(--tf-num); font-weight: 400; white-space: nowrap; }
+.nom-change-kind { justify-self: start; }
+.nom-change-text { color: var(--tf-text); line-height: 1.4; }
+.nom-change-text s { color: var(--tf-muted); }
+.nom-change-text small { display: block; color: var(--tf-text-2); }
+.nom-change-more { padding: 6px 12px; color: var(--tf-muted); }
+@media (max-width: 640px) { .nom-change { grid-template-columns: auto 1fr; } .nom-change-text { grid-column: 1 / -1; } }
+

@@ -154,6 +154,8 @@ func (s *Server) Router() *gin.Engine {
 
 	// Журнал действий сотрудников — только администратор.
 	router.GET("/api/user-actions", s.requireUser, s.requireAdmin, s.listUserActions)
+	// Результаты последних обновлений справочников — страница «Обновление данных».
+	router.GET("/api/data-updates", s.requireUser, s.requireAdmin, s.listDataUpdates)
 
 	// Подсказки для подбора цен под бюджет в сметах товаров.
 	pricing := router.Group("/api/estimates")

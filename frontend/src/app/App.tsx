@@ -11,6 +11,7 @@ import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { AgentLogPage } from '@/features/agentLog/AgentLogPage'
 import { UserActionsPage } from '@/features/userActions/UserActionsPage'
 import { DocumentsBasePage } from '@/features/documentsBase/DocumentsBasePage'
+import { DataUpdatesPage } from '@/features/dataUpdates/DataUpdatesPage'
 import { CeramicsPage } from '@/features/ceramics/CeramicsPage'
 import { DecisionsPage } from '@/features/decisions/DecisionsPage'
 import { HomePage } from '@/features/home/HomePage'
@@ -33,7 +34,7 @@ export function App() {
   const authPage = route?.page === 'login' || route?.page === 'register'
   // Сотрудники и журнал агента — только администратору, «Переводчик» — переводчику и администратору, сметы,
   // справочник товаров, база решений и керамика — не переводчику; остальных на главную.
-  const adminPages: string[] = ['employees', 'agentLog', 'userActions', 'documentsBase']
+  const adminPages: string[] = ['employees', 'agentLog', 'userActions', 'documentsBase', 'dataUpdates']
   const knownRoute = route !== null && !(user !== null && (adminPages.includes(route.page) && !isAdmin(user) || route.page === 'translator' && !canTranslate(user) || estimatePages.includes(route.page) && !canEstimate(user)))
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export function App() {
     case 'agentLog': return isAdmin(user) ? <AgentLogPage user={user} onLogout={() => void logout()} /> : null
     case 'userActions': return isAdmin(user) ? <UserActionsPage user={user} onLogout={() => void logout()} /> : null
     case 'documentsBase': return isAdmin(user) ? <DocumentsBasePage user={user} onLogout={() => void logout()} /> : null
+    case 'dataUpdates': return isAdmin(user) ? <DataUpdatesPage user={user} onLogout={() => void logout()} /> : null
     case 'decisions': return <DecisionsPage user={user} onLogout={() => void logout()} />
     case 'ceramics': return <CeramicsPage user={user} tab={route.tab} onLogout={() => void logout()} />
     case 'utilFee': return <UtilFeePage user={user} onLogout={() => void logout()} />

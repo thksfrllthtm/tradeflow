@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { SearchIcon } from '@/shared/components/icons'
 import { errorMessage } from '@/shared/lib/errorMessage'
@@ -9,13 +9,12 @@ import { shortHolder, TrademarkItem, trademarkLogoUrl, trademarksApi, TrademarkS
 import { isAdmin, User } from '@/shared/types/user'
 import '@/shared/styles/list-page.css'
 import '../components/DirectoryTransfer.css'
-import '../kzList/KzListPanel.css'
 import '../riskIndicators/RiskIndicatorsPanel.css'
 import './TrademarksPage.css'
 import { PageHead } from '@/shared/components/PageHead/PageHead'
 
 // «ТРОИС» — таможенный реестр объектов интеллектуальной собственности КГД. Список и поиск видят все;
-// загрузка файла реестра и подпись логотипов — администратор. Логотипы без текста подписывает ИИ в фоне
+// файл реестра администратор загружает на странице «Обновление данных». Логотипы без текста подписывает ИИ в фоне
 // (по ним ищутся бренды в наименованиях), неверную подпись администратор исправляет здесь.
 export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const admin = isAdmin(user)
@@ -25,10 +24,7 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
   const [page, setPage] = useState(0)
   const [query, setQuery] = useState('')
   const [unnamed, setUnnamed] = useState(false)
-  const [busy, setBusy] = useState('')
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [reload, setReload] = useState(0)
   const search = useDebouncedValue(query, 300)
 
   useEffect(() => {
@@ -40,24 +36,7 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
       setItems((current) => page > 0 ? [...current, ...body.items] : body.items)
     }).catch((reason) => { if (active) setError(errorMessage(reason)) })
     return () => { active = false }
-  }, [search, unnamed, page, reload])
-
-  async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    setBusy('Загружаем и читаем логотипы…'); setMessage(''); setError('')
-    try {
-      const result = await trademarksApi.upload(file)
-      const notes = [
-        `${formatDisplayNumber(result.excluded)} исключённых пропущено`,
-        result.badLogos.length > 0 ? `логотипы не прочитались: ${result.badLogos.join(', ')}` : '',
-        result.skipped.length > 0 ? `пропущены строки — ${result.skipped.join('; ')}` : '',
-      ].filter(Boolean)
-      setMessage(`Загружено ${formatDisplayNumber(result.summary.total)} действующих записей, из них ${formatDisplayNumber(result.summary.logos)} с логотипом; ${notes.join('; ')}. Логотипы без надписи ИИ подпишет в фоне.`)
-      setPage(0); setReload((value) => value + 1)
-    } catch (reason) { setError(errorMessage(reason)) } finally { setBusy('') }
-  }
+  }, [search, unnamed, page])
 
   async function saveLogoName(item: TrademarkItem, name: string) {
     if (name.trim() === item.logoName) return
@@ -75,17 +54,8 @@ export function TrademarksPage({ user, onLogout }: { user: User; onLogout: () =>
         subtitle={summary?.importedAt
             ? <>Реестр КГД · загружено <time dateTime={summary.importedAt}>{formatRuDate(summary.importedAt.slice(0, 10))}</time>{summary.importedByName && `, ${summary.importedByName}`}{summary.logos > 0 && <> · логотипов подписано ИИ {formatDisplayNumber(summary.logosRead)} из {formatDisplayNumber(summary.logos)}</>}</>
             : 'Товарные знаки под защитой таможни РК.'} />
-      {admin && <div className="kz-step">
-        <span className="kz-step-number">↑</span>
-        <div><b>Загрузить реестр</b><p>Файл КГД как есть (.xls) — без пересохранения: так логотипы сохраняются в исходном качестве. Новый файл заменяет реестр целиком, подписи логотипов переносятся.</p></div>
-        <label className={busy ? 'kz-file primary disabled' : 'kz-file primary'}>
-          {busy || 'Выбрать файл'}
-          <input type="file" accept=".xls,.xlsx" onChange={(event) => void upload(event)} disabled={busy !== ''} />
-        </label>
-      </div>}
-      {message && <p className="dir-transfer-ok" role="status">{message}</p>}
       {error && <p className="dir-transfer-error" role="alert">{error}</p>}
-      {summary && summary.total === 0 ? <p className="sir-empty">{admin ? 'Реестр ещё не загружен.' : 'Реестр ещё не загружен администратором.'}</p> : <>
+      {summary && summary.total === 0 ? <p className="sir-empty">Реестр ещё не загружен: администратор загружает его на странице «Обновление данных».</p> : <>
         <div className="tm-filters">
           <label className="dir-search"><SearchIcon /><input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0) }} placeholder="Знак, номер или правообладатель" aria-label="Поиск по реестру" /></label>
           <label><input type="checkbox" checked={unnamed} onChange={(event) => { setUnnamed(event.target.checked); setPage(0) }} /> Логотипы без надписи</label>

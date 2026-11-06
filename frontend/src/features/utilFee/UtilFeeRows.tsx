@@ -134,7 +134,7 @@ export function UtilFeeRows({ materials, usdRate }: { materials: UtilFeeMaterial
                 : <span className="uf-hint">{out.possible.length > 0 ? 'зависит от полного кода' : out.code ? 'не платится — кода нет в перечне' : ''}</span>)}</td>
               <td className="c-num">{money(out?.product ?? '')}</td>
               <td className="c-num">{money(out?.packaging ?? '')}</td>
-              <td className="c-num"><b>{money(out?.total ?? '')}</b></td>
+              <td className="c-num">{money(out?.total ?? '')}</td>
               <td className="c-num">{usd(out?.totalUsd ?? '')}</td>
               <td className={out?.error ? 'c-note bad' : 'c-note'} title={note}>{note}</td>
             </tr>
