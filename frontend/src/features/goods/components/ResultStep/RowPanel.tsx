@@ -4,8 +4,8 @@ import { formatMoney } from '@/shared/lib/formatDisplayNumber'
 import { nameParts } from '@/shared/tnved/codes'
 import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
 import { AntiDumpingChooser, AntiDumpingInfo } from './AntiDumpingChooser'
-import { RowProblem } from './errorGroups'
-import { displayNumber, dutyRateText, fixedNumber, itemNames, rowPaymentKzt, sirTitle, vatRateText } from './resultValues'
+import { RowProblem } from '../../lib/errorGroups'
+import { displayNumber, dutyRateText, fixedNumber, itemNames, rowPaymentKzt, sirTitle, vatRateText } from '../../lib/resultValues'
 
 // Вес — один знак после запятой: «20 230,0 кг».
 const weight = (value?: string) => { const shown = fixedNumber(value, 1); return shown === '—' ? shown : `${shown} кг` }

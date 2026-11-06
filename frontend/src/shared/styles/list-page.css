@@ -74,10 +74,8 @@
 .dir-table tr.archived code, .dir-table tr.archived .dir-name { opacity: .6; }
 
 .dir-table .c-code { width: 124px; }
-.dir-table .c-rate { width: 96px; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--tf-num); white-space: nowrap; }
 .dir-table .c-num { width: 100px; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
 .dir-table .c-unit { width: 60px; color: var(--tf-text-2); }
-.dir-table .c-tnved { width: 250px; }
 .dir-table .c-status { width: 170px; }
 .dir-table .c-actions { width: 104px; }
 
@@ -99,7 +97,7 @@
   -webkit-line-clamp: 2;
 }
 .dir-table .dir-name:hover:not(:disabled) { background: none; color: var(--tf-green); text-decoration: underline; text-underline-offset: 2px; }
-.dir-table .c-name small, .dir-table .c-tnved small { display: block; margin-top: 2px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
+.dir-table .c-name small { display: block; margin-top: 2px; overflow: hidden; color: var(--tf-muted); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
 .dir-table .c-name { max-width: 0; }
 .dir-none { color: var(--tf-muted); }
 .dir-warn { color: var(--tf-warn-text); font-size: var(--fs-sm); font-weight: 600; }

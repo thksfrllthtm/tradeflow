@@ -205,7 +205,6 @@
 .uf-rows-table td.c-note.bad { color: var(--tf-error); }
 .uf-rows-table tfoot td { position: sticky; bottom: 0; height: 38px; border-top: 1px solid var(--tf-border); background: var(--xl-head); font-weight: 600; }
 .uf-rows-table tfoot td.c-note { color: var(--tf-muted); font-weight: 500; }
-.uf-legend { color: var(--tf-muted); font-style: italic; }
 .uf-rows-table .uf-pay small { color: var(--tf-muted); font-size: var(--fs-xs); }
 .uf-rows-table td.c-in input::placeholder { font-size: var(--fs-sm); }
 .uf-filterbar select.uf-select-short { min-width: 100px; }

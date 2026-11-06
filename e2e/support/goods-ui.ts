@@ -27,7 +27,7 @@ export function item(index: number, overrides: Record<string, unknown> = {}) {
   return {
     id: `e2e-row-${index}`, sourceRow: index + 2, name: `${E2E} товар ${index + 1}`, supplierName: `${E2E} товар ${index + 1}`, standardName: '', code: '',
     pairs: '10', places: '1', pairsPerPlace: '', grossKg: '5', grossWeightUnit: 'kg', netKg: '4', netWeightUnit: 'kg', netSource: 'excel', packageWeightKg: '0.3',
-    coefficient: '', deliveryUsd: '', deliveryManual: false, deliveryIncluded: false, excluded: false, exclusionReason: '', deliveryAlreadyInCost: false,
+    coefficient: '', deliveryUsd: '', deliveryManual: false, deliveryIncluded: false, excluded: false, deliveryAlreadyInCost: false,
     pricePerPair: '2', sourcePricePerPair: '2', costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '', photoUrl: '', photoUrls: [],
     ...overrides,
   }

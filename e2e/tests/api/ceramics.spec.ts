@@ -3,7 +3,7 @@ import { test, expect } from '../../support/fixtures'
 import { E2E, uid } from '../../support/users'
 
 // Керамика: база марок (наименование, марка, цена), точный поиск марок и цена типа/размера —
-// без ИИ. /analyze (ИИ) не вызывается. /price читает только базу (ceramics.go: Price → loadContext).
+// без ИИ. /analyze (ИИ) не вызывается. /price читает только базу (price.go: Price → catalog.go: loadContext).
 
 type Product = { id: number; mark: string; name: string; price: string; productType: string; sizeValue: string; sizeUnit: string; chineseName: string }
 

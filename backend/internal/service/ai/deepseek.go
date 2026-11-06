@@ -30,11 +30,6 @@ type DeepSeekClient struct {
 	lastByUser map[int64]time.Time
 }
 
-// DefaultDeepSeekModel is DeepSeek V4.1 Flash. Without the separate thinking mode it answers in
-// about 2 s (deepseek-v4-pro with thinking: 30–50 s) and still compares products, because the
-// system prompt spells out the reasoning steps.
-const DefaultDeepSeekModel = "deepseek-flash"
-
 const (
 	MaxPriceGroups       = 200
 	maxPriceProducts     = 300
@@ -103,8 +98,8 @@ const priceWeightsSystemPrompt = `Ты — эксперт по ценам вне
 
 Ответь только JSON: {"prices":[{"id":"...","unitPrice":number,"reason":"..."}]}`
 
-// ValidatePriceWeightsRequest checks the groups sent by the browser before any AI call.
-func ValidatePriceWeightsRequest(request *PriceWeightsRequest) error {
+// validatePriceWeightsRequest checks the groups sent by the browser before any AI call.
+func validatePriceWeightsRequest(request *PriceWeightsRequest) error {
 	request.Currency = strings.ToUpper(strings.TrimSpace(request.Currency))
 	if request.Currency == "" {
 		request.Currency = "USD"
@@ -240,7 +235,7 @@ func (c *DeepSeekClient) SuggestUnitPrices(ctx context.Context, userID int64, re
 	if c == nil || c.apiKey == "" || c.model == "" {
 		return nil, ErrAINotConfigured
 	}
-	if err := ValidatePriceWeightsRequest(&request); err != nil {
+	if err := validatePriceWeightsRequest(&request); err != nil {
 		return nil, err
 	}
 	if !c.allow(userID) {
@@ -318,10 +313,7 @@ func (c *DeepSeekClient) SuggestUnitPrices(ctx context.Context, userID int64, re
 
 // parseSuggestedPrices keeps the first valid price for every requested product.
 func parseSuggestedPrices(content string, groups []PriceGroup) ([]SuggestedPrice, error) {
-	content = strings.TrimSpace(content)
-	// Tolerate a Markdown fence around the JSON object.
-	content = strings.TrimPrefix(strings.TrimPrefix(content, "```json"), "```")
-	content = strings.TrimSpace(strings.TrimSuffix(content, "```"))
+	content = UnwrapJSON(content)
 	var answer struct {
 		Prices []struct {
 			ID        string          `json:"id"`
@@ -359,7 +351,14 @@ func parseSuggestedPrices(content string, groups []PriceGroup) ([]SuggestedPrice
 	return result, nil
 }
 
-// parsePositivePrice accepts a JSON number or a numeric string ("7.5", "7,5").
+// UnwrapJSON tolerates a Markdown fence around the JSON object.
+func UnwrapJSON(content string) string {
+	content = strings.TrimSpace(content)
+	content = strings.TrimPrefix(strings.TrimPrefix(content, "```json"), "```")
+	return strings.TrimSpace(strings.TrimSuffix(content, "```"))
+}
+
+// ParsePositivePrice accepts a JSON number or a numeric string ("7.5", "7,5").
 func ParsePositivePrice(raw json.RawMessage) (float64, bool) {
 	text := strings.TrimSpace(string(raw))
 	var quoted string

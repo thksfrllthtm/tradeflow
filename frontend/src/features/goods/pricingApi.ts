@@ -1,7 +1,7 @@
 import { request } from '@/shared/api/client'
 
 // Товар кода: строки одного товара (тот же код и название) склеены, у товара одна цена.
-export type PriceProductInput = { id: string; name: string; quantity: number; places?: number; grossKg?: number; netKg?: number }
+type PriceProductInput = { id: string; name: string; quantity: number; places?: number; grossKg?: number; netKg?: number }
 export type PriceGroupInput = { code: string; unit: string; products: PriceProductInput[] }
 export type SuggestedPrice = { id: string; code: string; unitPrice: number; reason: string }
 type UnitPrice = { code: string; unitPrice: number }

@@ -1,6 +1,6 @@
 package goods
 
-// Расчёт сметы товаров: снимок справочника по каждой строке и общий расчёт растаможки.
+// Расчёт сметы товаров: растаможка по строкам и итоги.
 
 import (
 	"context"
@@ -428,85 +428,4 @@ func (s *GoodsService) Calculate(ctx context.Context, input GoodsCalculationInpu
 	}
 
 	return result, nil
-}
-
-func (s *GoodsService) resolveDirectorySnapshot(ctx context.Context, item GoodsItemInput, genericItems bool) (map[string]any, error) {
-	if s.repository == nil {
-		// Unit tests can exercise the arithmetic without a database. Production
-		// servers always provide a repository and take the trusted path below.
-		return item.DirectorySnapshot, nil
-	}
-	if item.ProductDirectoryID == nil || *item.ProductDirectoryID < 1 {
-		// Строка без карточки товара: код — из ячейки, ставки — из номенклатуры по коду.
-		return nil, nil
-	}
-	product, err := s.repository.ProductDirectoryEntryByID(ctx, *item.ProductDirectoryID)
-	if err != nil {
-		if service.IsNotFound(err) {
-			return nil, fmt.Errorf("карточка товара не найдена")
-		}
-		return nil, fmt.Errorf("не удалось загрузить карточку товара")
-	}
-	if product.ArchivedAt != nil {
-		return nil, fmt.Errorf("выбранная карточка товара архивирована")
-	}
-	if strings.TrimSpace(product.Code) == "" {
-		return nil, fmt.Errorf("у выбранного товара не указан код ТН ВЭД")
-	}
-	if !genericItems && strings.TrimSpace(product.Category) != "Перчатки" {
-		return nil, fmt.Errorf("выбранная карточка относится не к категории «Перчатки»")
-	}
-	// Название, код и ИТС — из карточки товара; пошлина, НДС и антидемпинг — из номенклатуры
-	// и реестра ЕЭК по коду (ApplyNomenclatureRates).
-	snapshot := map[string]any{
-		"category": product.Category, "name": strings.TrimSpace(product.Name), "code": product.Code,
-		"verificationStatus": product.VerificationStatus, "selectedAt": time.Now().UTC().Format(time.RFC3339),
-		// Отмечает карточку товара: только тогда строка берёт название товара вместо названия из Excel.
-		"productDirectoryId": product.ID,
-	}
-	if strings.TrimSpace(product.NameZH) != "" {
-		snapshot["nameZh"] = strings.TrimSpace(product.NameZH)
-	}
-	if product.CompanyCoefficient != nil {
-		snapshot["companyCoefficient"] = service.DecimalText(product.CompanyCoefficient)
-	}
-	return snapshot, nil
-}
-
-func directoryDisplayName(snapshot map[string]any) string {
-	russian, _ := snapshot["name"].(string)
-	chinese, _ := snapshot["nameZh"].(string)
-	russian = strings.TrimSpace(russian)
-	chinese = strings.TrimSpace(chinese)
-	if russian != "" && chinese != "" {
-		return russian + " / " + chinese
-	}
-	if russian != "" {
-		return russian
-	}
-	return chinese
-}
-
-// loadNomenclatureRates читает номенклатуру для всех кодов сметы одним запросом.
-func (s *GoodsService) loadNomenclatureRates(ctx context.Context, codes []string) (calculation.NomenclatureRates, error) {
-	rates := calculation.NomenclatureRates{ByCode: map[string]repository.TNVEDNomenclatureCode{}}
-	latest, err := s.repository.LatestTNVEDNomenclatureImport(ctx)
-	if service.IsNotFound(err) {
-		return rates, nil
-	}
-	if err != nil {
-		return rates, err
-	}
-	rates.Loaded = true
-	if latest.ActualDate != nil {
-		rates.ActualDate = latest.ActualDate.Format("02.01.2006")
-	}
-	rows, err := s.repository.TNVEDNomenclatureByCodes(ctx, codes)
-	if err != nil {
-		return rates, err
-	}
-	for _, row := range rows {
-		rates.ByCode[row.Code] = row
-	}
-	return rates, nil
 }

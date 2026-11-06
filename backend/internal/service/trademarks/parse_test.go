@@ -3,6 +3,7 @@ package trademarks
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"image"
 	"image/color"
 	"image/png"
@@ -161,5 +162,29 @@ func TestParseRealSampleCropAndSeveralPictures(t *testing.T) {
 	// DENSO: в файле квадрат с полями, в Excel видна только красная полоса.
 	if denso := decode(parsed.Entries[2].Logo).Bounds(); float64(denso.Dx())/float64(denso.Dy()) < 2.5 {
 		t.Fatalf("DENSO not cropped: %v", denso)
+	}
+}
+
+// Картинка с заголовком «60000×60000» не распаковывается.
+func TestLogoThumbRejectsHugeDimensions(t *testing.T) {
+	var buffer bytes.Buffer
+	_ = png.Encode(&buffer, image.NewGray(image.Rect(0, 0, 1, 1)))
+	raw := buffer.Bytes()
+	binary.BigEndian.PutUint32(raw[16:], 60000) // ширина и высота в IHDR
+	binary.BigEndian.PutUint32(raw[20:], 60000)
+	if logo := logoThumb(sheetPicture{Ext: ".png", Data: raw}); logo != "" {
+		t.Fatal("huge image accepted")
+	}
+}
+
+func TestParseUntilAndSpaces(t *testing.T) {
+	if date := parseUntil("с 01.01.2018 по 19.07.2028"); date == nil || date.Format("2006-01-02") != "2028-07-19" {
+		t.Fatalf("%v", date)
+	}
+	if date := parseUntil("31.06.2027"); date != nil {
+		t.Fatalf("31 июня: %v", date)
+	}
+	if got := spaces.ReplaceAllString("00001 /ТЗ-260905", ""); got != "00001/ТЗ-260905" {
+		t.Fatalf("%q", got)
 	}
 }

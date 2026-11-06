@@ -4,7 +4,7 @@ import { formatRuDate } from '@/shared/lib/dates'
 import { moneyText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult } from '@/shared/types/goods'
 import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
-import { calculatedRows, customsPaymentsUsd, displayNumber, hasAntiDumping, parseCalculatorNumber } from './resultValues'
+import { calculatedRows, customsPaymentsUsd, displayNumber, hasAntiDumping, parseCalculatorNumber } from '../../lib/resultValues'
 import './ResultSummary.css'
 
 type SummaryProps = {

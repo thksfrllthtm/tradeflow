@@ -9,22 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func AllocateDelivery(items []CalculationItem, totalUSD *decimal.Decimal, rates ...decimal.Decimal) {
-	// The variadic tail keeps source compatibility with the former internal
-	// helper signature (wagons, tariff, usd) while the service now passes the
-	// already resolved party total and usd rate.
-	var usd decimal.Decimal
-	if len(rates) == 1 {
-		usd = rates[0]
-	} else if len(rates) >= 2 {
-		if totalUSD != nil {
-			total := totalUSD.Mul(rates[0]).Round(2)
-			totalUSD = &total
-		}
-		usd = rates[1]
-	} else {
-		return
-	}
+func AllocateDelivery(items []CalculationItem, totalUSD *decimal.Decimal, usd decimal.Decimal) {
 	// Values previously distributed by another calculation are never a source
 	// of truth. Keep only explicitly edited manual rows; all automatic rows are
 	// rebuilt from the active party delivery mode.

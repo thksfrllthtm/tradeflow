@@ -191,8 +191,7 @@ func CalculateItem(in CalculationItemInput, usd, euro, defaultPkg decimal.Decima
 			warnings = append(warnings, "ИТС не может быть отрицательным")
 		}
 		if coeff != nil && net != nil && net.IsPositive() {
-			// Legacy fallback for drafts created before explicit cost and
-			// price-per-pair inputs existed.
+			// Без цены стоимость = ИТС карточки товара (USD/кг) × нетто.
 			calculated := coeff.Mul(*net)
 			cost = &calculated
 		} else if !in.SIR.HasIndicator() {

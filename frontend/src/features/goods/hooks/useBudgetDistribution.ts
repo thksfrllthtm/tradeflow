@@ -26,7 +26,7 @@ function storedGap(): { min: string; max: string; mode: GapMode } {
 }
 
 // Знаков после запятой в подобранных ценах: 2 (по умолчанию) или 4. Браузер запоминает выбор.
-export type PriceDecimals = 2 | 4
+type PriceDecimals = 2 | 4
 const decimalsStorageKey = 'tradeflow.budgetDecimals'
 function storedDecimals(): PriceDecimals {
   try { return localStorage.getItem(decimalsStorageKey) === '4' ? 4 : 2 } catch { return 2 }

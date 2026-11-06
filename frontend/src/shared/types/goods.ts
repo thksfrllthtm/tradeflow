@@ -3,10 +3,10 @@
 export type SheetInfo = { name: string; rows: number }
 
 type CalculationItem = {
-  productId: number; directorySnapshot?: Record<string, unknown>; standardName: string; supplierName: string; photoUrl: string; imageAssetIds?: number[]; code: string
+  directorySnapshot?: Record<string, unknown>; standardName: string; supplierName: string; photoUrl: string; imageAssetIds?: number[]; code: string
   pairs: string; places: string; pairsPerPlace: string; grossKg: string; grossWeightUnit?: string; netKg: string; netWeightUnit?: string; netSource: string; packageWeightKg: string; coefficient: string
   pricePerPair: string; costInput: string; costCurrency: string; extraExpenses: string; customsValueDirectKzt: string
-  deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean; exclusionReason: string
+  deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean
   costUsd: string; pairPriceUsd: string; goodsCost: string; goodsCostCurrency: string; pairPrice: string; customsValueKzt: string; dutyKzt: string; antiDumpingKzt: string; vatKzt: string; vatBaseKzt: string; feeKzt: string; deliveryKzt: string; status: string; errors: string[]; warnings: string[]
   // ТС по СУР: customsBasis = 'sir' и sir — как посчитано; без них — по инвойсу.
   customsBasis?: 'sir'; sir?: SirResult
@@ -25,7 +25,7 @@ export type GoodsParseRow = { sourceRow: number; values: Record<string, string>;
 export type GoodsParseResult = { sheets: SheetInfo[]; headers: string[]; rows: GoodsParseRow[]; images: { sourceRow: number; mimeType: string; data: string }[]; warnings?: string[] }
 export type GoodsSourceSnapshot = { filename: string; signature: string; sheet: string; headerRow: number; dataStartRow: number; headers: string[]; rows: GoodsParseRow[]; mapping: Record<string, string> }
 export type GoodsItemInput = {
-  id?: string; productId?: number; sourceRow?: number; productDirectoryId?: number; directorySnapshot?: Record<string, unknown>
+  id?: string; sourceRow?: number; productDirectoryId?: number; directorySnapshot?: Record<string, unknown>
   name: string; supplierName: string; standardName: string; photoUrl: string; photoUrls?: string[]; code: string
   // Другие колонки наименования из файла — у старых смет (раньше «Наименование 2/3»).
   otherNames?: string[]
@@ -35,7 +35,7 @@ export type GoodsItemInput = {
   antiDumpingChoice?: string
   pairs: string; places: string; pairsPerPlace: string; grossKg: string; grossWeightUnit?: string; netKg: string; netWeightUnit?: string; netSource: string; packageWeightKg: string; coefficient: string
   pricePerPair: string; sourcePricePerPair?: string; costInput: string; costCurrency: string; extraExpenses: string; customsValueDirectKzt: string
-  deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean; exclusionReason: string
+  deliveryUsd: string; deliveryManual: boolean; deliveryAlreadyInCost: boolean; deliveryIncluded: boolean; excluded: boolean
 }
 export type GoodsCalculationInput = { assessmentDate: string; origin: string; usdKzt: string; eurKzt: string; deliveryMode: '' | 'none' | 'wagons' | 'total'; wagons: string; wagonTariffUsd: string; deliveryTotalUsd: string; packageWeightKg: string; customsFeeKzt: string; mrp: string; feeMultiplier: string; cashUsd: string; items: GoodsItemInput[]; source?: GoodsSourceSnapshot; directoryCoefficientOnly?: boolean; genericItems?: boolean; resultTools?: GoodsResultTools } & SirParams
 // Инструменты этапа «Результат», сохраняемые со сметой: подбор цен под бюджет (бюджет, разница,

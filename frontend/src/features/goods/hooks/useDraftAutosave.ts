@@ -1,7 +1,6 @@
 import { MutableRefObject, useEffect, useRef } from 'react'
-import { MAX_LOCAL_STORAGE_CHARS, storageKey } from '../lib/localDraft'
 import { GoodsCalculationResult, GoodsItemInput, GoodsParams } from '@/shared/types/goods'
-import { draftSnapshot, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, PARAMS_KEY, RESULT_KEY } from '../lib/draftStorage'
+import { draftSnapshot, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, MAX_LOCAL_STORAGE_CHARS, PARAMS_KEY, RESULT_KEY, storageKey } from '../lib/draftStorage'
 
 // Сохранение черновика в браузер откладывается до паузы в вводе, чтобы не
 // сериализовать все строки и фотографии на каждое нажатие клавиши.

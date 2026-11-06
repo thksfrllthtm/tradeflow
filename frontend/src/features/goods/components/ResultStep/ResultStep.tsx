@@ -1,25 +1,25 @@
-import { CopyCode } from '@/shared/components/CopyCode/CopyCode'
-import { KeyboardEvent, MouseEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { trackFooterGap } from '../../lib/footerGap'
+import { MouseEvent, ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { GoodsCalculationResult, GoodsItemInput, ItpSaved, SirParams } from '@/shared/types/goods'
-import { moneyText } from '@/shared/lib/rounding'
-import { AiDot, budgetAmount, BudgetMeter, BudgetRunButton, BudgetStatus, RunMode } from '../BudgetTool/BudgetTool'
+import { BudgetMeter, BudgetRunButton, BudgetStatus, budgetAmount, RunMode } from '../BudgetTool/BudgetTool'
 import { BudgetDistributionState } from '../../hooks/useBudgetDistribution'
 import { changedFromExcel, changedFromRows, priceDiffers, shownPrice } from '../../lib/priceChanges'
 import { storageFailed } from '../../lib/storageNotice'
 import { CalculatorActivity } from '../../types'
 import { CalculationErrors } from './CalculationErrors'
-import { AntiDumpingChooser, AntiDumpingInfo, antiDumpingTone } from './AntiDumpingChooser'
+import { AntiDumpingInfo, antiDumpingTone } from './AntiDumpingChooser'
 import { ItpCalculator } from './ItpCalculator'
+import { ResultMenu } from './ResultMenu'
 import { ResultSummary } from './ResultSummary'
+import { ResultRow, ResultTable, StateIcon } from './ResultTable'
 import { RowPanel } from './RowPanel'
 import { SirControls } from './SirControls'
 import { SirCompareModal } from './SirCompareModal'
-import { commonProblems, plural, problemGroups, ProblemTone, rowProblems } from './errorGroups'
-import { calculatedRows, customsPaymentsUsd, displayNumber, fixedNumber, excelColumn, excelColumnHtml, hasAntiDumping, itemDisplayName, itemNames, parseCalculatorNumber, RowState, rowPaymentKzt, rowState, rowTotals, sirTitle, textColumn } from './resultValues'
-import { CopyColumn } from '@/shared/components/CopyCode/CopyColumn'
+import { usePriceInput } from './usePriceInput'
+import { useTableFit } from './useTableFit'
+import { plural } from '@/shared/lib/plural'
+import { commonProblems, problemGroups, rowProblems } from '../../lib/errorGroups'
+import { calculatedRows, customsPaymentsUsd, itemNames, parseCalculatorNumber, rowState } from '../../lib/resultValues'
 import { SearchIcon } from '@/shared/components/icons'
-import { spaceBelow } from '../../lib/spaceBelow'
 import '../../goods.css'
 import '@/shared/styles/list-page.css'
 import './ResultStep.css'
@@ -76,22 +76,6 @@ const storedAllColumns = () => {
 
 const positive = (value: unknown) => (parseCalculatorNumber(value as string) ?? 0) > 0
 
-// Значок у номера: ошибка, предупреждение, следующий шаг (нет цены), исключена.
-type Mark = 'bad' | 'warn' | 'todo' | 'off'
-const MARK_LABEL: Record<Mark, string> = { bad: 'Ошибка', warn: 'Проверить', todo: 'Не указана цена', off: 'Исключена' }
-const MARK: Record<ProblemTone, Mark> = { error: 'bad', warn: 'warn', todo: 'todo' }
-
-// Значок состояния строки: форма отличается, а не только цвет (!, ?, –).
-function StateIcon({ state }: { state: RowState | Mark }) {
-  return <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {state === 'ok' && <path d="M2.8 6.3 5 8.4l4.2-4.6" />}
-    {state === 'bad' && <><path d="M6 2.8v4" /><circle cx="6" cy="9.2" r=".5" fill="currentColor" /></>}
-    {state === 'warn' && <><path d="M4.4 4.4a1.7 1.7 0 1 1 2.4 1.5c-.5.3-.8.6-.8 1.2v.2" /><circle cx="6" cy="9.4" r=".5" fill="currentColor" /></>}
-    {state === 'off' && <path d="M3.4 6h5.2" />}
-    {state === 'todo' && <circle cx="6" cy="6" r="1.6" fill="currentColor" />}
-  </svg>
-}
-
 // Поле в фокусе (ввод текста) — стрелки принадлежат ему, а не таблице.
 const typing = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
 
@@ -126,9 +110,6 @@ export function ResultStep({
   canUndoPrices,
   budget,
 }: Props) {
-  // Цена, которую сейчас вводят: пока поле в фокусе, показываем ровно её (в том числе пустую),
-  // иначе стёртое поле сразу заполнилось бы рассчитанной ценой. Пересчёт — при выходе из поля.
-  const [draftPrices, setDraftPrices] = useState<Record<number, string>>({})
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [allColumns, setAllColumns] = useState(storedAllColumns)
@@ -162,42 +143,8 @@ export function ResultStep({
     row.cells[col]?.classList.add('rs-active-cell')
     table.tHead?.rows[0]?.cells[col]?.classList.add('rs-active-col')
   })
-  const menuRef = useRef<HTMLDetailsElement>(null)
-  // Цена до начала ввода (для Esc) и строка, выход из которой не должен пересчитывать.
-  const editStartRef = useRef<{ index: number; value: string } | null>(null)
-  const skipBlurRef = useRef<number | null>(null)
-  // Таблица и панель строки — до низа окна, как лист этапа проверки: строки прокручиваются внутри, шапка
-  // и «Итого» всегда на виду. Мерим блок «таблица + панель» (.rs-layout): --rs-top — где он начинается,
-  // --rs-after — что под ним (подпись «Предварительный расчёт» и нижний отступ страницы), --rs-around —
-  // строка фильтров и рамка карточки вокруг прокрутки.
   const tableWrapRef = useRef<HTMLDivElement | null>(null)
-  const measureTable = useCallback(() => {
-    const wrap = tableWrapRef.current
-    const layout = wrap?.closest<HTMLElement>('.rs-layout')
-    const card = wrap?.closest('.rs-card')
-    if (!wrap || !layout || !card) return
-    const box = wrap.getBoundingClientRect()
-    const area = layout.getBoundingClientRect()
-    const frame = card.getBoundingClientRect()
-    layout.style.setProperty('--rs-top', `${area.top + window.scrollY}px`)
-    layout.style.setProperty('--rs-after', `${spaceBelow(layout)}px`)
-    layout.style.setProperty('--rs-around', `${box.top - frame.top + frame.bottom - box.bottom}px`)
-  }, [])
-  useLayoutEffect(measureTable)
-  // Высота страницы сменилась без рендера этапа (раскрылась плашка ошибок, догрузились шрифты и фото) — тоже
-  // перемер: иначе таблица останется по старой высоте и под ней будет пустота. Окно — для высоты окна.
-  useEffect(() => {
-    const page = tableWrapRef.current?.closest('.goods-page')
-    const observer = new ResizeObserver(measureTable)
-    if (page) observer.observe(page)
-    window.addEventListener('resize', measureTable)
-    return () => { observer.disconnect(); window.removeEventListener('resize', measureTable) }
-  }, [measureTable])
-  // «Итого» — внизу области таблицы, даже когда строк мало.
-  useEffect(() => {
-    const wrap = tableWrapRef.current, table = tableRef.current
-    return wrap && table ? trackFooterGap(wrap, table) : undefined
-  }, [])
+  useTableFit(tableWrapRef, tableRef)
   const closeCompare = useCallback(() => setCompareOpen(false), [])
   // По СУР: итог того же расчёта по инвойсу — для строки разницы под «К оплате». Пробный расчёт, смета не меняется.
   const [invoiceTotal, setInvoiceTotal] = useState<string | null>(null)
@@ -212,23 +159,22 @@ export function ResultStep({
     return () => { active = false }
   }, [sirOn, result])
 
-  const checkTotals = rowTotals(result)
-  const antiDumping = hasAntiDumping(result)
   // Колонка доставки нужна, только если доставка есть.
   const delivery = positive(result.totals.totalDeliveryUsd) || result.items.some((item) => positive(item.deliveryUsd))
   // По СУР цены инвойса на ТС не влияют: подбирать их под бюджет бессмысленно.
   const sirMode = sir.customsValueMode === 'sir'
   const includedRows = result.items.filter((item) => !item.excluded)
   const sirRows = includedRows.filter((item) => item.customsBasis === 'sir').length
-  const sirGross = sir.sirWeight === 'gross'
-  const sirDiscount = Number(sir.sirDiscountPercent || 0)
-  const sirValueUsd = includedRows.reduce((total, item) => total + (parseCalculatorNumber(item.sir ? item.sir.valueUsd : item.costUsd) ?? 0), 0)
   const calculating = activity === 'calculate'
+  const { priceOf, priceInput } = usePriceInput({
+    result, items, notes: budget.notes, sirMode, tableRef, onPriceChange, onPriceBlur,
+    onFocusCell: (index, cellIndex) => { setSelected(index); if (cellIndex !== null) setActiveCol(cellIndex) },
+  })
 
   // Цены нет ни у одной строки: следующий шаг — подбор цен (главная кнопка), выгружать ещё нечего. Тогда «нет цены»
   // не проблема строк: ни баннера, ни вкладки «Внимание», ни значков.
   const noPrices = !sirMode && includedRows.length > 0 && result.items.every((item, index) => item.excluded || !positive(item.pricePerPair || item.pairPrice || items[index]?.pricePerPair))
-  const rows = result.items.map((item, index) => {
+  const rows: ResultRow[] = result.items.map((item, index) => {
     const state = rowState(item)
     const antiDumpingInfo = item.directorySnapshot?.antiDumping as AntiDumpingInfo | undefined
     const adAsk = !item.excluded && antiDumpingTone(antiDumpingInfo) === 'ask'
@@ -270,14 +216,7 @@ export function ResultStep({
   })
   const selectedRow = selected === null ? null : rows[selected] ?? null
   const selectedPosition = selectedRow ? visible.indexOf(selectedRow) : -1
-  // Копируются все строки, даже при фильтре: иначе в Excel значения съедут.
-  const copyCol = (label: string, get: (item: GoodsCalculationResult['items'][number], index: number) => string | undefined) =>
-    <CopyColumn label={label} text={() => excelColumn(result.items.map(get))} html={() => excelColumnHtml(result.items.map(get))} />
-  const copyNames = <CopyColumn label="Товар" text={() => textColumn(result.items.map((item, index) => itemDisplayName(item, items[index])))} />
-  // Код — только цифры, как у CopyCode.
-  const copyCodes = <CopyColumn label="Код ТН ВЭД" text={() => textColumn(rows.map((row) => row.code.replace(/\D/g, '')))} />
   const changed = changedFromExcel(items, result)
-  const priceOf = (index: number) => draftPrices[index] ?? (result.items[index]?.pricePerPair || result.items[index]?.pairPrice || items[index]?.pricePerPair || '')
 
   useEffect(() => {
     if (flashRow === null) return
@@ -333,26 +272,6 @@ export function ResultStep({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Меню «⋯» закрывается щелчком мимо и клавишей Esc.
-  useEffect(() => {
-    const close = (event: Event) => {
-      const menu = menuRef.current
-      if (!menu?.open) return
-      if (event instanceof globalThis.KeyboardEvent) {
-        if (event.key !== 'Escape') return
-        menu.open = false
-        menu.querySelector('summary')?.focus()
-      } else if (!event.composedPath().includes(menu)) menu.open = false
-    }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', close)
-    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close) }
-  }, [])
-
-  function closeMenuOnItem(event: MouseEvent<HTMLElement>) {
-    if ((event.target as HTMLElement).closest('.rs-menu-item') && menuRef.current) menuRef.current.open = false
-  }
-
   function toggleAllColumns(value: boolean) {
     setAllColumns(value)
     try { localStorage.setItem(ALL_COLUMNS_KEY, value ? '1' : '0') } catch { /* без памяти — выбор на эту сессию */ }
@@ -372,72 +291,20 @@ export function ResultStep({
     })
   }
 
-  // Excel-привычка в таблице: Enter / ↓ — следующая цена, Shift+Enter / ↑ — предыдущая, Esc — вернуть цену.
-  // В панели Enter применяет цену.
-  function priceKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number, inTable: boolean) {
-    if (event.key === 'Escape') {
-      const start = editStartRef.current
-      if (start?.index === index && draftPrices[index] !== undefined) {
-        event.preventDefault()
-        onPriceChange(index, start.value)
-        setDraftPrices(({ [index]: _done, ...rest }) => rest)
-        skipBlurRef.current = index
-        event.currentTarget.blur()
-      }
-      return
-    }
-    if (!inTable) {
-      if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() }
-      return
-    }
-    const back = event.key === 'ArrowUp' || (event.key === 'Enter' && event.shiftKey)
-    if (event.key !== 'Enter' && event.key !== 'ArrowDown' && !back) return
-    event.preventDefault()
-    const inputs = Array.from(tableRef.current?.querySelectorAll<HTMLInputElement>('input.rs-price:not(:disabled)') ?? [])
-    const next = inputs[inputs.indexOf(event.currentTarget) + (back ? -1 : 1)]
-    if (next) { next.focus(); next.select() } else event.currentTarget.blur()
-  }
-
-  // Поле цены строки — одно и то же в таблице и в панели.
-  function priceInput(index: number, inTable: boolean, label: string) {
-    const item = result.items[index]
-    const source = items[index]
-    const price = priceOf(index)
-    const edited = !item.excluded && !budget.notes[index] && priceDiffers(source?.sourcePricePerPair, price)
-    return <input
-      className={[inTable ? 'rs-price' : 'rp-price', edited ? 'edited' : ''].filter(Boolean).join(' ')}
-      inputMode="decimal"
-      value={price.replace('.', ',')}
-      placeholder="—"
-      disabled={item.excluded || (sirMode && !inTable)}
-      title={edited ? `В Excel: ${displayNumber(source?.sourcePricePerPair)} USD` : undefined}
-      onFocus={(event) => {
-        editStartRef.current = { index, value: price }
-        setSelected(index)
-        // Поле в таблице — рамка выбранной ячейки на цене (щелчок по полю до строки не доходит, фокус — с клавиатуры).
-        const cell = event.currentTarget.closest('td')
-        if (cell) setActiveCol(cell.cellIndex)
-      }}
-      onClick={(event) => event.stopPropagation()}
-      onChange={(event) => { const value = event.target.value.replace(',', '.'); setDraftPrices((current) => ({ ...current, [index]: value })); onPriceChange(index, value) }}
-      onBlur={() => {
-        if (skipBlurRef.current === index) { skipBlurRef.current = null; return }
-        const value = draftPrices[index]
-        if (value === undefined) return
-        setDraftPrices(({ [index]: _done, ...rest }) => rest)
-        // Пустое поле — убрать цену: строка считается без неё (по ИТП или с пометкой «Укажите цену»).
-        onPriceBlur(index, value.trim())
-      }}
-      onKeyDown={(event) => priceKeyDown(event, index, inTable)}
-      aria-label={label}
-    />
+  // Щелчок по строке выбирает ячейку; по номеру или наименованию (не по полю, кнопке, ссылке) — открывает карточку строки.
+  function rowClick(event: MouseEvent<HTMLTableRowElement>, index: number) {
+    const target = event.target as HTMLElement
+    const cell = target.closest('td')
+    if (cell && cell.cellIndex > 1) setActiveCol(cell.cellIndex)
+    setSelected(index)
+    if (cell && cell.cellIndex <= 2 && !target.closest('input, button, a')) setPanelOpen(true)
   }
 
   function backToReview() {
     const count = changed.length
     const bulk = canUndoPrices || Object.keys(budget.notes).length > 0
     if (!window.confirm(count > 0
-      ? `Цены этапа «Результат» вернутся к ценам из Excel: изменено ${count} ${plural(count, ['цена', 'цены', 'цен'])}. Перейти к проверке строк?`
+      ? `Цены этапа «Результат» вернутся к ценам из Excel: изменено ${count} ${plural(count, 'цена', 'цены', 'цен')}. Перейти к проверке строк?`
       : bulk ? 'Цены подбора под кассу сбросятся. Перейти к проверке строк?'
       : 'Перейти к проверке строк? Цены, изменённые на этапе «Результат», вернутся к ценам из Excel.')) return
     onBackToReview()
@@ -445,7 +312,7 @@ export function ResultStep({
 
   function restoreInitial() {
     // Пункт неактивен, пока менять нечего (replaceable = 0).
-    if (!window.confirm(`Вернуть цены из файла? Изменится ${replaceable} ${plural(replaceable, ['цена', 'цены', 'цен'])} после подбора под кассу; цены, введённые вручную, останутся. Вернуть подбор можно пунктом «Отменить подбор цен».`)) return
+    if (!window.confirm(`Вернуть цены из файла? Изменится ${replaceable} ${plural(replaceable, 'цена', 'цены', 'цен')} после подбора под кассу; цены, введённые вручную, останутся. Вернуть подбор можно пунктом «Отменить подбор цен».`)) return
     onRestoreInitial()
   }
 
@@ -456,7 +323,7 @@ export function ResultStep({
   function startRun(mode: RunMode) {
     if (budgetAmount(budget) === null) { document.getElementById('rs-budget')?.focus(); return }
     if (replaceable > 0) {
-      if (!window.confirm(`Заменить текущие цены у ${replaceable} ${plural(replaceable, ['строки', 'строк', 'строк'])}? Отменить можно через «Отменить подбор цен».`)) return
+      if (!window.confirm(`Заменить текущие цены у ${replaceable} ${plural(replaceable, 'строки', 'строк', 'строк')}? Отменить можно через «Отменить подбор цен».`)) return
       setPendingRun(mode)
       onRestoreInitial()
       return
@@ -478,20 +345,13 @@ export function ResultStep({
     const adAsk = rows.filter((row) => !row.item.excluded && antiDumpingTone(row.antiDumpingInfo) === 'ask').length
     const notes = [
       calculatedRows(result) < result.totals.totalCount && `рассчитано ${calculatedRows(result)} из ${result.totals.totalCount} строк — итог неполный`,
-      adAsk > 0 && `антидемпинг не выбран: ${adAsk} ${plural(adAsk, ['строка', 'строки', 'строк'])}`,
+      adAsk > 0 && `антидемпинг не выбран: ${adAsk} ${plural(adAsk, 'строка', 'строки', 'строк')}`,
     ].filter(Boolean)
     if (notes.length > 0 && !window.confirm(`Перед выгрузкой: ${notes.join('; ')}. Выгрузить Excel всё равно?`)) return
     exportExcel()
   }
 
   const failed = storageFailed(storageNotice)
-  // «Все колонки»: ширины колонок, px (CSS), таблица не уже их суммы — «Товар» не уже 160 px и забирает остальное место.
-  const wideMinWidth = 36 + 22 + 160 + 128 + 88 + 96 + 96 + 104 + (sirMode && sirDiscount > 0 ? 96 : 0) + (delivery ? 104 : 0) + 120 + 112 + (antiDumping ? 112 : 0) + 112 + 96 + 136
-  // Итог колонки: значения нет ни у одной строки — «—», а не 0,00. calculatedOnly — суммы, которых нет у строк с ошибкой.
-  const colTotal = (get: (item: GoodsCalculationResult['items'][number]) => string | undefined, total: string, calculatedOnly = false) =>
-    includedRows.some((item) => !(calculatedOnly && item.errors?.length) && String(get(item) ?? '').trim() !== '') ? total : '—'
-  // Стоимость, USD — и в обычном виде (8 колонок), остальные — только во «Всех колонках».
-  const columns = 8 + (allColumns ? 1 + (sirMode && sirDiscount > 0 ? 1 : 0) + (delivery ? 1 : 0) + 4 + (antiDumping ? 1 : 0) : 0)
   const tabs: { value: Filter; label: string; count: number }[] = [
     { value: 'all', label: 'Все', count: rows.length },
     { value: 'attention', label: 'Внимание', count: counts.attention },
@@ -500,22 +360,6 @@ export function ResultStep({
 
   // Пока у строк нет кода ТН ВЭД, подбирать цены бессмысленно: пошлину и НДС не посчитать.
   const codeFirst = hasCodeProblems ? 'Сначала укажите коды ТН ВЭД' : undefined
-
-  // Меню «⋯» — проверки и вид; подбор и откат цен — в стрелке кнопки «Подобрать цены ИИ».
-  const menu = <details className="rs-more" ref={menuRef}>
-    <summary className="icon-button" title="Ещё действия" aria-label="Ещё действия">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="3.5" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="12.5" cy="8" r="1.3" /></svg>
-    </summary>
-    <div className="rs-menu" onClick={closeMenuOnItem}>
-      <p className="rs-menu-label">Проверки</p>
-      <button type="button" className="rs-menu-item" onClick={() => setCompareOpen(true)} disabled={loading} title="Сравнить инвойс и СУР: итоги и каждая строка рядом">Сравнить с СУР</button>
-      <button type="button" className="rs-menu-item" onClick={() => setItpOpen(true)}>Сверка по ИТП{itp?.value ? ' · задана' : ''}</button>
-      <hr />
-      <p className="rs-menu-label">Вид</p>
-      <label className="rs-menu-item rs-menu-check"><input type="checkbox" checked={allColumns} onChange={(event) => toggleAllColumns(event.target.checked)} />Показать все колонки</label>
-    </div>
-  </details>
-
 
   return (
     <div className={agentOpen ? 'goods-step-page rs-step with-agent' : 'goods-step-page rs-step'}>
@@ -536,7 +380,7 @@ export function ResultStep({
             <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" /></svg>
             {activity === 'export' ? 'Готовим файл…' : 'Экспорт в Excel'}
           </button>
-          {menu}
+          <ResultMenu loading={loading} itpSet={Boolean(itp?.value)} allColumns={allColumns} onCompare={() => setCompareOpen(true)} onItp={() => setItpOpen(true)} onAllColumns={toggleAllColumns} />
         </div>
       </>} footer={<SirControls sir={sir} sirRows={sirRows} totalRows={includedRows.length} disabled={loading} onChange={onSirChange}>
         {/* Бюджет и подбор цен — в нижней строке справа; по СУР цены не подбираются. */}
@@ -569,113 +413,9 @@ export function ResultStep({
             </label>
           </div>
 
-
-          <div className={allColumns ? 'rs-table-wrap wide' : 'rs-table-wrap'} ref={tableWrapRef}>
-            <table className="rs-table" ref={tableRef} style={allColumns ? { ['--rs-min' as string]: `${wideMinWidth}px` } : undefined}>
-              <caption className="rs-sr">Строки расчёта: нажмите на строку, чтобы открыть подробности; ↑ ↓ — соседняя строка. Цену можно менять в таблице: Enter — следующая строка, Esc — вернуть цену</caption>
-              <thead>
-                <tr>
-                  <th className="rs-num" scope="col">№</th>
-                  <th className="rs-mark" scope="col"><span className="rs-sr">Состояние строки</span></th>
-                  <th className="rs-name" scope="col">{copyNames}Товар</th>
-                  <th className="rs-code" scope="col">{copyCodes}Код ТН ВЭД</th>
-                  <th className="rs-qty" scope="col">{copyCol('Кол-во', (item) => item.pairs)}Кол-во</th>
-                  {allColumns && (sirMode ? <>
-                    <th className="rs-w" scope="col" title={sirGross ? 'Вес брутто — по нему считается ТС' : 'Вес нетто — по нему считается ТС'}>{copyCol(sirGross ? 'Брутто' : 'Нетто', (item) => sirGross ? item.grossKg : item.netKg)}{sirGross ? 'Брутто' : 'Нетто'}, кг</th>
-                  </> : <th className="rs-w" scope="col">{copyCol('Нетто', (item) => item.netKg)}Нетто, кг</th>)}
-                  {/* Главная колонка СУР — цена со снижением, по ней считается ТС; исходный индикатор — только во «Всех колонках». */}
-                  {allColumns && sirMode && sirDiscount > 0 && <th scope="col" className="rs-sir-col" title="Стоимостной индикатор риска из файла профиля, USD за 1 кг">{copyCol('СУР', (item) => item.sir?.priceUsd)}СУР, USD/кг</th>}
-                  {sirMode
-                    ? <th scope="col" className="rs-sir-col" title={sirDiscount > 0 ? `Индикатор со снижением: берётся ${100 - sirDiscount} %` : 'Стоимостной индикатор риска из файла профиля, USD за 1 кг'}>{copyCol(sirDiscount > 0 ? 'СУР со снижением' : 'СУР', (item) => item.sir?.pricePerKgUsd)}{sirDiscount > 0 ? `СУР −${displayNumber(sir.sirDiscountPercent)}%` : 'СУР'}, USD/кг</th>
-                    : <th scope="col" className="rs-price-col" title="Цену единицы можно менять прямо в таблице">{copyCol('Цена ед.', (_item, index) => priceOf(index))}Цена, USD</th>}
-                  {sirMode
-                    ? <th className="rs-usd" scope="col" title="Вес × СУР со снижением; у строк без индикатора — стоимость по инвойсу">{copyCol('ТС, USD', (item) => item.sir ? item.sir.valueUsd : item.goodsCost || item.costInput)}ТС, USD</th>
-                    : <th className="rs-usd" scope="col">{copyCol('Стоимость', (item) => item.goodsCost || item.costInput)}Стоимость, USD</th>}
-                  {allColumns && <>
-                    {delivery && <th className="rs-usd" scope="col">{copyCol('Доставка', (item) => item.deliveryUsd)}Доставка, USD</th>}
-                    <th className="rs-cv" scope="col" title="Таможенная стоимость">{copyCol('ТС, KZT', (item) => item.customsValueKzt)}ТС, KZT</th>
-                    <th className="rs-tax" scope="col">{copyCol('Пошлина', (item) => item.dutyKzt)}Пошлина, KZT</th>
-                    {antiDumping && <th className="rs-tax" scope="col">{copyCol('Антидемпинг', (item) => item.antiDumpingKzt)}Антидемпинг, KZT</th>}
-                    <th className="rs-tax" scope="col">{copyCol('НДС', (item) => item.vatKzt)}НДС, KZT</th>
-                    <th className="rs-fee" scope="col" title="Таможенный сбор">{copyCol('Сбор', (item) => item.feeKzt)}Сбор, KZT</th>
-                  </>}
-                  <th className="rs-pay" scope="col" title="Пошлина + антидемпинг + НДС + сбор">{copyCol('К оплате', (item) => rowPaymentKzt(item))}К оплате, KZT</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.length === 0 && <tr className="rs-empty"><td className="dir-empty" colSpan={columns}>
-                  {needle ? 'Ничего не найдено.' : filter === 'attention' ? 'Строк, требующих внимания, больше нет.' : 'Таких строк нет.'} <button type="button" className="button-link" onClick={() => { setFilter('all'); setQuery('') }}>Показать все строки</button>
-                </td></tr>}
-                {visible.map(({ item, index, state, problems, antiDumpingInfo, names, code, aiNote }) => {
-                  const source = items[index]
-                  // Значок и текст — только у проблем, которых нет у большинства строк (общие — в баннере).
-                  const reason = problems.filter((problem) => !common.has(problem.text))
-                  const tone = (['error', 'warn', 'todo'] as const).find((value) => reason.some((problem) => problem.tone === value))
-                  const mark: Mark | null = item.excluded ? 'off' : tone ? MARK[tone] : null
-                  const currency = item.goodsCostCurrency || item.costCurrency || 'USD'
-                  const rowClass = [
-                    `rs-row-${state}`,
-                    item.excluded ? 'rv-excluded' : '',
-                    selected === index ? 'selected' : '',
-                    flashRow === index ? 'flash' : '',
-                  ].filter(Boolean).join(' ')
-
-                  return (
-                    <tr key={`${item.productId}-${index}`} id={`rs-row-${index}`} className={rowClass} onClick={(event) => { const target = event.target as HTMLElement; const cell = target.closest('td'); if (cell && cell.cellIndex > 1) setActiveCol(cell.cellIndex); setSelected(index); if (cell && cell.cellIndex <= 2 && !target.closest('input, button, a')) setPanelOpen(true) }} aria-current={selected === index ? 'true' : undefined}>
-                      <td className="rs-num">{index + 1}</td>
-                      <td className="rs-mark">{mark && <span className={`rs-state ${mark}`} role="img" aria-label={MARK_LABEL[mark]} title={(item.excluded ? [] : reason).map((problem) => problem.text).join('\n') || MARK_LABEL[mark]}><StateIcon state={mark} /></span>}</td>
-                      <td className="rs-name">
-                        {/* Одна строка, как на этапе проверки: русское название и серым — китайское. «Все колонки» — только русское, полное — в подсказке. */}
-                        <span className="rs-name-main" title={names.sub ? `${names.main} / ${names.sub}` : names.main}>{names.main}{names.sub && !allColumns && <span className="rs-name-sub"> · {names.sub}</span>}</span>
-                        {reason.length > 0 && <span className={`rs-reason ${reason[0].tone}`} title={reason.map((problem) => problem.text).join('\n')}>{reason[0].text}{reason.length > 1 && ` и ещё ${reason.length - 1}`}</span>}
-                      </td>
-                      <td className="rs-code">{code ? <CopyCode code={code} /> : '—'}</td>
-                      <td>{displayNumber(item.pairs)}</td>
-                      {allColumns && <td>{fixedNumber(sirMode && sirGross ? item.grossKg : item.netKg, 1)}</td>}
-                      {allColumns && sirMode && sirDiscount > 0 && <td className="rs-sir-col">{item.sir ? fixedNumber(item.sir.priceUsd, 2) : '—'}</td>}
-                      {sirMode
-                        ? <td className="rs-sir-col" title={item.sir ? `Профиль риска ${item.sir.profile}, страна ${item.sir.country}` : 'Для кода индикатора нет — строка считается по инвойсу'}>{item.sir ? fixedNumber(item.sir.pricePerKgUsd, 2) : <span className="rs-sir-none">нет</span>}</td>
-                        : <td className="rs-price-col"><span className="price-field"><AiDot note={aiNote} />{priceInput(index, true, `Цена за единицу, USD, строка ${index + 1}: ${names.main}`)}</span></td>}
-                      {sirMode
-                        ? <td>{item.sir ? displayNumber(item.sir.valueUsd) : <>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</>}</td>
-                        : <td>{displayNumber(item.goodsCost || item.costInput)}{currency !== 'USD' && <small> {currency}</small>}</td>}
-                      {allColumns && <>
-                        {delivery && <td>{displayNumber(item.deliveryUsd)}</td>}
-                        <td title={item.sir ? sirTitle(item.sir) : undefined}>{displayNumber(item.customsValueKzt)}</td>
-                        <td onClick={(event) => event.stopPropagation()}>{displayNumber(item.dutyKzt)}{antiDumpingInfo && <AntiDumpingChooser info={antiDumpingInfo} choice={source?.antiDumpingChoice} disabled={loading || item.excluded} onChoose={(key) => onAntiDumpingChoice(index, key)} />}</td>
-                        {antiDumping && <td title={antiDumpingInfo?.text}>{displayNumber(item.antiDumpingKzt)}</td>}
-                        <td>{displayNumber(item.vatKzt)}</td>
-                        <td>{displayNumber(item.feeKzt)}</td>
-                      </>}
-                      <td className="rs-pay">{displayNumber(rowPaymentKzt(item))}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="rs-num" />
-                  <td className="rs-mark" />
-                  <td className="rs-name">Итого{(filter !== 'all' || needle) && <small> · по всем строкам</small>}</td>
-                  <td className="rs-code" />
-                  <td>{displayNumber(checkTotals.quantity)}</td>
-                  {allColumns && <td>{colTotal((item) => sirMode && sirGross ? item.grossKg : item.netKg, fixedNumber(sirMode && sirGross ? checkTotals.grossKg : checkTotals.netKg, 1))}</td>}
-                  <td className={sirMode ? 'rs-sir-col' : 'rs-price-col'} />
-                  {allColumns && sirMode && sirDiscount > 0 && <td className="rs-sir-col" />}
-                  <td>{sirMode ? colTotal((item) => item.sir ? item.sir.valueUsd : item.goodsCost || item.costInput, displayNumber(moneyText(sirValueUsd))) : colTotal((item) => item.goodsCost || item.costInput, displayNumber(result.totals.totalCostUsd))}</td>
-                  {allColumns && <>
-                    {delivery && <td>{colTotal((item) => item.deliveryUsd, displayNumber(result.totals.totalDeliveryUsd))}</td>}
-                    <td>{colTotal((item) => item.customsValueKzt, displayNumber(result.totals.customsValueKzt), true)}</td>
-                    <td>{colTotal((item) => item.dutyKzt, displayNumber(result.totals.dutyKzt), true)}</td>
-                    {antiDumping && <td>{colTotal((item) => item.antiDumpingKzt, displayNumber(result.totals.antiDumpingKzt), true)}</td>}
-                    <td>{colTotal((item) => item.vatKzt, displayNumber(result.totals.vatKzt), true)}</td>
-                    <td>{colTotal((item) => item.feeKzt, displayNumber(result.totals.feeKzt))}</td>
-                  </>}
-                  <td className="rs-pay">{notCalculated ? '—' : displayNumber(result.totals.customsPaymentsKzt)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+          <ResultTable result={result} items={items} rows={rows} visible={visible} common={common} allColumns={allColumns} sir={sir} delivery={delivery} notCalculated={notCalculated}
+            filtered={filter !== 'all' || Boolean(needle)} emptyText={needle ? 'Ничего не найдено.' : filter === 'attention' ? 'Строк, требующих внимания, больше нет.' : 'Таких строк нет.'} onShowAll={() => { setFilter('all'); setQuery('') }}
+            selected={selected} flashRow={flashRow} loading={loading} onRowClick={rowClick} priceOf={priceOf} priceInput={priceInput} onAntiDumpingChoice={onAntiDumpingChoice} wrapRef={tableWrapRef} tableRef={tableRef} />
         </section>
 
         {selectedRow && panelOpen && <>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyItem } from './rowActions'
 import { problemChips, reviewProblems } from './reviewProblems'
-import type { ReviewStatus } from '../components/ReviewRow/reviewStatus'
+import type { ReviewStatus } from './reviewStatus'
 
 const item = (patch = {}) => ({ ...emptyItem('a', '0.3'), ...patch })
 const status = (patch: Partial<ReviewStatus>): ReviewStatus => ({ tone: 'warn', source: 'none', label: '', issues: [], attention: true, noCode: false, withErrors: false, ...patch })

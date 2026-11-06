@@ -1,5 +1,7 @@
 package utilfee
 
+import "strings"
+
 // Справочники утилизационного платежа РК. Обновляются правкой этого файла при выходе новой
 // редакции приказов (тест TestListHasEveryItem сверяет число позиций в разделах).
 //   - Перечень продукции — приказ МЭГПР РК от 09.11.2022 № 689 (ред. 13.10.2023).
@@ -189,13 +191,13 @@ var VehicleCategories = []VehicleCategory{
 // Группа категорий прил. 4 для позиции перечня.
 func vehicleGroup(prefix string) string {
 	switch {
-	case hasPrefix(prefix, "8703"), hasPrefix(prefix, "8706"):
+	case strings.HasPrefix(prefix, "8703"), strings.HasPrefix(prefix, "8706"):
 		return "m1"
-	case hasPrefix(prefix, "8702"):
+	case strings.HasPrefix(prefix, "8702"):
 		return "m23"
-	case hasPrefix(prefix, "87019"):
+	case strings.HasPrefix(prefix, "87019"):
 		return "tractor"
-	case hasPrefix(prefix, "8433"):
+	case strings.HasPrefix(prefix, "8433"):
 		return "combine"
 	default: // 8701 2x, 8704, 8705
 		return "n"

@@ -1,10 +1,15 @@
 .env
-frontend/node_modules/
+node_modules/
 frontend/dist/
 *.tsbuildinfo
 backend/bin/
 coverage/
 .cache/
+
+# Артефакты Playwright (e2e/.gitignore дублирует — на случай запуска из корня)
+playwright-report/
+test-results*/
+e2e/.auth/
 
 # Кэш сборки Go
 .gocache-*/

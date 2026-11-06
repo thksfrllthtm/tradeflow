@@ -12,7 +12,7 @@ const kindText: Record<NonNullable<AgentDocument['kind']>, string> = { cc: 'СС
 type Part = string | false | null | undefined
 const join = (parts: Part[], separator: string) => parts.filter((part): part is string => Boolean(part && part.trim())).join(separator)
 
-export function trademarksText(hits: TrademarkHit[] | undefined): string {
+function trademarksText(hits: TrademarkHit[] | undefined): string {
   if (!hits?.length) return ''
   return join(['ТРОИС:', ...hits.map((hit) => {
     const what = hit.kind === 'lookalike' ? `похоже на ${trademarkName(hit)} — возможная имитация` : `знак ${trademarkName(hit)}`

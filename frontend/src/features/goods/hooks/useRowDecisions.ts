@@ -8,7 +8,7 @@ import { GoodsItemInput } from '@/shared/types/goods'
 // сметы отсекает сервер: тот же код, то же наименование и похожее чёрно-белое фото — та же запись.
 
 // Код и наименование строки: изменили одно из них после сохранения — это уже другой вариант.
-export const rowDecisionKey = (item: GoodsItemInput) =>
+const rowDecisionKey = (item: GoodsItemInput) =>
   `${item.code.replace(/\D/g, '')}|${(item.standardName || item.name || '').trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ')}`
 
 export const canSaveRowDecision = (item: GoodsItemInput) => /^\d{10}$/.test(item.code.replace(/\D/g, '')) && Boolean((item.standardName || item.name || '').trim())

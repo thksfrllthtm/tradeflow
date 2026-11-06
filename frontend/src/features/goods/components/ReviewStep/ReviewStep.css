@@ -15,7 +15,6 @@
   font-family: var(--tf-font);
 }
 .rv-step :is(button, input, select, summary):focus-visible { outline: 2px solid var(--tf-green); outline-offset: 2px; }
-.rv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* «⋯» — <summary> с видом .icon-button: без маркера списка, скругление как у кнопок. */
 .rv-more > summary { list-style: none; border-radius: var(--tf-radius); cursor: pointer; }
 .rv-more > summary::-webkit-details-marker { display: none; }

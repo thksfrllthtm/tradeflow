@@ -55,7 +55,6 @@
 .drawer-field input:focus, .drawer-field select:focus, .drawer-field textarea:focus { outline: 2px solid var(--tf-focus-ring); border-color: var(--tf-green); box-shadow: none; }
 .drawer-field :is(input, select, textarea):disabled { background: var(--tf-chip); color: var(--tf-text-2); opacity: 1; }
 .drawer-field input::placeholder, .drawer-field textarea::placeholder { color: var(--tf-faint); }
-.drawer-field .mono { font-family: var(--tf-mono); font-size: var(--fs-base); }
 .drawer-hint { margin: 0; color: var(--tf-muted); font-size: var(--fs-xs); font-weight: 400; line-height: 1.45; }
 
 /* Поле с единицей справа (%, USD…) */
@@ -69,13 +68,6 @@
 .drawer-status button { display: inline-flex; align-items: center; gap: 8px; }
 .drawer-status button.active::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--tf-green); }
 .drawer-status button.review::before { background: var(--tf-ai); }
-
-/* Ставка (пошлина / НДС) */
-.drawer-rate { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--tf-border); border-radius: var(--tf-radius-card); background: var(--tf-card); }
-.drawer-rate > b { color: var(--tf-text); font-size: var(--fs-md); font-weight: 600; }
-.drawer-rate details summary { color: var(--tf-green); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
-.drawer-rate details[open] summary { margin-bottom: 8px; }
-.drawer-rate details > div { display: grid; gap: 8px; }
 
 /* Низ панели: состояние слева, кнопки справа — «Отмена» (.secondary), за ней главная. */
 .drawer-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--tf-border); background: var(--tf-card); }

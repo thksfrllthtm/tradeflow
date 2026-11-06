@@ -12,10 +12,7 @@ package service
 
 import "github.com/shopspring/decimal"
 
-var (
-	oneGramKG     = decimal.New(1, -3)
-	minExtraUnits = decimal.New(1, -2)
-)
+var oneGramKG = decimal.New(1, -3)
 
 // RoundMoney — денежная сумма до двух знаков.
 func RoundMoney(value decimal.Decimal) decimal.Decimal {
@@ -48,12 +45,4 @@ func WeightKGText(value decimal.Decimal) string {
 // декларация («0.1700»); нужна только для сверки документов, в расчёте не участвует.
 func RoundUnitPrice(value decimal.Decimal) decimal.Decimal {
 	return value.Round(4)
-}
-
-// RoundExtraUnits — количество в дополнительных единицах: до двух знаков, меньше 0,01 — до шести.
-func RoundExtraUnits(value decimal.Decimal) decimal.Decimal {
-	if !value.IsZero() && value.Abs().LessThan(minExtraUnits) {
-		return value.Round(6)
-	}
-	return value.Round(2)
 }

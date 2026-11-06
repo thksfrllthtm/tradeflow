@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ProblemGroup, plural, rowRangeParts } from './errorGroups'
+import { plural } from '@/shared/lib/plural'
+import { ProblemGroup, rowRangeParts } from '../../lib/errorGroups'
 import './CalculationErrors.css'
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
   onShowRow: (row: number) => void
 }
 
-const rowsText = (count: number) => `${count} ${plural(count, ['строка', 'строки', 'строк'])}`
+const rowsText = (count: number) => `${count} ${plural(count, 'строка', 'строки', 'строк')}`
 
 const ICON: Record<ProblemGroup['tone'], string> = { error: '!', todo: '•', warn: '?' }
 

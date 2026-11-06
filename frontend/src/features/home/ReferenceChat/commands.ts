@@ -4,7 +4,7 @@ import type { AgentMessage } from '@/features/goods/agent/agentApi'
 export type CommandName = 'подбор' | 'троис' | 'документы' | 'сравнить' | 'новый'
 export type Command = { name: CommandName; label: string; hint: string; arg?: string }
 
-export const commands: Command[] = [
+const commands: Command[] = [
   { name: 'подбор', label: 'Подбор кода', hint: 'новый вопрос, даже если открыт другой', arg: 'товар' },
   { name: 'троис', label: 'Проверка бренда по ТРОИС', hint: 'фото или название — есть ли знак в реестре, похожие написания', arg: 'бренд или фото' },
   { name: 'документы', label: 'Документы для ввоза', hint: 'по коду ответа или товар и код', arg: 'товар код' },

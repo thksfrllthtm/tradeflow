@@ -27,7 +27,7 @@ func deepSeekServer(t *testing.T, status int, content string, inspect func(body 
 		_ = json.NewEncoder(w).Encode(map[string]any{"choices": []any{map[string]any{"message": map[string]any{"role": "assistant", "content": content}}}})
 	}))
 	t.Cleanup(server.Close)
-	client := NewDeepSeekClient("test-key", DefaultDeepSeekModel)
+	client := NewDeepSeekClient("test-key", "deepseek-flash")
 	client.endpoint = server.URL
 	return client
 }
@@ -48,7 +48,7 @@ func TestDeepSeekSendsProductsWithoutBudget(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer test-key" {
 			t.Errorf("missing bearer key")
 		}
-		if body["model"] != DefaultDeepSeekModel {
+		if body["model"] != "deepseek-flash" {
 			t.Errorf("unexpected model %v", body["model"])
 		}
 		if format, _ := body["response_format"].(map[string]any); format["type"] != "json_object" {
@@ -139,7 +139,7 @@ func TestDeepSeekValidatesRequestBeforeCalling(t *testing.T) {
 	if called {
 		t.Fatal("an invalid request must not reach DeepSeek")
 	}
-	if _, err := NewDeepSeekClient("", DefaultDeepSeekModel).SuggestUnitPrices(context.Background(), 1, testPriceRequest); !errors.Is(err, ErrAINotConfigured) {
+	if _, err := NewDeepSeekClient("", "deepseek-flash").SuggestUnitPrices(context.Background(), 1, testPriceRequest); !errors.Is(err, ErrAINotConfigured) {
 		t.Fatalf("missing key must report not configured, got %v", err)
 	}
 }

@@ -1,5 +1,4 @@
-import { moneyText, roundHalfUp } from '@/shared/lib/rounding'
-import { priceText as formatPrice } from './priceText'
+import { decimalText, moneyText, roundHalfUp } from '@/shared/lib/rounding'
 // Распределение бюджета по ценам единицы товаров: цены подбираются так, чтобы итог
 // «Растаможка к оплате» (пошлина + антидемпинг + НДС + сбор) не доходил до бюджета на
 // minGap…maxGap USD (по умолчанию 35–45, сотрудник меняет), а в режиме over — превышал бюджет
@@ -157,7 +156,7 @@ export async function distributeBudget<T>(rows: T[], budget: number, access: Bud
     const weight = options.weights?.[group.key]
     return weight !== undefined && Number.isFinite(weight) && weight > 0 ? weight : 1
   }
-  const priceText = (value: number) => formatPrice(value, decimals)
+  const priceText = (value: number) => decimalText(value, decimals)
   const relative = productShares(rows, groups, access, options.productOf, options.productPrices)
   const productOf = options.productOf
   // Строка без своей цены в группе с ценой: тот же товар — его цена; другой товар — цена первой

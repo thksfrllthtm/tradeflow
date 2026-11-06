@@ -42,9 +42,7 @@
 .rs-menu-label { margin: 4px 12px 2px; color: var(--tf-muted); font-size: var(--fs-sm); }
 .rs-step .rs-menu .rs-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; height: auto; margin: 0; padding: 8px 12px; border: 0; border-radius: var(--tf-radius); background: transparent; color: var(--tf-text); font-size: var(--fs-md); font-weight: 500; text-align: left; white-space: normal; cursor: pointer; }
 .rs-step .rs-menu .rs-menu-item:hover:not(:disabled) { background: var(--tf-chip); }
-.rs-step .rs-menu .rs-menu-item.active, .rs-step .rs-menu .rs-menu-item.active:hover:not(:disabled) { background: var(--tf-green-soft); font-weight: 600; }
 .rs-step .rs-menu .rs-menu-item:disabled { color: var(--tf-muted); opacity: .55; }
-.rs-menu-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; color: var(--tf-text); font-size: var(--fs-md); }
 .rs-menu-check input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--tf-green); }
 
 /* ── Таблица и панель ── */
@@ -146,7 +144,6 @@
 .rp-block h3 { margin: 0; color: var(--tf-text-2); font-size: var(--fs-md); font-weight: 600; }
 .rp-block-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rs-step .rp button.rp-code, .rp .rp-code { justify-self: start; margin: 0 0 0 -4px; color: var(--tf-text); font-family: var(--tf-mono); font-size: var(--fs-lg); font-weight: 500; letter-spacing: .02em; }
-.rp .rp-empty { margin: 0; color: var(--tf-muted); font-family: inherit; font-size: var(--fs-md); }
 .rp-muted { margin: 0; color: var(--tf-muted); font-size: var(--fs-md); line-height: 1.45; overflow-wrap: anywhere; }
 .rp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
 .rp-chips span { padding: 4px 8px; border-radius: var(--tf-radius); background: var(--tf-chip); color: var(--tf-text); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }

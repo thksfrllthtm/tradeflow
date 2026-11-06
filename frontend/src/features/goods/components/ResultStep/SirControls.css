@@ -14,7 +14,6 @@
 .sir-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
 .sir-count { margin-left: auto; color: var(--tf-text-2); font-size: var(--fs-md); white-space: nowrap; }
 .sir-count b { color: var(--tf-text); font-weight: 600; }
-.goods-page .rs-table .rs-sub.sir-sub { color: var(--tf-warn-text); }
 /* Колонки СУР в таблице — тем же бежевым, что полоса режима. */
 .goods-page .rs-table .rs-sir-col { background: var(--tf-warn-bg); }
 .goods-page .rs-table thead .rs-sir-col, .goods-page .rs-table tfoot .rs-sir-col { background: var(--tf-warn-bg); color: var(--tf-warn-text); }

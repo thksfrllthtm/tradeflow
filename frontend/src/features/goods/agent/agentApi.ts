@@ -12,7 +12,7 @@ export type AgentStatus = { configured: boolean; model: string; vision: boolean;
 type AgentUsageTotals = { promptTokens: number; cachedTokens: number; completionTokens: number; costUsd: string }
 type AgentUsagePart = AgentUsageTotals & { model: string }
 // searching — поиск в базе решений, ready — поиск закончен, агента запускает сотрудник.
-export type AgentSessionStatus = 'searching' | 'ready' | 'running' | 'waiting' | 'done' | 'error' | 'cancelled'
+type AgentSessionStatus = 'searching' | 'ready' | 'running' | 'waiting' | 'done' | 'error' | 'cancelled'
 
 export type AgentItem = {
   name: string

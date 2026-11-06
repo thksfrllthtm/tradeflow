@@ -1,7 +1,7 @@
 import { KeyboardEvent, useEffect, useId, useRef, useState } from 'react'
 
 // «Керамическая» есть у всех типов — в списке её не повторяем, остаётся то, чем типы отличаются.
-export const shortType = (name: string) => {
+const shortType = (name: string) => {
   const rest = name.replace(/^керамическ\S*\s+/i, '')
   return rest === name ? name : rest.charAt(0).toUpperCase() + rest.slice(1)
 }

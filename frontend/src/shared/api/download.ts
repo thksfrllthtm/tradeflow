@@ -5,10 +5,18 @@ export async function downloadFile(path: string, fallbackName: string, errorText
     const body = await response.json().catch(() => ({})) as { error?: { message?: string } }
     throw new Error(body.error?.message ?? errorText)
   }
-  const disposition = response.headers.get('Content-Disposition') ?? ''
-  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1]
-  const name = encoded ? decodeURIComponent(encoded) : fallbackName
-  const url = URL.createObjectURL(await response.blob())
+  await saveResponse(response, fallbackName)
+}
+
+// Сохраняет ответ сервера файлом с именем из Content-Disposition (нет — fallbackName).
+export async function saveResponse(response: Response, fallbackName: string) {
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(response.headers.get('Content-Disposition') ?? '')?.[1]
+  saveBlob(await response.blob(), encoded ? decodeURIComponent(encoded) : fallbackName)
+}
+
+// Отдаёт браузеру blob как скачиваемый файл.
+export function saveBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = name

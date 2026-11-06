@@ -6,7 +6,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strings"
 	"time"
 
@@ -50,23 +49,6 @@ type TNVEDNomenclatureFilter struct {
 	Query  string
 	Limit  int
 	Offset int
-}
-
-var digitsQuery = regexp.MustCompile(`^[\d\s.]+$`)
-
-// SearchStem cuts the ending off a word so other forms match: «резиновые» → «резин»
-// finds «резиной», «фарфоровая» → «фарфор» finds «фарфора». Short words stay whole.
-func SearchStem(word string) string {
-	runes := []rune(word)
-	n := len(runes)
-	switch {
-	case n <= 4:
-		return word
-	case n <= 7:
-		return string(runes[:max(4, n-2)])
-	default:
-		return string(runes[:n-4])
-	}
 }
 
 // ListTNVEDNomenclature searches by the beginning of the code (digits, spaces allowed:
@@ -139,4 +121,21 @@ func (r *Repository) LatestTNVEDNomenclatureImport(ctx context.Context) (TNVEDNo
 		return TNVEDNomenclatureImport{}, ErrNotFound
 	}
 	return record, err
+}
+
+// TNVEDNomenclatureCodeSet is every code of the nomenclature: an import reports list codes
+// the nomenclature does not have.
+func (r *Repository) TNVEDNomenclatureCodeSet(ctx context.Context) (map[string]string, error) {
+	var rows []struct {
+		Code       string
+		TariffText string
+	}
+	if err := r.db.WithContext(ctx).Table("tnved_nomenclature").Select("code, tariff_text").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	codes := make(map[string]string, len(rows))
+	for _, row := range rows {
+		codes[row.Code] = row.TariffText
+	}
+	return codes, nil
 }

@@ -182,7 +182,7 @@ func Lookup(code string) (matches, possible []Match) {
 		prefixes := strings.Fields(sec.codes)
 		best, bestIndex := "", -1
 		for index, prefix := range prefixes {
-			if hasPrefix(code, prefix) && len(prefix) > len(best) && !isExcluded(code, prefix) {
+			if strings.HasPrefix(code, prefix) && len(prefix) > len(best) && !isExcluded(code, prefix) {
 				best, bestIndex = prefix, index
 			}
 		}
@@ -191,7 +191,7 @@ func Lookup(code string) (matches, possible []Match) {
 			continue
 		}
 		for index, prefix := range prefixes {
-			if len(prefix) > len(code) && hasPrefix(prefix, code) {
+			if len(prefix) > len(code) && strings.HasPrefix(prefix, code) {
 				possible = append(possible, newMatch(sec, index, prefix))
 			}
 		}
@@ -235,11 +235,9 @@ func newMatch(sec section, index int, prefix string) Match {
 	return match
 }
 
-func hasPrefix(code, prefix string) bool { return strings.HasPrefix(code, prefix) }
-
 func isExcluded(code, prefix string) bool {
 	for _, excludedCode := range excluded[prefix] {
-		if hasPrefix(code, excludedCode) {
+		if strings.HasPrefix(code, excludedCode) {
 			return true
 		}
 	}

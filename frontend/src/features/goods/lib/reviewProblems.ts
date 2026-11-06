@@ -1,5 +1,5 @@
 import { GoodsItemInput } from '@/shared/types/goods'
-import type { ReviewStatus } from '../components/ReviewRow/reviewStatus'
+import type { ReviewStatus } from './reviewStatus'
 import type { SheetKey } from '../components/ReviewSheet/sheetModel'
 
 // Проблемы строки этапа «Проверка строк» по типам — для чипов-фильтров над таблицей и подсветки ячейки,
@@ -37,7 +37,7 @@ export function reviewProblems(item: GoodsItemInput, status: ReviewStatus): Revi
   return found
 }
 
-export type ProblemChip = { type: string; label: string; tone: ProblemTone; rows: number }
+type ProblemChip = { type: string; label: string; tone: ProblemTone; rows: number }
 
 // Чипы над таблицей: тип проблемы и сколько строк с ней; ошибки — первыми.
 export function problemChips(rows: ReviewProblem[][]): ProblemChip[] {

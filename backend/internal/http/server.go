@@ -148,7 +148,7 @@ func (s *Server) Router() *gin.Engine {
 	employees.PATCH("/:id", s.updateEmployee)
 	employees.DELETE("/:id", s.deleteEmployee)
 
-	// Подсказки для подбора цен под бюджет — общие для смет перчаток и товаров.
+	// Подсказки для подбора цен под бюджет в сметах товаров.
 	pricing := router.Group("/api/estimates")
 	pricing.Use(s.requireUser, s.requireNotTranslator)
 	pricing.POST("/price-weights", s.suggestPriceWeights)

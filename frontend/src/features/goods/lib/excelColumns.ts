@@ -6,23 +6,8 @@ export function rowId(sourceRow: number, index: number) {
   return `glove-${Date.now()}-${sourceRow}-${index}`
 }
 
-function normalizeHeader(value: string) {
-  return value.toLowerCase().replace(/[\s_./\\()-]+/g, '')
-}
-
-function valueFor(values: Record<string, string>, patterns: string[]) {
-  const entries = Object.entries(values)
-  const exact = entries.find(([header]) => patterns.some((pattern) => normalizeHeader(header) === normalizeHeader(pattern)))
-  if (exact) return exact[1]
-  const match = entries.find(([header]) => patterns.some((pattern) => normalizeHeader(header).includes(normalizeHeader(pattern))))
-  return match?.[1] ?? ''
-}
-
-// '__auto__' — устаревший режим автопоиска колонки по шаблонам названий.
-export function mappedValue(values: Record<string, string>, selected: string, patterns: string[]) {
-  if (selected === '__auto__') return valueFor(values, patterns)
-  if (selected) return values[selected] ?? ''
-  return ''
+export function mappedValue(values: Record<string, string>, selected: string) {
+  return selected ? values[selected] ?? '' : ''
 }
 
 export function imageDataUrl(image?: { data: string; mimeType: string }) {
@@ -34,7 +19,7 @@ export function mappedFieldForHeader<M extends Mapping>(header: string, mapping:
   return match ?? ''
 }
 
-// Сопоставление из сохранённого черновика: недостающие поля пустые, '__auto__' сбрасывается.
+// Сопоставление из сохранённого черновика: недостающие поля пустые, '__auto__' (устаревший автопоиск колонки) сбрасывается.
 export function normalizeStoredMapping<M extends Mapping>(empty: M, value: Partial<M> | undefined): M {
   const result = { ...empty, ...(value ?? {}) } as M
   ;(Object.keys(result) as (keyof M)[]).forEach((field) => {

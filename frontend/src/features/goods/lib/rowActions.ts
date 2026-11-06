@@ -20,7 +20,7 @@ export function editItem(item: GoodsItemInput, field: keyof GoodsItemInput, valu
 }
 
 export function emptyItem(id: string, packageWeightKg: string): GoodsItemInput {
-  return { id, sourceRow: 0, name: '', supplierName: '', standardName: '', code: '', pairs: '', places: '', pairsPerPlace: '', grossKg: '', grossWeightUnit: 'kg', netKg: '', netWeightUnit: 'kg', netSource: '', packageWeightKg, coefficient: '', pricePerPair: '', costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '', deliveryUsd: '', deliveryManual: false, deliveryAlreadyInCost: false, deliveryIncluded: false, excluded: false, exclusionReason: '', photoUrl: '', photoUrls: [] }
+  return { id, sourceRow: 0, name: '', supplierName: '', standardName: '', code: '', pairs: '', places: '', pairsPerPlace: '', grossKg: '', grossWeightUnit: 'kg', netKg: '', netWeightUnit: 'kg', netSource: '', packageWeightKg, coefficient: '', pricePerPair: '', costInput: '', costCurrency: '', extraExpenses: '', customsValueDirectKzt: '', deliveryUsd: '', deliveryManual: false, deliveryAlreadyInCost: false, deliveryIncluded: false, excluded: false, photoUrl: '', photoUrls: [] }
 }
 
 // Правка строк на этапе 2 (сметы товаров). Любая правка сбрасывает

@@ -2,11 +2,11 @@ import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useSta
 import './AntiDumpingChooser.css'
 
 // Вариант ставки антидемпинга с сервера (реестр ЕЭК): страна, производитель или вид товара, ставка.
-export type AntiDumpingOption = { key: string; measure: string; shortName: string; country: string; countryName: string; label: string; percent: string; others: boolean }
+type AntiDumpingOption = { key: string; measure: string; shortName: string; country: string; countryName: string; label: string; percent: string; others: boolean }
 // Антидемпинг строки в снимке результата расчёта.
 export type AntiDumpingInfo = { status?: string; number?: string; percent?: string; text?: string; selected?: string; options?: AntiDumpingOption[]; documentUrl?: string }
 
-export const NO_ANTIDUMPING = 'none'
+const NO_ANTIDUMPING = 'none'
 
 const percent = (value?: string) => value ? `${value.replace('.', ',')}%` : ''
 

@@ -93,3 +93,23 @@ func (r *Repository) RestoreProductDirectoryEntry(ctx context.Context, id, userI
 	}
 	return nil
 }
+
+// SearchDirectoriesForAgent — опыт компании в справочнике товаров: наименования, синонимы и код.
+type DirectoryHint struct {
+	Kind               string
+	Name               string
+	NameZH             string
+	Code               string
+	VerificationStatus string
+}
+
+func (r *Repository) SearchDirectoriesForAgent(ctx context.Context, text string, limit int) ([]DirectoryHint, error) {
+	products := r.db.WithContext(ctx).Table("product_directory_entries AS p").Where("p.archived_at IS NULL")
+	products = wordsWhere(products, text, "p.name", "p.name_zh", "p.synonyms_ru::text", "p.synonyms_zh::text", "p.synonyms_en::text")
+	var productRows []DirectoryHint
+	if err := products.Select("'product' AS kind, p.name, p.name_zh, p.code, p.verification_status").
+		Order("p.updated_at DESC").Limit(limit).Scan(&productRows).Error; err != nil {
+		return nil, err
+	}
+	return productRows, nil
+}

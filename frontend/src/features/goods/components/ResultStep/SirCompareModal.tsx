@@ -7,7 +7,7 @@ import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { decimalText, moneyText, weightText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult, GoodsItemInput, SirParams, SirWeight } from '@/shared/types/goods'
 import { compareCounts, compareRows, compareTotals, SirCompareRow, totalOf } from '../../lib/sirCompare'
-import { itemDisplayName } from './resultValues'
+import { itemDisplayName } from '../../lib/resultValues'
 import { SirOptions } from './SirControls'
 import './SirCompareModal.css'
 

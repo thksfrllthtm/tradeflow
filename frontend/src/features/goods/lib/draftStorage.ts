@@ -1,6 +1,5 @@
 import { createPhotoStore } from './photoStore'
 import { todayIso } from '@/shared/lib/dates'
-import { storageKey } from './localDraft'
 import { GoodsCalculationResult, GoodsItemInput, GoodsParams } from '@/shared/types/goods'
 
 // Черновик сметы товаров в браузере: параметры, строки и результат расчёта — в localStorage,
@@ -13,6 +12,14 @@ export const RESULT_KEY = 'tradeflow.gloves-copy.result'
 export const FILE_KEY = 'tradeflow.gloves-copy.file'
 // Есть правки, которых нет на сервере. Ставится, только когда черновик отличается от сохранённого.
 export const LOCAL_UPDATED_KEY = 'tradeflow.gloves-copy.localUpdatedAt'
+
+// Ключи localStorage черновика: у каждой сметы свой набор с суффиксом id.
+export function storageKey(base: string, estimateId: number) {
+  return `${base}.${estimateId}`
+}
+
+// Предел для запасного сохранения строк вместе с фото в localStorage.
+export const MAX_LOCAL_STORAGE_CHARS = 4_000_000
 
 // Последний результат расчёта (фото в нём нет): смета снова открывается на этапе результата
 // с ценами, изменёнными на этом этапе.

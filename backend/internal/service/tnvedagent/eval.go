@@ -213,8 +213,8 @@ func (s *TNVEDAgentService) EvaluateItems(ctx context.Context, items []AgentEval
 	return summary, records, nil
 }
 
-// evalOne — один подбор как в программе (описание фото, вопросы по фото, интернет, декларации,
-// самопроверка); вопрос сотруднику — ответа нет, агент решает сам.
+// evalOne — один подбор как в программе (описание фото, вопросы по фото, интернет и
+// декларации); вопрос сотруднику — ответа нет, агент решает сам.
 func (s *TNVEDAgentService) evalOne(ctx context.Context, item AgentEvalItem) AgentEvalRecord {
 	record := AgentEvalRecord{Label: item.Label, Name: firstNonEmpty(item.Item.Name, item.Item.SupplierName), Code: item.Code, Disputed: item.Disputed, Steps: []string{},
 		CostUSD: decimal.Zero, VisionCostUSD: decimal.Zero}
@@ -259,7 +259,7 @@ func (s *TNVEDAgentService) evalOne(ctx context.Context, item AgentEvalItem) Age
 	toolbox.requireDeclarations = true
 	toolbox.fileCode = item.Item.Code
 	runner := &agentRunner{
-		model: s.model, toolbox: toolbox, system: s.systemPrompt(false, toolbox.lookPhoto != nil), review: s.settings.SelfCheck,
+		model: s.model, toolbox: toolbox, system: s.systemPrompt(false, toolbox.lookPhoto != nil),
 		transcript: transcript, photos: item.Photos, vision: s.model.Vision(), emit: emit,
 		onStep: func(_ []map[string]any, usage agentUsage) {
 			record.CostUSD = record.CostUSD.Add(s.model.Cost(usage))

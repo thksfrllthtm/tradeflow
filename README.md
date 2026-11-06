@@ -13,7 +13,8 @@
 
 - **backend** — Go 1.26, Gin, GORM, PostgreSQL 17, миграции golang-migrate (`backend/migrations`).
 - **frontend** — React 19, TypeScript, Vite, Vitest; псевдоним `@/` → `frontend/src`.
-- **ИИ** — DeepSeek (OpenAI-совместимый API): подбор цен, керамика, агент подбора кода ТН ВЭД.
+- **ИИ** — DeepSeek (OpenAI-совместимый API): подбор цен, керамика, перевод; агент подбора кода ТН ВЭД —
+  DeepSeek или Claude (`TNVED_AI_PROVIDER`), фото — отдельная модель (`TNVED_AI_VISION_*`).
 - **Деплой** — сайт на Vercel, API на Render, база в Supabase.
 
 ## Локальный запуск (Docker Compose)
@@ -98,36 +99,49 @@ backend/
 │   ├── config/              переменные окружения
 │   ├── http/                маршруты Gin и обработчики
 │   ├── repository/          GORM и SQL
-│   └── service/             бизнес-логика (общее: ValidationError, десятичные и текстовые помощники)
+│   ├── thirdparty/grate/    чтение старых .xls (вендорная копия)
+│   └── service/             бизнес-логика (общее: ValidationError, округление, десятичные и текстовые помощники)
 │       ├── ai/              клиент DeepSeek и ошибки провайдера ИИ
+│       ├── antidumping/     антидемпинговые меры ЕАЭС (реестр ЕЭК)
 │       ├── auth/            вход, регистрация, сессии, пароли
 │       ├── calculation/     расчёт растаможки строки, распределение доставки и сбора
 │       ├── ceramics/        подбор наименования и цены керамики
 │       ├── decisions/       база решений «товар → код», хеш и описание фото, похожие
 │       ├── directory/       справочник товаров, номенклатура, перечень РК, страницы TWS
 │       ├── employees/       сотрудники и роли
+│       ├── exportcheck/     сверка инвойса с экспортной декларацией КНР
 │       ├── goods/           сметы товаров: разбор Excel, расчёт, выгрузка, подбор цен
 │       ├── rates/           курс НБРК
-│       └── tnvedagent/      ИИ-агент подбора кода ТН ВЭД
-└── migrations/              000001…000034
+│       ├── riskindicators/  стоимостные индикаторы риска КГД
+│       ├── tnvedagent/      ИИ-агент подбора кода ТН ВЭД
+│       ├── trademarks/      ТРОИС: реестр КГД, проверка наименований
+│       ├── translator/      перевод Word-документов
+│       └── utilfee/         калькулятор утильсбора
+└── migrations/              000001…000053
 
 frontend/src/
 ├── app/                     корень приложения, выбор страницы
 ├── features/                модули (страницы); друг у друга берут только API-клиенты
+│   ├── agentLog/            журнал агента (админ)
 │   ├── auth/                вход и регистрация
 │   ├── ceramics/            керамика
 │   ├── decisions/           база решений
-│   ├── directories/         справочники: common/, components/, kzList/, nomenclature/, products/, tnved/
+│   ├── directories/         справочники: common/, components/, kzList/, nomenclature/, products/, riskIndicators/, trademarks/
+│   ├── documentsBase/       база документов «Документы для ввоза» (админ)
 │   ├── employees/           сотрудники
+│   ├── exportCheck/         сверка с экспортной декларацией КНР
 │   ├── goods/               сметы товаров: agent/ (чат подбора кода), calculator/, components/, hooks/, lib/
-│   └── home/                главная
+│   ├── home/                главная
+│   ├── translator/          перевод Word-документов
+│   └── utilFee/             калькулятор утильсбора
 └── shared/                  общее для модулей
     ├── api/                 HTTP-клиент, goodsApi (разбор Excel, расчёт, выгрузка)
-    ├── components/          AppHeader, PhotoLightbox, иконки
+    ├── components/          AppHeader, Drawer, Modal, PhotoLightbox, CopyCode, иконки…
     ├── hooks/, lib/         общие хуки и функции (даты, фото, числа…)
     ├── router/              адреса страниц
-    ├── styles/              base, app-shell, list-page, drawer, verification-status
+    ├── styles/              base, app-shell, list-page, drawer, modal, sheet, verification-status
     ├── tnved/               формат кода, типы номенклатуры и решений
+    ├── trademarks/          подсветка совпадений с ТРОИС
     └── types/               пользователь, данные смет
 ```
 
@@ -136,7 +150,7 @@ frontend/src/
 
 ## API
 
-Все маршруты, кроме `/api/health` и `/api/auth/{login,register,logout}`, требуют сессию (HttpOnly-cookie).
+Все маршруты, кроме `/api/health`, `/api/auth/{login,register,logout}` и `/api/rates/today`, требуют сессию (HttpOnly-cookie).
 «админ» — только администратор.
 
 | Маршрут | Назначение |
@@ -146,7 +160,7 @@ frontend/src/
 | `GET/POST /api/employees`, `PATCH/DELETE /api/employees/:id` | сотрудники (админ) |
 | `POST /api/goods/parse-xlsx`, `calculate`, `export` | разбор Excel, расчёт и выгрузка сметы товаров |
 | `GET/POST /api/goods-estimates`, `GET/PATCH/DELETE /api/goods-estimates/:id`, `PATCH …/:id/draft` | сметы товаров и автосохранение черновика (`?userId=` — сметы сотрудника, админ) |
-| `GET /api/rates/nbk?date=&currency=USD\|EUR` | курс НБРК на дату |
+| `GET /api/rates/nbk?date=&currency=USD\|EUR`, `GET /api/rates/today` | курс НБРК на дату и на сегодня |
 | `POST /api/estimates/price-weights`, `price-history` | подбор цен под бюджет: ИИ и история цен |
 | `/api/product-directory` (+ `export`, `import`, `:id/archive`, `restore`, `copy`) | справочник товаров (правка — админ) |
 | `/api/risk-indicators` (+ `import`, `:id`) | стоимостные индикаторы риска КГД: профили риска (загрузка и удаление — админ) |
@@ -154,7 +168,12 @@ frontend/src/
 | `POST /api/tnved-kz-rates/excel`, `import-pdf`, `import` | перечень РК (админ) |
 | `GET /api/tnved-antidumping`, `POST …/refresh` | антидемпинговые меры ЕАЭС из реестра ЕЭК; обновление — админ |
 | `/api/code-decisions` (+ `stats`, `import`, `:id/verify`, `:id/reject`) | база решений (проверка, правка, импорт — админ) |
-| `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `begin`, `messages`, `rerun`, `cancel`, `apply`, `name`), `reference` (+ `:id`) | ИИ-агент подбора кода; `reference` — чат-справочник на главной |
+| `/api/trademarks` (+ `logo`, `check`, `import`, `logo-name`) | ТРОИС (загрузка реестра — админ) |
+| `/api/tnved-agent/status`, `usage`, `sessions` (+ `:id`, `begin`, `messages`, `rerun`, `cancel`, `apply`, `name`, `documents`, `shares`), `reference` (+ `:id`, `trademarks`), `share-users` | ИИ-агент подбора кода; `reference` — чат-справочник на главной |
+| `/api/tnved-agent/log`, `documents-base` | журнал агента и база документов (админ) |
 | `/api/ceramics/*` | керамика: база марок, разбор, подбор, цена |
+| `GET/POST /api/util-fee`, `POST …/rows` | калькулятор утильсбора |
+| `POST /api/export-check` | сверка инвойса с экспортной декларацией КНР |
+| `/api/translator/*` | перевод Word-документов (переводчик и админ) |
 
 Неизвестный адрес под `/api` отвечает JSON `404`.

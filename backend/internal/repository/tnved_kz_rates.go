@@ -82,20 +82,3 @@ func (r *Repository) LatestTNVEDKZRateImport(ctx context.Context) (TNVEDKZRateIm
 	}
 	return record, err
 }
-
-// TNVEDNomenclatureCodeSet is every code of the nomenclature: an import reports list codes
-// the nomenclature does not have.
-func (r *Repository) TNVEDNomenclatureCodeSet(ctx context.Context) (map[string]string, error) {
-	var rows []struct {
-		Code       string
-		TariffText string
-	}
-	if err := r.db.WithContext(ctx).Table("tnved_nomenclature").Select("code, tariff_text").Scan(&rows).Error; err != nil {
-		return nil, err
-	}
-	codes := make(map[string]string, len(rows))
-	for _, row := range rows {
-		codes[row.Code] = row.TariffText
-	}
-	return codes, nil
-}

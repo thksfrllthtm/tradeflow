@@ -43,6 +43,6 @@ a.dl-act:hover { text-decoration: underline; }
 .dl-name b { font-weight: 600; }
 .dl-more summary { padding: 2px 0; color: var(--tf-faint); font-size: var(--fs-xs); cursor: pointer; }
 .dl-more[open] { display: grid; gap: 6px; }
-.dl-empty, .dl-note { margin: 0; color: var(--tf-muted); font-size: var(--fs-sm); line-height: 1.45; }
+.dl-empty { margin: 0; color: var(--tf-muted); font-size: var(--fs-sm); line-height: 1.45; }
 .dl-notice { margin: 0; color: var(--tf-warn-text); font-size: var(--fs-xs); }
 .dl-disclaimer { margin: 0; color: var(--tf-faint); font-size: var(--fs-xs); }

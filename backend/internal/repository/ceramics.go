@@ -180,7 +180,3 @@ func (r *Repository) ImportCeramicProducts(ctx context.Context, products []Ceram
 func isUniqueViolation(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), "SQLSTATE 23505") || strings.Contains(err.Error(), "duplicate key"))
 }
-
-func escapeLike(value string) string {
-	return strings.NewReplacer(`\`, `\\`, "%", `\%`, "_", `\_`).Replace(value)
-}

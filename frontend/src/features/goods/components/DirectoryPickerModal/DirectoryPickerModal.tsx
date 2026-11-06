@@ -1,6 +1,7 @@
 import { KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { ProductDirectoryEntry } from '@/features/directories/products/types'
 import { GoodsItemInput } from '@/shared/types/goods'
+import { photosOf } from '@/shared/lib/itemPhotos'
 import { SearchIcon } from '@/shared/components/icons'
 import { Modal } from '@/shared/components/Modal/Modal'
 import '@/shared/styles/list-page.css'
@@ -19,15 +20,9 @@ export type DirectoryPickerEntry =
 export type DirectoryPickerMode = 'products' | 'tnved'
 
 type Props = {
-  title: string
-  // Наименование товара строки — одной строкой под заголовком.
-  subtitle: string
-  // «К строке 6» / «К 3 выбранным строкам».
-  target: string
-  // Код, который сейчас стоит в строке (пусто — кода нет или у строк разные коды).
-  currentCode: string
-  photos: { photo: string; row: GoodsItemInput }[]
-  multipleRows: boolean
+  // Строки сметы и id строк, для которых выбирается товар или код.
+  items: GoodsItemInput[]
+  targetIds: string[]
   mode: DirectoryPickerMode
   query: string
   entries: DirectoryPickerEntry[]
@@ -51,7 +46,19 @@ const modes: { value: DirectoryPickerMode; label: string; placeholder: string; h
 
 // Окно выбора товара или кода ТН ВЭД для одной или нескольких строк сметы.
 // Поиск по мере ввода; ↑ ↓ выбирают строку, Enter или «Применить» применяет, двойной щелчок — сразу, Esc закрывает.
-export function DirectoryPickerModal({ title, subtitle, target, currentCode, photos, multipleRows, mode, query, entries, counts, moreCodes, loading, onClose, onModeChange, onQueryChange, onSearchNow, onShowAll, onPick, onPreview }: Props) {
+export function DirectoryPickerModal({ items, targetIds, mode, query, entries, counts, moreCodes, loading, onClose, onModeChange, onQueryChange, onSearchNow, onShowAll, onPick, onPreview }: Props) {
+  const rows = items.filter((item) => targetIds.includes(item.id ?? ''))
+  const multipleRows = rows.length > 1
+  // № — как в таблице.
+  const rowNumber = rows.length === 1 ? items.indexOf(rows[0]) + 1 : 0
+  const title = rows.length === 1 ? `Код для строки ${rowNumber}` : multipleRows ? `Код для ${rows.length} выбранных строк` : 'Выбор кода ТН ВЭД'
+  // Наименование товара строки — одной строкой под заголовком.
+  const subtitle = rows.length === 1 ? rows[0].name || rows[0].supplierName || '' : ''
+  const target = rows.length === 1 ? `К строке ${rowNumber}` : `К ${rows.length} выбранным строкам`
+  // Общий код выбранных строк; у строк разные коды — блока «Сейчас в строке» нет.
+  const codes = [...new Set(rows.map((row) => row.code ?? ''))]
+  const currentCode = codes.length === 1 ? codes[0] : ''
+  const photos = rows.flatMap((row) => photosOf(row).map((photo) => ({ photo, row })))
   const [active, setActive] = useState(-1)
   const [current, setCurrent] = useState<NomenclatureCode | null>(null)
   const listRef = useRef<HTMLDivElement | null>(null)

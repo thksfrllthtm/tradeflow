@@ -96,7 +96,7 @@ func TestFinishDecisionQuote(t *testing.T) {
 	}
 }
 
-// Порядок доверия и чтение дерева — в подсказке подбора и справочника; самопроверка — по пунктам.
+// Порядок доверия и чтение дерева — в подсказке подбора и справочника.
 func TestPromptHasSourcePriority(t *testing.T) {
 	for name, prompt := range map[string]string{"подбор": tnvedAgentPrompt(""), "справочник": tnvedReferencePrompt("")} {
 		for _, want := range []string{"Источники и порядок доверия", "Как читать дерево ТН ВЭД", "Конфликт источников: решай по старшему", "«прочие» — только если"} {
@@ -107,11 +107,6 @@ func TestPromptHasSourcePriority(t *testing.T) {
 	}
 	if strings.Contains(tnvedReferencePrompt(""), "Данные товара: фото") {
 		t.Error("справочнику не нужны данные строки сметы")
-	}
-	for _, want := range []string{"1. Дерево", "2. Позиция", "4. Источники", "5. Код из файла"} {
-		if !strings.Contains(agentReviewPrompt, want) {
-			t.Errorf("самопроверка без пункта %q", want)
-		}
 	}
 	// Классификационные решения — после пояснений и отдельным полем decisionQuote.
 	prompt := tnvedAgentPrompt("")

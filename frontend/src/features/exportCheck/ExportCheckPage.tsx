@@ -2,36 +2,17 @@ import { ChangeEvent, Fragment, useEffect, useRef, useState } from 'react'
 import { AppHeader } from '@/shared/components/AppHeader/AppHeader'
 import { PageHead } from '@/shared/components/PageHead/PageHead'
 import { errorMessage } from '@/shared/lib/errorMessage'
-import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
+import { plural } from '@/shared/lib/plural'
 import { User } from '@/shared/types/user'
-import { Declaration, readDeclarationPdf } from './declarationPdf'
+import { readDeclarationPdf } from './declarationPdf'
 import { Check, CheckStatus, Report, RowCheck, exportCheckApi } from './exportCheckApi'
-import { exportCheckStore } from './exportCheckStore'
+import { exportCheckStore, SavedCheck } from './exportCheckStore'
+import { shownValue } from './shownValue'
 import '@/shared/styles/list-page.css'
 import './ExportCheckPage.css'
 
-type Loaded = { file: File; declaration?: Declaration; error?: string }
-type Tab = 'error' | 'warn' | 'all'
-
-const plural = (n: number, one: string, few: string, many: string) => {
-  const tail = n % 10, hundred = n % 100
-  return hundred >= 11 && hundred <= 14 ? many : tail === 1 ? one : tail >= 2 && tail <= 4 ? few : many
-}
-
-// Число для показа: тот же знак после запятой, что и при сравнении на сервере (сумма — 2, цена — 4,
-// вес — до 3), и разделители тысяч. Поэтому «280.00» и «280» выглядят одинаково, а расхождение,
-// которое нашёл сервер, всегда видно глазами. Не число — как есть.
-export function shownValue(label: string, text: string) {
-  const value = text.trim()
-  if (!/^-?\d+(\.\d+)?$/.test(value)) return value || '—'
-  const number = Number(value)
-  const lower = label.toLowerCase()
-  let fixed = value
-  if (lower.includes('сумма') || lower.includes('стоимость')) fixed = number.toFixed(2)
-  else if (lower.includes('цена')) fixed = number.toFixed(4)
-  else if (lower.includes('кг')) fixed = number.toFixed(3).replace(/\.?0+$/, '')
-  return formatRuNumber(fixed)
-}
+type Loaded = SavedCheck['loaded'][number]
+type Tab = SavedCheck['tab']
 
 const badgeText: Record<CheckStatus, string> = { ok: '✓ совпадает', error: '✕ расхождение', warn: '! проверьте', skip: 'не сверяется' }
 const Badge = ({ status }: { status: CheckStatus }) => <span className={`badge ${status === 'skip' ? '' : status}`}>{badgeText[status]}</span>

@@ -1,20 +1,21 @@
-import { ChangeEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { mappedFieldForHeader, normalizeStoredMapping } from '../lib/excelColumns'
-import { mergeStoredPhotos, photosOf } from '@/shared/lib/itemPhotos'
-import { storageKey } from '../lib/localDraft'
-import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimateSummary, GoodsItemInput, GoodsParams, GoodsParseRow, GoodsResultTools, GoodsSourceSnapshot, SheetInfo, SirParams } from '@/shared/types/goods'
+import { mergeStoredPhotos } from '@/shared/lib/itemPhotos'
+import { GoodsCalculationInput, GoodsCalculationResult, GoodsEstimateSummary, GoodsItemInput, GoodsParams, GoodsResultTools, GoodsSourceSnapshot, SirParams } from '@/shared/types/goods'
 import { goodsEstimatesApi } from '../goodsEstimatesApi'
 import { CalculatorActivity, GoodsMapping } from '../types'
-import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storedItems, storedParams, storedResult } from '../lib/draftStorage'
-import { buildGloveItems, emptyMapping, mappingFieldOptions, matchImportedTnvedCodes, upgradeLegacyMapping } from '../lib/importMapping'
+import { draftSnapshot, emptyParams, ensureItemIds, FILE_KEY, goodsPhotoStore, ITEMS_KEY, LOCAL_UPDATED_KEY, normalizeParams, PARAMS_KEY, RESULT_KEY, storageKey, storedItems, storedParams, storedResult } from '../lib/draftStorage'
+import { emptyMapping, mappingFieldOptions, upgradeLegacyMapping } from '../lib/importMapping'
 import { lookupNomenclature, withNomenclatureRates } from '../lib/nomenclatureRates'
 import { requestErrorMessage } from '../lib/requestErrorMessage'
 import { savedAtText } from '@/shared/lib/dates'
-import { plural, rowProblems } from '../components/ResultStep/errorGroups'
-import { reviewStatus, rowMissing } from '../components/ReviewRow/reviewStatus'
 import { useDirectorySearch } from '../hooks/useDirectorySearch'
 import { useDraftAutosave } from '../hooks/useDraftAutosave'
 import { useServerAutosave } from '../hooks/useServerAutosave'
+import { useUsdRate } from '../hooks/useUsdRate'
+import { useExcelImport } from '../hooks/useExcelImport'
+import { CalculatorStepper } from './CalculatorStepper'
+import { CodeNotice, CodeNoticeState } from './CodeNotice'
 import '../goods.css'
 import './GoodsCalculator.css'
 import { ImportStep } from '../components/ImportStep/ImportStep'
@@ -24,17 +25,16 @@ import { DirectoryPickerEntry, DirectoryPickerModal } from '../components/Direct
 import { PhotoLightbox } from '@/shared/components/PhotoLightbox/PhotoLightbox'
 import { RowPhotos } from '../components/RowPhotos/RowPhotos'
 import { makeMainRowPhoto, moveRowPhoto, removeRowPhoto } from '../lib/rowPhotos'
-import { columnMappingActions } from '../lib/columnMappingActions'
 import { resultPriceActions } from '../lib/resultPriceActions'
 import { exportItems } from '../lib/exportItems'
 import { useBudgetDistribution } from '../hooks/useBudgetDistribution'
 import { rowActions } from '../lib/rowActions'
 import { checkFromResult, loadReviewCheck, ReviewCheck, saveReviewCheck } from '../lib/reviewCheck'
 import './calculatorPage.css'
-import { AgentPanel, agentItemFrom, agentPhotosFrom } from '../agent/AgentPanel'
+import { AgentPanel } from '../agent/AgentPanel'
 import { useRowDecisions } from '../hooks/useRowDecisions'
-import { agentApi } from '../agent/agentApi'
 import { useAgentRows } from '../agent/useAgentRows'
+import { useAgentBatch } from '../agent/useAgentBatch'
 
 // exportName — название сметы и клиент для имени файла выгрузки.
 type Props = { estimateId: number; onEstimateSaved?: (estimate: GoodsEstimateSummary) => void; headerSlot: ReactNode; exportName?: string }
@@ -42,7 +42,6 @@ type Props = { estimateId: number; onEstimateSaved?: (estimate: GoodsEstimateSum
 export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, exportName }: Props) {
   const paramsStorageKey = storageKey(PARAMS_KEY, estimateId)
   const itemsStorageKey = storageKey(ITEMS_KEY, estimateId)
-  const fileStorageKey = storageKey(FILE_KEY, estimateId)
   const localUpdatedStorageKey = storageKey(LOCAL_UPDATED_KEY, estimateId)
   const [params, setParams] = useState<GoodsParams>(() => storedParams(estimateId))
   const [items, setItems] = useState<GoodsItemInput[]>(() => storedItems(estimateId))
@@ -51,21 +50,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   const [previousBulkResult, setPreviousBulkResult] = useState<GoodsCalculationResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [activity, setActivity] = useState<CalculatorActivity>('')
-  const [usdRateLoading, setUsdRateLoading] = useState(false)
-  const [usdRateNotice, setUsdRateNotice] = useState('')
   const [error, setError] = useState('')
   const [storageNotice, setStorageNotice] = useState('')
   const [photoStorageReady, setPhotoStorageReady] = useState(false)
-  const [sheets, setSheets] = useState<SheetInfo[]>([])
-  const [sheet, setSheet] = useState('')
-  const [headerRow, setHeaderRow] = useState(1)
-  const [dataStartRow, setDataStartRow] = useState(2)
-  const [headers, setHeaders] = useState<string[]>([])
-  const [rawRows, setRawRows] = useState<GoodsParseRow[]>([])
-  const [parsedImages, setParsedImages] = useState<{ sourceRow: number; data: string; mimeType: string }[]>([])
-  const [mapping, setMapping] = useState<GoodsMapping>(emptyMapping)
   const [sourceSnapshot, setSourceSnapshot] = useState<GoodsSourceSnapshot | null>(null)
-  const [fileSignature, setFileSignature] = useState(() => localStorage.getItem(fileStorageKey) ?? '')
   const [selectedForDirectory, setSelectedForDirectory] = useState<string[]>([])
   const [pickerTargets, setPickerTargets] = useState<string[]>([])
   // Ошибки последнего расчёта по id строк (этап 2 показывает их и после правок) и удалённая
@@ -79,23 +67,10 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   const [lightbox, setLightbox] = useState<{ photos: string[]; index: number } | null>(null)
   // Фото строки на этапе проверки: просмотр с удалением и переносом в другую строку.
   const [rowPhotos, setRowPhotos] = useState<{ itemId: string; index: number } | null>(null)
-  // Строка, для которой открыт чат подбора кода ИИ, и пакетный подбор для строк без кода.
+  // Строка, для которой открыт чат подбора кода ИИ.
   const [agentRowId, setAgentRowId] = useState<string | null>(null)
-  const [agentBatch, setAgentBatch] = useState<{ done: number; total: number } | null>(null)
-  // Уведомление внизу после смены кода на этапе результата: «Отменить» (previous — строки до смены) или ошибка.
-  const [codeNotice, setCodeNotice] = useState<{ text: string; failed?: boolean; previous?: GoodsItemInput[] } | null>(null)
-
-  // Удачное уведомление само скрывается через 8 секунд; ошибка — висит, пока не закроют.
-  useEffect(() => {
-    if (!codeNotice || codeNotice.failed) return
-    const timer = window.setTimeout(() => setCodeNotice(null), 8000)
-    return () => window.clearTimeout(timer)
-  }, [codeNotice])
-  const selectedFileRef = useRef<File | null>(null)
-  const autoRateRequestedRef = useRef(false)
-  // Дата, на которую курс взят из НБРК; пусто — курс введён вручную или его нет.
-  const nbkRateDateRef = useRef('')
-  const rateRequestRef = useRef(0)
+  // Уведомление внизу после смены кода на этапе результата.
+  const [codeNotice, setCodeNotice] = useState<CodeNoticeState | null>(null)
   const hydrationRef = useRef(false)
   // Черновик, который сейчас лежит на сервере (draftSnapshot): отличается от него только то,
   // что изменено в этом браузере и ещё не сохранено.
@@ -134,8 +109,11 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     },
     onError: (message) => setStorageNotice(`Не сохранено на сервере: ${message}. Повторим автоматически`),
   })
+  const usdRate = useUsdRate({ params, ready: photoStorageReady, setParam, setError })
+  const excel = useExcelImport({ estimateId, items, packageWeightKg: params.packageWeightKg, setItems, setResult, setStep, setLoading, setError, setStorageNotice, setSourceSnapshot, setSelectedForDirectory })
   const directorySearch = useDirectorySearch(setError)
   const agentRows = useAgentRows(estimateId, step === 2)
+  const agentBatch = useAgentBatch(estimateId, items, agentRows, setError)
   // Кнопка «В базу» в строках: что уже в базе решений и сохранение строк.
   const rowDecisions = useRowDecisions(estimateId, items, serverReady && step === 2)
 
@@ -159,12 +137,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
       // автосохранение стёрло бы её на сервере.
       if (serverSource) {
         setSourceSnapshot(serverSource)
-        setSheet(serverSource.sheet || '')
-        setHeaderRow(serverSource.headerRow || 1)
-        setDataStartRow(serverSource.dataStartRow || 2)
-        setHeaders(serverSource.headers ?? [])
-        setRawRows(serverSource.rows ?? [])
-        setMapping(serverSource.mapping)
+        excel.restore(serverSource)
       }
       // Прежняя версия сайта ставила отметку «в браузере новее» при простом открытии сметы. Если
       // строки и параметры совпадают с сервером, а своего результата в браузере нет, отметка
@@ -194,8 +167,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   }, [estimateId, localUpdatedStorageKey])
 
   const { addManualPhoto, addEmptyRow, removeRow } = rowActions({ setItems, setResult, setSelectedForDirectory, setError }, items.length, params.packageWeightKg)
-  const { setMappingForHeader, setRawRowIncluded } = columnMappingActions(setMapping, setRawRows)
-  const { recalculateResultPrice, restoreInitialResult, undoLastPriceChange, applyDistributedPrices } = resultPriceActions({ items, result, previousBulkResult, setResult, setPreviousBulkResult, calculate })
+  const { withResultPrices, changeResultPrice, recalculateResultPrice, restoreInitialResult, undoLastPriceChange, applyDistributedPrices, setResultIncluded, chooseAntiDumping } = resultPriceActions({ items, result, previousBulkResult, setItems, setResult, setPreviousBulkResult, calculate })
   // Подбор под бюджет и сверка по ИТП хранятся в смете (параметр resultTools) и сохраняются автосохранением.
   const setResultTool = <K extends keyof GoodsResultTools>(key: K, value: GoodsResultTools[K]) =>
     setParams((current) => ({ ...current, resultTools: { ...current.resultTools, [key]: value } }))
@@ -220,8 +192,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
 
   function setParam(field: keyof GoodsParams, value: string) {
     setParams((current) => ({ ...current, [field]: value }))
-    if (field === 'assessmentDate' || field === 'usdKzt') setUsdRateNotice('')
-    if (field === 'usdKzt') nbkRateDateRef.current = ''
+    usdRate.paramChanged(field)
     if (field === 'packageWeightKg') {
       // Общая упаковка меняет только строки, которые идут по общему значению.
       // Строка со своей упаковкой (значение отличается от общего) остаётся как есть.
@@ -230,133 +201,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
       setItems((current) => current.map((item) => item.packageWeightKg === previous ? { ...item, packageWeightKg: value } : item))
     }
     setResult(null)
-  }
-
-  // quiet — автоматическая загрузка: ошибку не показываем, курс можно взять кнопкой «НБРК» или ввести.
-  async function loadUsdRate(quiet = false) {
-    const date = params.assessmentDate
-    if (!date) {
-      if (!quiet) setError('Сначала укажите дату расчёта')
-      return
-    }
-    // Ответ на устаревший запрос (дату успели сменить) не применяется.
-    const request = ++rateRequestRef.current
-    setUsdRateLoading(true)
-    if (!quiet) setError('')
-    try {
-      const rate = await goodsEstimatesApi.usdRate(date)
-      if (request !== rateRequestRef.current) return
-      setParam('usdKzt', rate.rate)
-      nbkRateDateRef.current = date
-      setUsdRateNotice(`${rate.source} · ${rate.date}`)
-    } catch (reason) {
-      if (request !== rateRequestRef.current) return
-      if (!quiet) setError(requestErrorMessage(reason))
-      setUsdRateNotice('')
-    } finally {
-      if (request === rateRequestRef.current) setUsdRateLoading(false)
-    }
-  }
-
-  // Курс НБРК подставляется сам: сразу при открытии сметы без курса и после смены даты, если
-  // прежний курс тоже был из НБРК. Введённый вручную курс не меняется.
-  useEffect(() => {
-    if (!photoStorageReady || !params.assessmentDate) return
-    const missing = params.usdKzt.trim() === '' && !autoRateRequestedRef.current
-    const outdated = nbkRateDateRef.current !== '' && nbkRateDateRef.current !== params.assessmentDate
-    if (!missing && !outdated) return
-    const timer = window.setTimeout(() => {
-      autoRateRequestedRef.current = true
-      void loadUsdRate(true)
-    }, 400)
-    return () => window.clearTimeout(timer)
-  }, [photoStorageReady, params.assessmentDate, params.usdKzt])
-
-  async function parseFile(file: File, replaceExisting: boolean, requestedSheet = '') {
-    const signature = `${file.name}:${file.size}:${file.lastModified}`
-    setLoading(true); setError(''); setResult(null); setStep(1)
-    try {
-      const parsed = await goodsEstimatesApi.parseXlsx(file, { sheet: requestedSheet || undefined, headerRow, dataStartRow })
-      setSheets(parsed.sheets)
-      const selectedSheet = sheet || parsed.sheets[0]?.name || ''
-      setSheet(selectedSheet)
-      let newItems: GoodsItemInput[]
-      setHeaders(parsed.headers ?? [])
-      setRawRows(parsed.rows)
-      setParsedImages(parsed.images)
-      const nextMapping = emptyMapping()
-      setMapping(nextMapping)
-      newItems = buildGloveItems(parsed.rows, parsed.images, nextMapping, params.packageWeightKg, items.length)
-      setSourceSnapshot({ filename: file.name, signature, sheet: selectedSheet, headerRow, dataStartRow, headers: parsed.headers ?? [], rows: parsed.rows, mapping: nextMapping })
-      setItems((current) => replaceExisting ? newItems : [...current, ...newItems])
-      setFileSignature(signature)
-      localStorage.setItem(fileStorageKey, signature)
-      if (parsed.warnings?.length) setStorageNotice(parsed.warnings.join(' '))
-      else setStorageNotice('Файл обработан. Проверьте исключённые строки и сопоставление колонок.')
-      if (newItems.length === 0) setError('В выбранном диапазоне нет заполненных строк товаров')
-    } catch (reason) {
-      setError(requestErrorMessage(reason))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const picked = event.target.files?.[0]
-    event.target.value = ''
-    if (!picked) return
-    // Копия в памяти: при смене листа файл отправляется снова, а файл на диске к этому времени
-    // могут открыть в Excel или изменить — тогда браузер обрывает отправку («Failed to fetch»).
-    let file: File
-    try {
-      file = new File([await picked.arrayBuffer()], picked.name, { type: picked.type, lastModified: picked.lastModified })
-    } catch {
-      setError('Не удалось прочитать файл. Закройте его в Excel и выберите снова.')
-      return
-    }
-    const signature = `${file.name}:${file.size}:${file.lastModified}`
-    let replaceExisting = false
-    if (items.length > 0 && fileSignature === signature) {
-      if (!window.confirm('Этот файл уже загружен в эту смету. Заменить текущие строки?')) return
-      replaceExisting = true
-    }
-    selectedFileRef.current = file
-    await parseFile(file, replaceExisting)
-  }
-
-  async function reparseSelectedSheet() {
-    const file = selectedFileRef.current
-    if (!file) {
-      setError('Сначала загрузите XLSX-файл')
-      return
-    }
-    if (items.length > 0 && !window.confirm('Перечитать выбранный лист и заменить текущие строки? Ручные исправления строк будут заменены.')) return
-    await parseFile(file, true, sheet)
-  }
-
-  async function applyMapping() {
-    if (rawRows.length === 0) return
-    if (items.length > 0 && !window.confirm('Пересобрать строки по выбранным колонкам? Ручные исправления текущих строк будут заменены.')) return
-    setLoading(true)
-    setError('')
-    try {
-      const importedItems = buildGloveItems(rawRows, parsedImages, mapping, params.packageWeightKg, 0)
-      const matched = await matchImportedTnvedCodes(importedItems)
-      setItems(matched.items)
-      setSourceSnapshot((current) => current ? { ...current, sheet, headerRow, dataStartRow, headers, rows: rawRows, mapping } : current)
-      setSelectedForDirectory([])
-      setResult(null)
-      if (!matched.nomenclatureLoaded) {
-        setStorageNotice('Коды ТН ВЭД из файла не проверены: номенклатура ТН ВЭД ЕАЭС не загружена — ставки для расчёта брать неоткуда.')
-      } else if (matched.matched > 0 || matched.missing > 0) {
-        setStorageNotice(`Коды ТН ВЭД сверены с номенклатурой: найдено ${matched.matched}${matched.missing > 0 ? `, нет в номенклатуре ${matched.missing}` : ''}. Ставки — пошлина ЕТТ и НДС из номенклатуры.`)
-      }
-      setStep(2)
-    } catch (reason) {
-      setError(requestErrorMessage(reason))
-    } finally {
-      setLoading(false)
-    }
   }
 
   // Товар даёт строке название, код и ИТС; код номенклатуры — только код. Ставки в обоих случаях —
@@ -410,18 +254,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     void recalculateCode(nextItems)
   }
 
-  // «Учитывать строку в расчёте» в панели строки результата; смета пересчитывается с текущими ценами.
-  function setResultIncluded(index: number, included: boolean) {
-    const nextItems = items.map((item, itemIndex) => itemIndex === index ? { ...item, excluded: !included } : item)
-    setItems(nextItems)
-    void calculate(withResultPrices(nextItems), false)
-  }
-
-  // Строки с ценами текущего результата (правка, подбор под бюджет) — для пересчёта без потери этих цен.
-  function withResultPrices(list: GoodsItemInput[]) {
-    return list.map((item, itemIndex) => ({ ...item, pricePerPair: result?.items[itemIndex]?.pricePerPair || item.pricePerPair }))
-  }
-
   // Код из подбора ИИ: ставки — пошлина ЕТТ и НДС из номенклатуры, как при выборе кода вручную.
   async function applyAgentCode(id: string, code: string) {
     const found = await lookupNomenclature([code]).catch(() => null)
@@ -434,31 +266,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   function applyAgentName(id: string, name: string) {
     setItems((current) => current.map((item) => item.id === id ? { ...item, name, supplierName: item.supplierName || item.name, standardName: name } : item))
     setResult(null)
-  }
-
-  // Подбор ИИ для всех включённых строк без кода, где подбора ещё не было: запуски идут на
-  // сервере в фоне, значки в таблице обновляются сами.
-  async function startAgentBatch() {
-    // Строки, где уже был поиск в базе, но агента не запускали, тоже входят: агент запускается сразу.
-    const rows = items.filter((item) => item.id && !item.excluded && !item.code && (!agentRows.statuses[item.id] || agentRows.statuses[item.id].status === 'ready'))
-    if (rows.length === 0) return
-    if (!window.confirm(`Подобрать коды для ${rows.length} строк без кода? Подбор идёт на сервере, результат — в чате каждой строки (кнопка «Подбор»).`)) return
-    setAgentBatch({ done: 0, total: rows.length })
-    setError('')
-    try {
-      for (const [index, item] of rows.entries()) {
-        const ready = agentRows.statuses[item.id ?? '']
-        if (ready?.status === 'ready') await agentApi.begin(ready.sessionId)
-        else await agentApi.start({ estimateId, itemId: item.id ?? '', item: agentItemFrom(item), photos: await agentPhotosFrom(item), auto: true })
-        setAgentBatch({ done: index + 1, total: rows.length })
-        agentRows.refresh()
-      }
-    } catch (reason) {
-      setError(requestErrorMessage(reason))
-    } finally {
-      setAgentBatch(null)
-      agentRows.refresh()
-    }
   }
 
   // Строки, для которых открыт выбор товара или кода: отдельно от галочек, чтобы выбор для одной
@@ -520,13 +327,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
     setStep(2)
   }
 
-  // Вариант антидемпинга строки: сохраняется в строке сметы, расчёт повторяется с ценами текущего результата.
-  function chooseAntiDumping(index: number, key: string) {
-    const choice = key || undefined
-    setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, antiDumpingChoice: choice } : item))
-    void calculate(withResultPrices(items.map((item, itemIndex) => itemIndex === index ? { ...item, antiDumpingChoice: choice } : item)), false)
-  }
-
   // ТС по инвойсу или по СУР, вес, снижение и страна СУР: хранятся в параметрах сметы, расчёт
   // повторяется с ценами текущего результата. По СУР цены инвойса на ТС не влияют — подбор под бюджет сбрасывается.
   function changeSir(patch: SirParams) {
@@ -539,14 +339,6 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   // Окно сравнения: та же смета с ценами текущего результата, но с другими параметрами СУР.
   function previewSir(patch: SirParams) {
     return previewCalculation(withResultPrices(items), { ...params, ...patch })
-  }
-
-  function changeResultPrice(index: number, value: string) {
-    // Keep the edited value in the source rows as well as in the result. The
-    // next row recalculation is built from `items`; without this mirror the
-    // previous row still contains its old price and appears to disappear.
-    setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item))
-    setResult((current) => current ? { ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, pricePerPair: value } : item) } : current)
   }
 
   // Кнопка «Сохранить»: не ждать паузы автосохранения. Уходят только изменения.
@@ -582,46 +374,14 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
   function clearAll() {
     if (!window.confirm('Очистить параметры и все строки этой сметы? Смета очистится и на сервере.')) return
     setReviewCheck(null); setRemovedRow(null)
-    setParams(emptyParams()); autoRateRequestedRef.current = false; nbkRateDateRef.current = ''; setItems([]); setResult(null); setStep(1); setSourceSnapshot(null); setSelectedForDirectory([]); setDirectoryOpen(false); directorySearch.reset(); localStorage.removeItem(paramsStorageKey); localStorage.removeItem(itemsStorageKey); localStorage.removeItem(storageKey(RESULT_KEY, estimateId)); localStorage.removeItem(fileStorageKey); localStorage.removeItem(localUpdatedStorageKey)
+    setParams(emptyParams()); usdRate.reset(); setItems([]); setResult(null); setStep(1); setSourceSnapshot(null); setSelectedForDirectory([]); setDirectoryOpen(false); directorySearch.reset(); localStorage.removeItem(paramsStorageKey); localStorage.removeItem(itemsStorageKey); localStorage.removeItem(storageKey(RESULT_KEY, estimateId)); localStorage.removeItem(storageKey(FILE_KEY, estimateId)); localStorage.removeItem(localUpdatedStorageKey)
     void goodsPhotoStore.remove(estimateId)
   }
 
   const includedCount = items.filter((item) => !item.excluded).length
-  const hasSource = headers.length > 0 || items.length > 0
-  const pickerRows = items.filter((item) => pickerTargets.includes(item.id ?? ''))
-  // № — как в таблице; строка Excel — в скобках, если строка из файла.
-  const pickerRowNumber = pickerRows.length === 1 ? items.indexOf(pickerRows[0]) + 1 : 0
-  const pickerTitle = pickerRows.length === 1 ? `Код для строки ${pickerRowNumber}` : pickerRows.length > 1 ? `Код для ${pickerRows.length} выбранных строк` : 'Выбор кода ТН ВЭД'
-  const pickerSubtitle = pickerRows.length === 1 ? pickerRows[0].name || pickerRows[0].supplierName || '' : ''
-  const pickerTarget = pickerRows.length === 1 ? `К строке ${pickerRowNumber}` : `К ${pickerRows.length} выбранным строкам`
-  // Общий код выбранных строк; у строк разные коды — блока «Сейчас в строке» нет.
-  const pickerCodes = [...new Set(pickerRows.map((row) => row.code ?? ''))]
-  const pickerCurrentCode = pickerCodes.length === 1 ? pickerCodes[0] : ''
-  const pickerPhotos = pickerRows.flatMap((row) => photosOf(row).map((photo) => ({ photo, row })))
-  // На этапе результата степпер компактный: «✓ Файл · ✓ Проверка · Результат».
+  const hasSource = excel.headers.length > 0 || items.length > 0
   const resultStep = step === 3 && Boolean(result)
-  // На этапе проверки строк — красный счётчик строк, требующих внимания (те же проверки, что в таблице).
-  const reviewStep = step === 2
-  const reviewAttention = reviewStep ? items.filter((item, index) => reviewStatus(item, result?.items[index], result ? undefined : reviewCheck?.rows[item.id ?? ''], rowMissing(item, params.packageWeightKg)).attention).length : 0
-  const codeProblemRows = result ? result.items.filter((item, index) => !item.excluded && rowProblems(item, item.code || items[index]?.code || '').some((problem) => problem.kind === 'code')).length : 0
-  const stepList: { value: 1 | 2 | 3; label: string; available: boolean }[] = [
-    { value: 1, label: 'Файл', available: true },
-    { value: 2, label: 'Проверка строк', available: hasSource },
-    { value: 3, label: 'Результат', available: Boolean(result) },
-  ]
-  const calculatorStepper = <nav className="est-steps compact" aria-label="Этапы расчёта товаров">
-    {stepList.map(({ value, label, available }) => {
-      // «Проверка» завершена, только если у всех строк есть код и ставки; иначе — ⚠ и число таких строк.
-      const unfinished = value === 2 && step === 3 && codeProblemRows > 0
-      const done = value < step && available && !unfinished
-      const title = unfinished ? `${label}: ${codeProblemRows} ${plural(codeProblemRows, ['строка', 'строки', 'строк'])} без кода ТН ВЭД или ставок` : label
-      return <button type="button" key={value} className={step === value ? 'active' : done ? 'done' : unfinished ? 'unfinished' : undefined} aria-current={step === value ? 'step' : undefined} onClick={() => available && setStep(value)} disabled={!available} title={title}>
-        <span className="est-step-num">{unfinished ? '⚠' : done ? '✓' : value}</span><span className="est-step-label">{label}</span>
-        {unfinished && <b className="est-step-count" aria-label={title}>{codeProblemRows}</b>}
-        {value === 2 && reviewStep && reviewAttention > 0 && <b className="est-step-count bad" title={`Требуют внимания: ${reviewAttention}`}>{reviewAttention}</b>}
-      </button>
-    })}
-  </nav>
+  const calculatorStepper = <CalculatorStepper step={step} setStep={setStep} items={items} result={result} params={params} reviewCheck={reviewCheck} hasSource={hasSource} />
   // Пока смета не загружена с сервера, правки некуда положить: ответ сервера заменил бы строки,
   // добавленные до него (на Render после простоя ответ идёт около минуты). Шапку сметы не
   // показываем: после загрузки её рисует этап, и открытая форма названия закрылась бы.
@@ -637,27 +397,27 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
       {step === 1 && <ImportStep
         header={<>{headerSlot}{calculatorStepper}</>}
         loading={loading}
-        sheets={sheets}
-        sheet={sheet}
-        headerRow={headerRow}
-        dataStartRow={dataStartRow}
-        headers={headers}
-        rawRows={rawRows}
-        mapping={mapping}
+        sheets={excel.sheets}
+        sheet={excel.sheet}
+        headerRow={excel.headerRow}
+        dataStartRow={excel.dataStartRow}
+        headers={excel.headers}
+        rawRows={excel.rawRows}
+        mapping={excel.mapping}
         // После перезагрузки файла в браузере нет — имя берём из сохранённой сметы.
-        fileName={selectedFileRef.current?.name ?? sourceSnapshot?.filename ?? ''}
-        selectedFileAvailable={Boolean(selectedFileRef.current)}
+        fileName={excel.selectedFile?.name ?? sourceSnapshot?.filename ?? ''}
+        selectedFileAvailable={Boolean(excel.selectedFile)}
         mappingFieldOptions={mappingFieldOptions}
-        upload={upload}
+        upload={excel.upload}
         addEmptyRow={() => { addEmptyRow(); setStep(2) }}
-        setSheet={setSheet}
-        setHeaderRow={setHeaderRow}
-        setDataStartRow={setDataStartRow}
-        reparseSelectedSheet={reparseSelectedSheet}
+        setSheet={excel.setSheet}
+        setHeaderRow={excel.setHeaderRow}
+        setDataStartRow={excel.setDataStartRow}
+        reparseSelectedSheet={excel.reparseSelectedSheet}
         mappedFieldForHeader={mappedFieldForHeader}
-        setMappingForHeader={setMappingForHeader}
-        setRawRowIncluded={setRawRowIncluded}
-        applyMapping={applyMapping}
+        setMappingForHeader={excel.setMappingForHeader}
+        setRawRowIncluded={excel.setRawRowIncluded}
+        applyMapping={excel.applyMapping}
       />}
 
       {step === 2 && <ReviewStep
@@ -669,13 +429,13 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         storageNotice={storageNotice}
         unsaved={autosave.unsaved}
         header={<>{headerSlot}{calculatorStepper}</>}
-         usdRateLoading={usdRateLoading}
-         usdRateNotice={usdRateNotice}
+        usdRateLoading={usdRate.loading}
+        usdRateNotice={usdRate.notice}
         includedCount={includedCount}
         editItems={(next) => { setItems(next); setResult(null) }}
         setSelectedForDirectory={setSelectedForDirectory}
-         setParam={setParam}
-         loadUsdRate={loadUsdRate}
+        setParam={setParam}
+        loadUsdRate={usdRate.load}
         openDirectoryPicker={openDirectoryPicker}
         removeRow={removeRowWithUndo}
         removedRow={removedRow ? { rowNumber: removedRow.index + 1, name: removedRow.item.name } : null}
@@ -691,21 +451,17 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         clearAll={clearAll}
         agentStatuses={agentRows.statuses}
         rowDecisions={rowDecisions}
-        agentBatch={agentBatch}
+        agentBatch={agentBatch.progress}
         openAgent={setAgentRowId}
-        startAgentBatch={() => void startAgentBatch()}
+        startAgentBatch={() => void agentBatch.start()}
       />}
 
       {step === 3 && result && <ResultStep agentOpen={Boolean(agentRowId)} onCloseAgent={() => setAgentRowId(null)} result={result} items={items} loading={loading} activity={activity} storageNotice={storageNotice} header={<>{headerSlot}{calculatorStepper}</>} unsaved={autosave.unsaved} saveDraft={saveDraft} exportExcel={exportExcel} onBackToReview={returnToReview} onPriceChange={changeResultPrice} onPriceBlur={recalculateResultPrice} onAntiDumpingChoice={chooseAntiDumping}
         onChangeCode={(index) => { const id = items[index]?.id; if (id) openDirectoryPicker([id]) }} onAgent={(index) => { const id = items[index]?.id; if (id) setAgentRowId(id) }} onToggleIncluded={setResultIncluded} sir={params} onSirChange={changeSir} previewSir={previewSir} itp={params.resultTools?.itp} onItpChange={(value) => setResultTool('itp', value)} onRestoreInitial={() => { budget.reset(); restoreInitialResult() }} onUndoPrices={() => { budget.reset(); undoLastPriceChange() }} canUndoPrices={Boolean(previousBulkResult)} budget={budget} />}
 
       {directoryOpen && <DirectoryPickerModal
-        title={pickerTitle}
-        subtitle={pickerSubtitle}
-        target={pickerTarget}
-        currentCode={pickerCurrentCode}
-        photos={pickerPhotos}
-        multipleRows={pickerRows.length > 1}
+        items={items}
+        targetIds={pickerTargets}
         mode={directorySearch.mode}
         query={directorySearch.query}
         entries={directorySearch.entries}
@@ -724,11 +480,7 @@ export function GoodsCalculator({ estimateId, onEstimateSaved, headerSlot, expor
         <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="8" cy="8" r="6.3" /><path d="M8 7.3v3.6" /><circle cx="8" cy="5" r=".4" fill="currentColor" /></svg>
         Предварительный расчёт, не официальный документ. Пошлина и НДС — из номенклатуры ТН ВЭД ЕАЭС.
       </p>
-      {codeNotice && <div className={codeNotice.failed ? 'code-notice failed' : 'code-notice'} role={codeNotice.failed ? 'alert' : 'status'}>
-        <span>{codeNotice.text}</span>
-        {codeNotice.previous && <button type="button" className="code-notice-undo" onClick={() => codeNotice.previous && undoCodeChange(codeNotice.previous)} disabled={loading}>Отменить</button>}
-        <button type="button" className="code-notice-close" onClick={() => setCodeNotice(null)} aria-label="Закрыть уведомление">×</button>
-      </div>}
+      {codeNotice && <CodeNotice notice={codeNotice} loading={loading} onUndo={undoCodeChange} onClose={() => setCodeNotice(null)} />}
     </div>
     {agentRowId && (() => {
       const index = items.findIndex((item) => item.id === agentRowId)

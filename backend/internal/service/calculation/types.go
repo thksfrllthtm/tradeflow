@@ -7,7 +7,6 @@ import (
 )
 
 type CalculationItemInput struct {
-	ProductID             int64          `json:"productId"`
 	SourceRow             int            `json:"sourceRow,omitempty"`
 	DirectorySnapshot     map[string]any `json:"directorySnapshot,omitempty"`
 	StandardName          string         `json:"standardName"`
@@ -35,7 +34,6 @@ type CalculationItemInput struct {
 	DeliveryAlreadyInCost bool           `json:"deliveryAlreadyInCost"`
 	DeliveryIncluded      bool           `json:"deliveryIncluded"`
 	Excluded              bool           `json:"excluded"`
-	ExclusionReason       string         `json:"exclusionReason"`
 	GenericItems          bool           `json:"-"`
 	// SIR — смета в режиме «ТС по СУР»; nil — ТС по инвойсу. Задаёт только сервер.
 	SIR *SIRBasis `json:"-"`

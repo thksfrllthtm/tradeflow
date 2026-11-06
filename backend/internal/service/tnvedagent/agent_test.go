@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/east-trans-logistic/import-calculator/backend/internal/repository"
-	"github.com/east-trans-logistic/import-calculator/backend/internal/service/decisions"
 	"github.com/east-trans-logistic/import-calculator/backend/internal/service/directory"
 )
 
@@ -274,61 +273,6 @@ func TestAgentRunnerRetriesFinishWithoutValidCodes(t *testing.T) {
 	outcome := runner.execute(context.Background())
 	if outcome.result == nil || outcome.result.Candidates[0].Code != "4015190000" || model.calls != 2 {
 		t.Fatalf("outcome %+v calls %d", outcome, model.calls)
-	}
-}
-
-// Изменено: цитата (quote) — только из пояснений страницы или открытых документов; дерево кода и
-// наименование из номенклатуры не доказательство, классификационное решение — отдельное поле decisionQuote.
-func TestQuoteSourceNeedsVerbatimText(t *testing.T) {
-	toolbox := newAgentToolbox(&fakeAgentData{})
-	toolbox.opened["6116102000"] = "Дерево кода:\n6116 10 200 0 перчатки, пропитанные или покрытые резиной\nМеры нетарифного регулирования\nСертификат соответствия на перчатки защитные\n" +
-		decisionsHeading + "\nРешение ЕЭК № 12: перчатки хозяйственные с латексным покрытием — 6116 10 200 0\n" +
-		notesHeading + "\nВ данную субпозицию включаются трикотажные перчатки с покрытием ладони."
-	toolbox.web["https://tnved.info/help/6116102000"] = "Перчатки для защиты рук подлежат санитарному надзору"
-	toolbox.web["https://adilet.zan.kz/rus/docs/V1800017400"] = "Перечень продукции, подлежащей обязательной сертификации"
-	cases := map[string]string{
-		"перчатки для защиты рук подлежат":             "help",     // справка tnved.info
-		"перечень продукции, подлежащей обязательной":  "document", // другой документ — не справка tnved.info
-		"«трикотажные перчатки, с покрытием ладони»":   "page",     // знаки и регистр не важны
-		"перчатки хозяйственные с латексным покрытием": "",         // решение — не quote, а decisionQuote
-		"перчатки, пропитанные или покрытые резиной":   "",         // наименование и дерево — не доказательство
-		"сертификат соответствия на перчатки защитные": "",         // меры — тоже
-		"перчатки из нитрила для медицины":             "",
-		"прочие":                 "", // коротко
-		"6116 10 200 0 перчатки": "", // номер кода и одно слово ничего не подтверждают
-	}
-	for quote, want := range cases {
-		if got := toolbox.quoteSource("6116102000", strings.Trim(quote, "«»")); got != want {
-			t.Errorf("%q: got %q, want %q", quote, got, want)
-		}
-	}
-	// Основание меры в «Документах для ввоза»: решение — решением, страница — страницей, документ — документом.
-	origins := map[string]string{
-		"перчатки хозяйственные с латексным покрытием": "классификационное решение, код 6116 10 200 0 (TWS.BY)",
-		"трикотажные перчатки с покрытием ладони":      "страница кода 6116 10 200 0 (TWS.BY)",
-		"перечень продукции, подлежащей обязательной":  "документ " + shortURL("https://adilet.zan.kz/rus/docs/V1800017400"),
-	}
-	for quote, want := range origins {
-		if got := toolbox.quoteOrigin(quote, "", ""); got != want {
-			t.Errorf("основание %q: got %q, want %q", quote, got, want)
-		}
-	}
-}
-
-func TestSortByVerdictPutsSameProductFirst(t *testing.T) {
-	matches := []decisions.SimilarMatch{
-		{Decision: decisions.CodeDecisionView{ID: 1}, Score: 90},
-		{Decision: decisions.CodeDecisionView{ID: 2}, Score: 60, Verdict: "same"},
-		{Decision: decisions.CodeDecisionView{ID: 3}, Score: 80, Verdict: "similar"},
-		{Decision: decisions.CodeDecisionView{ID: 4}, Score: 70, Verdict: "same"},
-	}
-	sortByVerdict(matches)
-	order := []int64{}
-	for _, match := range matches {
-		order = append(order, match.Decision.ID)
-	}
-	if order[0] != 4 || order[1] != 2 || order[2] != 3 || order[3] != 1 {
-		t.Fatalf("order %v", order)
 	}
 }
 

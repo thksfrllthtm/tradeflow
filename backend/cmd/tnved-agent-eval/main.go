@@ -87,7 +87,7 @@ type schemeRun struct {
 
 func main() {
 	limit := flag.Int("limit", 20, "сколько последних проверенных записей проверить")
-	baseline := flag.Bool("baseline", false, "как раньше: без интернета и без самопроверки — для сравнения")
+	baseline := flag.Bool("baseline", false, "как раньше: без интернета — для сравнения")
 	effort := flag.String("effort", "", "уровень размышлений модели: low, high, max (пусто — из TNVED_AI_EFFORT)")
 	single := flag.Bool("single", false, "прежняя схема: одна модель для фото (TNVED_AI_VISION_MODEL) на всё, без размышлений")
 	file := flag.String("file", "", "Excel поставщика: прогон по его строкам вместо базы решений")
@@ -109,7 +109,7 @@ func main() {
 	}
 	settings := tnvedagent.AgentSettings{DailyLimit: cfg.TNVEDAIDailyLimit, NamingRule: cfg.TNVEDAINamingRule, WebSearchKey: cfg.TavilyAPIKey}
 	if *baseline {
-		settings.WebSearchKey, settings.SelfCheck = "", false
+		settings.WebSearchKey = ""
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Hour)
 	defer cancel()
@@ -125,7 +125,7 @@ func main() {
 		model, vision = tnvedagent.NewAgentModelClient(visionConfig(cfg)), nil
 	}
 	agent := tnvedagent.NewTNVEDAgentService(database, model, vision, decisions.NewCodeDecisionService(database), settings)
-	fmt.Printf("Модель %s, фото: %s, записей до %d, интернет: %v, самопроверка: %v\n", model.Name(), visionName(vision), *limit, settings.WebSearchKey != "", settings.SelfCheck)
+	fmt.Printf("Модель %s, фото: %s, записей до %d, интернет: %v\n", model.Name(), visionName(vision), *limit, settings.WebSearchKey != "")
 	summary, err := agent.Evaluate(ctx, *limit, func(line string) { fmt.Println(line) })
 	if err != nil {
 		log.Fatal(ai.AIErrorMessage(err))

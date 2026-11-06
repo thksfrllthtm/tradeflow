@@ -221,16 +221,6 @@ func (s directorySheet) number(i int, header string) (string, bool) {
 	return cellNumber(shown), true
 }
 
-// date reads a date column: text as typed or Excel's stored serial number.
-func (s directorySheet) date(i int, header string) (string, bool, error) {
-	stored, ok := s.at(s.raw, i, header)
-	if !ok {
-		return "", false, nil
-	}
-	value, err := cellDate(stored)
-	return value, true, err
-}
-
 // code reads a TN VED code without spaces and dots; a code typed as a number loses its leading
 // zero in Excel (0101210000 → 101210000), so nine digits get it back.
 func (s directorySheet) code(i int, header string) (string, bool) {

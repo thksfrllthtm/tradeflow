@@ -1,5 +1,6 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { goodsApi } from '@/shared/api/goodsApi'
+import { saveBlob } from '@/shared/api/download'
 import { GoodsParseResult } from '@/shared/types/goods'
 import { errorMessage } from '@/shared/lib/errorMessage'
 import { ceramicsApi } from '../ceramicsApi'
@@ -157,16 +158,8 @@ export function MatchTab({ types, ai }: Props) {
     updateGroup(key, (group) => ({ ...group, draft: { ...group.draft, ...change } }))
   }
 
-
-
   function downloadCsv() {
-    const blob = new Blob([resultCsv(groups)], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${(file?.name ?? 'керамика').replace(/\.xlsx$/i, '')} — подбор.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    saveBlob(new Blob([resultCsv(groups)], { type: 'text/csv;charset=utf-8' }), `${(file?.name ?? 'керамика').replace(/\.xlsx$/i, '')} — подбор.csv`)
   }
 
   const counts = useMemo(() => {

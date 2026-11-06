@@ -270,7 +270,7 @@ func (s *scanner) inline(p *paragraph, wrap string, top bool) error {
 func (s *scanner) run(p *paragraph, wrap string) error {
 	rPr := ""
 	for {
-		token, start, end, err := s.next()
+		token, start, _, err := s.next()
 		if err != nil {
 			return err
 		}
@@ -279,7 +279,7 @@ func (s *scanner) run(p *paragraph, wrap string) error {
 			return nil
 		case xml.StartElement:
 			name := qname(t.Name)
-			stop := end
+			var stop int
 			switch name {
 			case "w:t":
 				text, err := s.text()
@@ -407,7 +407,6 @@ var textEscaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
 // fragment — склеенные соседние куски с одинаковым форматированием.
 type fragment struct {
 	piece
-	id string
 }
 
 func (p paragraph) fragments() []fragment {

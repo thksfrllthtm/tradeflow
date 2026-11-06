@@ -8,7 +8,7 @@ import { normalizeTnvedCode } from '../../lib/nomenclatureRates'
 export type SheetKey = 'photo' | 'name' | 'code' | 'duty' | NumberField | 'included'
 export type NumberField = 'places' | 'pairsPerPlace' | 'pairs' | 'grossKg' | 'packageWeightKg' | 'netKg'
 
-export type SheetColumn = { key: SheetKey; title: string; width: number; type: 'text' | 'checkbox'; readOnly?: boolean; align: 'left' | 'right' | 'center'; hint?: string }
+type SheetColumn = { key: SheetKey; title: string; width: number; type: 'text' | 'checkbox'; readOnly?: boolean; align: 'left' | 'right' | 'center'; hint?: string }
 
 export const NUMBER_FIELDS: NumberField[] = ['places', 'pairsPerPlace', 'pairs', 'grossKg', 'packageWeightKg', 'netKg']
 
@@ -29,7 +29,7 @@ export const SHEET_COLUMNS: SheetColumn[] = [
 
 export const columnIndex = (key: SheetKey) => SHEET_COLUMNS.findIndex((column) => column.key === key)
 
-export type SheetCell = string | boolean
+type SheetCell = string | boolean
 
 // Значения строки для листа. Служебные колонки (фото, пошлина) пустые: их вид рисуется
 // отдельно, а при копировании они дают пустые ячейки.
@@ -67,7 +67,7 @@ export function copyValue(key: SheetKey, value: unknown): string {
 
 export type SheetChange = { x: number; y: number; value: unknown }
 
-export type AppliedChanges = {
+type AppliedChanges = {
   // null — строки не изменились (например, Delete по флажкам).
   items: GoodsItemInput[] | null
   // Строки с новым кодом из 10 цифр: ставки нужно взять из номенклатуры.

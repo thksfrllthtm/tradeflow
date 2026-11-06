@@ -116,7 +116,7 @@ func (s *TNVEDAgentService) translateName(ctx context.Context, russian, supplier
 	var answer struct {
 		ZH string `json:"zh"`
 	}
-	if json.Unmarshal([]byte(unwrapJSON(reply.Content)), &answer) != nil {
+	if json.Unmarshal([]byte(ai.UnwrapJSON(reply.Content)), &answer) != nil {
 		return "", reply.Usage, ai.ErrAIBadResponse
 	}
 	chinese := service.TruncateRunes(strings.Trim(strings.TrimSpace(answer.ZH), "«»\"/ "), 120)

@@ -26,7 +26,7 @@ export type SirCompareRow = {
   customsDiff: number | null
 }
 
-export type SirCompareLine = { label: string; invoice: number | null; sir: number | null; diff: number | null; total?: boolean }
+type SirCompareLine = { label: string; invoice: number | null; sir: number | null; diff: number | null; total?: boolean }
 
 export function compareRows(invoice: GoodsCalculationResult, sir: GoodsCalculationResult, weight: SirWeight): SirCompareRow[] {
   return invoice.items.flatMap((item, index) => {

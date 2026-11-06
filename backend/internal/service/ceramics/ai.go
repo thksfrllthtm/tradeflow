@@ -1,6 +1,6 @@
 package ceramics
 
-// ceramicsAiService: the model chooses a product type of the ceramics base in two stages —
+// Ceramics AI: the model chooses a product type of the ceramics base in two stages —
 // candidates from the whole list of types, then a careful comparison of the closest ones.
 // Every answer is JSON checked against the types sent; the model never adds a type, a size
 // or a price. The provider is any OpenAI-compatible Chat Completions API (DeepSeek by default).
@@ -310,13 +310,6 @@ func (c *CeramicsAIClient) complete(ctx context.Context, systemPrompt string, pa
 	return parsed.Choices[0].Message.Content, nil
 }
 
-// unwrapJSON tolerates a Markdown fence around the JSON object.
-func unwrapJSON(content string) string {
-	content = strings.TrimSpace(content)
-	content = strings.TrimPrefix(strings.TrimPrefix(content, "```json"), "```")
-	return strings.TrimSpace(strings.TrimSuffix(content, "```"))
-}
-
 // canonicalTypeName maps a name from the answer to the exact name sent; "" — not in the list.
 func canonicalTypeName(name string, allowed []string) string {
 	key := normalizeCeramicTypeKey(name)
@@ -379,7 +372,7 @@ func parseCeramicsCandidates(content string, allowed []string, imageSeen bool) (
 		ChineseAnalysis []ChineseTerm  `json:"chineseAnalysis"`
 		Candidates      []rawCandidate `json:"candidates"`
 	}
-	if json.Unmarshal([]byte(unwrapJSON(content)), &answer) != nil {
+	if json.Unmarshal([]byte(ai.UnwrapJSON(content)), &answer) != nil {
 		return CeramicsCandidatesResult{}, ai.ErrAIBadResponse
 	}
 	result := CeramicsCandidatesResult{}
@@ -422,7 +415,7 @@ func parseCeramicsComparison(content string, candidates []string, imageSeen bool
 		Sources     []string        `json:"sources"`
 		Ranking     []rawCandidate  `json:"ranking"`
 	}
-	if json.Unmarshal([]byte(unwrapJSON(content)), &answer) != nil {
+	if json.Unmarshal([]byte(ai.UnwrapJSON(content)), &answer) != nil {
 		return CeramicsComparisonResult{}, ai.ErrAIBadResponse
 	}
 	decision := strings.ToUpper(strings.TrimSpace(answer.Decision))

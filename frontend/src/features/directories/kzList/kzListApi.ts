@@ -1,4 +1,5 @@
 import { request } from '@/shared/api/client'
+import { saveResponse } from '@/shared/api/download'
 import { DirectoryImportResult } from '../common/directoryTransfer'
 import { KzListExtract } from './kzListPdf'
 
@@ -21,13 +22,7 @@ export const kzListApi = {
   async excel(extract: KzListExtract) {
     const response = await fetch('/api/tnved-kz-rates/excel', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(extract) })
     if (!response.ok) throw await failure(response, 'Не удалось сделать Excel')
-    const encoded = /filename\*=UTF-8''([^;]+)/i.exec(response.headers.get('Content-Disposition') ?? '')?.[1]
-    const url = URL.createObjectURL(await response.blob())
-    const link = document.createElement('a')
-    link.href = url
-    link.download = encoded ? decodeURIComponent(encoded) : 'Перечень РК.xlsx'
-    link.click()
-    URL.revokeObjectURL(url)
+    await saveResponse(response, 'Перечень РК.xlsx')
   },
   importPdf: (extract: KzListExtract) => request<KzImportResult>('/api/tnved-kz-rates/import-pdf', { method: 'POST', body: JSON.stringify(extract) }),
   async importExcel(file: File): Promise<KzImportResult> {

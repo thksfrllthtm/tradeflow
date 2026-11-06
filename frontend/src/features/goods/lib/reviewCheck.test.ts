@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GoodsCalculationResult, GoodsItemInput } from '@/shared/types/goods'
-import { reviewStatus } from '../components/ReviewRow/reviewStatus'
+import { reviewStatus } from './reviewStatus'
 import { checkFromResult, loadReviewCheck, saveReviewCheck } from './reviewCheck'
 
 const row = (id: string, grossKg = '10') => ({ id, code: '4015190000', grossKg, pricePerPair: '1', excluded: false, directorySnapshot: { rateSource: 'nomenclature' } }) as unknown as GoodsItemInput

@@ -18,7 +18,7 @@ export function budgetAmount(budget: BudgetDistributionState) {
   return /^\d+([.,]\d+)?$/.test(text) && Number(text.replace(',', '.')) > 0 ? Number(text.replace(',', '.')) : null
 }
 
-export const budgetHint = (budget: BudgetDistributionState) => hint(budget.gapMin, budget.gapMax, budget.gapMode === 'over')
+const budgetHint = (budget: BudgetDistributionState) => hint(budget.gapMin, budget.gapMax, budget.gapMode === 'over')
 
 const AI_RUN_HINT = '«По товарам»: каждый товар оценивается отдельно (DeepSeek), у цены — пояснение. Разные товары одного кода получают разные цены, одинаковый товар (тот же код и название) — одну. Обычно 2–5 секунд; повторный подбор для тех же товаров — сразу.'
 
@@ -44,7 +44,7 @@ export function BudgetMeter({ budget, totalUsd }: { budget: BudgetDistributionSt
 }
 
 // Текущие настройки подбора одной строкой: «Итог меньше бюджета на 35–45 USD · 4 знака».
-export const budgetSettingsText = (budget: BudgetDistributionState) =>
+const budgetSettingsText = (budget: BudgetDistributionState) =>
   `Итог ${budget.gapMode === 'over' ? 'больше' : 'меньше'} кассы на ${budget.gapMin}–${budget.gapMax} USD · ${budget.priceDecimals} знака`
 
 const usd = (value: number) => formatRuNumber(decimalText(value, 2))

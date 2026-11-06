@@ -4,7 +4,7 @@ import { formatRuNumber } from '@/shared/lib/formatDisplayNumber'
 import { moneyText, weightText } from '@/shared/lib/rounding'
 import { GoodsCalculationResult, ItpSaved } from '@/shared/types/goods'
 import { useSavedSnapshot } from '../../hooks/useSavedSnapshot'
-import { calculatorInputValue, parseCalculatorNumber, weightInputValue } from './resultValues'
+import { calculatorInputValue, parseCalculatorNumber, weightInputValue } from '../../lib/resultValues'
 
 // «Сверка по ИТП» (свёрнута по умолчанию): ИТП × общий нетто = USD, × курс = KZT. Только для сверки,
 // на расчёт не влияет. Нетто и курс заполняются из результата, их можно поправить. Введённое

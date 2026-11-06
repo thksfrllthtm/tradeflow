@@ -1,7 +1,6 @@
 package repository
 
-// Подбор кода ТН ВЭД ИИ-агентом: сессии (одна строка сметы), сообщения чата и сохранённые
-// страницы кодов TWS.BY.
+// Подбор кода ТН ВЭД ИИ-агентом: сессии (одна строка сметы или вопрос чата на главной), сообщения чата и расход.
 
 import (
 	"context"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type TNVEDAgentSession struct {
@@ -60,26 +58,6 @@ type TNVEDAgentMessage struct {
 }
 
 func (TNVEDAgentMessage) TableName() string { return "tnved_agent_messages" }
-
-type TNVEDDetailsPage struct {
-	Code      string    `gorm:"primaryKey;size:10"`
-	URL       string    `gorm:"size:500;not null"`
-	Text      string    `gorm:"not null"`
-	FetchedAt time.Time `gorm:"not null"`
-}
-
-func (TNVEDDetailsPage) TableName() string { return "tnved_details_pages" }
-
-// WebPageCache — сохранённая веб-страница для агента (справка tnved.info, акты): текст и ссылки.
-type WebPageCache struct {
-	URL       string    `gorm:"primaryKey;size:1000"`
-	Title     string    `gorm:"not null"`
-	Text      string    `gorm:"not null"`
-	Links     JSON      `gorm:"type:jsonb;not null"`
-	FetchedAt time.Time `gorm:"not null"`
-}
-
-func (WebPageCache) TableName() string { return "web_pages" }
 
 func (r *Repository) CreateAgentSession(ctx context.Context, session TNVEDAgentSession) (TNVEDAgentSession, error) {
 	return session, r.db.WithContext(ctx).Create(&session).Error
@@ -213,47 +191,6 @@ func (r *Repository) AgentUsageSince(ctx context.Context, since time.Time) (Agen
 	return usage, err
 }
 
-// DetailsPage — сохранённая страница кода; ErrNotFound, если её ещё не скачивали (Find, а не Take:
-// отсутствие страницы — обычный случай, и GORM не пишет его в лог как ошибку).
-func (r *Repository) DetailsPage(ctx context.Context, code string) (TNVEDDetailsPage, error) {
-	var pages []TNVEDDetailsPage
-	if err := r.db.WithContext(ctx).Where("code = ?", code).Limit(1).Find(&pages).Error; err != nil {
-		return TNVEDDetailsPage{}, err
-	}
-	if len(pages) == 0 {
-		return TNVEDDetailsPage{}, ErrNotFound
-	}
-	return pages[0], nil
-}
-
-func (r *Repository) DetailsPages(ctx context.Context, codes []string) ([]TNVEDDetailsPage, error) {
-	var pages []TNVEDDetailsPage
-	if len(codes) == 0 {
-		return pages, nil
-	}
-	return pages, r.db.WithContext(ctx).Where("code IN ?", codes).Find(&pages).Error
-}
-
-func (r *Repository) SaveDetailsPage(ctx context.Context, page TNVEDDetailsPage) error {
-	return r.db.WithContext(ctx).Save(&page).Error
-}
-
-// WebPage — сохранённая веб-страница; ErrNotFound, если её ещё не скачивали.
-func (r *Repository) WebPage(ctx context.Context, url string) (WebPageCache, error) {
-	var pages []WebPageCache
-	if err := r.db.WithContext(ctx).Where("url = ?", url).Limit(1).Find(&pages).Error; err != nil {
-		return WebPageCache{}, err
-	}
-	if len(pages) == 0 {
-		return WebPageCache{}, ErrNotFound
-	}
-	return pages[0], nil
-}
-
-func (r *Repository) SaveWebPage(ctx context.Context, page WebPageCache) error {
-	return r.db.WithContext(ctx).Save(&page).Error
-}
-
 // ReferenceSession — вопрос чата-справочника для списка прошлых вопросов.
 type ReferenceSession struct {
 	ID            int64
@@ -281,128 +218,6 @@ func (r *Repository) ReferenceSessions(ctx context.Context, userID int64, limit 
 // DeleteAgentSession удаляет сессию агента вместе с сообщениями.
 func (r *Repository) DeleteAgentSession(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&TNVEDAgentSession{}).Error
-}
-
-// CodeDocuments — сохранённый ответ «Документы для ввоза» по коду: описание товара, резюме и меры
-// (записи AgentDocument с видом документа). Показывается последний по коду.
-type CodeDocuments struct {
-	ID          int64     `gorm:"primaryKey"`
-	Code        string    `gorm:"size:10;not null"`
-	Product     string    `gorm:"not null"`
-	Description string    `gorm:"not null"`
-	Documents   JSON      `gorm:"type:jsonb;not null"`
-	SessionID   *int64    `gorm:"column:session_id"`
-	UserID      *int64    `gorm:"column:user_id"`
-	CreatedAt   time.Time `gorm:"not null"`
-}
-
-func (CodeDocuments) TableName() string { return "tnved_code_documents" }
-
-func (r *Repository) SaveCodeDocuments(ctx context.Context, row CodeDocuments) error {
-	return r.db.WithContext(ctx).Create(&row).Error
-}
-
-// LatestCodeDocuments — последний сохранённый ответ по коду; ErrNotFound — ответа ещё не было.
-func (r *Repository) LatestCodeDocuments(ctx context.Context, code string) (CodeDocuments, error) {
-	var rows []CodeDocuments
-	if err := r.db.WithContext(ctx).Where("code = ?", code).Order("created_at DESC, id DESC").Limit(1).Find(&rows).Error; err != nil {
-		return CodeDocuments{}, err
-	}
-	if len(rows) == 0 {
-		return CodeDocuments{}, ErrNotFound
-	}
-	return rows[0], nil
-}
-
-// GeneralAct — перечень СС/ДС общей базы «Документов для ввоза», добавленный из справки tnved.info.
-type GeneralAct struct {
-	URL     string    `gorm:"primaryKey;size:1000"`
-	Title   string    `gorm:"not null"`
-	AddedAt time.Time `gorm:"not null"`
-}
-
-func (GeneralAct) TableName() string { return "general_acts" }
-
-// SaveGeneralActs — новые перечни; уже известные адреса не меняются.
-func (r *Repository) SaveGeneralActs(ctx context.Context, acts []GeneralAct) error {
-	if len(acts) == 0 {
-		return nil
-	}
-	return r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&acts).Error
-}
-
-// GeneralActs — все перечни, добавленные из справок, в порядке добавления.
-func (r *Repository) GeneralActs(ctx context.Context) ([]GeneralAct, error) {
-	var acts []GeneralAct
-	return acts, r.db.WithContext(ctx).Order("added_at, url").Find(&acts).Error
-}
-
-// TNVEDAgentShadowRun — теневой подбор второй моделью для сессии (tnvedagent/shadow.go): одна строка на
-// сессию. Messages — лента событий, как сообщения чата сотрудника; расход — отдельно от сессии.
-type TNVEDAgentShadowRun struct {
-	ID               int64           `gorm:"primaryKey"`
-	SessionID        int64           `gorm:"not null"`
-	Model            string          `gorm:"size:100;not null"`
-	Status           string          `gorm:"size:16;not null"`
-	Transcript       JSON            `gorm:"type:jsonb;not null"`
-	Messages         JSON            `gorm:"type:jsonb;not null"`
-	Result           JSON            `gorm:"type:jsonb;not null"`
-	Error            string          `gorm:"not null"`
-	Steps            int             `gorm:"not null"`
-	PromptTokens     int64           `gorm:"not null"`
-	CachedTokens     int64           `gorm:"not null"`
-	CompletionTokens int64           `gorm:"not null"`
-	CostUSD          decimal.Decimal `gorm:"column:cost_usd;type:numeric(12,6);not null"`
-	VisionCostUSD    decimal.Decimal `gorm:"column:vision_cost_usd;type:numeric(12,6);not null"`
-	StartedAt        time.Time       `gorm:"not null"`
-	FinishedAt       *time.Time
-	// DocumentsCode и DocumentsAgree — сошлись ли модели по мерам «нужно» в «Документах для ввоза» для кода (nil — не сравнивалось).
-	DocumentsCode  string `gorm:"size:10;not null"`
-	DocumentsAgree *bool
-}
-
-func (TNVEDAgentShadowRun) TableName() string { return "tnved_agent_shadow_runs" }
-
-func (r *Repository) CreateShadowRun(ctx context.Context, run TNVEDAgentShadowRun) (TNVEDAgentShadowRun, error) {
-	return run, r.db.WithContext(ctx).Create(&run).Error
-}
-
-func (r *Repository) UpdateShadowRun(ctx context.Context, id int64, changes map[string]any) error {
-	return r.db.WithContext(ctx).Model(&TNVEDAgentShadowRun{}).Where("id = ?", id).Updates(changes).Error
-}
-
-func (r *Repository) ShadowRunBySession(ctx context.Context, sessionID int64) (TNVEDAgentShadowRun, error) {
-	var run TNVEDAgentShadowRun
-	err := r.db.WithContext(ctx).Where("session_id = ?", sessionID).Take(&run).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return TNVEDAgentShadowRun{}, ErrNotFound
-	}
-	return run, err
-}
-
-// ShadowSpend — расход тени за всё время и прогонов с момента since (пропущенные не считаются).
-func (r *Repository) ShadowSpend(ctx context.Context, since time.Time) (decimal.Decimal, int64, error) {
-	var row struct {
-		Spent decimal.Decimal
-		Runs  int64
-	}
-	err := r.db.WithContext(ctx).Raw(`SELECT COALESCE(SUM(cost_usd), 0) AS spent,
-		COUNT(*) FILTER (WHERE started_at >= ? AND status <> 'skipped') AS runs FROM tnved_agent_shadow_runs`, since).Scan(&row).Error
-	return row.Spent, row.Runs, err
-}
-
-// FailRunningShadowRuns — после перезапуска сервера незаконченные теневые подборы помечаются ошибкой.
-func (r *Repository) FailRunningShadowRuns(ctx context.Context, message string) error {
-	return r.db.WithContext(ctx).Model(&TNVEDAgentShadowRun{}).Where("status = 'running'").
-		Updates(map[string]any{"status": "error", "error": message, "finished_at": time.Now().UTC()}).Error
-}
-
-// ClaimShadowRun — тень берётся за новый ход, только если прошлый закончен (done или error): два хода одной
-// тени не идут параллельно. false — тень ещё отвечает или была пропущена.
-func (r *Repository) ClaimShadowRun(ctx context.Context, id int64) (bool, error) {
-	result := r.db.WithContext(ctx).Model(&TNVEDAgentShadowRun{}).Where("id = ? AND status IN ('done', 'error')", id).
-		Updates(map[string]any{"status": "running", "error": ""})
-	return result.RowsAffected > 0, result.Error
 }
 
 // UpdateAgentMessageContent — содержимое сообщения чата (итог «Документов для ввоза» после второго мнения).

@@ -66,23 +66,21 @@ func decode(t *testing.T, content string) map[string]any {
 	return answer
 }
 
-// Интернет: поиск решений таможни, источник принимается, только если агент видел страницу; первый
-// итог уходит на самопроверку, принимается второй. Изменено: поиска «что за товар» (focus product)
-// нет, web_search ищет только по сайтам решений.
-func TestAgentWebSearchSourcesAndReview(t *testing.T) {
+// Интернет: поиск решений таможни, источник принимается, только если агент видел страницу; итог
+// принимается с первого finish. Изменено: поиска «что за товар» (focus product) нет, web_search ищет
+// только по сайтам решений.
+func TestAgentWebSearchSources(t *testing.T) {
 	search := &fakeSearcher{}
 	sources := []map[string]string{{"title": "решение alta.ru", "url": testAltaURL}, {"title": "выдумка", "url": "https://example.com/fake"}}
 	model := &scriptedModel{replies: []agentReply{
 		{ToolCalls: []agentToolCall{call("w1", "web_search", map[string]string{"query": "классификация формочки"})}},
 		{ToolCalls: []agentToolCall{finishWith(sources)}},
-		{ToolCalls: []agentToolCall{finishWith(sources)}},
 	}}
-	runner, events := newTestRunner(model, &fakeAgentData{})
+	runner, _ := newTestRunner(model, &fakeAgentData{})
 	runner.toolbox.search = search
-	runner.review = true
 	outcome := runner.execute(context.Background())
-	if outcome.result == nil || model.calls != 3 {
-		t.Fatalf("итог после самопроверки: %+v, вызовов модели %d", outcome.result, model.calls)
+	if outcome.result == nil || model.calls != 2 {
+		t.Fatalf("итог с первого finish: %+v, вызовов модели %d", outcome.result, model.calls)
 	}
 	if outcome.result.Confidence != "high" || len(outcome.result.Sources) != 1 || outcome.result.Sources[0].URL != testAltaURL {
 		t.Fatalf("уверенность и источники: %+v", outcome.result)
@@ -95,15 +93,6 @@ func TestAgentWebSearchSourcesAndReview(t *testing.T) {
 		if !strings.Contains(names, name) {
 			t.Fatalf("с ключом у агента есть %s: %s", name, names)
 		}
-	}
-	reviewed := false
-	for _, event := range *events {
-		if tool, ok := event.content.(agentToolEvent); ok && tool.Tool == "review" {
-			reviewed = true
-		}
-	}
-	if !reviewed {
-		t.Fatal("самопроверка видна в ходе подбора")
 	}
 }
 
@@ -155,7 +144,7 @@ func TestAgentWebLimitAndDisabled(t *testing.T) {
 	model := &scriptedModel{replies: []agentReply{{ToolCalls: []agentToolCall{finishWith(nil)}}}}
 	runner, _ := newTestRunner(model, &fakeAgentData{})
 	if outcome := runner.execute(context.Background()); outcome.result == nil || strings.Contains(toolNames(model.lastTools), "web_search") {
-		t.Fatal("без ключа и самопроверки — итог с первого раза, без интернета")
+		t.Fatal("без ключа — итог с первого раза, без интернета")
 	}
 }
 

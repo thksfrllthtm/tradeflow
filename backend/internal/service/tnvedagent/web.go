@@ -120,9 +120,6 @@ func (c tavilyClient) Extract(ctx context.Context, url string) (string, error) {
 
 // webTools — инструменты интернета для подбора и справочника (только при ключе Tavily).
 func webTools() []agentTool {
-	tool := func(name, description string, parameters map[string]any) agentTool {
-		return agentTool{Type: "function", Function: agentToolFunction{Name: name, Description: description, Parameters: parameters}}
-	}
 	return []agentTool{
 		tool("web_search", fmt.Sprintf("Поиск в интернете по классификации (до %d обращений за подбор): сначала только tks.ru — главный сайт; если там пусто — alta.ru, ЕЭК, ФТС, КГД, adilet, tnved.info, ifcg.ru (ещё одно обращение).", agentMaxWebCalls),
 			objectSchema(map[string]any{

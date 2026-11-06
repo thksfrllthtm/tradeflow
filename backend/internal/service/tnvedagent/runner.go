@@ -39,8 +39,6 @@ type agentRunner struct {
 	tools []agentTool
 	// documents — под-агент «Документов для ввоза»: без поиска в интернете.
 	documents bool
-	// review — первый итог возвращается агенту на самопроверку («второй взгляд»), окончательный — второй.
-	review bool
 	// finalize — дополнение принятого итога программой перед показом (знаки ТРОИС); nil — нет.
 	finalize func(result *AgentResult)
 	// ownEyes — модель смотрит фото сама и описание фото от модели для фото не получает (оно остаётся в
@@ -208,7 +206,6 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 	// forcedTries — попытки принудительного итога после лимита шагов: на них другие инструменты не
 	// выполняются, модель получает отказ и зовёт finish (модель с размышлениями tool_choice не принимает).
 	forcedTries := 0
-	reviewed := !r.review
 	canAsk := false
 	for _, tool := range tools {
 		canAsk = canAsk || tool.Function.Name == "ask_user"
@@ -298,14 +295,6 @@ func (r *agentRunner) execute(ctx context.Context) agentOutcome {
 				finishRetried = true
 				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"error": problem}))
 				r.onStep(r.transcript, reply.Usage)
-				continue
-			}
-			// Самопроверка: итог ещё не принимается, агент проверяет себя и вызывает finish снова.
-			if result != nil && !reviewed && forcedTries == 0 {
-				reviewed = true
-				r.toolMessage(finishCall.ID, toolJSON(map[string]string{"status": "review", "instruction": agentReviewPrompt}))
-				r.onStep(r.transcript, reply.Usage)
-				r.emit("tool", agentToolEvent{Tool: "review", Label: "Самопроверка вывода"})
 				continue
 			}
 			if result == nil {

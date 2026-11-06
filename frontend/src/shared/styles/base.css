@@ -65,7 +65,6 @@
   --tf-info: #2c4f86;
   --tf-info-bg: #eef2fa;
   --tf-ai: #c98a12;            /* значок ИИ, не для текста */
-  --tf-ai-text: #8a5a00;       /* текст про ИИ (4.5:1) */
   --tf-focus-ring: rgba(30, 91, 60, .2);
   --tf-overlay: rgba(20, 30, 24, .35);
 
@@ -88,7 +87,6 @@
   --xl-head-line: var(--tf-border);
   --xl-head-ink: var(--tf-text);
   --xl-hover: #f6f8f6;
-  --xl-active: var(--tf-green);
 }
 
 * { box-sizing: border-box; }
@@ -96,9 +94,9 @@ body { margin: 0; min-width: 320px; }
 button, input, textarea, select { font: inherit; }
 /* Поле внутри <label> не наследует её жирность 600: текст и подсказка в поле — обычным шрифтом. */
 input, textarea, select { font-weight: 400; }
-/* Коды ТН ВЭД (code, .mono) и клавиши (kbd) — моноширинным JetBrains Mono; остальное — основным шрифтом.
+/* Коды ТН ВЭД (code) и клавиши (kbd) — моноширинным JetBrains Mono; остальное — основным шрифтом.
    Все числа — ровными цифрами (tabular-nums). */
-code, kbd, .mono { font-family: var(--tf-mono); font-weight: 400; letter-spacing: 0; }
+code, kbd { font-family: var(--tf-mono); font-weight: 400; letter-spacing: 0; }
 pre, samp, body .jcontextmenu > div, body .jtooltip { font-family: inherit; }
 body { font-variant-numeric: tabular-nums; }
 h1, h2, h3, h4, h5, h6, p { margin-top: 0; }

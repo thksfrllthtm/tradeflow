@@ -5,11 +5,13 @@ package ceramics
 // missing from the base goes to the operator.
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/east-trans-logistic/import-calculator/backend/internal/service"
 	"github.com/shopspring/decimal"
 )
 
@@ -155,4 +157,26 @@ func priceKey(typeKey string, size *CeramicSize) string {
 		return typeKey + "|"
 	}
 	return typeKey + "|" + size.key()
+}
+
+// Price answers the operator's manual choice of type and size.
+func (s *CeramicsService) Price(ctx context.Context, productType, sizeValue, sizeUnit string) (CeramicsPriceResult, error) {
+	cc, err := s.loadContext(ctx)
+	if err != nil {
+		return CeramicsPriceResult{}, err
+	}
+	item, ok := cc.typeByKey[normalizeCeramicTypeKey(productType)]
+	if !ok {
+		return CeramicsPriceResult{}, &service.ValidationError{Field: "productType", Message: "Такого типа товара нет в базе"}
+	}
+	var size *CeramicSize
+	if value := strings.TrimSpace(strings.ReplaceAll(sizeValue, ",", ".")); value != "" {
+		parsed, err := decimal.NewFromString(value)
+		if err != nil || !parsed.IsPositive() || !validSizeUnit(sizeUnit) {
+			return CeramicsPriceResult{}, &service.ValidationError{Field: "sizeValue", Message: "Проверьте размер и единицу"}
+		}
+		built := newCeramicSize(parsed, sizeUnit)
+		size = &built
+	}
+	return cc.priceFor(item, size), nil
 }

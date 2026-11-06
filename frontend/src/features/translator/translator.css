@@ -48,7 +48,6 @@
 }
 
 /* Перевод: прогресс и кнопка над сегментами; предупреждение проверки у перевода. */
-.tr-doc-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .tr-doc-progress { display: flex; flex: 1 1 auto; align-items: center; gap: 12px; max-width: 520px; color: var(--tf-text-2); font-size: var(--fs-sm); }
 .tr-doc-progress .tr-progress { flex: 1 1 auto; }
 .tr-doc-progress b { color: var(--tf-text); font-variant-numeric: tabular-nums; font-family: var(--tf-num); }
