@@ -21,3 +21,6 @@ backend/.gocache-*/
 .cursor/
 graphify-out/
 skills-lock.json
+
+# Тексты нормативных актов локальной базы (legal-acts-collect; в проде — в Postgres)
+data/

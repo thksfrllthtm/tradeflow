@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeTnvedCode, withNomenclatureRates } from './nomenclatureRates'
+import { dutyRateText } from './resultValues'
 import { NomenclatureCode } from '@/shared/tnved/nomenclature'
 
 const code: NomenclatureCode = {
@@ -21,6 +22,13 @@ describe('withNomenclatureRates', () => {
     expect(snapshot).toMatchObject({ name: 'Перчатки нитриловые', companyCoefficient: '0.65', duty: { percent: '10' } })
     expect(snapshot).not.toHaveProperty('antiDumpingPercent')
     expect(snapshot).not.toHaveProperty('verificationStatus')
+  })
+
+  it('keeps "percent plus per unit" duty and shows it in the duty column', () => {
+    const plus = { ...code, duty: { type: 'combined_plus' as const, percent: '8', amount: '0.05', currency: 'EUR', unit: 'кг' } }
+    const snapshot = withNomenclatureRates(plus, source)
+    expect(snapshot).toMatchObject({ duty: { type: 'combined_plus', percent: '8', amount: '0.05' } })
+    expect(dutyRateText(snapshot)).toBe('ЕТТ 8% плюс 0,05 EUR/кг')
   })
 
   it('reads codes the way Excel gives them', () => {

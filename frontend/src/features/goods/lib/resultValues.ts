@@ -87,6 +87,7 @@ export function dutyRateText(snapshot?: Record<string, unknown>) {
   if (duty.type === 'percentage') return percent ? `ЕТТ ${percent}` : ''
   if (duty.type === 'specific') return specific ? `ЕТТ ${specific}` : ''
   if (duty.type === 'combined_minimum') return percent && specific ? `ЕТТ ${percent}, не менее ${specific}` : ''
+  if (duty.type === 'combined_plus') return percent && specific ? `ЕТТ ${percent} плюс ${specific}` : ''
   return ''
 }
 

@@ -39,6 +39,19 @@ var generalActs = []WebLink{
 	{URL: "https://adilet.zan.kz/rus/docs/H22EK000023", Text: "Решение Коллегии ЕЭК №23 от 08.02.2022 (ТР ЕАЭС 048/2019)"},
 }
 
+// generalActsFrom — перечни к регламентам, которые ещё не вступили в силу: с какой даты они участвуют в
+// поиске (и из основного списка, и из справок). ТР ЕАЭС 048/2019 вступает в силу «не ранее 1 сентября
+// 2028 г.» — Решение Совета ЕЭК №114 от 08.08.2019 в редакции 2025 г.
+var generalActsFrom = map[string]time.Time{
+	"https://adilet.zan.kz/rus/docs/H22EK000023": time.Date(2028, time.September, 1, 0, 0, 0, 0, time.UTC),
+}
+
+// generalActInForce — перечень участвует в поиске на дату.
+func generalActInForce(address string, date time.Time) bool {
+	from, ok := generalActsFrom[address]
+	return !ok || !date.Before(from)
+}
+
 var (
 	// eecDecision — «Решение Коллегии ЕЭК №6 от 16.01.2018», «№30 (2015) от 21.04.2015», «Решение Совета ЕЭК №11
 	// от 22.01.2025»: орган, номер и год.
@@ -124,27 +137,31 @@ func (f *WebPageFetcher) saveGeneralActs(ctx context.Context, body []byte) {
 	_ = f.repository.SaveGeneralActs(ctx, rows)
 }
 
-// GeneralActs — общая база: основной список и перечни из справок (без повторов адресов).
+// GeneralActs — общая база на сегодня: основной список и перечни из справок (без повторов адресов и
+// перечней к регламентам, которые ещё не вступили в силу).
 func (f *WebPageFetcher) GeneralActs(ctx context.Context) ([]WebLink, error) {
+	var rows []repository.GeneralAct
+	var err error
+	if f.repository != nil {
+		rows, err = f.repository.GeneralActs(ctx)
+	}
+	return generalActsOn(rows, time.Now()), err
+}
+
+func generalActsOn(rows []repository.GeneralAct, date time.Time) []WebLink {
 	acts := append([]WebLink{}, generalActs...)
-	if f.repository == nil {
-		return acts, nil
+	for _, row := range rows {
+		acts = append(acts, WebLink{URL: row.URL, Text: row.Title})
 	}
-	rows, err := f.repository.GeneralActs(ctx)
-	if err != nil {
-		return acts, err
-	}
+	inForce := []WebLink{}
 	seen := map[string]bool{}
 	for _, act := range acts {
+		if !seen[act.URL] && generalActInForce(act.URL, date) {
+			inForce = append(inForce, act)
+		}
 		seen[act.URL] = true
 	}
-	for _, row := range rows {
-		if !seen[row.URL] {
-			seen[row.URL] = true
-			acts = append(acts, WebLink{URL: row.URL, Text: row.Title})
-		}
-	}
-	return acts, nil
+	return inForce
 }
 
 // WarmGeneralActs — тексты перечней в базу заранее, в фоне при запуске сервера: adilet отвечает до

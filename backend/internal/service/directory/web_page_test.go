@@ -69,35 +69,6 @@ func TestParseGoodsHelpLimit(t *testing.T) {
 	}
 }
 
-// Образец — Решение КТС №299 на old.adilet.zan.kz (документ обрезан): текст акта без меню и подвала.
-func TestParseAdiletDocument(t *testing.T) {
-	page, err := pageFromBody("https://adilet.zan.kz/rus/docs/H10T0000299", "https://old.adilet.zan.kz/rus/docs/H10T0000299", string(readTestdata(t, "adilet_old_H10T0000299.html")))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if page.URL != "https://adilet.zan.kz/rus/docs/H10T0000299" || !strings.Contains(page.Title, "О применении санитарных мер") {
-		t.Errorf("url/title: %s / %s", page.URL, page.Title)
-	}
-	for _, want := range []string{"Комиссия Евразийского экономического союза решила", "контактирующим с кожей человека"} {
-		if !strings.Contains(page.Text, want) {
-			t.Errorf("missing %q", want)
-		}
-	}
-	for _, unwanted := range []string{"Состояние базы", "Бесплатный звонок", "Вернуться в мобильную версию", "function(", "{"} {
-		if strings.Contains(page.Text, unwanted) {
-			t.Errorf("unexpected %q", unwanted)
-		}
-	}
-	if len(page.Links) == 0 {
-		t.Fatal("no links")
-	}
-	for _, link := range page.Links {
-		if !strings.HasPrefix(link.URL, "https://") || strings.Contains(link.URL, "#") {
-			t.Errorf("bad link %+v", link)
-		}
-	}
-}
-
 // Образец — карточка акта на docs.eaeunion.org: текст только в PDF и Word, ссылки на них абсолютные.
 func TestParseEAEUDocumentCard(t *testing.T) {
 	page, err := pageFromBody("https://docs.eaeunion.org/documents/446/10220/", "https://docs.eaeunion.org/documents/446/10220/", string(readTestdata(t, "eaeunion_document_pdf.html")))
@@ -119,7 +90,7 @@ func TestSPAShellNeedsBrowser(t *testing.T) {
 	}
 }
 
-func TestCanonicalWebURLAndFetchAddress(t *testing.T) {
+func TestCanonicalWebURL(t *testing.T) {
 	for raw, want := range map[string]string{
 		"http://adilet.zan.kz/rus/docs/H10T0000299":      "https://adilet.zan.kz/rus/docs/H10T0000299",
 		"https://Docs.EAEUnion.org:443/documents/1/#top": "https://docs.eaeunion.org/documents/1/",
@@ -133,12 +104,6 @@ func TestCanonicalWebURLAndFetchAddress(t *testing.T) {
 		if got != want || ok != (want != "") {
 			t.Errorf("%s: got %q %v, want %q", raw, got, ok, want)
 		}
-	}
-	if got := fetchAddress("https://adilet.zan.kz/rus/docs/H10T0000299"); got != "https://old.adilet.zan.kz/rus/docs/H10T0000299" {
-		t.Errorf("adilet: %s", got)
-	}
-	if got := fetchAddress("https://docs.eaeunion.org/documents/1/"); got != "https://docs.eaeunion.org/documents/1/" {
-		t.Errorf("eaeunion: %s", got)
 	}
 }
 

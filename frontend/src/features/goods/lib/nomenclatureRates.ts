@@ -14,7 +14,7 @@ export function normalizeTnvedCode(value: string): string {
   return compact.match(/^(\d{10})\.0+$/)?.[1] ?? ''
 }
 
-const dutyType = (type: string) => (type === 'percentage' || type === 'specific' || type === 'combined_minimum' ? type : 'unknown')
+const dutyType = (type: string) => (['percentage', 'specific', 'combined_minimum', 'combined_plus'].includes(type) ? type : 'unknown')
 
 // Снимок строки со ставками кода из номенклатуры; название и ИТС выбранной карточки (base)
 // остаются, антидемпинг и статус проверки справочника отбрасываются.

@@ -83,6 +83,8 @@ type WebPage struct {
 type WebPageFetcher struct {
 	repository *repository.Repository
 	client     *http.Client
+	// adiletAPI, zakonBase — источники актов adilet (пусто — настоящие сайты; в тестах — свой сервер).
+	adiletAPI, zakonBase string
 }
 
 func NewWebPageFetcher(r *repository.Repository) *WebPageFetcher {
@@ -179,19 +181,6 @@ func IsWebFileURL(pageURL string) bool {
 	return err == nil && webFileExtensions[strings.ToLower(path.Ext(parsed.Path))]
 }
 
-// fetchAddress — откуда скачивать: новая версия adilet.zan.kz — SPA (текст только через API с
-// токеном), у старой версии полный текст акта прямо в HTML.
-func fetchAddress(pageURL string) string {
-	parsed, err := url.Parse(pageURL)
-	if err != nil {
-		return pageURL
-	}
-	if host := parsed.Hostname(); (host == "adilet.zan.kz" || host == "www.adilet.zan.kz") && strings.Contains(parsed.Path, "/docs/") {
-		parsed.Host = "old.adilet.zan.kz"
-	}
-	return parsed.String()
-}
-
 // Page — страница по адресу: из базы, если свежая, иначе с сайта; сайт недоступен — старая копия.
 func (f *WebPageFetcher) Page(ctx context.Context, rawURL string) (WebPage, error) {
 	pageURL, ok := CanonicalWebURL(rawURL)
@@ -208,13 +197,18 @@ func (f *WebPageFetcher) Page(ctx context.Context, rawURL string) (WebPage, erro
 	if found && time.Since(cached.fetchedAt) < webPageMaxAge {
 		return cached.page, nil
 	}
-	body, finalURL, err := f.download(ctx, fetchAddress(pageURL))
-	if err == nil {
-		var page WebPage
-		if page, err = pageFromBody(pageURL, finalURL, body); err == nil {
-			f.save(ctx, page)
-			return page, nil
+	var page WebPage
+	if code := adiletCode(pageURL); code != "" {
+		page, err = f.adiletPage(ctx, pageURL, code)
+	} else {
+		var body, finalURL string
+		if body, finalURL, err = f.download(ctx, pageURL); err == nil {
+			page, err = pageFromBody(pageURL, finalURL, body)
 		}
+	}
+	if err == nil {
+		f.save(ctx, page)
+		return page, nil
 	}
 	if found {
 		return cached.page, nil
@@ -288,24 +282,11 @@ func (f *WebPageFetcher) save(ctx context.Context, page WebPage) { f.saveAs(ctx,
 
 // download скачивает HTML; файл (PDF, Word, архив) — ErrWebPageFile без чтения тела.
 func (f *WebPageFetcher) download(ctx context.Context, address string) (body, finalURL string, err error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
-	if err != nil || request.URL.Scheme != "https" {
-		return "", "", ErrWebPageURL
-	}
-	request.Header.Set("User-Agent", webUserAgent)
-	request.Header.Set("Accept", "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5")
-	request.Header.Set("Accept-Language", "ru")
-	response, err := f.client.Do(request)
+	response, err := f.open(ctx, address, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5")
 	if err != nil {
-		if errors.Is(err, errBlockedAddr) {
-			return "", "", errBlockedAddr
-		}
-		return "", "", ErrWebPageUnavailable
+		return "", "", err
 	}
 	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		return "", "", ErrWebPageUnavailable
-	}
 	if webFileResponse(response.Header.Get("Content-Type"), response.Request.URL.Path) {
 		return "", "", ErrWebPageFile
 	}
@@ -332,12 +313,16 @@ func webFileResponse(contentType, urlPath string) bool {
 }
 
 // pageFromBody — страница по скачанному HTML; ссылки разрешаются от адреса после редиректов. Почти
-// пустой текст при скриптах — SPA (новый adilet.zan.kz, gov.kz): ErrWebPageScript.
+// пустой текст при скриптах — SPA (новый adilet.zan.kz, gov.kz): ErrWebPageScript; заглушка «идут технические
+// работы» — ErrWebPageUnavailable (иначе она легла бы в кэш вместо страницы).
 func pageFromBody(pageURL, finalURL, body string) (WebPage, error) {
 	page := parseWebPage(finalURL, body)
 	page.URL = pageURL
 	if utf8.RuneCountInString(page.Text) < webScriptMinRunes && strings.Contains(strings.ToLower(body), "<script") {
 		return WebPage{URL: pageURL}, ErrWebPageScript
+	}
+	if maintenancePage(page) {
+		return WebPage{URL: pageURL}, ErrWebPageUnavailable
 	}
 	return page, nil
 }
@@ -360,18 +345,10 @@ func parseWebPage(pageURL, body string) WebPage {
 	return page
 }
 
-// webContent — основной блок страницы: текст акта на old.adilet.zan.kz, <main>, иначе <body>.
+// webContent — основной блок страницы: текст акта (<article> у API adilet и zakon.uchet.kz), <main>, иначе <body>.
 func webContent(body string) string {
-	if start := strings.Index(body, `class="container_gamma text`); start >= 0 {
-		part := body[start:]
-		if end := strings.Index(part, `<div id="footer"`); end > 0 {
-			part = part[:end]
-		}
-		// Начало тега до class="…" отрезано — убираем его хвост.
-		if close := strings.Index(part, ">"); close >= 0 {
-			part = part[close+1:]
-		}
-		return part
+	if start, end := strings.Index(body, "<article"), strings.LastIndex(body, "</article>"); start >= 0 && end > start {
+		return body[start:end]
 	}
 	if match := webMain.FindStringSubmatch(body); match != nil {
 		return match[1]
